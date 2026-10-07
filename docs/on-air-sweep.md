@@ -70,8 +70,8 @@ Assistant's home coordinates: never paste its parameters anywhere.
 
 ### Home Assistant side
 
-- Debug logging for the integration (*Settings → Devices & services → JUNG HOME → Enable debug logging*, or
-  `logger: logs: custom_components.junghome_ble: debug`); *Download diagnostics* at the end of each group.
+- Debug logging for the integration (*Settings → Devices & services → JUNG HOME Bluetooth Mesh → Enable debug
+  logging*, or `logger: logs: custom_components.junghome_ble: debug`); *Download diagnostics* at the end of each group.
 - *Developer tools → Events*, listening to `junghome_ble_button_action` and `junghome_ble_scene_recalled`, for the
   key items.
 - Enable, for the duration, the disabled-by-default entities an item names; disable them again afterwards.

@@ -1074,7 +1074,7 @@
       "message": "Yksikään JUNG-mesh-verkon solmu ei vielä näy Bluetoothin kautta."
     },
     "export_keys_stale": {
-      "message": "JUNG-mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta viennin verkkoavainta: avaimet uusittiin viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta ja ota se käyttöön kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen."
+      "message": "JUNG-mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta viennin verkkoavainta: avaimet uusittiin viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta ja ota se käyttöön kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistantilla ei ole yhdistettävää Bluetooth-sovitinta tai -proxya: JUNG-mesh-verkkoa ei tavoiteta."
@@ -1275,10 +1275,10 @@
       "message": "Yhteys JUNG-mesh-verkkoon katkesi, kun viestiä {message} lähetettiin solmulle {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Solmu {node} on mesh-verkon viennissä {path}, mutta ei verkossa, jonka Home Assistant latasi siitä aiemmin; lataa integraatio uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME → Lataa uudelleen), jotta se seuraa vientiä, ja yritä sitten uudelleen. {applied}"
+      "message": "Solmu {node} on mesh-verkon viennissä {path}, mutta ei verkossa, jonka Home Assistant latasi siitä aiemmin; lataa integraatio uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Lataa uudelleen), jotta se seuraa vientiä, ja yritä sitten uudelleen. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "JUNG HOME -yhdyskäytävällä osoitteessa {host} on uudempi vienti ({gateway}) kuin tiedosto, jonka Home Assistant lataisi sille ({file}); lataaminen poistaisi sen, mitä JUNG HOME -sovelluksessa on sen jälkeen muutettu. Seuraava Home Assistantissa tehty muutos ottaa yhdyskäytävän viennin käyttöön ja siirtää Home Assistantin omat muutokset siihen. Jos tämä virhe toistuu (merkintä, jolla ei ole kopiota sovelluksen viimeisimmästä latauksesta, ei pysty erottamaan niitä), hae yhdyskäytävän vienti uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen; korvattu tiedosto säilytetään sen vieressä nimellä `.pre-reconfigure`) ja toista sitten Home Assistantissa tehty muutos."
+      "message": "JUNG HOME -yhdyskäytävällä osoitteessa {host} on uudempi vienti ({gateway}) kuin tiedosto, jonka Home Assistant lataisi sille ({file}); lataaminen poistaisi sen, mitä JUNG HOME -sovelluksessa on sen jälkeen muutettu. Seuraava Home Assistantissa tehty muutos ottaa yhdyskäytävän viennin käyttöön ja siirtää Home Assistantin omat muutokset siihen. Jos tämä virhe toistuu (merkintä, jolla ei ole kopiota sovelluksen viimeisimmästä latauksesta, ei pysty erottamaan niitä), hae yhdyskäytävän vienti uudelleen (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen; korvattu tiedosto säilytetään sen vieressä nimellä `.pre-reconfigure`) ja toista sitten Home Assistantissa tehty muutos."
     },
     "service_gateway_export_incomplete": {
       "message": "JUNG HOME -yhdyskäytävä osoitteessa {host} vastasi pelkällä laitetietokannalla (ilman laitteiden nimiä tai huonekytkentöjä); sen käyttöönotto poistaisi ne Home Assistantin säilyttämästä tiedostosta. Yritä uudelleen, kun yhdyskäytävä ei ole enää varattu, tai hae sovelluksen vienti uudelleen."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
           "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
           "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
           "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
-          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
           "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
           "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
           "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
           "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
           "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
           "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
-          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
           "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
           "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
           "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
           "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
           "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
           "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
-          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
           "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
           "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
           "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME -painikkeissa eri yksikkö kuin viennissä",
-      "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} painikkeet mainostavat eri yksikköä kuin Home Assistantin lataamassa viennissä on (vienti → laite). Yksikkö vaihdettiin viennin tekemisen jälkeen, joten Home Assistant ja sovellus saattavat näyttää niille väärän kuormatyypin. Tarkista laitteet JUNG HOME -sovelluksessa, vie verkko uudelleen ja päivitä tämä integraatio (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen); ongelma poistuu, kun vienti nimeää laitteiden mainostamat yksiköt. Ei vielä varmistettu oikeilla laitteilla."
+      "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} painikkeet mainostavat eri yksikköä kuin Home Assistantin lataamassa viennissä on (vienti → laite). Yksikkö vaihdettiin viennin tekemisen jälkeen, joten Home Assistant ja sovellus saattavat näyttää niille väärän kuormatyypin. Tarkista laitteet JUNG HOME -sovelluksessa, vie verkko uudelleen ja päivitä tämä integraatio (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen); ongelma poistuu, kun vienti nimeää laitteiden mainostamat yksiköt. Ei vielä varmistettu oikeilla laitteilla."
     },
     "node_clock_wrong": {
       "title": "JUNG HOME -laitteiden kello on väärässä",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
           "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
           "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
           "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
-          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
           "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
           "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
           "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Hyppää laitteiden tuntemien numeroiden yli",
-            "description": "Home Assistant kuulee JUNG HOME -mesh-verkon {title} välityssolmunsa kautta, mutta yksikään laite ei vastannut sen tilakyselyihin. Solmut hylkäävät Home Assistantin viestit toistoina (replay). Kaksi syytä on todennäköisiä: tämän integraation järjestysnumerovarasto (`.storage/junghome_ble.*`) katosi tai palautettiin vanhemmasta varmuuskopiosta, joten Home Assistant lähettää nyt järjestysnumeroita, jotka solmut ovat jo nähneet; tai toinen mesh-asiakas (esimerkiksi työkalu `mesh_poc.py`) lähettää samalla unicast-osoitteella {unicast}. Anna Home Assistantille joko uusi, käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme, ja varmista, ettei mikään muu asiakas käytä sitä) tai, jos varasto katosi tai palautettiin (eikä mikään muu asiakas käytä osoitetta), vahvista, niin Home Assistant hyppää järjestysnumeroissaan 1 048 576 eteenpäin ja yhdistää uudelleen. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta: vanhempi kopio vain toistaa numeroita, jotka laitteet ovat jo nähneet. Ongelma poistuu itsestään heti, kun jokin laite vastaa taas Home Assistantille."
+            "description": "Home Assistant kuulee JUNG HOME -mesh-verkon {title} välityssolmunsa kautta, mutta yksikään laite ei vastannut sen tilakyselyihin. Solmut hylkäävät Home Assistantin viestit toistoina (replay). Kaksi syytä on todennäköisiä: tämän integraation järjestysnumerovarasto (`.storage/junghome_ble.*`) katosi tai palautettiin vanhemmasta varmuuskopiosta, joten Home Assistant lähettää nyt järjestysnumeroita, jotka solmut ovat jo nähneet; tai toinen mesh-asiakas (esimerkiksi työkalu `mesh_poc.py`) lähettää samalla unicast-osoitteella {unicast}. Anna Home Assistantille joko uusi, käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme, ja varmista, ettei mikään muu asiakas käytä sitä) tai, jos varasto katosi tai palautettiin (eikä mikään muu asiakas käytä osoitetta), vahvista, niin Home Assistant hyppää järjestysnumeroissaan 1 048 576 eteenpäin ja yhdistää uudelleen. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta: vanhempi kopio vain toistaa numeroita, jotka laitteet ovat jo nähneet. Ongelma poistuu itsestään heti, kun jokin laite vastaa taas Home Assistantille."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Hyppää toisen asiakkaan järjestysnumeroiden yli",
-            "description": "Home Assistant vastaanotti JUNG HOME -mesh-verkon {title} viestin, joka oli lähetetty sen omasta unicast-osoitteesta {unicast} järjestysnumerolla, jota se ei ole koskaan käyttänyt: toinen mesh-asiakas lähettää samalla osoitteella — toinen Home Assistant -asennus, tällä osoitteella määritetty `mesh_poc.py`-työkalu tai muualla käynnistetty kopio tästä asennuksesta. Kaksi lähettäjää samalla osoitteella käyttävät toistensa järjestysnumeroita uudelleen, ja laitteet hylkäävät kaiken toisen asiakkaan numeroita pienemmän, joten Home Assistant ei lähetä mesh-verkkoon mitään, ennen kuin tämä on korjattu (komennot epäonnistuvat, tiloja ei päivitetä). Pysäytä toinen asiakas tai anna sille tai Home Assistantille toinen käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme). Vahvista sitten, niin Home Assistant jatkaa järjestysnumeroitaan toisen asiakkaan havaittujen numeroiden yli ja lähettää taas. Jos toinen asiakas jatkaa lähettämistä tältä osoitteelta, ongelma palaa. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
+            "description": "Home Assistant vastaanotti JUNG HOME -mesh-verkon {title} viestin, joka oli lähetetty sen omasta unicast-osoitteesta {unicast} järjestysnumerolla, jota se ei ole koskaan käyttänyt: toinen mesh-asiakas lähettää samalla osoitteella — toinen Home Assistant -asennus, tällä osoitteella määritetty `mesh_poc.py`-työkalu tai muualla käynnistetty kopio tästä asennuksesta. Kaksi lähettäjää samalla osoitteella käyttävät toistensa järjestysnumeroita uudelleen, ja laitteet hylkäävät kaiken toisen asiakkaan numeroita pienemmän, joten Home Assistant ei lähetä mesh-verkkoon mitään, ennen kuin tämä on korjattu (komennot epäonnistuvat, tiloja ei päivitetä). Pysäytä toinen asiakas tai anna sille tai Home Assistantille toinen käyttämätön osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme). Vahvista sitten, niin Home Assistant jatkaa järjestysnumeroitaan toisen asiakkaan havaittujen numeroiden yli ja lähettää taas. Jos toinen asiakas jatkaa lähettämistä tältä osoitteelta, ongelma palaa. Älä yritä korjata tätä palauttamalla järjestysnumerovarastoa varmuuskopiosta. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Hyppää uudelleen toisen asiakkaan järjestysnumeroiden yli",
-            "description": "Home Assistant hyppäsi toisen mesh-asiakkaan järjestysnumeroiden yli osoitteessaan {unicast} JUNG HOME -mesh-verkossa {title}, ja toinen asiakas on sen jälkeen lähettänyt taas tältä osoitteelta: se on yhä käynnissä. Hyppääminen ei auta niin kauan kuin se on. Anna Home Assistantille uusi, käyttämätön unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) tai pysäytä toinen asiakas tai siirrä se toiseen osoitteeseen. Siihen asti Home Assistant ei lähetä mesh-verkkoon mitään. Vahvista vasta, kun toinen asiakas ei enää käytä tätä osoitetta: Home Assistant hyppää silloin taas sen numeroiden yli ja jatkaa lähettämistä. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
+            "description": "Home Assistant hyppäsi toisen mesh-asiakkaan järjestysnumeroiden yli osoitteessaan {unicast} JUNG HOME -mesh-verkossa {title}, ja toinen asiakas on sen jälkeen lähettänyt taas tältä osoitteelta: se on yhä käynnissä. Hyppääminen ei auta niin kauan kuin se on. Anna Home Assistantille uusi, käyttämätön unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) tai pysäytä toinen asiakas tai siirrä se toiseen osoitteeseen. Siihen asti Home Assistant ei lähetä mesh-verkkoon mitään. Vahvista vasta, kun toinen asiakas ei enää käytä tätä osoitetta: Home Assistant hyppää silloin taas sen numeroiden yli ja jatkaa lähettämistä. Ei vielä varmistettu oikeilla laitteilla: toista asiakasta Home Assistantin osoitteella on vain simuloitu."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
+          "address_in_use": "Uudessa viennissä solmulla on Home Assistantin osoite, joten merkintä ei voi käyttää sitä. Anna Home Assistantille ensin vapaa osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme) ja lataa vienti sitten siellä.",
           "cannot_connect": "Yhdyskäytävää ei tavoitettu kyseisestä osoitteesta.",
           "cannot_load": "Mesh-verkon vientiä ei voitu lukea. Tarkista, että tiedosto on sovelluksen JSON-vienti (ja polun kohdalla, että polku on oikea).",
           "cannot_store": "Vientiä ei voitu kirjoittaa Home Assistantin määrityskansioon.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
-          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
+          "no_gateway_pin": "Home Assistantilla ei ole tallennettua käyttöoikeutta tai varmennetta yhdyskäytävälle {host}, joten se ei lähetä sille mitään: mitään ei muutettu. Hae vienti sen sijaan kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa yhdyskäytävän varmenne voidaan tarkistaa.",
+          "certificate_changed": "Yhdyskäytävä osoitteessa {host} esittää eri varmenteen kuin sen, jonka Home Assistant kiinnitti sille: sille ei lähetetty mitään eikä mitään muutettu. Jos vaihdoit yhdyskäytävän tai sen varmenteen, hae vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen, jossa uusi varmenne voidaan tarkistaa; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä.",
           "token_rejected": "Yhdyskäytävä osoitteessa {host} ei enää hyväksy Home Assistantin käyttöoikeutta: mitään ei muutettu. Suorita Home Assistantin pyytämä uudelleentodennus (Asetukset → Laitteet ja palvelut) ja korjaa sitten tämä ongelma uudelleen.",
           "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin tämä merkintä.",
           "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä; saman verkon kaksi merkintää jakaisivat sen järjestysnumerot. Määritä sen sijaan kyseinen merkintä uudelleen tai poista se ensin."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "JUNG HOME -yhdyskäytävän varmenne vaihtui",
-      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää vastaa TLS-varmennetta, jonka Home Assistant kiinnitti sille: palvelin esittää toisen varmenteen tai yhdyskäytävän solmu ilmoittaa toisesta mesh-verkon kautta. Home Assistant lopetti yhdyskäytävän käytön (sinne ei lähetetä käyttöoikeustunnusta eikä vientiä); laitteet toimivat edelleen Bluetoothin kautta. Jos vaihdoit yhdyskäytävän tai sen varmenteen, avaa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen ja hae vienti uudelleen yhdyskäytävältä; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä — tarkista verkkosi."
+      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} ei enää vastaa TLS-varmennetta, jonka Home Assistant kiinnitti sille: palvelin esittää toisen varmenteen tai yhdyskäytävän solmu ilmoittaa toisesta mesh-verkon kautta. Home Assistant lopetti yhdyskäytävän käytön (sinne ei lähetetä käyttöoikeustunnusta eikä vientiä); laitteet toimivat edelleen Bluetoothin kautta. Jos vaihdoit yhdyskäytävän tai sen varmenteen, avaa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen ja hae vienti uudelleen yhdyskäytävältä; muussa tapauksessa jokin toinen laite verkossasi saattaa vastata yhdyskäytävänä — tarkista verkkosi."
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME -vientiä ei luovutettu yhdyskäytävälle",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME -yhdyskäytävä ei enää hyväksy Home Assistantia",
-      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} hylkää käyttöoikeuden, jonka Home Assistant rekisteröi mesh-verkolle {title} (se poistettiin todennäköisesti JUNG HOME -sovelluksessa kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet). Home Assistant jatkaa huoneiden, painikkeiden kytkentöjen ja tilanteiden muuttamista omassa viennissään, mutta ei enää luovuta sitä yhdyskäytävälle, joten sovellus ei näe näitä muutoksia; laitteet toimivat edelleen. Home Assistant pyytää käyttöoikeutta uudelleen: noudata sen pyyntöä todentaa JUNG HOME uudelleen (Asetukset → Laitteet ja palvelut; Korjaukset näyttää sen myös vanhentuneena todennuksena) ja anna yhdyskäytävän verkkoavaimen salasana tai hyväksy uusi käyttöoikeuspyyntö sovelluksessa. Ongelma poistuu, kun yhdyskäytävä hyväksyy taas Home Assistantin; toiminto Synkronoi yhdyskäytävä luovuttaa sitten sen jälkeen tehdyt muutokset."
+      "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} hylkää käyttöoikeuden, jonka Home Assistant rekisteröi mesh-verkolle {title} (se poistettiin todennäköisesti JUNG HOME -sovelluksessa kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet). Home Assistant jatkaa huoneiden, painikkeiden kytkentöjen ja tilanteiden muuttamista omassa viennissään, mutta ei enää luovuta sitä yhdyskäytävälle, joten sovellus ei näe näitä muutoksia; laitteet toimivat edelleen. Home Assistant pyytää käyttöoikeutta uudelleen: noudata sen pyyntöä todentaa JUNG HOME Bluetooth Mesh uudelleen (Asetukset → Laitteet ja palvelut; Korjaukset näyttää sen myös vanhentuneena todennuksena) ja anna yhdyskäytävän verkkoavaimen salasana tai hyväksy uusi käyttöoikeuspyyntö sovelluksessa. Ongelma poistuu, kun yhdyskäytävä hyväksyy taas Home Assistantin; toiminto Synkronoi yhdyskäytävä luovuttaa sitten sen jälkeen tehdyt muutokset."
     },
     "seq_store_lost": {
       "title": "JUNG HOME -mesh-verkon {title} järjestysnumerot kadonneet",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
-          "cannot_load": "Merkinnän vientiä ei voitu lukea, joten vapaata osoitetta ei voida selvittää: mitään ei muutettu. Lataa uusi vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen.",
-          "no_free_address": "Viennissä ei ole vapaata osoitetta Home Assistantille: mitään ei muutettu. Tarkista vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen.",
+          "cannot_load": "Merkinnän vientiä ei voitu lukea, joten vapaata osoitetta ei voida selvittää: mitään ei muutettu. Lataa uusi vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen.",
+          "no_free_address": "Viennissä ei ole vapaata osoitetta Home Assistantille: mitään ei muutettu. Tarkista vienti kohdassa Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen.",
           "address_taken": "{suggestion} ei ole enää vapaa viennissä (se muuttui sillä välin): mitään ei muutettu. Korjaa ongelma uudelleen saadaksesi uuden ehdotuksen."
         }
       }
     },
     "address_reserved": {
       "title": "Home Assistantin JUNG HOME -osoite voidaan antaa muille",
-      "description": "Unicast-osoite {unicast}, josta Home Assistant lähettää mesh-verkossa {title}, on jonkin sovelluksen provisioijan osoitealueella tai poistetun solmun käyttämä. Se toimii, kunnes sovellus ottaa sinne solmun käyttöön; siirrä Home Assistant ennen sitä vapaaseen osoitteeseen (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme; {suggestion} on vapaa)."
+      "description": "Unicast-osoite {unicast}, josta Home Assistant lähettää mesh-verkossa {title}, on jonkin sovelluksen provisioijan osoitealueella tai poistetun solmun käyttämä. Se toimii, kunnes sovellus ottaa sinne solmun käyttöön; siirrä Home Assistant ennen sitä vapaaseen osoitteeseen (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme; {suggestion} on vapaa)."
     },
     "sequence_space_low": {
       "title": "JUNG HOME -mesh-verkon järjestysnumerot vähissä",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME -mesh-verkko on eri IV-indeksissä",
-      "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours}: liian kaukana toisistaan, jotta Home Assistant voisi seurata (se seuraa mesh-verkkoa enintään 42 eteenpäin, korkeintaan kerran 192 tunnissa, eikä koskaan taaksepäin). Laitteet jättävät Home Assistantin sillä välin huomiotta. Näin käy, kun Home Assistant on ollut poissa monen IV-päivityksen ajan, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Anna Home Assistantille uusi unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen → Lisäasetukset → Meidän unicast-osoitteemme): siellä se aloittaa mesh-verkon IV-indeksistä. Älä palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa järjestysnumeroita, jotka laitteet ovat jo nähneet, ja seuraava käynnistys korvaa käsin tehdyn muokkauksen joka tapauksessa. Ongelma poistuu itsestään, kun ulottuvilla oleva beacon saapuu."
+      "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours}: liian kaukana toisistaan, jotta Home Assistant voisi seurata (se seuraa mesh-verkkoa enintään 42 eteenpäin, korkeintaan kerran 192 tunnissa, eikä koskaan taaksepäin). Laitteet jättävät Home Assistantin sillä välin huomiotta. Näin käy, kun Home Assistant on ollut poissa monen IV-päivityksen ajan, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Anna Home Assistantille uusi unicast-osoite (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen → viennin lähde → Lisäasetukset → Meidän unicast-osoitteemme): siellä se aloittaa mesh-verkon IV-indeksistä. Älä palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa järjestysnumeroita, jotka laitteet ovat jo nähneet, ja seuraava käynnistys korvaa käsin tehdyn muokkauksen joka tapauksessa. Ongelma poistuu itsestään, kun ulottuvilla oleva beacon saapuu."
     },
     "iv_index_ahead": {
       "title": "Home Assistant on JUNG HOME -mesh-verkon IV-indeksiä edellä",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Palaa mesh-verkon IV-indeksiin",
-            "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours} — sen edellä, mitä mesh-verkko ei koskaan ole: laitteet jättävät Home Assistantin huomiotta, eikä se voi seurata mesh-verkkoa, joka on sen jäljessä. Näin käy, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Vahvista, niin Home Assistant palaa mesh-verkon IV-indeksiin ja integraatio määritetään uudelleen: sen järjestysnumerot jatkuvat jokaisen siitä indeksistä alkaen lähettämänsä numeron yläpuolelta, joten mitään ei käytetä kahdesti. Älä sen sijaan palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa numeroita, jotka laitteet ovat jo nähneet. Toinen tapa palata on uusi unicast-osoite Home Assistantille (Asetukset → Laitteet ja palvelut → JUNG HOME → Määritä uudelleen). Ei vielä varmistettu oikeilla laitteilla: mesh-verkkoa edellä olevaa IV-indeksiä ei ole nähty oikeassa verkossa."
+            "description": "Mesh-verkko {title} on IV-indeksissä {mesh}, Home Assistantin järjestysnumerovarasto indeksissä {ours} — sen edellä, mitä mesh-verkko ei koskaan ole: laitteet jättävät Home Assistantin huomiotta, eikä se voi seurata mesh-verkkoa, joka on sen jäljessä. Näin käy, kun sen varasto (`.storage/junghome_ble.seq.*`) kuuluu toiseen mesh-verkkoon tai kun verkkoavaimella väärennetyt beaconit työnsivät sen eteenpäin. Vahvista, niin Home Assistant palaa mesh-verkon IV-indeksiin ja integraatio määritetään uudelleen: sen järjestysnumerot jatkuvat jokaisen siitä indeksistä alkaen lähettämänsä numeron yläpuolelta, joten mitään ei käytetä kahdesti. Älä sen sijaan palauta varastoa varmuuskopiosta tai muokkaa sitä: vanhempi tai muokattu tietue toistaa numeroita, jotka laitteet ovat jo nähneet. Toinen tapa palata on uusi unicast-osoite Home Assistantille (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen). Ei vielä varmistettu oikeilla laitteilla: mesh-verkkoa edellä olevaa IV-indeksiä ei ole nähty oikeassa verkossa."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Lataa vienti",
-      "description": "Vastaa linkillä, joka lataa Home Assistantin JUNG HOME -verkosta säilyttämän viennin (JungHome.json, mukana Home Assistantin muuttamat huoneet, painikkeet, kytkennät ja tilannekuvat), jotta sen voi tuoda JUNG HOME -sovellukseen tai säilyttää varmuuskopiona. Linkki on polku Home Assistantin osoitteessa ja toimii viisi minuuttia, vain sitä pyytäneelle ylläpitäjälle. Tiedosto sisältää asennuksen kaikki avaimet: poista se, kun se on tuotu tai tallennettu turvalliseen paikkaan. Vain ylläpitäjille. Tuontia sovellukseen ei ole vielä varmistettu sovelluksella.",
+      "description": "Vastaa linkillä, joka lataa Home Assistantin JUNG HOME -verkosta säilyttämän viennin (JungHome.json, mukana Home Assistantin muuttamat huoneet, painikkeet, kytkennät ja tilannekuvat), jotta sen voi tuoda JUNG HOME -sovellukseen tai säilyttää varmuuskopiona. Kuka tahansa, jolla linkki on, voi ladata tiedoston viiden minuutin ajan sen pyytäneen ylläpitäjän nimissä: avaa se itse äläkä anna sitä kenellekään. Vastaus antaa sen polkuna Home Assistantin osoitteessa (`url`) ja, kun Home Assistant tietää osoitteensa, täydellisenä URL-osoitteena (`absolute_url`); `stale` tarkoittaa, että JUNG HOME -sovellus muutti asennusta tiedoston kirjoittamisen jälkeen: lataa ensin sovelluksen vienti Home Assistantiin. Tiedosto sisältää asennuksen kaikki avaimet: poista se, kun se on tuotu tai tallennettu turvalliseen paikkaan. Vain ylläpitäjille. Tuontia sovellukseen ei ole vielä varmistettu sovelluksella.",
       "fields": {
         "device": {
           "name": "Laite",

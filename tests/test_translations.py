@@ -873,3 +873,42 @@ def test_docs_never_advise_restoring_the_seq_store() -> None:
         if RESTORE_ADVICE.search(line)
     ]
     assert not offending
+
+
+# The gateway integration (`junghome`) is the one listed as *JUNG HOME* under Devices & services; this one is listed
+# by its manifest name. A path through the menu names the integration it means, so it is never "JUNG HOME →".
+OLD_NAME_PATH = re.compile(r"JUNG HOME(?! Bluetooth Mesh)\W{0,3}→")
+# texts whose *JUNG HOME* is the gateway integration's entry (deleted once its entities moved here)
+GATEWAY_ENTRY_TEXTS = frozenset({"config.abort.import_successful"})
+
+
+@pytest.mark.parametrize("path", [STRINGS, EN, *TRANSLATED], ids=lambda p: p.name)
+def test_texts_send_users_to_this_integration_by_its_name(path: Path) -> None:
+    """Owners with both integrations installed opened the gateway integration's card from *Devices & services →
+    JUNG HOME → Reconfigure* and found no such option there (or reconfigured the wrong one)."""
+    manifest = json.loads((COMPONENT / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["name"] == "JUNG HOME Bluetooth Mesh"
+    leaves = _leaves(_load(path))
+    offending = sorted(
+        key
+        for key, value in leaves.items()
+        if key not in GATEWAY_ENTRY_TEXTS and OLD_NAME_PATH.search(value)
+    )
+    assert offending == []
+    if (
+        path == EN
+    ):  # the repairs and errors that send the owner there, as counted when they were renamed
+        assert sum(f"{manifest['name']} →" in v for v in leaves.values()) >= 28
+
+
+def test_the_old_name_check_finds_what_it_means() -> None:
+    assert OLD_NAME_PATH.search(
+        "Settings → Devices & services → JUNG HOME → Reconfigure"
+    )
+    assert OLD_NAME_PATH.search("«Настройки → Устройства и службы → JUNG HOME» → x")
+    assert not OLD_NAME_PATH.search(
+        "Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure"
+    )
+    assert not OLD_NAME_PATH.search(
+        "delete it under Settings → Devices & services → JUNG HOME once"
+    )

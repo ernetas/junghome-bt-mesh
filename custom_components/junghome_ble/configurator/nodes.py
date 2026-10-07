@@ -174,8 +174,10 @@ class Nodes(Operations):
     async def remove_node(self, unicast: int, *, force: bool = False) -> bool:
         """Remove the node whose primary element is `unicast` from the network (experimental).
 
-        The app's order, with the reset first: Config Node Reset to the node (it forgets its keys and becomes an
-        unprovisioned device again); only once it confirmed — or with `force`, for a node that is gone for good —
+        The reset first, unlike the app (which unwires first unless forced: RTR operation mode, thresholds, the
+        others' wiring, then the reset), so a node that refuses the reset keeps its wiring: Config Node Reset to the
+        node (it forgets its keys and becomes an unprovisioned device again); only once it confirmed — or with
+        `force`, for a node that is gone for good —
         every other node's wiring to it is removed (`ProjectFile.remove_node`: its element groups, publications to
         it) and the file records it as excluded. The reset cannot be taken back, so a stop of that unwiring — a
         cancellation too — still records the removal itself (`ProjectFile.exclude_node`) with what the
@@ -198,7 +200,9 @@ class Nodes(Operations):
                 raise _validation("remove_device_gateway")
             carries_link = unicast == self.hub.proxy_node
             if carries_link and not force:
-                raise _validation("remove_device_proxy", address=hexaddr(unicast))
+                raise _validation(
+                    "remove_device_proxy", address=self.store.node_name(unicast)
+                )
             if self.store.dry:
                 changes = pf.remove_node(node, self.hub.proxy.state.iv_index)
                 plan = self.executor.in_order(config_steps(pf, changes))[0]
@@ -229,7 +233,7 @@ class Nodes(Operations):
                 if not carries_link:
                     raise _failure(
                         "service_send_failed",
-                        node=hexaddr(unicast),
+                        node=self.store.node_name(unicast),
                         message="Config Node Reset",
                         applied=applied_message(self.hub.hass, APPLIED_NOTHING),
                     ) from err
@@ -254,7 +258,7 @@ class Nodes(Operations):
                         "iv_index": iv_index,
                     },
                     applied=lambda accepted, total: applied_removed(
-                        unicast, accepted, total
+                        self.store.node_name(unicast), accepted, total
                     ),
                 )
                 await self.store.save(pf)
@@ -314,7 +318,7 @@ class Nodes(Operations):
             )
             return
         raise _failure(
-            "remove_device_unconfirmed", address=hexaddr(node.unicast)
+            "remove_device_unconfirmed", address=self.store.node_name(node.unicast)
         ) from err
 
     async def _advertises_reset(self, uuid: str) -> bool:

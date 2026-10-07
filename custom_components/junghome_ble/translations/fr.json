@@ -1074,7 +1074,7 @@
       "message": "Aucun nœud du mesh JUNG n'est encore visible via Bluetooth."
     },
     "export_keys_stale": {
-      "message": "Des appareils du mesh JUNG sont visibles via Bluetooth, mais aucun n'annonce la clé réseau de l'export : les clés ont été renouvelées après la création de l'export. Exportez à nouveau le réseau depuis l'application JUNG HOME et utilisez-le sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer."
+      "message": "Des appareils du mesh JUNG sont visibles via Bluetooth, mais aucun n'annonce la clé réseau de l'export : les clés ont été renouvelées après la création de l'export. Exportez à nouveau le réseau depuis l'application JUNG HOME et utilisez-le sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant n'a aucun adaptateur ni proxy Bluetooth permettant une connexion : le mesh JUNG ne peut pas être joint."
@@ -1275,10 +1275,10 @@
       "message": "La connexion au mesh JUNG a été perdue pendant l'envoi de {message} au nœud {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Le nœud {node} figure dans l'export du mesh {path} mais pas dans le réseau que Home Assistant en a chargé précédemment ; rechargez l'intégration (Paramètres → Appareils et services → JUNG HOME → Recharger) pour qu'elle suive l'export, puis réessayez. {applied}"
+      "message": "Le nœud {node} figure dans l'export du mesh {path} mais pas dans le réseau que Home Assistant en a chargé précédemment ; rechargez l'intégration (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Recharger) pour qu'elle suive l'export, puis réessayez. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "La passerelle JUNG HOME à l'adresse {host} contient un export plus récent ({gateway}) que le fichier que Home Assistant enverrait ({file}) ; l'envoyer effacerait ce que l'application JUNG HOME a modifié depuis. La prochaine modification faite dans Home Assistant reprend l'export de la passerelle et y reporte les propres modifications de Home Assistant. Si cette erreur revient (une entrée sans copie du dernier envoi de l'application ne peut pas les distinguer), récupérez à nouveau l'export de la passerelle (Paramètres → Appareils et services → JUNG HOME → Reconfigurer ; le fichier remplacé est conservé à côté sous le nom `.pre-reconfigure`), puis répétez la modification faite dans Home Assistant."
+      "message": "La passerelle JUNG HOME à l'adresse {host} contient un export plus récent ({gateway}) que le fichier que Home Assistant enverrait ({file}) ; l'envoyer effacerait ce que l'application JUNG HOME a modifié depuis. La prochaine modification faite dans Home Assistant reprend l'export de la passerelle et y reporte les propres modifications de Home Assistant. Si cette erreur revient (une entrée sans copie du dernier envoi de l'application ne peut pas les distinguer), récupérez à nouveau l'export de la passerelle (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer ; le fichier remplacé est conservé à côté sous le nom `.pre-reconfigure`), puis répétez la modification faite dans Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "La passerelle JUNG HOME à l'adresse {host} n'a répondu qu'avec la base de données brute des appareils (sans noms d'appareils ni liens aux zones) ; l'adopter les effacerait du fichier que Home Assistant conserve. Réessayez lorsque la passerelle n'est plus occupée, ou récupérez à nouveau l'export de l'application."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
+          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
           "cannot_connect": "La passerelle n'a pas pu être jointe à cette adresse.",
           "cannot_load": "L'export du mesh n'a pas pu être lu. Vérifiez que le fichier est bien l'export JSON de l'application (et, pour un chemin, que le chemin est correct).",
           "cannot_store": "L'export n'a pas pu être écrit dans le répertoire de configuration de Home Assistant.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
-          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
+          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
+          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
           "token_rejected": "La passerelle à l'adresse {host} n'accepte plus l'accès de Home Assistant : rien n'a changé. Suivez la réauthentification que Home Assistant demande (Paramètres → Appareils et services), puis réparez à nouveau ce problème.",
           "network_mismatch": "L'export appartient à un autre réseau mesh que cette entrée.",
           "mesh_already_configured": "Ce mesh est déjà configuré dans une autre entrée ; deux entrées d'un même mesh partageraient ses numéros de séquence. Reconfigurez plutôt cette entrée, ou supprimez-la d'abord."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
+          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
           "cannot_connect": "La passerelle n'a pas pu être jointe à cette adresse.",
           "cannot_load": "L'export du mesh n'a pas pu être lu. Vérifiez que le fichier est bien l'export JSON de l'application (et, pour un chemin, que le chemin est correct).",
           "cannot_store": "L'export n'a pas pu être écrit dans le répertoire de configuration de Home Assistant.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
-          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
+          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
+          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
           "token_rejected": "La passerelle à l'adresse {host} n'accepte plus l'accès de Home Assistant : rien n'a changé. Suivez la réauthentification que Home Assistant demande (Paramètres → Appareils et services), puis réparez à nouveau ce problème.",
           "network_mismatch": "L'export appartient à un autre réseau mesh que cette entrée.",
           "mesh_already_configured": "Ce mesh est déjà configuré dans une autre entrée ; deux entrées d'un même mesh partageraient ses numéros de séquence. Reconfigurez plutôt cette entrée, ou supprimez-la d'abord."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
+          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
           "cannot_connect": "La passerelle n'a pas pu être jointe à cette adresse.",
           "cannot_load": "L'export du mesh n'a pas pu être lu. Vérifiez que le fichier est bien l'export JSON de l'application (et, pour un chemin, que le chemin est correct).",
           "cannot_store": "L'export n'a pas pu être écrit dans le répertoire de configuration de Home Assistant.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
-          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
+          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
+          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
           "token_rejected": "La passerelle à l'adresse {host} n'accepte plus l'accès de Home Assistant : rien n'a changé. Suivez la réauthentification que Home Assistant demande (Paramètres → Appareils et services), puis réparez à nouveau ce problème.",
           "network_mismatch": "L'export appartient à un autre réseau mesh que cette entrée.",
           "mesh_already_configured": "Ce mesh est déjà configuré dans une autre entrée ; deux entrées d'un même mesh partageraient ses numéros de séquence. Reconfigurez plutôt cette entrée, ou supprimez-la d'abord."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Boutons poussoirs JUNG HOME avec un autre mécanisme que dans l'export",
-      "description": "{devices} : ces boutons poussoirs du mesh JUNG HOME {title} annoncent un autre mécanisme que celui de l'export chargé par Home Assistant (export → appareil). Le mécanisme a été remplacé après la création de cet export, Home Assistant et l'application peuvent donc afficher pour eux un mauvais type de charge. Vérifiez les appareils dans l'application JUNG HOME, exportez à nouveau le réseau et mettez à jour cette intégration (Paramètres → Appareils et services → JUNG HOME → Reconfigurer) ; le problème disparaît dès que l'export indique les mécanismes que les appareils annoncent. Non vérifié sur de vrais appareils."
+      "description": "{devices} : ces boutons poussoirs du mesh JUNG HOME {title} annoncent un autre mécanisme que celui de l'export chargé par Home Assistant (export → appareil). Le mécanisme a été remplacé après la création de cet export, Home Assistant et l'application peuvent donc afficher pour eux un mauvais type de charge. Vérifiez les appareils dans l'application JUNG HOME, exportez à nouveau le réseau et mettez à jour cette intégration (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer) ; le problème disparaît dès que l'export indique les mécanismes que les appareils annoncent. Non vérifié sur de vrais appareils."
     },
     "node_clock_wrong": {
       "title": "Appareils JUNG HOME avec une horloge erronée",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
+          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
           "cannot_connect": "La passerelle n'a pas pu être jointe à cette adresse.",
           "cannot_load": "L'export du mesh n'a pas pu être lu. Vérifiez que le fichier est bien l'export JSON de l'application (et, pour un chemin, que le chemin est correct).",
           "cannot_store": "L'export n'a pas pu être écrit dans le répertoire de configuration de Home Assistant.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
-          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
+          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
+          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
           "token_rejected": "La passerelle à l'adresse {host} n'accepte plus l'accès de Home Assistant : rien n'a changé. Suivez la réauthentification que Home Assistant demande (Paramètres → Appareils et services), puis réparez à nouveau ce problème.",
           "network_mismatch": "L'export appartient à un autre réseau mesh que cette entrée.",
           "mesh_already_configured": "Ce mesh est déjà configuré dans une autre entrée ; deux entrées d'un même mesh partageraient ses numéros de séquence. Reconfigurez plutôt cette entrée, ou supprimez-la d'abord."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Sauter au-delà des numéros que les appareils connaissent",
-            "description": "Home Assistant entend le mesh JUNG HOME {title} via son nœud proxy, mais aucun appareil n'a répondu à ses demandes d'état. Les nœuds rejettent les messages de Home Assistant comme des rejeux. Deux causes sont probables : le stockage des numéros de séquence de cette intégration (`.storage/junghome_ble.*`) a été perdu ou restauré depuis une sauvegarde plus ancienne, si bien que Home Assistant envoie maintenant des numéros de séquence que les nœuds ont déjà vus ; ou un autre client mesh (par exemple l'outil `mesh_poc.py`) émet avec la même adresse unicast {unicast}. Donnez soit à Home Assistant une adresse neuve et inutilisée (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast, et assurez-vous qu'aucun autre client ne l'utilise), soit, si le stockage a été perdu ou restauré (et qu'aucun autre client n'utilise l'adresse), confirmez pour laisser Home Assistant avancer ses numéros de séquence de 1 048 576 et se reconnecter. Ne restaurez pas le stockage des numéros de séquence depuis une sauvegarde pour corriger cela : une copie plus ancienne ne fait que répéter des numéros que les appareils ont déjà vus. Le problème disparaît de lui-même dès qu'un appareil répond à nouveau à Home Assistant."
+            "description": "Home Assistant entend le mesh JUNG HOME {title} via son nœud proxy, mais aucun appareil n'a répondu à ses demandes d'état. Les nœuds rejettent les messages de Home Assistant comme des rejeux. Deux causes sont probables : le stockage des numéros de séquence de cette intégration (`.storage/junghome_ble.*`) a été perdu ou restauré depuis une sauvegarde plus ancienne, si bien que Home Assistant envoie maintenant des numéros de séquence que les nœuds ont déjà vus ; ou un autre client mesh (par exemple l'outil `mesh_poc.py`) émet avec la même adresse unicast {unicast}. Donnez soit à Home Assistant une adresse neuve et inutilisée (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast, et assurez-vous qu'aucun autre client ne l'utilise), soit, si le stockage a été perdu ou restauré (et qu'aucun autre client n'utilise l'adresse), confirmez pour laisser Home Assistant avancer ses numéros de séquence de 1 048 576 et se reconnecter. Ne restaurez pas le stockage des numéros de séquence depuis une sauvegarde pour corriger cela : une copie plus ancienne ne fait que répéter des numéros que les appareils ont déjà vus. Le problème disparaît de lui-même dès qu'un appareil répond à nouveau à Home Assistant."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Sauter au-delà des numéros de séquence de l'autre client",
-            "description": "Home Assistant a reçu un message du mesh JUNG HOME {title} envoyé depuis sa propre adresse unicast {unicast} avec un numéro de séquence qu'il n'a jamais utilisé : un autre client mesh émet avec la même adresse — une seconde installation Home Assistant, l'outil `mesh_poc.py` configuré avec cette adresse, ou une copie de cette installation démarrée ailleurs. Deux émetteurs sur une même adresse réutilisent mutuellement leurs numéros de séquence, et les appareils rejettent tout ce qui se situe en dessous de ceux de l'autre client ; Home Assistant n'envoie donc plus rien au mesh tant que ce n'est pas réparé (les commandes échouent, les états ne sont pas actualisés). Arrêtez l'autre client, ou donnez-lui, ou à Home Assistant, une autre adresse inutilisée (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast). Confirmez ensuite pour laisser Home Assistant poursuivre ses numéros de séquence au-delà de ceux observés chez l'autre client et émettre à nouveau. Si l'autre client continue d'émettre depuis cette adresse, le problème revient. Ne restaurez pas le stockage des numéros de séquence depuis une sauvegarde pour corriger cela. Non vérifié sur de vrais appareils : un second client sur l'adresse de Home Assistant n'a été que simulé."
+            "description": "Home Assistant a reçu un message du mesh JUNG HOME {title} envoyé depuis sa propre adresse unicast {unicast} avec un numéro de séquence qu'il n'a jamais utilisé : un autre client mesh émet avec la même adresse — une seconde installation Home Assistant, l'outil `mesh_poc.py` configuré avec cette adresse, ou une copie de cette installation démarrée ailleurs. Deux émetteurs sur une même adresse réutilisent mutuellement leurs numéros de séquence, et les appareils rejettent tout ce qui se situe en dessous de ceux de l'autre client ; Home Assistant n'envoie donc plus rien au mesh tant que ce n'est pas réparé (les commandes échouent, les états ne sont pas actualisés). Arrêtez l'autre client, ou donnez-lui, ou à Home Assistant, une autre adresse inutilisée (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast). Confirmez ensuite pour laisser Home Assistant poursuivre ses numéros de séquence au-delà de ceux observés chez l'autre client et émettre à nouveau. Si l'autre client continue d'émettre depuis cette adresse, le problème revient. Ne restaurez pas le stockage des numéros de séquence depuis une sauvegarde pour corriger cela. Non vérifié sur de vrais appareils : un second client sur l'adresse de Home Assistant n'a été que simulé."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Sauter à nouveau au-delà des numéros de séquence de l'autre client",
-            "description": "Home Assistant a sauté au-delà des numéros de séquence d'un autre client mesh sur son adresse {unicast} dans le mesh JUNG HOME {title}, et l'autre client a depuis émis à nouveau depuis cette adresse : il fonctionne toujours. Sauter en avant n'aide pas tant que c'est le cas. Donnez à Home Assistant une adresse unicast neuve et inutilisée (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), ou arrêtez l'autre client ou déplacez-le vers une autre adresse. D'ici là, Home Assistant n'envoie rien au mesh. Ne confirmez qu'une fois que l'autre client n'utilise plus cette adresse : Home Assistant poursuit alors à nouveau au-delà de ses numéros et reprend l'émission. Non vérifié sur de vrais appareils : un second client sur l'adresse de Home Assistant n'a été que simulé."
+            "description": "Home Assistant a sauté au-delà des numéros de séquence d'un autre client mesh sur son adresse {unicast} dans le mesh JUNG HOME {title}, et l'autre client a depuis émis à nouveau depuis cette adresse : il fonctionne toujours. Sauter en avant n'aide pas tant que c'est le cas. Donnez à Home Assistant une adresse unicast neuve et inutilisée (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), ou arrêtez l'autre client ou déplacez-le vers une autre adresse. D'ici là, Home Assistant n'envoie rien au mesh. Ne confirmez qu'une fois que l'autre client n'utilise plus cette adresse : Home Assistant poursuit alors à nouveau au-delà de ses numéros et reprend l'émission. Non vérifié sur de vrais appareils : un second client sur l'adresse de Home Assistant n'a été que simulé."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
+          "address_in_use": "Dans le nouvel export, un nœud possède l'adresse de Home Assistant, l'entrée ne peut donc pas l'utiliser. Donnez d'abord une adresse libre à Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast), puis chargez l'export à cet endroit.",
           "cannot_connect": "La passerelle n'a pas pu être jointe à cette adresse.",
           "cannot_load": "L'export du mesh n'a pas pu être lu. Vérifiez que le fichier est bien l'export JSON de l'application (et, pour un chemin, que le chemin est correct).",
           "cannot_store": "L'export n'a pas pu être écrit dans le répertoire de configuration de Home Assistant.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
-          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
+          "no_gateway_pin": "Home Assistant n'a enregistré aucun accès ni aucun certificat pour la passerelle {host}, il ne lui envoie donc rien : rien n'a changé. Récupérez plutôt l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le certificat de la passerelle peut être vérifié.",
+          "certificate_changed": "La passerelle à l'adresse {host} présente un autre certificat que celui que Home Assistant a épinglé pour elle : rien ne lui a été envoyé et rien n'a changé. Si vous avez remplacé la passerelle ou son certificat, récupérez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer, où le nouveau certificat peut être vérifié ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle.",
           "token_rejected": "La passerelle à l'adresse {host} n'accepte plus l'accès de Home Assistant : rien n'a changé. Suivez la réauthentification que Home Assistant demande (Paramètres → Appareils et services), puis réparez à nouveau ce problème.",
           "network_mismatch": "L'export appartient à un autre réseau mesh que cette entrée.",
           "mesh_already_configured": "Ce mesh est déjà configuré dans une autre entrée ; deux entrées d'un même mesh partageraient ses numéros de séquence. Reconfigurez plutôt cette entrée, ou supprimez-la d'abord."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Le certificat de la passerelle JUNG HOME a changé",
-      "description": "La passerelle JUNG HOME à l'adresse {host} ne correspond plus au certificat TLS que Home Assistant a épinglé pour elle : l'hôte présente un autre certificat, ou le nœud de la passerelle en signale un autre via le mesh. Home Assistant a cessé d'utiliser la passerelle (aucun jeton d'accès ni aucun export n'y est envoyé) ; les appareils continuent de fonctionner via Bluetooth. Si vous avez remplacé la passerelle ou son certificat, ouvrez Paramètres → Appareils et services → JUNG HOME → Reconfigurer et récupérez à nouveau l'export depuis la passerelle ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle — vérifiez votre réseau."
+      "description": "La passerelle JUNG HOME à l'adresse {host} ne correspond plus au certificat TLS que Home Assistant a épinglé pour elle : l'hôte présente un autre certificat, ou le nœud de la passerelle en signale un autre via le mesh. Home Assistant a cessé d'utiliser la passerelle (aucun jeton d'accès ni aucun export n'y est envoyé) ; les appareils continuent de fonctionner via Bluetooth. Si vous avez remplacé la passerelle ou son certificat, ouvrez Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer et récupérez à nouveau l'export depuis la passerelle ; sinon, un autre appareil de votre réseau répond peut-être à la place de la passerelle — vérifiez votre réseau."
     },
     "gateway_sync_failed": {
       "title": "Export JUNG HOME non transmis à la passerelle",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "La passerelle JUNG HOME n'accepte plus Home Assistant",
-      "description": "La passerelle JUNG HOME à l'adresse {host} rejette l'accès que Home Assistant a enregistré pour le mesh {title} (il a probablement été supprimé dans l'application JUNG HOME sous Réglages → Passerelle → Clients). Home Assistant continue de modifier les zones, liens de touche et scènes dans son propre export, mais ne le transmet plus à la passerelle, si bien que l'application ne voit pas ces modifications ; les appareils continuent de fonctionner. Home Assistant demande à nouveau l'accès : suivez sa demande de réauthentification de JUNG HOME (Paramètres → Appareils et services ; Réparations l'indique aussi comme authentification expirée) et saisissez le mot de passe de la clé réseau de la passerelle ou approuvez la nouvelle demande d'accès dans l'application. Le problème disparaît dès que la passerelle accepte à nouveau Home Assistant ; l'action Synchroniser la passerelle transmet alors les modifications faites entre-temps."
+      "description": "La passerelle JUNG HOME à l'adresse {host} rejette l'accès que Home Assistant a enregistré pour le mesh {title} (il a probablement été supprimé dans l'application JUNG HOME sous Réglages → Passerelle → Clients). Home Assistant continue de modifier les zones, liens de touche et scènes dans son propre export, mais ne le transmet plus à la passerelle, si bien que l'application ne voit pas ces modifications ; les appareils continuent de fonctionner. Home Assistant demande à nouveau l'accès : suivez sa demande de réauthentification de JUNG HOME Bluetooth Mesh (Paramètres → Appareils et services ; Réparations l'indique aussi comme authentification expirée) et saisissez le mot de passe de la clé réseau de la passerelle ou approuvez la nouvelle demande d'accès dans l'application. Le problème disparaît dès que la passerelle accepte à nouveau Home Assistant ; l'action Synchroniser la passerelle transmet alors les modifications faites entre-temps."
     },
     "seq_store_lost": {
       "title": "Numéros de séquence du mesh JUNG HOME {title} perdus",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "L'entrée JUNG HOME à laquelle appartient ce problème n'est plus configurée.",
-          "cannot_load": "L'export de l'entrée n'a pas pu être lu, aucune adresse libre ne peut donc être déterminée : rien n'a changé. Chargez un nouvel export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer.",
-          "no_free_address": "L'export ne laisse aucune adresse libre pour Home Assistant : rien n'a changé. Vérifiez l'export sous Paramètres → Appareils et services → JUNG HOME → Reconfigurer.",
+          "cannot_load": "L'export de l'entrée n'a pas pu être lu, aucune adresse libre ne peut donc être déterminée : rien n'a changé. Chargez un nouvel export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer.",
+          "no_free_address": "L'export ne laisse aucune adresse libre pour Home Assistant : rien n'a changé. Vérifiez l'export sous Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer.",
           "address_taken": "{suggestion} n'est plus libre dans l'export (il a changé entre-temps) : rien n'a changé. Réparez à nouveau le problème pour obtenir une nouvelle suggestion."
         }
       }
     },
     "address_reserved": {
       "title": "L'adresse JUNG HOME de Home Assistant risque d'être attribuée",
-      "description": "L'adresse unicast {unicast} depuis laquelle Home Assistant émet dans le mesh {title} se trouve dans la plage d'adresses de l'un des provisionneurs de l'application, ou a été utilisée par un nœud supprimé. Elle continue de fonctionner jusqu'à ce que l'application y mette un nœud en service ; déplacez Home Assistant vers une adresse libre avant cela (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast ; {suggestion} est libre)."
+      "description": "L'adresse unicast {unicast} depuis laquelle Home Assistant émet dans le mesh {title} se trouve dans la plage d'adresses de l'un des provisionneurs de l'application, ou a été utilisée par un nœud supprimé. Elle continue de fonctionner jusqu'à ce que l'application y mette un nœud en service ; déplacez Home Assistant vers une adresse libre avant cela (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast ; {suggestion} est libre)."
     },
     "sequence_space_low": {
       "title": "Les numéros de séquence du mesh JUNG HOME s'épuisent",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "Le mesh JUNG HOME est à un autre IV Index",
-      "description": "Le mesh {title} est à l'IV Index {mesh}, le stockage des numéros de séquence de Home Assistant à {ours} : trop éloignés pour que Home Assistant suive (il suit le mesh jusqu'à 42 en avance, au plus une fois toutes les 192 heures, et jamais en arrière). Les appareils ignorent Home Assistant en attendant. Cela se produit lorsque Home Assistant a été absent pendant de nombreux IV Updates, lorsque son stockage (`.storage/junghome_ble.seq.*`) appartient à un autre mesh, ou lorsque des balises falsifiées avec la clé réseau l'ont poussé en avant. Donnez à Home Assistant une nouvelle adresse unicast (Paramètres → Appareils et services → JUNG HOME → Reconfigurer → Avancé → Notre adresse unicast) : il y démarre à l'IV Index du mesh. Ne restaurez pas le stockage depuis une sauvegarde et ne le modifiez pas : un enregistrement plus ancien ou modifié répète des numéros de séquence que les appareils ont déjà vus, et le prochain démarrage écrase de toute façon une modification manuelle. Le problème disparaît de lui-même lorsqu'une balise à portée arrive."
+      "description": "Le mesh {title} est à l'IV Index {mesh}, le stockage des numéros de séquence de Home Assistant à {ours} : trop éloignés pour que Home Assistant suive (il suit le mesh jusqu'à 42 en avance, au plus une fois toutes les 192 heures, et jamais en arrière). Les appareils ignorent Home Assistant en attendant. Cela se produit lorsque Home Assistant a été absent pendant de nombreux IV Updates, lorsque son stockage (`.storage/junghome_ble.seq.*`) appartient à un autre mesh, ou lorsque des balises falsifiées avec la clé réseau l'ont poussé en avant. Donnez à Home Assistant une nouvelle adresse unicast (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer → source de l'export → Avancé → Notre adresse unicast) : il y démarre à l'IV Index du mesh. Ne restaurez pas le stockage depuis une sauvegarde et ne le modifiez pas : un enregistrement plus ancien ou modifié répète des numéros de séquence que les appareils ont déjà vus, et le prochain démarrage écrase de toute façon une modification manuelle. Le problème disparaît de lui-même lorsqu'une balise à portée arrive."
     },
     "iv_index_ahead": {
       "title": "Home Assistant est en avance sur l'IV Index du mesh JUNG HOME",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Revenir à l'IV Index du mesh",
-            "description": "Le mesh {title} est à l'IV Index {mesh}, le stockage des numéros de séquence de Home Assistant à {ours} — en avance sur lui, ce que le mesh n'est jamais : les appareils ignorent Home Assistant, et il ne peut pas suivre un mesh qui est derrière lui. Cela se produit lorsque son stockage (`.storage/junghome_ble.seq.*`) appartient à un autre mesh, ou lorsque des balises falsifiées avec la clé réseau l'ont poussé en avant. Confirmez pour ramener Home Assistant à l'IV Index du mesh et reconfigurer l'intégration : ses numéros de séquence continuent au-dessus de chaque numéro qu'il a envoyé à partir de cet index, aucun n'est donc utilisé deux fois. Ne restaurez pas plutôt le stockage depuis une sauvegarde et ne le modifiez pas : un enregistrement plus ancien ou modifié répète des numéros que les appareils ont déjà vus. L'autre façon de revenir est une nouvelle adresse unicast pour Home Assistant (Paramètres → Appareils et services → JUNG HOME → Reconfigurer). Non vérifié sur de vrais appareils : un IV Index en avance sur le mesh n'a pas été observé sur un vrai mesh."
+            "description": "Le mesh {title} est à l'IV Index {mesh}, le stockage des numéros de séquence de Home Assistant à {ours} — en avance sur lui, ce que le mesh n'est jamais : les appareils ignorent Home Assistant, et il ne peut pas suivre un mesh qui est derrière lui. Cela se produit lorsque son stockage (`.storage/junghome_ble.seq.*`) appartient à un autre mesh, ou lorsque des balises falsifiées avec la clé réseau l'ont poussé en avant. Confirmez pour ramener Home Assistant à l'IV Index du mesh et reconfigurer l'intégration : ses numéros de séquence continuent au-dessus de chaque numéro qu'il a envoyé à partir de cet index, aucun n'est donc utilisé deux fois. Ne restaurez pas plutôt le stockage depuis une sauvegarde et ne le modifiez pas : un enregistrement plus ancien ou modifié répète des numéros que les appareils ont déjà vus. L'autre façon de revenir est une nouvelle adresse unicast pour Home Assistant (Paramètres → Appareils et services → JUNG HOME Bluetooth Mesh → Reconfigurer). Non vérifié sur de vrais appareils : un IV Index en avance sur le mesh n'a pas été observé sur un vrai mesh."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Télécharger l'export",
-      "description": "Répond par un lien qui télécharge l'export que Home Assistant conserve pour le réseau JUNG HOME (JungHome.json, avec les pièces, touches, liaisons et scènes modifiées par Home Assistant), pour l'importer dans l'app JUNG HOME ou le garder comme sauvegarde. Le lien est un chemin sur l'adresse de Home Assistant et fonctionne cinq minutes, uniquement pour l'administrateur qui l'a demandé. Le fichier contient toutes les clés de l'installation : supprimez-le une fois importé ou rangé en lieu sûr. Réservé aux administrateurs. L'import dans l'app n'a pas encore été vérifié avec l'app.",
+      "description": "Répond par un lien qui télécharge l'export que Home Assistant conserve pour le réseau JUNG HOME (JungHome.json, avec les pièces, touches, liaisons et scènes modifiées par Home Assistant), pour l'importer dans l'app JUNG HOME ou le garder comme sauvegarde. Toute personne qui a le lien peut télécharger le fichier pendant cinq minutes, en tant que l'administrateur qui l'a demandé : ouvrez-le vous-même et ne le transmettez à personne. La réponse le donne comme chemin sur l'adresse de Home Assistant (`url`) et, quand Home Assistant connaît son adresse, comme URL complète (`absolute_url`) ; `stale` signale que l'app JUNG HOME a modifié l'installation après l'écriture du fichier : chargez d'abord l'export de l'app dans Home Assistant. Le fichier contient toutes les clés de l'installation : supprimez-le une fois importé ou rangé en lieu sûr. Réservé aux administrateurs. L'import dans l'app n'a pas encore été vérifié avec l'app.",
       "fields": {
         "device": {
           "name": "Appareil",

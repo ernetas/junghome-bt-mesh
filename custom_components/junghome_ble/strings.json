@@ -1074,7 +1074,7 @@
       "message": "No node of the JUNG mesh is visible over Bluetooth yet."
     },
     "export_keys_stale": {
-      "message": "Devices of the JUNG mesh are visible over Bluetooth, but none advertises the network key in the export: the keys were renewed after the export was made. Export the network again from the JUNG HOME app and use it under Settings → Devices & services → JUNG HOME → Reconfigure."
+      "message": "Devices of the JUNG mesh are visible over Bluetooth, but none advertises the network key in the export: the keys were renewed after the export was made. Export the network again from the JUNG HOME app and use it under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant has no connectable Bluetooth adapter or proxy: the JUNG mesh cannot be reached."
@@ -1278,10 +1278,10 @@
       "message": "The connection to the JUNG mesh was lost while {message} was being sent to node {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Node {node} is in the mesh export {path} but not in the network Home Assistant loaded from it earlier; reload the integration (Settings → Devices & services → JUNG HOME → Reload) so it follows the export, then retry. {applied}"
+      "message": "Node {node} is in the mesh export {path} but not in the network Home Assistant loaded from it earlier; reload the integration (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reload) so it follows the export, then retry. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "The JUNG HOME Gateway at {host} holds a newer export ({gateway}) than the file Home Assistant would upload ({file}); uploading it would erase what the JUNG HOME app changed since. The next change made in Home Assistant takes the gateway's export over and carries Home Assistant's own changes onto it. If this error comes back (an entry without a copy of the app's last upload cannot tell them apart), fetch the gateway's export again (Settings → Devices & services → JUNG HOME → Reconfigure; the file it replaces is kept beside it as `.pre-reconfigure`), then repeat the change made in Home Assistant."
+      "message": "The JUNG HOME Gateway at {host} holds a newer export ({gateway}) than the file Home Assistant would upload ({file}); uploading it would erase what the JUNG HOME app changed since. The next change made in Home Assistant takes the gateway's export over and carries Home Assistant's own changes onto it. If this error comes back (an entry without a copy of the app's last upload cannot tell them apart), fetch the gateway's export again (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure; the file it replaces is kept beside it as `.pre-reconfigure`), then repeat the change made in Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "The JUNG HOME Gateway at {host} answered with the bare device database only (no device names or room links); adopting it would erase them from the file Home Assistant keeps. Try again once the gateway is no longer busy, or fetch the app's export again."
@@ -1755,7 +1755,7 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
@@ -1775,8 +1775,8 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
-          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
           "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
           "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
           "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
@@ -1803,7 +1803,7 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
@@ -1823,8 +1823,8 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
-          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
           "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
           "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
           "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
@@ -1851,7 +1851,7 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
@@ -1871,8 +1871,8 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
-          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
           "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
           "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
           "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
@@ -1881,7 +1881,7 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME push-buttons with another insert than in the export",
-      "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was replaced after that export was made, so Home Assistant and the app may show the wrong kind of load for them. Check the devices in the JUNG HOME app, export the network again and update this integration (Settings → Devices & services → JUNG HOME → Reconfigure); the issue clears once the export names the inserts the devices advertise. Unverified on air."
+      "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was replaced after that export was made, so Home Assistant and the app may show the wrong kind of load for them. Check the devices in the JUNG HOME app, export the network again and update this integration (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure); the issue clears once the export names the inserts the devices advertise. Unverified on air."
     },
     "node_clock_wrong": {
       "title": "JUNG HOME devices with a wrong clock",
@@ -1918,7 +1918,7 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
@@ -1938,8 +1938,8 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
-          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
           "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
           "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
           "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
@@ -1952,7 +1952,7 @@
         "step": {
           "confirm": {
             "title": "Skip ahead past the numbers the devices know",
-            "description": "Home Assistant hears the JUNG HOME mesh {title} through its proxy node, but not one device answered its state requests. The nodes are discarding Home Assistant's messages as replays. Two causes are likely: the sequence-number store of this integration (`.storage/junghome_ble.*`) was lost or restored from an older backup, so Home Assistant now sends sequence numbers the nodes have already seen; or another mesh client (for example the `mesh_poc.py` tool) transmits with the same unicast address {unicast}. Either give Home Assistant a fresh, unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address, and make sure no other client uses it) or, if the store was lost or restored (and no other client uses the address), confirm to let Home Assistant jump its sequence numbers 1 048 576 ahead and reconnect. Do not restore the sequence-number store from a backup to fix this: an older copy only repeats numbers the devices have already seen. The issue clears itself as soon as a device answers Home Assistant again."
+            "description": "Home Assistant hears the JUNG HOME mesh {title} through its proxy node, but not one device answered its state requests. The nodes are discarding Home Assistant's messages as replays. Two causes are likely: the sequence-number store of this integration (`.storage/junghome_ble.*`) was lost or restored from an older backup, so Home Assistant now sends sequence numbers the nodes have already seen; or another mesh client (for example the `mesh_poc.py` tool) transmits with the same unicast address {unicast}. Either give Home Assistant a fresh, unused address (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address, and make sure no other client uses it) or, if the store was lost or restored (and no other client uses the address), confirm to let Home Assistant jump its sequence numbers 1 048 576 ahead and reconnect. Do not restore the sequence-number store from a backup to fix this: an older copy only repeats numbers the devices have already seen. The issue clears itself as soon as a device answers Home Assistant again."
           }
         },
         "abort": {
@@ -1966,7 +1966,7 @@
         "step": {
           "confirm": {
             "title": "Skip past the other client's sequence numbers",
-            "description": "Home Assistant received a message of the JUNG HOME mesh {title} sent from its own unicast address {unicast} with a sequence number it never used: another mesh client transmits with the same address — a second Home Assistant installation, the `mesh_poc.py` tool configured with this address, or a copy of this installation started elsewhere. Two senders on one address reuse each other's sequence numbers, and the devices discard whatever lies below the other client's, so Home Assistant sends nothing to the mesh until this is repaired (commands fail, states are not refreshed). Stop the other client, or give it or Home Assistant another unused address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address). Then confirm to let Home Assistant continue its sequence numbers past the ones the other client was seen with and send again. If the other client keeps sending from this address, the issue comes back. Do not restore the sequence-number store from a backup to fix this. Unverified on air: a second client on Home Assistant's address has only been simulated."
+            "description": "Home Assistant received a message of the JUNG HOME mesh {title} sent from its own unicast address {unicast} with a sequence number it never used: another mesh client transmits with the same address — a second Home Assistant installation, the `mesh_poc.py` tool configured with this address, or a copy of this installation started elsewhere. Two senders on one address reuse each other's sequence numbers, and the devices discard whatever lies below the other client's, so Home Assistant sends nothing to the mesh until this is repaired (commands fail, states are not refreshed). Stop the other client, or give it or Home Assistant another unused address (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address). Then confirm to let Home Assistant continue its sequence numbers past the ones the other client was seen with and send again. If the other client keeps sending from this address, the issue comes back. Do not restore the sequence-number store from a backup to fix this. Unverified on air: a second client on Home Assistant's address has only been simulated."
           }
         },
         "abort": {
@@ -1980,7 +1980,7 @@
         "step": {
           "confirm": {
             "title": "Skip past the other client's sequence numbers again",
-            "description": "Home Assistant skipped past the sequence numbers of another mesh client on its address {unicast} in the JUNG HOME mesh {title}, and the other client has sent from that address again since: it is still running. Skipping ahead does not help while it does. Give Home Assistant a fresh, unused unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), or stop the other client or move it to another address. Until then Home Assistant sends nothing to the mesh. Confirm only once the other client no longer uses this address: Home Assistant then continues past its numbers again and resumes sending. Unverified on air: a second client on Home Assistant's address has only been simulated."
+            "description": "Home Assistant skipped past the sequence numbers of another mesh client on its address {unicast} in the JUNG HOME mesh {title}, and the other client has sent from that address again since: it is still running. Skipping ahead does not help while it does. Give Home Assistant a fresh, unused unicast address (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), or stop the other client or move it to another address. Until then Home Assistant sends nothing to the mesh. Confirm only once the other client no longer uses this address: Home Assistant then continues past its numbers again and resumes sending. Unverified on air: a second client on Home Assistant's address has only been simulated."
           }
         },
         "abort": {
@@ -2020,7 +2020,7 @@
           }
         },
         "error": {
-          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address), then load the export there.",
+          "address_in_use": "In the new export a node has Home Assistant's address, so the entry cannot use it. Give Home Assistant a free address first (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address), then load the export there.",
           "cannot_connect": "[%key:component::junghome_ble::config::error::cannot_connect%]",
           "cannot_load": "[%key:component::junghome_ble::config::error::cannot_load%]",
           "cannot_store": "[%key:component::junghome_ble::config::error::cannot_store%]",
@@ -2040,8 +2040,8 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure instead, where the gateway's certificate can be checked.",
-          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
+          "no_gateway_pin": "Home Assistant has no access or no certificate on record for the gateway {host}, so it sends it nothing: nothing changed. Fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure instead, where the gateway's certificate can be checked.",
+          "certificate_changed": "The gateway at {host} presents another certificate than the one Home Assistant pinned for it: nothing was sent to it and nothing changed. If you replaced the gateway or its certificate, fetch the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure, where the new certificate can be checked; otherwise another device on your network may be answering as the gateway.",
           "token_rejected": "The gateway at {host} no longer accepts Home Assistant's access: nothing changed. Follow the re-authentication Home Assistant asks for (Settings → Devices & services), then repair this issue again.",
           "network_mismatch": "[%key:component::junghome_ble::config::abort::network_mismatch%]",
           "mesh_already_configured": "[%key:component::junghome_ble::config::abort::mesh_already_configured%]"
@@ -2050,7 +2050,7 @@
     },
     "gateway_certificate_changed": {
       "title": "JUNG HOME Gateway certificate changed",
-      "description": "The JUNG HOME Gateway at {host} no longer matches the TLS certificate Home Assistant pinned for it: the host presents another certificate, or the gateway node reports another one over the mesh. Home Assistant stopped using the gateway (no access token and no export is sent there); devices keep working over Bluetooth. If you replaced the gateway or its certificate, open Settings → Devices & services → JUNG HOME → Reconfigure and fetch the export from the gateway again; otherwise another device on your network may be answering as the gateway — check your network."
+      "description": "The JUNG HOME Gateway at {host} no longer matches the TLS certificate Home Assistant pinned for it: the host presents another certificate, or the gateway node reports another one over the mesh. Home Assistant stopped using the gateway (no access token and no export is sent there); devices keep working over Bluetooth. If you replaced the gateway or its certificate, open Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure and fetch the export from the gateway again; otherwise another device on your network may be answering as the gateway — check your network."
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME export not handed to the gateway",
@@ -2129,7 +2129,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway no longer accepts Home Assistant",
-      "description": "The JUNG HOME Gateway at {host} rejects the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). Home Assistant keeps changing rooms, key connections and scenes in its own export, but no longer hands it to the gateway, so the app does not see those changes; the devices keep working. Home Assistant asks for access again: follow its request to re-authenticate JUNG HOME (Settings → Devices & services; Repairs also lists it as expired authentication) and enter the gateway's network-key password or approve the new access request in the app. The issue clears once the gateway accepts Home Assistant again; the action Sync gateway then hands over the changes made since."
+      "description": "The JUNG HOME Gateway at {host} rejects the access Home Assistant registered for the mesh {title} (it was probably removed in the JUNG HOME app under Settings → Gateway → Access permissions). Home Assistant keeps changing rooms, key connections and scenes in its own export, but no longer hands it to the gateway, so the app does not see those changes; the devices keep working. Home Assistant asks for access again: follow its request to re-authenticate JUNG HOME Bluetooth Mesh (Settings → Devices & services; Repairs also lists it as expired authentication) and enter the gateway's network-key password or approve the new access request in the app. The issue clears once the gateway accepts Home Assistant again; the action Sync gateway then hands over the changes made since."
     },
     "restore_too_old": {
       "title": "Restored backup too old for the JUNG HOME mesh {title}",
@@ -2165,15 +2165,15 @@
         },
         "abort": {
           "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
-          "cannot_load": "The entry's export could not be read, so no free address can be worked out: nothing changed. Load a new export under Settings → Devices & services → JUNG HOME → Reconfigure.",
-          "no_free_address": "The export leaves no address free for Home Assistant: nothing changed. Check the export under Settings → Devices & services → JUNG HOME → Reconfigure.",
+          "cannot_load": "The entry's export could not be read, so no free address can be worked out: nothing changed. Load a new export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure.",
+          "no_free_address": "The export leaves no address free for Home Assistant: nothing changed. Check the export under Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure.",
           "address_taken": "{suggestion} is no longer free in the export (it changed meanwhile): nothing changed. Repair the issue again for a new suggestion."
         }
       }
     },
     "address_reserved": {
       "title": "Home Assistant's JUNG HOME address may be handed out",
-      "description": "The unicast address {unicast} that Home Assistant sends from in the mesh {title} lies inside the address range of one of the app's provisioners, or was used by a removed node. It keeps working until the app provisions a node there; move Home Assistant to a free address before that (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address; {suggestion} is free)."
+      "description": "The unicast address {unicast} that Home Assistant sends from in the mesh {title} lies inside the address range of one of the app's provisioners, or was used by a removed node. It keeps working until the app provisions a node there; move Home Assistant to a free address before that (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address; {suggestion} is free)."
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
@@ -2197,7 +2197,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh is at another IV index",
-      "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours}: too far apart for Home Assistant to follow (it follows the mesh up to 42 ahead, at most once every 192 hours, and never back). The devices ignore Home Assistant meanwhile. This happens when Home Assistant was away through many IV updates, when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Give Home Assistant a new unicast address (Settings → Devices & services → JUNG HOME → Reconfigure → Advanced → Our unicast address): it starts from the mesh's IV index there. Do not restore the store from a backup or edit it: an older or edited record repeats sequence numbers the devices already saw, and the next start overwrites a hand edit anyway. The issue clears itself when a beacon within reach arrives."
+      "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours}: too far apart for Home Assistant to follow (it follows the mesh up to 42 ahead, at most once every 192 hours, and never back). The devices ignore Home Assistant meanwhile. This happens when Home Assistant was away through many IV updates, when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Give Home Assistant a new unicast address (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure → the export's source → Advanced → Our unicast address): it starts from the mesh's IV index there. Do not restore the store from a backup or edit it: an older or edited record repeats sequence numbers the devices already saw, and the next start overwrites a hand edit anyway. The issue clears itself when a beacon within reach arrives."
     },
     "iv_index_ahead": {
       "title": "Home Assistant is ahead of the JUNG HOME mesh's IV index",
@@ -2205,7 +2205,7 @@
         "step": {
           "confirm": {
             "title": "Go back to the mesh's IV index",
-            "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours} — ahead of it, which the mesh never is: the devices ignore Home Assistant, and it cannot follow a mesh that is behind it. This happens when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Confirm to take Home Assistant back to the mesh's IV index and set the integration up again: its sequence numbers continue above every number it sent from that index on, so none is used twice. Do not restore the store from a backup or edit it instead: an older or edited record repeats numbers the devices already saw. The other way back is a new unicast address for Home Assistant (Settings → Devices & services → JUNG HOME → Reconfigure). Unverified on air: an IV index ahead of the mesh has not been seen on a real one."
+            "description": "The mesh {title} is at IV index {mesh}, Home Assistant's sequence-number store at {ours} — ahead of it, which the mesh never is: the devices ignore Home Assistant, and it cannot follow a mesh that is behind it. This happens when its store (`.storage/junghome_ble.seq.*`) belongs to another mesh, or when beacons forged with the network key pushed it ahead. Confirm to take Home Assistant back to the mesh's IV index and set the integration up again: its sequence numbers continue above every number it sent from that index on, so none is used twice. Do not restore the store from a backup or edit it instead: an older or edited record repeats numbers the devices already saw. The other way back is a new unicast address for Home Assistant (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure). Unverified on air: an IV index ahead of the mesh has not been seen on a real one."
           }
         },
         "abort": {
@@ -2995,7 +2995,7 @@
     },
     "download_export": {
       "name": "Download export",
-      "description": "Answers a link that downloads the export Home Assistant holds for the JUNG HOME network (JungHome.json, with the rooms, keys, links and scenes Home Assistant changed), to import into the JUNG HOME app or keep as a backup. The link is a path on Home Assistant's address and works for five minutes, only for the administrator who asked for it. The file holds every key of the installation: delete it once it is imported or stored safely. Administrators only. Importing the file into the app is unverified with the app.",
+      "description": "Answers a link that downloads the export Home Assistant holds for the JUNG HOME network (JungHome.json, with the rooms, keys, links and scenes Home Assistant changed), to import into the JUNG HOME app or keep as a backup. Anyone who has the link can download the file within five minutes, as the administrator who asked for it: open it yourself and pass it to no one. The answer gives it as a path on Home Assistant's address (`url`) and, when Home Assistant knows its address, as a full URL (`absolute_url`); `stale` means the JUNG HOME app changed the installation after the file was written: load the app's export into Home Assistant first. The file holds every key of the installation: delete it once it is imported or stored safely. Administrators only. Importing the file into the app is unverified with the app.",
       "fields": {
         "device": {
           "name": "Device",

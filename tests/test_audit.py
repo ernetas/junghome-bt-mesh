@@ -374,8 +374,9 @@ async def test_a_node_that_cannot_or_will_not_advertise_its_identity_is_reported
     with pytest.raises(HomeAssistantError) as err:
         await locate(hass, device=switch)
     assert err.value.translation_key == "locate_refused"
+    # the device by the name the device list shows, the address in brackets (the light at the node's address)
     assert err.value.translation_placeholders == {
-        "node": "0148",
+        "node": "WC mirror (0148)",
         "status": "Invalid NetKey Index",
     }
     servers.silent.add(SWITCH)

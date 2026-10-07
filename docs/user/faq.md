@@ -73,13 +73,18 @@ The export file holds **every key** of your installation: with it, anyone could 
 devices. So:
 
 - never share it, post it or commit it anywhere;
-- Home Assistant stores its copy (and its backup copies) readable by itself only, in `junghome_ble/` of the
-  configuration folder; keep that folder out of backups you share;
+- set up from the gateway or from an uploaded file, Home Assistant keeps its own copy (and its backup copies),
+  readable by itself only, in `junghome_ble/` of the configuration folder; keep that folder out of backups you
+  share;
+- set up from a **file on the host**, Home Assistant has **no copy of its own**: it reads that very file at every
+  start and writes its changes into it (with backup copies beside it). **Do not delete it** while the integration
+  uses it, or it does not start any more. To move the export into Home Assistant's own folder, use *Reconfigure →
+  Upload the app's export file*; then delete the file on the host;
 - diagnostics downloads and logs never contain a key;
-- if you used a file on the host, delete it once you no longer need it;
-- the export can be downloaded by an administrator only, through a link that works for five minutes and only for
-  the administrator who asked for it ([Downloading the export](maintenance.md#downloading-the-export)); delete the
-  downloaded file once it is imported into the app or stored safely.
+- the export can be downloaded by an administrator only, through a link that works for five minutes
+  ([Downloading the export](maintenance.md#downloading-the-export)); **anyone who has that link can download the
+  file** in that time, so open it yourself and never pass it on; delete the downloaded file once it is imported into
+  the app or stored safely.
 
 If an export did leak, renew the network key in the JUNG HOME app (a *key renewal*), then give Home Assistant the
 new export.

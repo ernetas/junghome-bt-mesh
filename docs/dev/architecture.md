@@ -7,7 +7,7 @@ and the [reference](../ha-integration.md); this page is for changing the code.
 
 ```
 custom_components/junghome_ble/          the Home Assistant integration (HA Bluetooth stack / ESPHome proxies), the mesh stack inside:
-custom_components/junghome_ble/jhmesh/   Bluetooth Mesh stack: crypto, PDUs (segmentation), GATT-proxy client, device model (PyPI `jhmesh`)
+custom_components/junghome_ble/jhmesh/   Bluetooth Mesh stack: crypto, PDUs (segmentation), GATT-proxy client, device model (package `jhmesh`)
 jhmesh                                   symlink to the above, so the CLI tools import it as top-level `jhmesh`
 pyproject.toml, MANIFEST.in              the `jhmesh` sdist + wheel (README-pypi.md is its PyPI page); ruff, mypy, pytest, coverage settings
 scripts/package_ha.sh                    builds dist/junghome_ble.zip for unzipping into HA's custom_components/
@@ -30,8 +30,9 @@ docs/research/                           the index of the reverse-engineering no
 ios/, android/                           developer-only inputs, git-ignored: the iOS app backup (KEYS INSIDE — never publish) and the APK decompile
 ```
 
-The integration is self-contained: the `jhmesh` mesh library is a regular package inside it, also published on its
-own to PyPI (`README-pypi.md`). The command-line tools and how to run them are in the
+The integration is self-contained: the `jhmesh` mesh library is a regular package inside it, built to be published on
+its own to PyPI as `jhmesh` (`README-pypi.md`) — not published yet: the PyPI project does not exist until the first
+upload ([roadmap](../roadmap.md), quality scale). The command-line tools and how to run them are in the
 [research notes](../research/README.md#running-the-poc).
 
 ## Integration modules
@@ -101,7 +102,7 @@ Layout of `custom_components/junghome_ble/`:
 | `strings.json`, `translations/en.json`, `translations/de.json`, `icons.json` | Config-flow, entity, exception and issue translations (English, German); icons |
 | `quality_scale.yaml` | Rule status for the Integration Quality Scale |
 | `brand/` | The integration's icon (`icon.png`, `icon@2x.png`, `dark_icon.png`, `dark_icon@2x.png`): the JUNG HOME brand images Home Assistant's brands repository publishes for `custom_integrations/junghome`. Home Assistant 2026.3 and later take a custom integration's icon from here; the HACS `brands` check accepts it |
-| `jhmesh/` | The mesh stack (crypto, PDUs with segmentation, GATT-proxy client, CDB loader, device model), bundled as a regular package; also published on its own to PyPI as `jhmesh` (`pyproject.toml`). The repository's top-level `jhmesh` is a symlink to it (the CLI tools import it from there); `scripts/package_ha.sh` zips the whole directory, `standalone.py` (the CLI's plain-`bleak` link, unused by the integration) included |
+| `jhmesh/` | The mesh stack (crypto, PDUs with segmentation, GATT-proxy client, CDB loader, device model), bundled as a regular package; built to be published on its own to PyPI as `jhmesh` (`pyproject.toml`), not published yet. The repository's top-level `jhmesh` is a symlink to it (the CLI tools import it from there); `scripts/package_ha.sh` zips the whole directory, `standalone.py` (the CLI's plain-`bleak` link, unused by the integration) included |
 
 ## The `jhmesh` library
 

@@ -1074,7 +1074,7 @@
       "message": "JUNG mesh ağının hiçbir düğümü henüz Bluetooth üzerinden görünmüyor."
     },
     "export_keys_stale": {
-      "message": "JUNG mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri dışa aktarımdaki ağ anahtarını yayınlamıyor: anahtarlar dışa aktarım oluşturulduktan sonra yenilenmiş. Ağı JUNG HOME uygulamasından yeniden dışa aktarın ve Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında kullanın."
+      "message": "JUNG mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri dışa aktarımdaki ağ anahtarını yayınlamıyor: anahtarlar dışa aktarım oluşturulduktan sonra yenilenmiş. Ağı JUNG HOME uygulamasından yeniden dışa aktarın ve Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında kullanın."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant'ın bağlanabilir bir Bluetooth adaptörü veya proxy'si yok: JUNG mesh ağına ulaşılamıyor."
@@ -1275,10 +1275,10 @@
       "message": "{message}, {node} düğümüne gönderilirken JUNG mesh ağıyla bağlantı kesildi. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "{node} düğümü {path} mesh dışa aktarımında var, ancak Home Assistant'ın daha önce ondan yüklediği ağda yok; dışa aktarımı izlemesi için entegrasyonu yeniden yükleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yükle), ardından tekrar deneyin. {applied}"
+      "message": "{node} düğümü {path} mesh dışa aktarımında var, ancak Home Assistant'ın daha önce ondan yüklediği ağda yok; dışa aktarımı izlemesi için entegrasyonu yeniden yükleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yükle), ardından tekrar deneyin. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın yükleyeceği dosyadan ({file}) daha yeni bir dışa aktarım ({gateway}) tutuyor; yüklemek, JUNG HOME uygulamasının o zamandan beri değiştirdiklerini silerdi. Home Assistant'ta yapılan bir sonraki değişiklik ağ geçidinin dışa aktarımını devralır ve Home Assistant'ın kendi değişikliklerini onun üzerine taşır. Bu hata yeniden görünürse (uygulamanın son yüklemesinin kopyası olmayan bir giriş bunları ayırt edemez), ağ geçidinin dışa aktarımını yeniden alın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır; değiştirdiği dosya yanında `.pre-reconfigure` olarak saklanır), ardından Home Assistant'ta yapılan değişikliği tekrarlayın."
+      "message": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın yükleyeceği dosyadan ({file}) daha yeni bir dışa aktarım ({gateway}) tutuyor; yüklemek, JUNG HOME uygulamasının o zamandan beri değiştirdiklerini silerdi. Home Assistant'ta yapılan bir sonraki değişiklik ağ geçidinin dışa aktarımını devralır ve Home Assistant'ın kendi değişikliklerini onun üzerine taşır. Bu hata yeniden görünürse (uygulamanın son yüklemesinin kopyası olmayan bir giriş bunları ayırt edemez), ağ geçidinin dışa aktarımını yeniden alın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır; değiştirdiği dosya yanında `.pre-reconfigure` olarak saklanır), ardından Home Assistant'ta yapılan değişikliği tekrarlayın."
     },
     "service_gateway_export_incomplete": {
       "message": "{host} adresindeki JUNG HOME Gateway yalnızca çıplak cihaz veritabanıyla yanıt verdi (cihaz adları veya oda bağlantıları yok); bunu devralmak, onları Home Assistant'ın tuttuğu dosyadan silerdi. Ağ geçidi artık meşgul olmadığında tekrar deneyin veya uygulamanın dışa aktarımını yeniden alın."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
           "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
           "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
           "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
-          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
           "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
           "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
           "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
           "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
           "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
           "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
-          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
           "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
           "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
           "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
           "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
           "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
           "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
-          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
           "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
           "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
           "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Dışa aktarımdakinden farklı mekanizmalı JUNG HOME butonları",
-      "description": "{devices}: {title} adlı JUNG HOME mesh ağındaki bu butonlar, yayın paketlerinde Home Assistant'ın yüklediği dışa aktarımdakinden farklı bir mekanizma bildiriyor (dışa aktarım → cihaz). Mekanizma o dışa aktarım yapıldıktan sonra değiştirildi, bu yüzden Home Assistant ve uygulama bunlar için yanlış türde bir yük gösterebilir. Cihazları JUNG HOME uygulamasında kontrol edin, ağı yeniden dışa aktarın ve bu entegrasyonu güncelleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır); dışa aktarım, cihazların bildirdiği mekanizmaları içerdiğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+      "description": "{devices}: {title} adlı JUNG HOME mesh ağındaki bu butonlar, yayın paketlerinde Home Assistant'ın yüklediği dışa aktarımdakinden farklı bir mekanizma bildiriyor (dışa aktarım → cihaz). Mekanizma o dışa aktarım yapıldıktan sonra değiştirildi, bu yüzden Home Assistant ve uygulama bunlar için yanlış türde bir yük gösterebilir. Cihazları JUNG HOME uygulamasında kontrol edin, ağı yeniden dışa aktarın ve bu entegrasyonu güncelleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır); dışa aktarım, cihazların bildirdiği mekanizmaları içerdiğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
     },
     "node_clock_wrong": {
       "title": "Saati yanlış olan JUNG HOME cihazları",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
           "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
           "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
           "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
-          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
           "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
           "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
           "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Cihazların bildiği numaraların ötesine atla",
-            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağını proxy düğümü üzerinden duyuyor, ancak durum isteklerine tek bir cihaz bile yanıt vermedi. Düğümler Home Assistant'ın mesajlarını tekrar oynatma (replay) sayıp atıyor. İki neden olası: bu entegrasyonun sıra numarası deposu (`.storage/junghome_ble.*`) kayboldu veya daha eski bir yedekten geri yüklendi, bu yüzden Home Assistant artık düğümlerin zaten gördüğü sıra numaralarını gönderiyor; ya da başka bir mesh istemcisi (örneğin `mesh_poc.py` aracı) aynı unicast adresiyle ({unicast}) gönderim yapıyor. Ya Home Assistant'a yeni, kullanılmayan bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi; başka hiçbir istemcinin onu kullanmadığından emin olun) ya da depo kaybolduysa veya geri yüklendiyse (ve adresi başka hiçbir istemci kullanmıyorsa) Home Assistant'ın sıra numaralarını 1 048 576 ileri atlatıp yeniden bağlanması için onaylayın. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin: daha eski bir kopya yalnızca cihazların zaten gördüğü numaraları tekrarlar. Bir cihaz Home Assistant'a yeniden yanıt verir vermez sorun kendiliğinden kaybolur."
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağını proxy düğümü üzerinden duyuyor, ancak durum isteklerine tek bir cihaz bile yanıt vermedi. Düğümler Home Assistant'ın mesajlarını tekrar oynatma (replay) sayıp atıyor. İki neden olası: bu entegrasyonun sıra numarası deposu (`.storage/junghome_ble.*`) kayboldu veya daha eski bir yedekten geri yüklendi, bu yüzden Home Assistant artık düğümlerin zaten gördüğü sıra numaralarını gönderiyor; ya da başka bir mesh istemcisi (örneğin `mesh_poc.py` aracı) aynı unicast adresiyle ({unicast}) gönderim yapıyor. Ya Home Assistant'a yeni, kullanılmayan bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi; başka hiçbir istemcinin onu kullanmadığından emin olun) ya da depo kaybolduysa veya geri yüklendiyse (ve adresi başka hiçbir istemci kullanmıyorsa) Home Assistant'ın sıra numaralarını 1 048 576 ileri atlatıp yeniden bağlanması için onaylayın. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin: daha eski bir kopya yalnızca cihazların zaten gördüğü numaraları tekrarlar. Bir cihaz Home Assistant'a yeniden yanıt verir vermez sorun kendiliğinden kaybolur."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Diğer istemcinin sıra numaralarının ötesine atla",
-            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi unicast adresinden ({unicast}) gönderilmiş ve hiç kullanmadığı bir sıra numarası taşıyan bir mesaj aldı: başka bir mesh istemcisi aynı adresle gönderim yapıyor — ikinci bir Home Assistant kurulumu, bu adresle yapılandırılmış `mesh_poc.py` aracı veya bu kurulumun başka bir yerde başlatılmış bir kopyası. Aynı adresteki iki gönderici birbirinin sıra numaralarını yeniden kullanır ve cihazlar diğer istemcininkilerin altında kalan her şeyi atar; bu yüzden Home Assistant bu sorun onarılana kadar mesh ağına hiçbir şey göndermez (komutlar başarısız olur, durumlar yenilenmez). Diğer istemciyi durdurun veya ona ya da Home Assistant'a kullanılmayan başka bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi). Ardından Home Assistant'ın sıra numaralarını diğer istemcide görülenlerin ötesinden sürdürmesi ve yeniden göndermesi için onaylayın. Diğer istemci bu adresten göndermeye devam ederse sorun geri gelir. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi unicast adresinden ({unicast}) gönderilmiş ve hiç kullanmadığı bir sıra numarası taşıyan bir mesaj aldı: başka bir mesh istemcisi aynı adresle gönderim yapıyor — ikinci bir Home Assistant kurulumu, bu adresle yapılandırılmış `mesh_poc.py` aracı veya bu kurulumun başka bir yerde başlatılmış bir kopyası. Aynı adresteki iki gönderici birbirinin sıra numaralarını yeniden kullanır ve cihazlar diğer istemcininkilerin altında kalan her şeyi atar; bu yüzden Home Assistant bu sorun onarılana kadar mesh ağına hiçbir şey göndermez (komutlar başarısız olur, durumlar yenilenmez). Diğer istemciyi durdurun veya ona ya da Home Assistant'a kullanılmayan başka bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi). Ardından Home Assistant'ın sıra numaralarını diğer istemcide görülenlerin ötesinden sürdürmesi ve yeniden göndermesi için onaylayın. Diğer istemci bu adresten göndermeye devam ederse sorun geri gelir. Bunu düzeltmek için sıra numarası deposunu bir yedekten geri yüklemeyin. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Diğer istemcinin sıra numaralarının ötesine yeniden atla",
-            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi adresini ({unicast}) kullanan başka bir mesh istemcisinin sıra numaralarının ötesine atladı, ancak diğer istemci o zamandan beri bu adresten yeniden gönderim yaptı: hâlâ çalışıyor. O çalıştığı sürece ileri atlamak işe yaramaz. Home Assistant'a yeni, kullanılmayan bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi) ya da diğer istemciyi durdurun veya başka bir adrese taşıyın. O zamana kadar Home Assistant mesh ağına hiçbir şey göndermez. Yalnızca diğer istemci bu adresi artık kullanmadığında onaylayın: Home Assistant bunun ardından onun numaralarının ötesinden yeniden devam eder ve gönderime yeniden başlar. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
+            "description": "Home Assistant, {title} adlı JUNG HOME mesh ağında kendi adresini ({unicast}) kullanan başka bir mesh istemcisinin sıra numaralarının ötesine atladı, ancak diğer istemci o zamandan beri bu adresten yeniden gönderim yaptı: hâlâ çalışıyor. O çalıştığı sürece ileri atlamak işe yaramaz. Home Assistant'a yeni, kullanılmayan bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi) ya da diğer istemciyi durdurun veya başka bir adrese taşıyın. O zamana kadar Home Assistant mesh ağına hiçbir şey göndermez. Yalnızca diğer istemci bu adresi artık kullanmadığında onaylayın: Home Assistant bunun ardından onun numaralarının ötesinden yeniden devam eder ve gönderime yeniden başlar. Gerçek cihazlarda henüz doğrulanmadı: Home Assistant'ın adresindeki ikinci bir istemci yalnızca simüle edildi."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
+          "address_in_use": "Yeni dışa aktarımda bir düğüm Home Assistant'ın adresine sahip, bu yüzden giriş bu dışa aktarımı kullanamaz. Önce Home Assistant'a boş bir adres verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi), ardından dışa aktarımı orada yükleyin.",
           "cannot_connect": "Ağ geçidine bu adresten ulaşılamadı.",
           "cannot_load": "Mesh dışa aktarımı okunamadı. Dosyanın uygulamanın JSON dışa aktarımı olduğunu (ve yol için yolun doğru olduğunu) kontrol edin.",
           "cannot_store": "Dışa aktarım Home Assistant yapılandırma dizinine yazılamadı.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
-          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
+          "no_gateway_pin": "Home Assistant'ın {host} ağ geçidi için kayıtlı bir erişimi veya sertifikası yok, bu yüzden ona hiçbir şey göndermez: hiçbir şey değişmedi. Dışa aktarımı bunun yerine Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada ağ geçidinin sertifikası denetlenebilir.",
+          "certificate_changed": "{host} adresindeki ağ geçidi, Home Assistant'ın onun için sabitlediği sertifikadan farklı bir sertifika sunuyor: ona hiçbir şey gönderilmedi ve hiçbir şey değişmedi. Ağ geçidini veya sertifikasını değiştirdiyseniz dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında alın; orada yeni sertifika denetlenebilir. Aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir.",
           "token_rejected": "{host} adresindeki ağ geçidi Home Assistant'ın erişimini artık kabul etmiyor: hiçbir şey değişmedi. Home Assistant'ın istediği yeniden kimlik doğrulamayı izleyin (Ayarlar → Cihazlar ve hizmetler), ardından bu sorunu yeniden onarın.",
           "network_mismatch": "Dışa aktarım, bu girişten farklı bir mesh ağına ait.",
           "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu; bir mesh ağının iki girişi onun sıra numaralarını paylaşırdı. Bunun yerine o girişi yeniden yapılandırın veya önce onu kaldırın."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "JUNG HOME Gateway sertifikası değişti",
-      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın onun için sabitlediği TLS sertifikasıyla artık eşleşmiyor: bu adres başka bir sertifika sunuyor veya ağ geçidi düğümü mesh ağı üzerinden başka bir sertifika bildiriyor. Home Assistant ağ geçidini kullanmayı bıraktı (oraya ne erişim belirteci ne de dışa aktarım gönderilir); cihazlar Bluetooth üzerinden çalışmaya devam eder. Ağ geçidini veya sertifikasını değiştirdiyseniz Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır bölümünü açın ve dışa aktarımı ağ geçidinden yeniden alın; aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir — ağınızı kontrol edin."
+      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın onun için sabitlediği TLS sertifikasıyla artık eşleşmiyor: bu adres başka bir sertifika sunuyor veya ağ geçidi düğümü mesh ağı üzerinden başka bir sertifika bildiriyor. Home Assistant ağ geçidini kullanmayı bıraktı (oraya ne erişim belirteci ne de dışa aktarım gönderilir); cihazlar Bluetooth üzerinden çalışmaya devam eder. Ağ geçidini veya sertifikasını değiştirdiyseniz Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır bölümünü açın ve dışa aktarımı ağ geçidinden yeniden alın; aksi takdirde ağınızdaki başka bir cihaz ağ geçidi gibi yanıt veriyor olabilir — ağınızı kontrol edin."
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME dışa aktarımı ağ geçidine iletilmedi",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway artık Home Assistant'ı kabul etmiyor",
-      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın {title} adlı mesh ağı için kaydettiği erişimi reddediyor (erişim muhtemelen JUNG HOME uygulamasında Ayarlar → Ağ Geçidi → Erişim İzinleri altında kaldırıldı). Home Assistant odaları, düğme bağlantılarını ve sahneleri kendi dışa aktarımında değiştirmeye devam eder, ancak dışa aktarımı artık ağ geçidine iletmez; bu yüzden uygulama bu değişiklikleri görmez; cihazlar çalışmaya devam eder. Home Assistant yeniden erişim istiyor: JUNG HOME için yeniden kimlik doğrulama isteğini izleyin (Ayarlar → Cihazlar ve hizmetler; Onarımlar da bunu süresi dolmuş kimlik doğrulaması olarak listeler) ve ağ geçidinin ağ anahtarı parolasını girin veya uygulamada yeni erişim isteğini onaylayın. Ağ geçidi Home Assistant'ı yeniden kabul ettiğinde sorun kaybolur; ardından Ağ geçidini eşitle eylemi o zamandan beri yapılan değişiklikleri iletir."
+      "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın {title} adlı mesh ağı için kaydettiği erişimi reddediyor (erişim muhtemelen JUNG HOME uygulamasında Ayarlar → Ağ Geçidi → Erişim İzinleri altında kaldırıldı). Home Assistant odaları, düğme bağlantılarını ve sahneleri kendi dışa aktarımında değiştirmeye devam eder, ancak dışa aktarımı artık ağ geçidine iletmez; bu yüzden uygulama bu değişiklikleri görmez; cihazlar çalışmaya devam eder. Home Assistant yeniden erişim istiyor: JUNG HOME Bluetooth Mesh için yeniden kimlik doğrulama isteğini izleyin (Ayarlar → Cihazlar ve hizmetler; Onarımlar da bunu süresi dolmuş kimlik doğrulaması olarak listeler) ve ağ geçidinin ağ anahtarı parolasını girin veya uygulamada yeni erişim isteğini onaylayın. Ağ geçidi Home Assistant'ı yeniden kabul ettiğinde sorun kaybolur; ardından Ağ geçidini eşitle eylemi o zamandan beri yapılan değişiklikleri iletir."
     },
     "seq_store_lost": {
       "title": "{title} JUNG HOME mesh ağının sıra numaraları kayboldu",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
-          "cannot_load": "Girişin dışa aktarımı okunamadı, bu yüzden boş bir adres belirlenemiyor: hiçbir şey değişmedi. Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında yeni bir dışa aktarım yükleyin.",
-          "no_free_address": "Dışa aktarım Home Assistant için boş adres bırakmıyor: hiçbir şey değişmedi. Dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır altında kontrol edin.",
+          "cannot_load": "Girişin dışa aktarımı okunamadı, bu yüzden boş bir adres belirlenemiyor: hiçbir şey değişmedi. Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında yeni bir dışa aktarım yükleyin.",
+          "no_free_address": "Dışa aktarım Home Assistant için boş adres bırakmıyor: hiçbir şey değişmedi. Dışa aktarımı Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır altında kontrol edin.",
           "address_taken": "{suggestion} dışa aktarımda artık boş değil (bu arada değişti): hiçbir şey değişmedi. Yeni bir öneri için sorunu yeniden onarın."
         }
       }
     },
     "address_reserved": {
       "title": "Home Assistant'ın JUNG HOME adresi başkasına verilebilir",
-      "description": "Home Assistant'ın {title} adlı mesh ağında gönderim yaptığı {unicast} unicast adresi, uygulamanın provisioner'larından birinin adres aralığı içinde bulunuyor veya kaldırılmış bir düğüm tarafından kullanılmıştı. Uygulama oraya bir düğümü ağa katana kadar çalışmaya devam eder; bundan önce Home Assistant'ı boş bir adrese taşıyın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi; {suggestion} boş)."
+      "description": "Home Assistant'ın {title} adlı mesh ağında gönderim yaptığı {unicast} unicast adresi, uygulamanın provisioner'larından birinin adres aralığı içinde bulunuyor veya kaldırılmış bir düğüm tarafından kullanılmıştı. Uygulama oraya bir düğümü ağa katana kadar çalışmaya devam eder; bundan önce Home Assistant'ı boş bir adrese taşıyın (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi; {suggestion} boş)."
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh ağının sıra numaraları azalıyor",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh ağı başka bir IV dizininde",
-      "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde: Home Assistant'ın takip edemeyeceği kadar birbirinden uzak (mesh ağını en fazla 42 ileriye kadar, en fazla 192 saatte bir takip eder ve asla geri gitmez). Bu arada cihazlar Home Assistant'ı yok sayar. Bu durum, Home Assistant birçok IV güncellemesi boyunca devre dışı kaldığında, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'a yeni bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır → Gelişmiş → Home Assistant'ın unicast adresi): orada mesh ağının IV dizininden başlar. Depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü sıra numaralarını tekrarlar ve bir sonraki başlatma elle yapılan bir düzenlemenin üzerine zaten yazar. Menzil içindeki bir beacon geldiğinde sorun kendiliğinden kaybolur."
+      "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde: Home Assistant'ın takip edemeyeceği kadar birbirinden uzak (mesh ağını en fazla 42 ileriye kadar, en fazla 192 saatte bir takip eder ve asla geri gitmez). Bu arada cihazlar Home Assistant'ı yok sayar. Bu durum, Home Assistant birçok IV güncellemesi boyunca devre dışı kaldığında, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'a yeni bir unicast adresi verin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır → dışa aktarımın kaynağı → Gelişmiş → Home Assistant'ın unicast adresi): orada mesh ağının IV dizininden başlar. Depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü sıra numaralarını tekrarlar ve bir sonraki başlatma elle yapılan bir düzenlemenin üzerine zaten yazar. Menzil içindeki bir beacon geldiğinde sorun kendiliğinden kaybolur."
     },
     "iv_index_ahead": {
       "title": "Home Assistant, JUNG HOME mesh ağının IV dizininin önünde",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Mesh ağının IV dizinine geri dön",
-            "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde — mesh ağının önünde, oysa mesh ağı hiçbir zaman geride kalmaz: cihazlar Home Assistant'ı yok sayar ve Home Assistant kendisinin gerisindeki bir mesh ağını takip edemez. Bu durum, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'ı mesh ağının IV dizinine geri almak ve entegrasyonu yeniden kurmak için onaylayın: sıra numaraları, o dizinden itibaren gönderdiği her numaranın üstünden devam eder, böylece hiçbiri iki kez kullanılmaz. Bunun yerine depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü numaraları tekrarlar. Geri dönmenin diğer yolu, Home Assistant için yeni bir unicast adresidir (Ayarlar → Cihazlar ve hizmetler → JUNG HOME → Yeniden yapılandır). Gerçek cihazlarda henüz doğrulanmadı: mesh ağının önünde olan bir IV dizini gerçek bir mesh ağında görülmedi."
+            "description": "{title} adlı mesh ağı IV dizini {mesh} üzerinde, Home Assistant'ın sıra numarası deposu ise {ours} üzerinde — mesh ağının önünde, oysa mesh ağı hiçbir zaman geride kalmaz: cihazlar Home Assistant'ı yok sayar ve Home Assistant kendisinin gerisindeki bir mesh ağını takip edemez. Bu durum, deposu (`.storage/junghome_ble.seq.*`) başka bir mesh ağına ait olduğunda veya ağ anahtarıyla sahte olarak oluşturulmuş beacon'lar onu ileri ittiğinde ortaya çıkar. Home Assistant'ı mesh ağının IV dizinine geri almak ve entegrasyonu yeniden kurmak için onaylayın: sıra numaraları, o dizinden itibaren gönderdiği her numaranın üstünden devam eder, böylece hiçbiri iki kez kullanılmaz. Bunun yerine depoyu bir yedekten geri yüklemeyin veya düzenlemeyin: daha eski ya da düzenlenmiş bir kayıt, cihazların zaten gördüğü numaraları tekrarlar. Geri dönmenin diğer yolu, Home Assistant için yeni bir unicast adresidir (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır). Gerçek cihazlarda henüz doğrulanmadı: mesh ağının önünde olan bir IV dizini gerçek bir mesh ağında görülmedi."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Dışa aktarımı indir",
-      "description": "Home Assistant'ın JUNG HOME ağı için tuttuğu dışa aktarımı (JungHome.json; Home Assistant'ın değiştirdiği odalar, tuşlar, bağlantılar ve sahnelerle birlikte) indiren bir bağlantıyla yanıt verir; JUNG HOME uygulamasına içe aktarmak ya da yedek olarak saklamak için. Bağlantı, Home Assistant adresindeki bir yoldur ve yalnızca onu isteyen yönetici için beş dakika geçerlidir. Dosya kurulumun tüm anahtarlarını içerir: içe aktarıldıktan ya da güvenli bir yere konduktan sonra silin. Yalnızca yöneticiler. Uygulamaya içe aktarma henüz uygulamayla doğrulanmadı.",
+      "description": "Home Assistant'ın JUNG HOME ağı için tuttuğu dışa aktarımı (JungHome.json; Home Assistant'ın değiştirdiği odalar, tuşlar, bağlantılar ve sahnelerle birlikte) indiren bir bağlantıyla yanıt verir; JUNG HOME uygulamasına içe aktarmak ya da yedek olarak saklamak için. Bağlantıya sahip olan herkes, dosyayı beş dakika boyunca onu isteyen yönetici olarak indirebilir: kendiniz açın ve kimseye vermeyin. Yanıt onu Home Assistant adresindeki bir yol (`url`) olarak ve Home Assistant kendi adresini biliyorsa tam bir URL (`absolute_url`) olarak verir; `stale`, dosya yazıldıktan sonra JUNG HOME uygulamasının kurulumu değiştirdiğini gösterir: önce uygulamanın dışa aktarımını Home Assistant'a yükleyin. Dosya kurulumun tüm anahtarlarını içerir: içe aktarıldıktan ya da güvenli bir yere konduktan sonra silin. Yalnızca yöneticiler. Uygulamaya içe aktarma henüz uygulamayla doğrulanmadı.",
       "fields": {
         "device": {
           "name": "Cihaz",

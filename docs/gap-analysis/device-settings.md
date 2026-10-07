@@ -513,8 +513,12 @@ surface.
    property whose userAccess read `1` reads `3` after our Set with access 3, exactly as after the app's Sets.
    SIG setup Sets behave per spec except two: OnPowerUp Set, Lightness Default Set and CTL Default Set answer
    unicast; **Light Lightness Range Set** answers only with the *publication* of its status to the element group
-   (twice, like OnOff), and **Light CTL Temperature Range Set** is not answered at all (nothing unicast, nothing
-   published) — the DALI insert's range is not settable this way.
+   (twice, like OnOff). **Light CTL Temperature Range Set** was not answered in that pass (nothing unicast, nothing
+   published, no change), but **the on-air sweep (C1) found otherwise**: the acknowledged Set `34 08 70 17`
+   (2100..6000 K, Home Assistant's message) to the DALI insert's CTL element (`sweep-cli` `00A11A`) was answered at
+   once by a *Range Status* (`8263`, status 0) to the element group (`19040D`) and to the sender (`19040E`), and the
+   Range Get read the new range — **the DALI insert applies the range**, so the *Minimum / Maximum colour
+   temperature* entities set it (`msg:op:826b`; `hidden-features.md` §9).
 4. **DimMode userAccess = 1** — unknown whether access 3 would be rejected; replicate the app.
 5. **Units not visible in code** — 0x6004/0x600F assumed lux (slider says lx), 0x6021 u8 unit unknown (props §5 q.5).
 6. **Detector element addressing** — the app sends sensor properties to the highest element and 0x0001 to the

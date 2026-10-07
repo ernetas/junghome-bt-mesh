@@ -37,6 +37,7 @@ from .const import (
 )
 from .conversions import closedness_to_level, level_to_closedness
 from .data import jung_data
+from .device_info import address_label
 from .entity import (
     blind_device_info,
     light_device_info,
@@ -319,7 +320,7 @@ class Scheduler:
         )
         reply = await self._ask(address, pdu, header)
         if reply is None:
-            raise _error("schedule_no_reply", address=f"{address:04X}")
+            raise _error("schedule_no_reply", address=address_label(self.hub, address))
         return V.decode_scheduler_status(reply.params)
 
     async def _read_slot(self, address: int, index: int) -> Slot | None:
@@ -348,14 +349,16 @@ class Scheduler:
         """
         slots = (await self._get(address, 0, V.SUB_LIST)).slots
         if slots is None:
-            raise _error("schedule_no_reply", address=f"{address:04X}")
+            raise _error("schedule_no_reply", address=address_label(self.hub, address))
         return slots
 
     async def _free_slot(self, address: int) -> int:
         slots = await self._list(address)
         index = next((i for i, s in enumerate(slots) if s == AVAILABLE), None)
         if index is None:
-            raise _error("schedule_slots_full", address=f"{address:04X}")
+            raise _error(
+                "schedule_slots_full", address=address_label(self.hub, address)
+            )
         return index
 
     async def free_slot(self, address: int) -> int:
@@ -396,7 +399,9 @@ class Scheduler:
             status = await self._get(address, index, V.SUB_SCHEDULE)
         if not confirms(status):
             raise _error(
-                "schedule_not_applied", address=f"{address:04X}", slot=str(index)
+                "schedule_not_applied",
+                address=address_label(self.hub, address),
+                slot=str(index),
             )
 
     async def _write_action(self, address: int, index: int, action: V.Action) -> None:
@@ -412,7 +417,9 @@ class Scheduler:
             got = (await self._get(address, index, V.SUB_ACTION)).action
         if got != action:
             raise _error(
-                "schedule_not_applied", address=f"{address:04X}", slot=str(index)
+                "schedule_not_applied",
+                address=address_label(self.hub, address),
+                slot=str(index),
             )
 
     async def _send_location(self, address: int) -> None:
@@ -494,7 +501,7 @@ class Scheduler:
             raise _error(
                 "schedule_empty_slot",
                 ServiceValidationError,
-                address=f"{address:04X}",
+                address=address_label(self.hub, address),
                 slot=str(index),
             )
         return schedule
@@ -518,7 +525,7 @@ class Scheduler:
                 raise _error(
                     "schedule_empty_slot",
                     ServiceValidationError,
-                    address=f"{address:04X}",
+                    address=address_label(self.hub, address),
                     slot=str(index),
                 )
             old_action = (await self._get(address, index, V.SUB_ACTION)).action
@@ -580,7 +587,7 @@ class Scheduler:
                 raise _error(
                     "schedule_empty_slot",
                     ServiceValidationError,
-                    address=f"{address:04X}",
+                    address=address_label(self.hub, address),
                     slot=str(index),
                 )
             kind = TRIGGERS[trigger][enabled]

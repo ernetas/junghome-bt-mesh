@@ -48,10 +48,18 @@ dann (außer bei der Gateway-Karte), woher der Netzwerk-Export der App kommt —
    Assistant Companion App: die Datei in den Dateien des Handys speichern und im Dialog auswählen (nicht mit jedem
    Handy ausprobiert).
 3. **Eine Datei auf dem Home-Assistant-Host verwenden**: `JungHome.json` zum Beispiel nach `/config/junghome/`
-   kopieren und den Pfad eingeben.
+   kopieren und den Pfad eingeben. Home Assistant legt davon keine eigene Kopie an, sondern liest und schreibt genau
+   diese Datei: nicht löschen, solange die Integration sie nutzt.
 
 Den eingeklappten Abschnitt *Erweitert* (Feld *Unsere Unicast-Adresse*, Vorschlag `0D00`) so lassen. Nur ein
 zweites Home Assistant an derselben Installation braucht eine eigene Adresse.
+
+Ist der Export gelesen, fragt Home Assistant im Schritt **Räume und Bereiche**, in welchen Home-Assistant-Bereich
+jeder Raum der App kommt. Vorausgewählt ist der Bereich mit demselben Namen oder der Bereich, der den Namen des Raums
+als **Alias** hat: So landet ein Raum *Küche* in deinem Bereich *Kitchen*, wenn dieser *Küche* als Alias führt, statt
+dass ein zweiter Bereich entsteht. Ein leeres Feld gibt einen Bereich mit dem Namen des Raums (er wird angelegt, falls
+es keinen gibt); mit *JUNG HOME Geräte Bereichen zuordnen* aus bleiben alle Geräte ohne Bereich. Später ändern:
+*Neu konfigurieren → Festlegen, in welchen Bereich die Geräte jedes Raums kommen*.
 
 > **Den Export geheim halten.** Er enthält alle Schlüssel der Installation: wer die Datei hat, kann jedes Gerät
 > steuern und umkonfigurieren. Nicht weitergeben, nirgends hochladen.
@@ -60,8 +68,8 @@ zweites Home Assistant an derselben Installation braucht eine eigene Adresse.
 
 - Jedes JUNG Gerät erscheint als Gerät in Home Assistant, mit dem Namen aus der App. Ein Taster erscheint meist als
   mehrere Geräte: der Taster selbst, das Licht, das er schaltet, und seine Tasten.
-- Geräte landen beim ersten Einrichten im Bereich, der wie ihr erster Raum in der App heißt; danach lassen sie sich
-  frei verschieben.
+- Geräte landen beim ersten Einrichten im Bereich, den der Schritt *Räume und Bereiche* ihrem ersten Raum gegeben
+  hat; danach lassen sie sich frei verschieben.
 - Jede Taste hat eine Ereignis-Entität (*Taste A*, …). Für Automatisierungen: *Einstellungen → Automatisierungen &
   Szenen → Automatisierung erstellen → Auslöser hinzufügen → Gerät*, die Tasten wählen, dann z. B. *Taste A
   geklickt*. Klicks und Doppelklicks melden nur Tasten, die in der App mit dem Gateway verbunden sind; mit einem Licht

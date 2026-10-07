@@ -569,7 +569,10 @@ async def test_ignored_set_is_not_applied(
             },
         )
     assert err.value.translation_key == "schedule_not_applied"
-    assert err.value.translation_placeholders == {"address": "0300", "slot": "0"}
+    assert err.value.translation_placeholders == {
+        "address": "WC ceiling (0300)",
+        "slot": "0",
+    }
     # a schedule whose action did not take is freed again: it must not fire with the slot's old action
     assert (LIGHT_DIMMER, 0) not in fake_link.scheduler.schedules
 
@@ -663,7 +666,7 @@ async def test_a_failing_load_names_the_slots_already_created(
         await call(hass, "create_schedule", {"entity_id": [dimmer, socket], **data})
     assert err.value.translation_key == "schedule_partly_created"
     assert err.value.translation_placeholders == {
-        "error": "The JUNG device 0172 did not take the change of schedule slot 0",
+        "error": "The JUNG device Boiler (0172) did not take the change of schedule slot 0",
         "created": f"{dimmer} (slot 0)",
     }
     assert str(err.value).endswith(
@@ -811,7 +814,7 @@ async def test_a_full_load_stops_the_call_before_any_write(
             },
         )
     assert err.value.translation_key == "schedule_slots_full"
-    assert err.value.translation_placeholders == {"address": f"{SOCKET:04X}"}
+    assert err.value.translation_placeholders == {"address": f"Boiler ({SOCKET:04X})"}
     assert not [key for key in fake_link.scheduler.schedules if key[0] != SOCKET]
     assert not fake_link.scheduler.actions
 
@@ -1022,7 +1025,10 @@ async def test_update_of_a_free_or_foreign_slot_is_refused(
             },
         )
     assert err.value.translation_key == "schedule_empty_slot"
-    assert err.value.translation_placeholders == {"address": "0300", "slot": "3"}
+    assert err.value.translation_placeholders == {
+        "address": "WC ceiling (0300)",
+        "slot": "3",
+    }
     assert (LIGHT_DIMMER, 3) not in fake_link.scheduler.actions
 
 

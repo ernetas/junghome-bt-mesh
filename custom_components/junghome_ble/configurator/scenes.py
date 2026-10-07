@@ -137,7 +137,7 @@ class Scenes(Operations):
             if reply is None:
                 raise _failure(
                     "service_no_reply",
-                    node=hexaddr(other.address),
+                    node=self.store.node_name(other.address),
                     message=M.describe(V.scene_action_get(number)),
                     applied=applied_message(self.hub.hass, applied),
                 )
@@ -268,7 +268,7 @@ class Scenes(Operations):
         ):
             raise _failure(
                 "service_scene_state_unknown",
-                address=hexaddr(element.address),
+                address=self.store.node_name(element.address),
                 scene=str(number),
                 applied=applied_message(self.hub.hass, applied),
             )
@@ -279,7 +279,7 @@ class Scenes(Operations):
         if not register.ok or number not in register.scenes:
             raise _failure(
                 "service_scene_not_stored",
-                address=hexaddr(store.address),
+                address=self.store.node_name(store.address),
                 scene=str(number),
                 status=(
                     "not in the register after read-back"
@@ -297,7 +297,7 @@ class Scenes(Operations):
                 element.address,
                 number,
                 action,
-                applied_scene_stored(store.address, number),
+                applied_scene_stored(self.store.node_name(store.address), number),
             )
         if action is not None:
             pf.set_scene_info(
@@ -333,7 +333,7 @@ class Scenes(Operations):
             if reply is None:
                 raise _failure(
                     "service_no_reply",
-                    node=hexaddr(element.address),
+                    node=self.store.node_name(element.address),
                     message=M.describe(V.scene_action_get()),
                     applied=applied_message(self.hub.hass, applied),
                 )
@@ -361,7 +361,7 @@ class Scenes(Operations):
         if number not in held and len(held) >= capacity:
             raise _failure(
                 "service_scene_no_capacity",
-                address=hexaddr(where),
+                address=self.store.node_name(where),
                 scene=str(number),
                 capacity=str(capacity),
                 applied=applied_message(self.hub.hass, applied),
@@ -616,7 +616,7 @@ class Scenes(Operations):
         if number in register.scenes:
             raise _failure(
                 "service_scene_not_deleted",
-                address=hexaddr(store.address),
+                address=self.store.node_name(store.address),
                 scene=str(number),
                 status=_scene_register_status_name(register.status),
                 applied=applied_message(self.hub.hass, applied_unused_deleted(deleted)),
@@ -645,7 +645,9 @@ class Scenes(Operations):
         applied = applied_members(done, total, number, keys_cleared=keys_cleared)
         if has_model(element, SCENE_ACTION_SETUP):
             await self.executor.scene_action(element.address, number, None, applied)
-            applied = applied_scene_cleared(element.address, number, done, total)
+            applied = applied_scene_cleared(
+                self.store.node_name(element.address), number, done, total
+            )
         if await self._sibling_uses_scene(element, number, applied):
             _LOGGER.debug(
                 "%04X: another channel still uses scene %d, register kept",
@@ -665,7 +667,7 @@ class Scenes(Operations):
         if number in register.scenes:
             raise _failure(
                 "service_scene_not_deleted",
-                address=hexaddr(store.address),
+                address=self.store.node_name(store.address),
                 scene=str(number),
                 status=_scene_register_status_name(register.status),
                 applied=applied_message(self.hub.hass, applied),

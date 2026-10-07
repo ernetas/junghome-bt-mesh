@@ -55,15 +55,19 @@ class Thresholds(Operations):
         socket = find_element(pf, socket_address)
         client = threshold_client(socket.node)
         if client is None:
-            raise _validation("threshold_not_supported", name=hexaddr(socket.address))
+            raise _validation(
+                "threshold_not_supported", name=self.store.node_name(socket.address)
+            )
         wanted = [find_element(pf, address) for address in devices]
         for element in wanted:
             if not has_model(element, ONOFF_SERVER):
-                raise _validation("service_not_a_load", name=hexaddr(element.address))
+                raise _validation(
+                    "service_not_a_load", name=self.store.node_name(element.address)
+                )
         group = element_groups(pf).get(client.address)
         if group is None and wanted:
             raise _validation(
-                "service_no_element_group", address=hexaddr(client.address)
+                "service_no_element_group", address=self.store.node_name(client.address)
             )
         return socket, client, wanted, group
 
@@ -169,7 +173,9 @@ class Thresholds(Operations):
         socket = find_element(pf, socket_address)
         client = threshold_client(socket.node)
         if client is None:
-            raise _validation("threshold_not_supported", name=hexaddr(socket.address))
+            raise _validation(
+                "threshold_not_supported", name=self.store.node_name(socket.address)
+            )
         group = element_groups(pf).get(client.address)
         steps: list[ConfigStep] = []
         if group is None:
@@ -266,7 +272,8 @@ class Thresholds(Operations):
                 group = groups.get(element.address)
                 if on and group is None:
                     raise _validation(
-                        "service_no_element_group", address=hexaddr(element.address)
+                        "service_no_element_group",
+                        address=self.store.node_name(element.address),
                     )
                 want = group if on else None
                 if pf.publication(element, SENSOR_SERVER) == want and live in (

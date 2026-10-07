@@ -1074,7 +1074,7 @@
       "message": "A JUNG mesh hálózat egyetlen csomópontja sem látható még Bluetooth-on."
     },
     "export_keys_stale": {
-      "message": "A JUNG mesh hálózat eszközei láthatók Bluetooth-on, de egyik sem az exportban szereplő hálózati kulccsal hirdeti magát: a kulcsok az export elkészítése után megújultak. Exportálja újra a hálózatot a JUNG HOME alkalmazásból, és használja itt: Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás."
+      "message": "A JUNG mesh hálózat eszközei láthatók Bluetooth-on, de egyik sem az exportban szereplő hálózati kulccsal hirdeti magát: a kulcsok az export elkészítése után megújultak. Exportálja újra a hálózatot a JUNG HOME alkalmazásból, és használja itt: Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás."
     },
     "bluetooth_unavailable": {
       "message": "A Home Assistantnak nincs csatlakoztatható Bluetooth-adaptere vagy -proxyja: a JUNG mesh hálózat nem érhető el."
@@ -1275,10 +1275,10 @@
       "message": "Megszakadt a kapcsolat a JUNG mesh hálózattal, miközben a rendszer a(z) {node} csomópontnak ezt küldte: {message}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "A(z) {node} csomópont szerepel a(z) {path} mesh-exportban, de abban a hálózatban nem, amelyet a Home Assistant korábban betöltött belőle; töltse újra az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újratöltés), hogy kövesse az exportot, majd próbálja újra. {applied}"
+      "message": "A(z) {node} csomópont szerepel a(z) {path} mesh-exportban, de abban a hálózatban nem, amelyet a Home Assistant korábban betöltött belőle; töltse újra az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újratöltés), hogy kövesse az exportot, majd próbálja újra. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "A(z) {host} címen lévő JUNG HOME átjáró újabb exportot tárol ({gateway}), mint a fájl, amelyet a Home Assistant feltöltene ({file}); a feltöltés törölné azt, amit a JUNG HOME alkalmazásban azóta módosítottak. A Home Assistantban végzett következő módosítás átveszi az átjáró exportját, és arra viszi át a Home Assistant saját módosításait. Ha ez a hiba újra jelentkezik (egy bejegyzés, amely nem rendelkezik az alkalmazás utolsó feltöltésének másolatával, nem tudja megkülönböztetni őket), kérje le újra az átjáró exportját (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás; a lecserélt fájl `.pre-reconfigure` kiterjesztéssel mellette megmarad), majd ismételje meg a Home Assistantban végzett módosítást."
+      "message": "A(z) {host} címen lévő JUNG HOME átjáró újabb exportot tárol ({gateway}), mint a fájl, amelyet a Home Assistant feltöltene ({file}); a feltöltés törölné azt, amit a JUNG HOME alkalmazásban azóta módosítottak. A Home Assistantban végzett következő módosítás átveszi az átjáró exportját, és arra viszi át a Home Assistant saját módosításait. Ha ez a hiba újra jelentkezik (egy bejegyzés, amely nem rendelkezik az alkalmazás utolsó feltöltésének másolatával, nem tudja megkülönböztetni őket), kérje le újra az átjáró exportját (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás; a lecserélt fájl `.pre-reconfigure` kiterjesztéssel mellette megmarad), majd ismételje meg a Home Assistantban végzett módosítást."
     },
     "service_gateway_export_incomplete": {
       "message": "A(z) {host} címen lévő JUNG HOME átjáró csak a puszta eszközadatbázissal válaszolt (eszköznevek és helyiség-hozzárendelések nélkül); átvétele ezeket törölné a Home Assistant által tárolt fájlból. Próbálja újra, amikor az átjáró már nem foglalt, vagy kérje le újra az alkalmazás exportját."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
           "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
           "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
           "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
-          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
           "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
           "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
           "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
           "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
           "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
           "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
-          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
           "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
           "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
           "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
           "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
           "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
           "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
-          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
           "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
           "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
           "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME nyomógombok az exportban szereplőtől eltérő betéttel",
-      "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen nyomógombjai más betétet hirdetnek, mint amely a Home Assistant által betöltött exportban szerepel (export → eszköz). A betétet az export elkészülte után cserélték ki, így a Home Assistant és az alkalmazás rossz fogyasztótípust mutathat hozzájuk. Ellenőrizze az eszközöket a JUNG HOME alkalmazásban, exportálja újra a hálózatot, és frissítse ezt az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás); a probléma megszűnik, amint az export az eszközök által hirdetett betéteket tartalmazza. Valós eszközökön még nem ellenőrzött."
+      "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen nyomógombjai más betétet hirdetnek, mint amely a Home Assistant által betöltött exportban szerepel (export → eszköz). A betétet az export elkészülte után cserélték ki, így a Home Assistant és az alkalmazás rossz fogyasztótípust mutathat hozzájuk. Ellenőrizze az eszközöket a JUNG HOME alkalmazásban, exportálja újra a hálózatot, és frissítse ezt az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás); a probléma megszűnik, amint az export az eszközök által hirdetett betéteket tartalmazza. Valós eszközökön még nem ellenőrzött."
     },
     "node_clock_wrong": {
       "title": "JUNG HOME eszközök hibás órával",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
           "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
           "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
           "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
-          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
           "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
           "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
           "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Ugrás az eszközök által ismert sorszámok fölé",
-            "description": "A Home Assistant a proxy csomópontján keresztül hallja a(z) {title} JUNG HOME mesh hálózatot, de egyetlen eszköz sem válaszolt az állapotlekérdezéseire. A csomópontok visszajátszásként (replay) eldobják a Home Assistant üzeneteit. Két ok valószínű: ennek az integrációnak a sorszámtára (`.storage/junghome_ble.*`) elveszett, vagy egy régebbi biztonsági mentésből állították vissza, így a Home Assistant most olyan sorszámokat küld, amelyeket a csomópontok már láttak; vagy egy másik mesh-kliens (például a `mesh_poc.py` segédprogram) ugyanazzal a(z) {unicast} unicast címmel küld. Vagy adjon a Home Assistantnak egy új, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk, és győződjön meg róla, hogy más kliens nem használja), vagy ha a tár elveszett vagy vissza lett állítva (és más kliens nem használja a címet), erősítse meg, hogy a Home Assistant 1 048 576-tal előreléptesse a sorszámait, és újracsatlakozzon. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből: egy régebbi másolat csak olyan számokat ismétel, amelyeket az eszközök már láttak. A probléma magától megszűnik, amint egy eszköz ismét válaszol a Home Assistantnak."
+            "description": "A Home Assistant a proxy csomópontján keresztül hallja a(z) {title} JUNG HOME mesh hálózatot, de egyetlen eszköz sem válaszolt az állapotlekérdezéseire. A csomópontok visszajátszásként (replay) eldobják a Home Assistant üzeneteit. Két ok valószínű: ennek az integrációnak a sorszámtára (`.storage/junghome_ble.*`) elveszett, vagy egy régebbi biztonsági mentésből állították vissza, így a Home Assistant most olyan sorszámokat küld, amelyeket a csomópontok már láttak; vagy egy másik mesh-kliens (például a `mesh_poc.py` segédprogram) ugyanazzal a(z) {unicast} unicast címmel küld. Vagy adjon a Home Assistantnak egy új, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk, és győződjön meg róla, hogy más kliens nem használja), vagy ha a tár elveszett vagy vissza lett állítva (és más kliens nem használja a címet), erősítse meg, hogy a Home Assistant 1 048 576-tal előreléptesse a sorszámait, és újracsatlakozzon. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből: egy régebbi másolat csak olyan számokat ismétel, amelyeket az eszközök már láttak. A probléma magától megszűnik, amint egy eszköz ismét válaszol a Home Assistantnak."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Ugrás a másik kliens sorszámai fölé",
-            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban olyan üzenetet kapott, amelyet a saját {unicast} unicast címéről küldtek, egy általa soha nem használt sorszámmal: egy másik mesh-kliens ugyanezzel a címmel küld — egy második Home Assistant-telepítés, az erre a címre beállított `mesh_poc.py` segédprogram, vagy ennek a telepítésnek egy máshol elindított másolata. Ha egy címen két küldő osztozik, egymás sorszámait használják fel újra, és az eszközök eldobják mindazt, ami a másik kliens sorszámai alá esik, ezért a Home Assistant semmit nem küld a mesh hálózatnak, amíg ez nincs kijavítva (a parancsok sikertelenek, az állapotok nem frissülnek). Állítsa le a másik klienst, vagy adjon neki vagy a Home Assistantnak egy másik, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk). Ezután erősítse meg, hogy a Home Assistant a másik kliensnél látott sorszámok fölött folytassa a sorszámait, és ismét küldjön. Ha a másik kliens továbbra is erről a címről küld, a probléma visszatér. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
+            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban olyan üzenetet kapott, amelyet a saját {unicast} unicast címéről küldtek, egy általa soha nem használt sorszámmal: egy másik mesh-kliens ugyanezzel a címmel küld — egy második Home Assistant-telepítés, az erre a címre beállított `mesh_poc.py` segédprogram, vagy ennek a telepítésnek egy máshol elindított másolata. Ha egy címen két küldő osztozik, egymás sorszámait használják fel újra, és az eszközök eldobják mindazt, ami a másik kliens sorszámai alá esik, ezért a Home Assistant semmit nem küld a mesh hálózatnak, amíg ez nincs kijavítva (a parancsok sikertelenek, az állapotok nem frissülnek). Állítsa le a másik klienst, vagy adjon neki vagy a Home Assistantnak egy másik, nem használt címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk). Ezután erősítse meg, hogy a Home Assistant a másik kliensnél látott sorszámok fölött folytassa a sorszámait, és ismét küldjön. Ha a másik kliens továbbra is erről a címről küld, a probléma visszatér. A probléma megoldásához ne állítsa vissza a sorszámtárat biztonsági mentésből. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Ugrás ismét a másik kliens sorszámai fölé",
-            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban átugrotta egy másik mesh-kliens sorszámait a saját {unicast} címén, de a másik kliens azóta ismét küldött erről a címről: még mindig fut. Amíg fut, az átugrás nem segít. Adjon a Home Assistantnak egy új, nem használt unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), vagy állítsa le a másik klienst, illetve helyezze át egy másik címre. Addig a Home Assistant semmit nem küld a mesh hálózatnak. Csak akkor erősítse meg, ha a másik kliens már nem használja ezt a címet: a Home Assistant ekkor ismét átugorja annak sorszámait, és folytatja a küldést. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
+            "description": "A Home Assistant a(z) {title} JUNG HOME mesh hálózatban átugrotta egy másik mesh-kliens sorszámait a saját {unicast} címén, de a másik kliens azóta ismét küldött erről a címről: még mindig fut. Amíg fut, az átugrás nem segít. Adjon a Home Assistantnak egy új, nem használt unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), vagy állítsa le a másik klienst, illetve helyezze át egy másik címre. Addig a Home Assistant semmit nem küld a mesh hálózatnak. Csak akkor erősítse meg, ha a másik kliens már nem használja ezt a címet: a Home Assistant ekkor ismét átugorja annak sorszámait, és folytatja a küldést. Valós eszközökön még nem ellenőrzött: a Home Assistant címét használó második klienst csak szimulálták."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
+          "address_in_use": "Az új exportban egy csomópont a Home Assistant címét használja, ezért a bejegyzés nem használhatja. Előbb adjon a Home Assistantnak egy szabad címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk), majd ott töltse be az exportot.",
           "cannot_connect": "Az átjáró ezen a címen nem érhető el.",
           "cannot_load": "A mesh-export nem olvasható. Ellenőrizze, hogy a fájl az alkalmazás JSON-exportja-e (elérési út esetén pedig azt, hogy az elérési út helyes-e).",
           "cannot_store": "Az exportot nem sikerült a Home Assistant konfigurációs könyvtárába írni.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
-          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
+          "no_gateway_pin": "A Home Assistant nem rendelkezik hozzáféréssel vagy tárolt tanúsítvánnyal a(z) {host} átjáróhoz, ezért semmit nem küld neki: semmi sem változott. Inkább a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban kérje le az exportot, ahol az átjáró tanúsítványa ellenőrizhető.",
+          "certificate_changed": "A(z) {host} címen lévő átjáró más tanúsítványt mutat be, mint amelyet a Home Assistant rögzített hozzá: semmit nem küldött neki, és semmi sem változott. Ha kicserélte az átjárót vagy a tanúsítványát, kérje le az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban, ahol az új tanúsítvány ellenőrizhető; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében.",
           "token_rejected": "A(z) {host} címen lévő átjáró már nem fogadja el a Home Assistant hozzáférését: semmi sem változott. Végezze el a Home Assistant által kért újrahitelesítést (Beállítások → Eszközök és szolgáltatások), majd javítsa újra ezt a problémát.",
           "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint ez a bejegyzés.",
           "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként; ugyanannak a mesh hálózatnak két bejegyzése osztozna a sorszámain. Inkább azt a bejegyzést konfigurálja újra, vagy előbb távolítsa el."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Megváltozott a JUNG HOME átjáró tanúsítványa",
-      "description": "A(z) {host} címen lévő JUNG HOME átjáró már nem egyezik azzal a TLS-tanúsítvánnyal, amelyet a Home Assistant rögzített hozzá: az ezen a címen válaszoló gép más tanúsítványt mutat be, vagy az átjáró csomópontja a mesh hálózaton keresztül másikat jelent. A Home Assistant felhagyott az átjáró használatával (sem hozzáférési tokent, sem exportot nem küld oda); az eszközök Bluetoothon továbbra is működnek. Ha kicserélte az átjárót vagy a tanúsítványát, nyissa meg a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontot, és kérje le újra az exportot az átjáróról; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében — ellenőrizze a hálózatát."
+      "description": "A(z) {host} címen lévő JUNG HOME átjáró már nem egyezik azzal a TLS-tanúsítvánnyal, amelyet a Home Assistant rögzített hozzá: az ezen a címen válaszoló gép más tanúsítványt mutat be, vagy az átjáró csomópontja a mesh hálózaton keresztül másikat jelent. A Home Assistant felhagyott az átjáró használatával (sem hozzáférési tokent, sem exportot nem küld oda); az eszközök Bluetoothon továbbra is működnek. Ha kicserélte az átjárót vagy a tanúsítványát, nyissa meg a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontot, és kérje le újra az exportot az átjáróról; ellenkező esetben lehet, hogy a hálózatán egy másik eszköz válaszol az átjáró nevében — ellenőrizze a hálózatát."
     },
     "gateway_sync_failed": {
       "title": "A JUNG HOME export nem jutott el az átjáróhoz",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "A JUNG HOME átjáró már nem fogadja el a Home Assistantot",
-      "description": "A(z) {host} címen lévő JUNG HOME átjáró elutasítja azt a hozzáférést, amelyet a Home Assistant a(z) {title} mesh hálózathoz regisztrált (valószínűleg eltávolították a JUNG HOME alkalmazásban a Beállítások → Átjáró → Hozzáférési jogosultságok menüpontban). A Home Assistant továbbra is módosítja a helyiségeket, gombhozzárendeléseket és jeleneteket a saját exportjában, de azt már nem adja át az átjárónak, így az alkalmazás nem látja ezeket a módosításokat; az eszközök továbbra is működnek. A Home Assistant újra hozzáférést kér: kövesse a JUNG HOME újrahitelesítésére vonatkozó kérését (Beállítások → Eszközök és szolgáltatások; a Javítások között is lejárt hitelesítésként szerepel), és adja meg az átjáró hálózatikulcs-jelszavát, vagy hagyja jóvá az új hozzáférési kérelmet az alkalmazásban. A probléma megszűnik, amint az átjáró ismét elfogadja a Home Assistantot; ezután az „Átjáró szinkronizálása” művelet átadja az azóta végzett módosításokat."
+      "description": "A(z) {host} címen lévő JUNG HOME átjáró elutasítja azt a hozzáférést, amelyet a Home Assistant a(z) {title} mesh hálózathoz regisztrált (valószínűleg eltávolították a JUNG HOME alkalmazásban a Beállítások → Átjáró → Hozzáférési jogosultságok menüpontban). A Home Assistant továbbra is módosítja a helyiségeket, gombhozzárendeléseket és jeleneteket a saját exportjában, de azt már nem adja át az átjárónak, így az alkalmazás nem látja ezeket a módosításokat; az eszközök továbbra is működnek. A Home Assistant újra hozzáférést kér: kövesse a JUNG HOME Bluetooth Mesh újrahitelesítésére vonatkozó kérését (Beállítások → Eszközök és szolgáltatások; a Javítások között is lejárt hitelesítésként szerepel), és adja meg az átjáró hálózatikulcs-jelszavát, vagy hagyja jóvá az új hozzáférési kérelmet az alkalmazásban. A probléma megszűnik, amint az átjáró ismét elfogadja a Home Assistantot; ezután az „Átjáró szinkronizálása” művelet átadja az azóta végzett módosításokat."
     },
     "seq_store_lost": {
       "title": "Elvesztek a(z) {title} JUNG HOME mesh hálózat sorszámai",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
-          "cannot_load": "A bejegyzés exportja nem olvasható, ezért nem határozható meg szabad cím: semmi sem változott. Töltsön be új exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban.",
-          "no_free_address": "Az export nem hagy szabad címet a Home Assistantnak: semmi sem változott. Ellenőrizze az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás menüpontban.",
+          "cannot_load": "A bejegyzés exportja nem olvasható, ezért nem határozható meg szabad cím: semmi sem változott. Töltsön be új exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban.",
+          "no_free_address": "Az export nem hagy szabad címet a Home Assistantnak: semmi sem változott. Ellenőrizze az exportot a Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás menüpontban.",
           "address_taken": "A(z) {suggestion} cím már nem szabad az exportban (időközben megváltozott): semmi sem változott. Új javaslatért javítsa újra a problémát."
         }
       }
     },
     "address_reserved": {
       "title": "A Home Assistant JUNG HOME címét kioszthatják",
-      "description": "A(z) {unicast} unicast cím, amelyről a Home Assistant a(z) {title} mesh hálózatban küld, az alkalmazás valamelyik provisionerének címtartományába esik, vagy egy eltávolított csomópont használta. Addig működik, amíg az alkalmazás oda nem léptet hálózatba egy csomópontot; azelőtt helyezze át a Home Assistantot egy szabad címre (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk; a(z) {suggestion} szabad)."
+      "description": "A(z) {unicast} unicast cím, amelyről a Home Assistant a(z) {title} mesh hálózatban küld, az alkalmazás valamelyik provisionerének címtartományába esik, vagy egy eltávolított csomópont használta. Addig működik, amíg az alkalmazás oda nem léptet hálózatba egy csomópontot; azelőtt helyezze át a Home Assistantot egy szabad címre (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk; a(z) {suggestion} szabad)."
     },
     "sequence_space_low": {
       "title": "Fogynak a JUNG HOME mesh hálózat sorszámai",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "A JUNG HOME mesh hálózat más IV-indexen áll",
-      "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen: ez túl nagy eltérés ahhoz, hogy a Home Assistant követni tudja (legfeljebb 42-vel előre követi a mesh hálózatot, legfeljebb 192 óránként egyszer, és soha nem visszafelé). Addig az eszközök figyelmen kívül hagyják a Home Assistantot. Ez akkor fordul elő, ha a Home Assistant sok IV-frissítés alatt nem volt jelen, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Adjon a Home Assistantnak új unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás → Haladó → Saját unicast címünk): ott a mesh hálózat IV-indexéről indul. Ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan sorszámokat ismétel, amelyeket az eszközök már láttak, a kézi szerkesztést pedig a következő indítás egyébként is felülírja. A probléma magától megszűnik, amikor olyan beacon-üzenet érkezik, amelynek IV-indexét a Home Assistant követni tudja."
+      "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen: ez túl nagy eltérés ahhoz, hogy a Home Assistant követni tudja (legfeljebb 42-vel előre követi a mesh hálózatot, legfeljebb 192 óránként egyszer, és soha nem visszafelé). Addig az eszközök figyelmen kívül hagyják a Home Assistantot. Ez akkor fordul elő, ha a Home Assistant sok IV-frissítés alatt nem volt jelen, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Adjon a Home Assistantnak új unicast címet (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás → az export forrása → Haladó → Saját unicast címünk): ott a mesh hálózat IV-indexéről indul. Ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan sorszámokat ismétel, amelyeket az eszközök már láttak, a kézi szerkesztést pedig a következő indítás egyébként is felülírja. A probléma magától megszűnik, amikor olyan beacon-üzenet érkezik, amelynek IV-indexét a Home Assistant követni tudja."
     },
     "iv_index_ahead": {
       "title": "A Home Assistant megelőzi a JUNG HOME mesh hálózat IV-indexét",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Visszatérés a mesh hálózat IV-indexére",
-            "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen — vagyis előrébb jár, ami a mesh hálózattal sosem fordul elő: az eszközök figyelmen kívül hagyják a Home Assistantot, és az nem tud követni egy mögötte lévő mesh hálózatot. Ez akkor fordul elő, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Erősítse meg, hogy a Home Assistant visszatérjen a mesh hálózat IV-indexére, és újra beállítsa az integrációt: a sorszámai minden olyan szám fölött folytatódnak, amelyet attól az indextől kezdve küldött, így egyiket sem használja kétszer. Ehelyett ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan számokat ismétel, amelyeket az eszközök már láttak. A másik visszaút egy új unicast cím a Home Assistant számára (Beállítások → Eszközök és szolgáltatások → JUNG HOME → Újrakonfigurálás). Valós eszközökön még nem ellenőrzött: a mesh hálózatnál előrébb járó IV-indexet valós hálózaton még nem láttak."
+            "description": "A(z) {title} mesh hálózat a(z) {mesh} IV-indexen áll, a Home Assistant sorszámtára a(z) {ours} indexen — vagyis előrébb jár, ami a mesh hálózattal sosem fordul elő: az eszközök figyelmen kívül hagyják a Home Assistantot, és az nem tud követni egy mögötte lévő mesh hálózatot. Ez akkor fordul elő, ha a tára (`.storage/junghome_ble.seq.*`) egy másik mesh hálózathoz tartozik, vagy ha a hálózati kulccsal hamisított beacon-üzenetek előreléptették. Erősítse meg, hogy a Home Assistant visszatérjen a mesh hálózat IV-indexére, és újra beállítsa az integrációt: a sorszámai minden olyan szám fölött folytatódnak, amelyet attól az indextől kezdve küldött, így egyiket sem használja kétszer. Ehelyett ne állítsa vissza a tárat biztonsági mentésből, és ne szerkessze: egy régebbi vagy szerkesztett nyilvántartás olyan számokat ismétel, amelyeket az eszközök már láttak. A másik visszaút egy új unicast cím a Home Assistant számára (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás). Valós eszközökön még nem ellenőrzött: a mesh hálózatnál előrébb járó IV-indexet valós hálózaton még nem láttak."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Export letöltése",
-      "description": "Egy hivatkozással válaszol, amely letölti a Home Assistant által a JUNG HOME hálózathoz tárolt exportot (JungHome.json, a Home Assistant által módosított helyiségekkel, gombokkal, kapcsolatokkal és jelenetekkel), hogy a JUNG HOME alkalmazásba importálható vagy biztonsági mentésként megőrizhető legyen. A hivatkozás egy útvonal a Home Assistant címén, és öt percig érvényes, csak a kérő rendszergazda számára. A fájl a telepítés minden kulcsát tartalmazza: töröld, amint importáltad vagy biztonságos helyre tetted. Csak rendszergazdáknak. Az alkalmazásba importálás az alkalmazással még nincs ellenőrizve.",
+      "description": "Egy hivatkozással válaszol, amely letölti a Home Assistant által a JUNG HOME hálózathoz tárolt exportot (JungHome.json, a Home Assistant által módosított helyiségekkel, gombokkal, kapcsolatokkal és jelenetekkel), hogy a JUNG HOME alkalmazásba importálható vagy biztonsági mentésként megőrizhető legyen. Bárki, akinél a hivatkozás van, öt percig letöltheti a fájlt, mégpedig a kérő rendszergazda nevében: nyisd meg magad, és ne add tovább senkinek. A válasz útvonalként adja meg a Home Assistant címén (`url`), és ha a Home Assistant ismeri a saját címét, teljes URL-ként is (`absolute_url`); a `stale` azt jelzi, hogy a JUNG HOME alkalmazás a fájl megírása után megváltoztatta a telepítést: előbb töltsd be az alkalmazás exportját a Home Assistantba. A fájl a telepítés minden kulcsát tartalmazza: töröld, amint importáltad vagy biztonságos helyre tetted. Csak rendszergazdáknak. Az alkalmazásba importálás az alkalmazással még nincs ellenőrizve.",
       "fields": {
         "device": {
           "name": "Eszköz",

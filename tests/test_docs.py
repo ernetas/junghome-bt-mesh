@@ -30,6 +30,17 @@ LINK = re.compile(
 REFERENCE_DEFINITION = re.compile(r"^\s{0,3}\[[^\]]+\]:\s*<?(\S+?)>?(?:\s|$)")
 EXPLICIT_ANCHOR = re.compile(r'<a\s+(?:id|name)="([^"]+)"')
 URL = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+# a link to a file of this repository on GitHub: the README's are all absolute (HACS shows it, and resolves nothing
+# relative), so they are checked as the relative links they stand for
+REPOSITORY = "https://github.com/ernetas/junghome-bt-mesh/blob/main/"
+
+
+def in_tree(root: Path, page: Path, target: str) -> str | None:
+    """The target relative to `page` (in the tree at `root`): a relative link, or one to this repository; None else."""
+    if target.startswith(REPOSITORY):
+        up = [".."] * len(page.relative_to(root).parent.parts)
+        return Path(*up, target.removeprefix(REPOSITORY)).as_posix()
+    return None if URL.match(target) else target
 
 
 def markdown_files(root: Path) -> list[Path]:
@@ -96,12 +107,12 @@ def broken_links(root: Path, files: list[Path]) -> list[str]:
     cache: dict[Path, set[str]] = {}
     broken: list[str] = []
     for page in files:
-        for number, target in links(page.read_text(encoding="utf-8")):
-            if URL.match(target):
+        for number, link in links(page.read_text(encoding="utf-8")):
+            if (target := in_tree(root, page, link)) is None:
                 continue
             path, _, fragment = target.partition("#")
             dest = (page.parent / path).resolve() if path else page
-            where = f"{page.relative_to(root)}:{number}: {target}"
+            where = f"{page.relative_to(root)}:{number}: {link}"
             if not dest.exists():
                 broken.append(f"{where} (no such file)")
             elif fragment and dest.suffix == ".md":
@@ -187,9 +198,10 @@ def test_the_pages_link_to_each_other() -> None:
         if page in reachable or page.suffix != ".md":
             continue
         reachable.add(page)
-        for _number, target in links(page.read_text(encoding="utf-8")):
-            path = target.partition("#")[0]
-            if path and not URL.match(target):
+        for _number, link in links(page.read_text(encoding="utf-8")):
+            target = in_tree(ROOT, page, link)
+            path = (target or "").partition("#")[0]
+            if path:
                 dest = (page.parent / path).resolve()
                 if dest.is_file() and dest.is_relative_to(ROOT / "docs"):
                     todo.append(dest)
@@ -318,3 +330,48 @@ REFERENCE_ANCHORS = (
 def test_the_reference_keeps_its_headings() -> None:
     offered = anchors((ROOT / "docs" / "ha-integration.md").read_text(encoding="utf-8"))
     assert [a for a in REFERENCE_ANCHORS if a not in offered] == []
+
+
+def test_the_readme_links_absolutely() -> None:
+    """HACS renders the README inside Home Assistant (`render_readme`), where a relative link leads nowhere."""
+    relative = [
+        f"README.md:{number}: {target}"
+        for number, target in links((ROOT / "README.md").read_text(encoding="utf-8"))
+        if not URL.match(target) and not target.startswith("#")
+    ]
+    assert relative == []
+    assert any(
+        t.startswith(REPOSITORY)
+        for _n, t in links((ROOT / "README.md").read_text(encoding="utf-8"))
+    )
+
+
+def test_a_link_to_the_repository_is_checked_as_a_file_of_it(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.md").write_text("# A\n", encoding="utf-8")
+    page = tmp_path / "docs" / "b.md"
+    page.write_text(
+        f"[ok]({REPOSITORY}docs/a.md#a) [gone]({REPOSITORY}docs/gone.md) [web](https://example.org/x)\n",
+        encoding="utf-8",
+    )
+    assert broken_links(tmp_path, [page]) == [
+        f"docs/b.md:1: {REPOSITORY}docs/gone.md (no such file)"
+    ]
+
+
+# The gateway integration is the one listed as *JUNG HOME* under Devices & services; this one by its name.
+OLD_NAME_PATH = re.compile(r"JUNG HOME(?! Bluetooth Mesh)[*_]*\s*→")
+
+
+def test_no_page_sends_the_owner_to_this_integration_by_the_gateway_integrations_name() -> (
+    None
+):
+    offending = [
+        str(page.relative_to(ROOT))
+        for page in markdown_files(ROOT)
+        # the review records and the changelog quote what the texts said when they were written
+        if page.name != "CHANGELOG.md"
+        and not any(part.startswith("review-") for part in page.relative_to(ROOT).parts)
+        and OLD_NAME_PATH.search(re.sub(r"\s+", " ", page.read_text(encoding="utf-8")))
+    ]
+    assert offending == []

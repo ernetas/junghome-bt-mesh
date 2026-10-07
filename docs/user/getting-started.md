@@ -80,6 +80,10 @@ enter the path. With `MeshNetwork.json` from a backup, the device names are in a
 (`Library/Application Support/` of the app's backup); enter it as the *App metadata directory*, or your devices are
 named by type and address.
 
+Home Assistant makes no copy of a file on the host: it reads that file at every start and writes its own changes
+into it. Keep it where it is (and as private as the export itself); deleting it stops the integration from starting.
+*Reconfigure → Upload the app's export file* moves the export into Home Assistant's own folder later.
+
 ### Advanced
 
 Each of these forms has a collapsed *Advanced* section with one field, *Our unicast address*: the address Home
@@ -100,8 +104,8 @@ shows up as **several Home Assistant devices**, because the app shows it that wa
 
 - the **node device** — the JUNG device itself (a push-button, a socket, an actuator), with its firmware, its
   diagnostics and the settings that belong to the device as a whole; it is named after the one output (or, without
-  an output, the one gang of keys) the app named on it, with the product behind, e.g. *WC mirror (Push-button
-  1-gang)*, and otherwise after the product and its address, e.g. *2-channel actuator 0400*;
+  an output, the one gang of keys) the app named on it, with the product behind, e.g. *WC mirror - Push-button
+  1-gang*, and otherwise after the product and its address, e.g. *2-channel actuator 0400*;
 - a **light, socket or blind device** for each output, named as the load in the app — this is where you switch it;
 - a **push-buttons device** per gang of keys, with an event entity per key (*Button A*, *Button B*, …; *Input E1* /
   *Input E2* on a mini actuator);

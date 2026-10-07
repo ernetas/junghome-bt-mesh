@@ -14,12 +14,16 @@ from datetime import timedelta
 from http import HTTPStatus
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 import pytest
 import voluptuous as vol
 from homeassistant.core import Context
+from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -29,6 +33,9 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
+    ISSUE_APP_CHANGED,
+    ISSUE_UNKNOWN_NODES,
+    issue_id,
 )
 from custom_components.junghome_ble.export_view import EXPORT_FILENAME, export_path
 
@@ -275,8 +282,9 @@ async def test_the_signed_link_opens_without_a_login_for_five_minutes(
 ) -> None:
     caplog.set_level(logging.DEBUG)
     answer = await ws_download(hass, hass_ws_client)
-    assert set(answer) == {"url", "expires_in"}
+    assert set(answer) == {"url", "absolute_url", "expires_in", "stale"}
     assert answer["expires_in"] == 300
+    assert answer["stale"] is False
     url = answer["url"]
     assert url.startswith(f"{export_path(init_integration.entry_id)}?authSig=")
     client = await hass_client_no_auth()
@@ -445,3 +453,65 @@ async def test_a_user_who_is_no_administrator_gets_no_link(
             return_response=True,
             context=Context(user_id=hass_read_only_user.id),
         )
+
+
+async def test_the_link_comes_as_a_full_url_when_home_assistant_knows_its_address(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    export_file: Path,
+    hass_ws_client: WebSocketGenerator,
+    hass_client_no_auth: ClientSessionGenerator,
+) -> None:
+    """`absolute_url` is the path on Home Assistant's own address, so it opens from the response; the configured
+    URL when the caller's address is none Home Assistant knows, None when it knows no address at all."""
+    answer = await ws_download(hass, hass_ws_client)
+    port = (
+        hass.config.api.port
+    )  # the test server's, on the loopback address the client reached it at
+    assert answer["absolute_url"] == f"http://127.0.0.1:{port}{answer['url']}"
+    download = await (await hass_client_no_auth()).get(answer["url"])
+    assert download.status == HTTPStatus.OK
+    assert await download.read() == read(export_file)
+
+    def configured_only(_hass: HomeAssistant, *, require_current_request: bool) -> str:
+        if (
+            require_current_request
+        ):  # a caller on an address Home Assistant does not know
+            raise NoURLAvailableError
+        return get_url(_hass)
+
+    await async_process_ha_core_config(
+        hass, {"internal_url": "http://homeassistant.example:8123"}
+    )
+    with patch(f"custom_components.{DOMAIN}.actions.download.get_url", configured_only):
+        answer = await ws_download(hass, hass_ws_client)
+    assert answer["absolute_url"] == f"http://homeassistant.example:8123{answer['url']}"
+    with (
+        patch.object(hass.config, "api", None),
+        patch.object(hass.config, "internal_url", None),
+    ):
+        answer = await ws_download(hass, hass_ws_client)
+    assert answer["absolute_url"] is None
+
+
+@pytest.mark.parametrize("issue", [ISSUE_APP_CHANGED, ISSUE_UNKNOWN_NODES])
+async def test_a_file_the_app_has_moved_past_is_answered_stale(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    hass_ws_client: WebSocketGenerator,
+    issue: str,
+) -> None:
+    """With *the JUNG HOME app changed the installation* (or devices missing from the export) open, the file predates
+    what the app holds: imported into the app it would take those changes out again, so the answer says so."""
+    assert (await ws_download(hass, hass_ws_client))["stale"] is False
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue_id(init_integration, issue),
+        is_fixable=True,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=issue,
+    )
+    assert (await ws_download(hass, hass_ws_client))["stale"] is True
+    ir.async_delete_issue(hass, DOMAIN, issue_id(init_integration, issue))
+    assert (await ws_download(hass, hass_ws_client))["stale"] is False

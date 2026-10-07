@@ -1074,7 +1074,7 @@
       "message": "目前还无法通过蓝牙看到 JUNG Mesh 的任何节点。"
     },
     "export_keys_stale": {
-      "message": "可以通过蓝牙看到 JUNG Mesh 的设备，但没有任何设备广播导出文件中的网络密钥：密钥在导出之后已被更新。请从 JUNG HOME 应用重新导出网络，并在 设置 → 设备与服务 → JUNG HOME → 重新配置 中使用该文件。"
+      "message": "可以通过蓝牙看到 JUNG Mesh 的设备，但没有任何设备广播导出文件中的网络密钥：密钥在导出之后已被更新。请从 JUNG HOME 应用重新导出网络，并在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中使用该文件。"
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant 没有可连接的蓝牙适配器或代理：无法访问 JUNG Mesh。"
@@ -1275,10 +1275,10 @@
       "message": "向节点 {node} 发送 {message} 时，与 JUNG Mesh 的连接丢失。{applied}"
     },
     "service_export_unknown_node": {
-      "message": "节点 {node} 存在于 Mesh 导出文件 {path} 中，但不在 Home Assistant 先前从该文件加载的网络中；请重新加载集成（设置 → 设备与服务 → JUNG HOME → 重新加载），使其跟随导出文件，然后重试。{applied}"
+      "message": "节点 {node} 存在于 Mesh 导出文件 {path} 中，但不在 Home Assistant 先前从该文件加载的网络中；请重新加载集成（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新加载），使其跟随导出文件，然后重试。{applied}"
     },
     "service_gateway_export_newer": {
-      "message": "{host} 处的 JUNG HOME 网关保存的导出文件（{gateway}）比 Home Assistant 将要上传的文件（{file}）更新；上传会抹去 JUNG HOME 应用此后所做的更改。在 Home Assistant 中进行的下一次更改会接管网关的导出文件，并将 Home Assistant 自身的更改应用到其上。如果此错误再次出现（没有应用上次上传副本的条目无法区分两者），请重新获取网关的导出文件（设置 → 设备与服务 → JUNG HOME → 重新配置；被替换的文件会以 `.pre-reconfigure` 保留在其旁边），然后重复在 Home Assistant 中所做的更改。"
+      "message": "{host} 处的 JUNG HOME 网关保存的导出文件（{gateway}）比 Home Assistant 将要上传的文件（{file}）更新；上传会抹去 JUNG HOME 应用此后所做的更改。在 Home Assistant 中进行的下一次更改会接管网关的导出文件，并将 Home Assistant 自身的更改应用到其上。如果此错误再次出现（没有应用上次上传副本的条目无法区分两者），请重新获取网关的导出文件（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置；被替换的文件会以 `.pre-reconfigure` 保留在其旁边），然后重复在 Home Assistant 中所做的更改。"
     },
     "service_gateway_export_incomplete": {
       "message": "{host} 处的 JUNG HOME 网关只返回了单纯的设备数据库（没有设备名称或房间关联）；采用它会从 Home Assistant 保存的文件中抹去这些信息。请在网关不再繁忙时重试，或重新获取应用的导出文件。"
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），然后在那里加载导出文件。",
           "cannot_connect": "无法通过该地址访问网关。",
           "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
           "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
-          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
-          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
           "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
           "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
           "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），然后在那里加载导出文件。",
           "cannot_connect": "无法通过该地址访问网关。",
           "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
           "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
-          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
-          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
           "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
           "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
           "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），然后在那里加载导出文件。",
           "cannot_connect": "无法通过该地址访问网关。",
           "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
           "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
-          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
-          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
           "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
           "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
           "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "嵌件与导出文件不一致的 JUNG HOME 按钮面板",
-      "description": "{devices}：JUNG HOME Mesh {title} 中的这些按钮面板广播的嵌件与 Home Assistant 已加载的导出文件中的不同（导出文件 → 设备）。嵌件是在该导出文件生成之后更换的，因此 Home Assistant 和应用可能会为其显示错误的负载类型。请在 JUNG HOME 应用中检查这些设备，重新导出网络并更新此集成（设置 → 设备与服务 → JUNG HOME → 重新配置）；导出文件中列出的嵌件与设备广播的一致后，此问题即会清除。尚未在真实设备上验证。"
+      "description": "{devices}：JUNG HOME Mesh {title} 中的这些按钮面板广播的嵌件与 Home Assistant 已加载的导出文件中的不同（导出文件 → 设备）。嵌件是在该导出文件生成之后更换的，因此 Home Assistant 和应用可能会为其显示错误的负载类型。请在 JUNG HOME 应用中检查这些设备，重新导出网络并更新此集成（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置）；导出文件中列出的嵌件与设备广播的一致后，此问题即会清除。尚未在真实设备上验证。"
     },
     "node_clock_wrong": {
       "title": "时钟错误的 JUNG HOME 设备",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），然后在那里加载导出文件。",
           "cannot_connect": "无法通过该地址访问网关。",
           "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
           "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
-          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
-          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
           "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
           "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
           "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "跳过设备已知的序列号",
-            "description": "Home Assistant 能通过代理节点收到 JUNG HOME Mesh {title} 的消息，但没有任何设备响应其状态请求。节点将 Home Assistant 的消息当作重放消息丢弃。可能有两个原因：此集成的序列号存储（`.storage/junghome_ble.*`）丢失或从较旧的备份中恢复，因此 Home Assistant 现在发送的是节点已见过的序列号；或者另一个 Mesh 客户端（例如 `mesh_poc.py` 工具）正在使用相同的单播地址 {unicast} 发送消息。请为 Home Assistant 指定一个新的、未使用的地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址，并确保没有其他客户端使用该地址）；或者，如果存储已丢失或已恢复（且没有其他客户端使用该地址），请确认，让 Home Assistant 将其序列号向前跳过 1,048,576 并重新连接。不要通过从备份恢复序列号存储来解决此问题：较旧的副本只会重复设备已见过的序列号。一旦有设备再次响应 Home Assistant，此问题会自动清除。"
+            "description": "Home Assistant 能通过代理节点收到 JUNG HOME Mesh {title} 的消息，但没有任何设备响应其状态请求。节点将 Home Assistant 的消息当作重放消息丢弃。可能有两个原因：此集成的序列号存储（`.storage/junghome_ble.*`）丢失或从较旧的备份中恢复，因此 Home Assistant 现在发送的是节点已见过的序列号；或者另一个 Mesh 客户端（例如 `mesh_poc.py` 工具）正在使用相同的单播地址 {unicast} 发送消息。请为 Home Assistant 指定一个新的、未使用的地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址，并确保没有其他客户端使用该地址）；或者，如果存储已丢失或已恢复（且没有其他客户端使用该地址），请确认，让 Home Assistant 将其序列号向前跳过 1,048,576 并重新连接。不要通过从备份恢复序列号存储来解决此问题：较旧的副本只会重复设备已见过的序列号。一旦有设备再次响应 Home Assistant，此问题会自动清除。"
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "跳过另一个客户端的序列号",
-            "description": "Home Assistant 收到了 JUNG HOME Mesh {title} 中一条从其自身单播地址 {unicast} 发出的消息，其序列号是 Home Assistant 从未使用过的：另一个 Mesh 客户端正在使用相同的地址发送——可能是第二个 Home Assistant 实例、配置了此地址的 `mesh_poc.py` 工具，或在别处启动的此实例的副本。同一地址上的两个发送方会重复使用彼此的序列号，而设备会丢弃低于另一客户端序列号的所有消息，因此在修复之前，Home Assistant 不会向 Mesh 发送任何内容（命令会失败，状态不会刷新）。请停止另一个客户端，或为它或 Home Assistant 指定另一个未使用的地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址）。然后确认，让 Home Assistant 将其序列号推进到已观察到的另一客户端所用序列号之后，并重新发送。如果另一个客户端继续从此地址发送，此问题会再次出现。不要通过从备份恢复序列号存储来解决此问题。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
+            "description": "Home Assistant 收到了 JUNG HOME Mesh {title} 中一条从其自身单播地址 {unicast} 发出的消息，其序列号是 Home Assistant 从未使用过的：另一个 Mesh 客户端正在使用相同的地址发送——可能是第二个 Home Assistant 实例、配置了此地址的 `mesh_poc.py` 工具，或在别处启动的此实例的副本。同一地址上的两个发送方会重复使用彼此的序列号，而设备会丢弃低于另一客户端序列号的所有消息，因此在修复之前，Home Assistant 不会向 Mesh 发送任何内容（命令会失败，状态不会刷新）。请停止另一个客户端，或为它或 Home Assistant 指定另一个未使用的地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址）。然后确认，让 Home Assistant 将其序列号推进到已观察到的另一客户端所用序列号之后，并重新发送。如果另一个客户端继续从此地址发送，此问题会再次出现。不要通过从备份恢复序列号存储来解决此问题。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "再次跳过另一个客户端的序列号",
-            "description": "Home Assistant 已跳过 JUNG HOME Mesh {title} 中与其共用地址 {unicast} 的另一个 Mesh 客户端的序列号，但此后另一个客户端又从该地址发送了消息：它仍在运行。只要它仍在运行，向前跳过就无济于事。请为 Home Assistant 指定一个新的、未使用的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），或停止另一个客户端，或将其改用另一个地址。在此之前，Home Assistant 不会向 Mesh 发送任何内容。请仅在另一个客户端不再使用此地址后再确认：届时 Home Assistant 会再次跳过其序列号并恢复发送。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
+            "description": "Home Assistant 已跳过 JUNG HOME Mesh {title} 中与其共用地址 {unicast} 的另一个 Mesh 客户端的序列号，但此后另一个客户端又从该地址发送了消息：它仍在运行。只要它仍在运行，向前跳过就无济于事。请为 Home Assistant 指定一个新的、未使用的单播地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），或停止另一个客户端，或将其改用另一个地址。在此之前，Home Assistant 不会向 Mesh 发送任何内容。请仅在另一个客户端不再使用此地址后再确认：届时 Home Assistant 会再次跳过其序列号并恢复发送。尚未在真实设备上验证：Home Assistant 地址上存在第二个客户端的情况仅经过模拟。"
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址），然后在那里加载导出文件。",
+          "address_in_use": "新的导出文件中有一个节点使用了 Home Assistant 的地址，因此该条目无法使用它。请先为 Home Assistant 指定一个空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址），然后在那里加载导出文件。",
           "cannot_connect": "无法通过该地址访问网关。",
           "cannot_load": "无法读取 Mesh 导出文件。请检查该文件是否为应用的 JSON 导出文件（如使用路径，请检查路径是否正确）。",
           "cannot_store": "无法将导出文件写入 Home Assistant 配置目录。",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
-          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
-          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
+          "no_gateway_pin": "Home Assistant 没有网关 {host} 的访问权限或证书记录，因此不会向其发送任何内容：未做任何更改。请改为在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查网关的证书。",
+          "certificate_changed": "{host} 处的网关出示的证书与 Home Assistant 为其固定的证书不同：未向其发送任何内容，也未做任何更改。如果您更换了网关或其证书，请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 中获取导出文件，在那里可以检查新证书；否则，可能是您网络中的另一台设备在冒充网关应答。",
           "token_rejected": "{host} 处的网关不再接受 Home Assistant 的访问权限：未做任何更改。请按照 Home Assistant 的要求完成重新认证（设置 → 设备与服务），然后再次修复此问题。",
           "network_mismatch": "该导出文件属于与此条目不同的 Mesh 网络。",
           "mesh_already_configured": "此 Mesh 已被设置为另一个条目；同一 Mesh 的两个条目会共用其序列号。请改为重新配置该条目，或先将其移除。"
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "JUNG HOME 网关证书已更改",
-      "description": "{host} 处的 JUNG HOME 网关与 Home Assistant 为其固定的 TLS 证书不再匹配：该主机出示了另一个证书，或网关节点通过 Mesh 报告了另一个证书。Home Assistant 已停止使用该网关（不会向其发送访问令牌和导出文件）；设备将继续通过蓝牙工作。如果您更换了网关或其证书，请打开 设置 → 设备与服务 → JUNG HOME → 重新配置，并再次从网关获取导出文件；否则，可能是您网络中的另一台设备在冒充网关应答——请检查您的网络。"
+      "description": "{host} 处的 JUNG HOME 网关与 Home Assistant 为其固定的 TLS 证书不再匹配：该主机出示了另一个证书，或网关节点通过 Mesh 报告了另一个证书。Home Assistant 已停止使用该网关（不会向其发送访问令牌和导出文件）；设备将继续通过蓝牙工作。如果您更换了网关或其证书，请打开 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置，并再次从网关获取导出文件；否则，可能是您网络中的另一台设备在冒充网关应答——请检查您的网络。"
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME 导出文件未交给网关",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME 网关不再接受 Home Assistant",
-      "description": "位于 {host} 的 JUNG HOME 网关拒绝了 Home Assistant 为 Mesh {title} 注册的访问权限（可能已在 JUNG HOME 应用的 设置 → 网关 → 访问权限 下被移除）。Home Assistant 仍会在自己的导出文件中更改房间、按钮关联和场景，但不再将其交给网关，因此应用看不到这些更改；设备仍正常工作。Home Assistant 会再次请求访问权限：请按照其重新验证 JUNG HOME 的请求操作（设置 → 设备与服务；“修复”中也会将其列为身份验证已过期），并输入网关的网络密钥密码，或在应用中批准新的访问请求。一旦网关再次接受 Home Assistant，此问题即会清除；之后动作“同步网关”会交出此后所做的更改。"
+      "description": "位于 {host} 的 JUNG HOME 网关拒绝了 Home Assistant 为 Mesh {title} 注册的访问权限（可能已在 JUNG HOME 应用的 设置 → 网关 → 访问权限 下被移除）。Home Assistant 仍会在自己的导出文件中更改房间、按钮关联和场景，但不再将其交给网关，因此应用看不到这些更改；设备仍正常工作。Home Assistant 会再次请求访问权限：请按照其重新验证 JUNG HOME Bluetooth Mesh 的请求操作（设置 → 设备与服务；“修复”中也会将其列为身份验证已过期），并输入网关的网络密钥密码，或在应用中批准新的访问请求。一旦网关再次接受 Home Assistant，此问题即会清除；之后动作“同步网关”会交出此后所做的更改。"
     },
     "seq_store_lost": {
       "title": "JUNG HOME Mesh {title} 的序列号已丢失",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "此问题所属的 JUNG HOME 条目已不再设置。",
-          "cannot_load": "无法读取该条目的导出文件，因此无法确定空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME → 重新配置 下加载新的导出文件。",
-          "no_free_address": "导出文件中没有可供 Home Assistant 使用的空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME → 重新配置 下检查导出文件。",
+          "cannot_load": "无法读取该条目的导出文件，因此无法确定空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 下加载新的导出文件。",
+          "no_free_address": "导出文件中没有可供 Home Assistant 使用的空闲地址：未做任何更改。请在 设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 下检查导出文件。",
           "address_taken": "{suggestion} 在导出文件中已不再空闲（导出文件在此期间已更改）：未做任何更改。请再次修复此问题以获取新的建议地址。"
         }
       }
     },
     "address_reserved": {
       "title": "Home Assistant 的 JUNG HOME 地址可能会被分配出去",
-      "description": "Home Assistant 在 Mesh {title} 中用于发送的单播地址 {unicast} 位于应用某个配网者的地址范围内，或曾被一个已移除的节点使用。在应用于该地址配网一个节点之前，它仍可正常工作；请在此之前将 Home Assistant 迁移到空闲地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址；{suggestion} 是空闲的）。"
+      "description": "Home Assistant 在 Mesh {title} 中用于发送的单播地址 {unicast} 位于应用某个配网者的地址范围内，或曾被一个已移除的节点使用。在应用于该地址配网一个节点之前，它仍可正常工作；请在此之前将 Home Assistant 迁移到空闲地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址；{suggestion} 是空闲的）。"
     },
     "sequence_space_low": {
       "title": "JUNG HOME Mesh 序列号即将用尽",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME Mesh 处于另一个 IV index",
-      "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}：两者相差太远，Home Assistant 无法跟随（它最多跟随 Mesh 领先 42，最多每 192 小时一次，且从不后退）。在此期间，设备会忽略 Home Assistant。这种情况发生在 Home Assistant 错过了多次 IV Update、其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。请为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置 → 高级 → 本机单播地址）：它将在该地址上从 Mesh 的 IV index 开始。请勿从备份恢复该存储，也不要编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号，而且下次启动时手动编辑的内容无论如何都会被覆盖。当收到范围内可跟随的信标时，此问题即会自动清除。"
+      "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}：两者相差太远，Home Assistant 无法跟随（它最多跟随 Mesh 领先 42，最多每 192 小时一次，且从不后退）。在此期间，设备会忽略 Home Assistant。这种情况发生在 Home Assistant 错过了多次 IV Update、其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。请为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置 → 导出文件来源 → 高级 → 本机单播地址）：它将在该地址上从 Mesh 的 IV index 开始。请勿从备份恢复该存储，也不要编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号，而且下次启动时手动编辑的内容无论如何都会被覆盖。当收到范围内可跟随的信标时，此问题即会自动清除。"
     },
     "iv_index_ahead": {
       "title": "Home Assistant 领先于 JUNG HOME Mesh 的 IV index",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "返回 Mesh 的 IV index",
-            "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}——领先于 Mesh，而 Mesh 本身从不会出现这种情况：设备会忽略 Home Assistant，而它也无法跟随一个落后于自己的 Mesh。这种情况发生在其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。确认后，Home Assistant 将回到 Mesh 的 IV index 并重新设置此集成：其序列号将从它自该 index 起发送过的所有序列号之上继续，因此不会有序列号被使用两次。也请勿改为从备份恢复该存储或编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号。另一种恢复方式是为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME → 重新配置）。尚未在真实设备上验证：IV index 领先于 Mesh 的情况尚未在真实 Mesh 上出现过。"
+            "description": "Mesh {title} 处于 IV index {mesh}，而 Home Assistant 的序列号存储处于 {ours}——领先于 Mesh，而 Mesh 本身从不会出现这种情况：设备会忽略 Home Assistant，而它也无法跟随一个落后于自己的 Mesh。这种情况发生在其存储（`.storage/junghome_ble.seq.*`）属于另一个 Mesh，或使用网络密钥伪造的信标将其推前时。确认后，Home Assistant 将回到 Mesh 的 IV index 并重新设置此集成：其序列号将从它自该 index 起发送过的所有序列号之上继续，因此不会有序列号被使用两次。也请勿改为从备份恢复该存储或编辑它：旧的或经过编辑的记录会重复设备已经见过的序列号。另一种恢复方式是为 Home Assistant 分配新的单播地址（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置）。尚未在真实设备上验证：IV index 领先于 Mesh 的情况尚未在真实 Mesh 上出现过。"
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "下载导出",
-      "description": "返回一个链接，用于下载 Home Assistant 为 JUNG HOME 网络保存的导出（JungHome.json，含 Home Assistant 更改过的房间、按键、连接和场景），以便导入 JUNG HOME 应用或作为备份保存。该链接是 Home Assistant 地址上的一个路径，有效期五分钟，且仅对请求它的管理员有效。该文件包含安装的所有密钥：导入或妥善保存后请将其删除。仅限管理员。导入应用一事尚未在应用中验证。",
+      "description": "返回一个链接，用于下载 Home Assistant 为 JUNG HOME 网络保存的导出（JungHome.json，含 Home Assistant 更改过的房间、按键、连接和场景），以便导入 JUNG HOME 应用或作为备份保存。任何拥有该链接的人都可以在五分钟内以请求它的管理员身份下载该文件：请自己打开，不要转交给任何人。响应以 Home Assistant 地址上的路径（`url`）给出该链接，如果 Home Assistant 知道自己的地址，还会给出完整 URL（`absolute_url`）；`stale` 表示文件写入后 JUNG HOME 应用更改了安装：请先将应用的导出加载到 Home Assistant 中。该文件包含安装的所有密钥：导入或妥善保存后请将其删除。仅限管理员。导入应用一事尚未在应用中验证。",
       "fields": {
         "device": {
           "name": "设备",

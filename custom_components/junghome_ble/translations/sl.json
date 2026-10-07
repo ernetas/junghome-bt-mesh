@@ -1074,7 +1074,7 @@
       "message": "Prek Bluetootha še ni vidno nobeno vozlišče omrežja mesh JUNG."
     },
     "export_keys_stale": {
-      "message": "Naprave omrežja mesh JUNG so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz izvoza: ključi so bili obnovljeni, potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME in ga uporabite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj."
+      "message": "Naprave omrežja mesh JUNG so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz izvoza: ključi so bili obnovljeni, potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME in ga uporabite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant nima adapterja ali proxyja Bluetooth, ki bi omogočal povezavo: omrežje mesh JUNG ni dosegljivo."
@@ -1275,10 +1275,10 @@
       "message": "Povezava z omrežjem mesh JUNG je bila prekinjena med pošiljanjem {message} vozlišču {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Vozlišče {node} je v izvozu mesh {path}, ni pa v omrežju, ki ga je Home Assistant iz njega naložil prej; znova naložite integracijo (Nastavitve → Naprave in storitve → JUNG HOME → Ponovno naloži), da bo sledila izvozu, nato poskusite znova. {applied}"
+      "message": "Vozlišče {node} je v izvozu mesh {path}, ni pa v omrežju, ki ga je Home Assistant iz njega naložil prej; znova naložite integracijo (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Ponovno naloži), da bo sledila izvozu, nato poskusite znova. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "Prehod JUNG HOME na naslovu {host} hrani novejši izvoz ({gateway}) od datoteke, ki bi jo naložil Home Assistant ({file}); nalaganje bi izbrisalo tisto, kar je aplikacija JUNG HOME medtem spremenila. Naslednja sprememba v Home Assistantu prevzame izvoz prehoda in nanj prenese lastne spremembe Home Assistanta. Če se ta napaka ponovi (vnos brez kopije zadnjega nalaganja aplikacije ju ne more razlikovati), znova pridobite izvoz prehoda (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj; datoteka, ki jo nadomesti, se ohrani poleg nje kot `.pre-reconfigure`), nato ponovite spremembo v Home Assistantu."
+      "message": "Prehod JUNG HOME na naslovu {host} hrani novejši izvoz ({gateway}) od datoteke, ki bi jo naložil Home Assistant ({file}); nalaganje bi izbrisalo tisto, kar je aplikacija JUNG HOME medtem spremenila. Naslednja sprememba v Home Assistantu prevzame izvoz prehoda in nanj prenese lastne spremembe Home Assistanta. Če se ta napaka ponovi (vnos brez kopije zadnjega nalaganja aplikacije ju ne more razlikovati), znova pridobite izvoz prehoda (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj; datoteka, ki jo nadomesti, se ohrani poleg nje kot `.pre-reconfigure`), nato ponovite spremembo v Home Assistantu."
     },
     "service_gateway_export_incomplete": {
       "message": "Prehod JUNG HOME na naslovu {host} je odgovoril le z golo podatkovno bazo naprav (brez imen naprav ali povezav s prostori); njen prevzem bi jih izbrisal iz datoteke, ki jo hrani Home Assistant. Poskusite znova, ko prehod ne bo več zaseden, ali znova pridobite izvoz aplikacije."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
           "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
           "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
           "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
-          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
           "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
           "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
           "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
           "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
           "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
           "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
-          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
           "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
           "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
           "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
           "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
           "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
           "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
-          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
           "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
           "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
           "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Tipkala JUNG HOME z drugim vložkom kot v izvozu",
-      "description": "{devices}: ta tipkala omrežja mesh JUNG HOME {title} oglašujejo drug vložek od tistega v izvozu, ki ga je naložil Home Assistant (izvoz → naprava). Vložek je bil zamenjan po nastanku tega izvoza, zato lahko Home Assistant in aplikacija zanje prikazujeta napačno vrsto porabnika. Preverite naprave v aplikaciji JUNG HOME, znova izvozite omrežje in posodobite to integracijo (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj); težava izgine, ko izvoz navaja vložke, ki jih naprave oglašujejo. Še ni preverjeno na resničnih napravah."
+      "description": "{devices}: ta tipkala omrežja mesh JUNG HOME {title} oglašujejo drug vložek od tistega v izvozu, ki ga je naložil Home Assistant (izvoz → naprava). Vložek je bil zamenjan po nastanku tega izvoza, zato lahko Home Assistant in aplikacija zanje prikazujeta napačno vrsto porabnika. Preverite naprave v aplikaciji JUNG HOME, znova izvozite omrežje in posodobite to integracijo (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj); težava izgine, ko izvoz navaja vložke, ki jih naprave oglašujejo. Še ni preverjeno na resničnih napravah."
     },
     "node_clock_wrong": {
       "title": "Naprave JUNG HOME z napačno uro",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
           "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
           "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
           "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
-          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
           "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
           "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
           "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Preskoči številke, ki jih naprave poznajo",
-            "description": "Home Assistant prek svojega vozlišča proxy sliši omrežje mesh JUNG HOME {title}, vendar se na njegove zahteve po stanju ni odzvala niti ena naprava. Vozlišča zavržejo sporočila Home Assistanta kot ponovitve (replay). Verjetna sta dva vzroka: shramba zaporednih številk te integracije (`.storage/junghome_ble.*`) je bila izgubljena ali obnovljena iz starejše varnostne kopije, zato Home Assistant zdaj pošilja zaporedne številke, ki so jih vozlišča že videla; ali pa drug odjemalec mesh (na primer orodje `mesh_poc.py`) oddaja z istim naslovom unicast {unicast}. Home Assistantu dodelite nov, neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast in poskrbite, da ga ne uporablja noben drug odjemalec) ali pa, če je bila shramba izgubljena ali obnovljena (in naslova ne uporablja noben drug odjemalec), potrdite, da Home Assistant svoje zaporedne številke preskoči za 1 048 576 naprej in se znova poveže. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije: starejša kopija le ponovi številke, ki so jih naprave že videle. Težava izgine sama, takoj ko se kakšna naprava znova odzove Home Assistantu."
+            "description": "Home Assistant prek svojega vozlišča proxy sliši omrežje mesh JUNG HOME {title}, vendar se na njegove zahteve po stanju ni odzvala niti ena naprava. Vozlišča zavržejo sporočila Home Assistanta kot ponovitve (replay). Verjetna sta dva vzroka: shramba zaporednih številk te integracije (`.storage/junghome_ble.*`) je bila izgubljena ali obnovljena iz starejše varnostne kopije, zato Home Assistant zdaj pošilja zaporedne številke, ki so jih vozlišča že videla; ali pa drug odjemalec mesh (na primer orodje `mesh_poc.py`) oddaja z istim naslovom unicast {unicast}. Home Assistantu dodelite nov, neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast in poskrbite, da ga ne uporablja noben drug odjemalec) ali pa, če je bila shramba izgubljena ali obnovljena (in naslova ne uporablja noben drug odjemalec), potrdite, da Home Assistant svoje zaporedne številke preskoči za 1 048 576 naprej in se znova poveže. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije: starejša kopija le ponovi številke, ki so jih naprave že videle. Težava izgine sama, takoj ko se kakšna naprava znova odzove Home Assistantu."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Preskoči zaporedne številke drugega odjemalca",
-            "description": "Home Assistant je prejel sporočilo omrežja mesh JUNG HOME {title}, poslano z njegovega lastnega naslova unicast {unicast} z zaporedno številko, ki je nikoli ni uporabil: drug odjemalec mesh oddaja z istim naslovom — druga namestitev Home Assistanta, orodje `mesh_poc.py`, nastavljeno s tem naslovom, ali kopija te namestitve, zagnana drugje. Dva pošiljatelja na enem naslovu ponovno uporabljata zaporedne številke drug drugega, naprave pa zavržejo vse, kar je pod številkami drugega odjemalca, zato Home Assistant v omrežje mesh ne pošilja ničesar, dokler to ni popravljeno (ukazi ne uspejo, stanja se ne osvežujejo). Ustavite drugega odjemalca ali njemu ali Home Assistantu dodelite drug neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast). Nato potrdite, da Home Assistant nadaljuje svoje zaporedne številke za tistimi, s katerimi je bil zaznan drugi odjemalec, in znova pošilja. Če drugi odjemalec še naprej pošilja s tega naslova, se težava vrne. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
+            "description": "Home Assistant je prejel sporočilo omrežja mesh JUNG HOME {title}, poslano z njegovega lastnega naslova unicast {unicast} z zaporedno številko, ki je nikoli ni uporabil: drug odjemalec mesh oddaja z istim naslovom — druga namestitev Home Assistanta, orodje `mesh_poc.py`, nastavljeno s tem naslovom, ali kopija te namestitve, zagnana drugje. Dva pošiljatelja na enem naslovu ponovno uporabljata zaporedne številke drug drugega, naprave pa zavržejo vse, kar je pod številkami drugega odjemalca, zato Home Assistant v omrežje mesh ne pošilja ničesar, dokler to ni popravljeno (ukazi ne uspejo, stanja se ne osvežujejo). Ustavite drugega odjemalca ali njemu ali Home Assistantu dodelite drug neuporabljen naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast). Nato potrdite, da Home Assistant nadaljuje svoje zaporedne številke za tistimi, s katerimi je bil zaznan drugi odjemalec, in znova pošilja. Če drugi odjemalec še naprej pošilja s tega naslova, se težava vrne. Da bi to odpravili, shrambe zaporednih številk ne obnavljajte iz varnostne kopije. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Znova preskoči zaporedne številke drugega odjemalca",
-            "description": "Home Assistant je preskočil zaporedne številke drugega odjemalca mesh na svojem naslovu {unicast} v omrežju mesh JUNG HOME {title}, drugi odjemalec pa je od takrat znova pošiljal s tega naslova: še vedno teče. Dokler teče, preskok naprej ne pomaga. Home Assistantu dodelite nov, neuporabljen naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast) ali ustavite drugega odjemalca oziroma ga premaknite na drug naslov. Do takrat Home Assistant v omrežje mesh ne pošilja ničesar. Potrdite šele, ko drugi odjemalec tega naslova ne uporablja več: Home Assistant nato znova nadaljuje za njegovimi številkami in spet začne pošiljati. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
+            "description": "Home Assistant je preskočil zaporedne številke drugega odjemalca mesh na svojem naslovu {unicast} v omrežju mesh JUNG HOME {title}, drugi odjemalec pa je od takrat znova pošiljal s tega naslova: še vedno teče. Dokler teče, preskok naprej ne pomaga. Home Assistantu dodelite nov, neuporabljen naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast) ali ustavite drugega odjemalca oziroma ga premaknite na drug naslov. Do takrat Home Assistant v omrežje mesh ne pošilja ničesar. Potrdite šele, ko drugi odjemalec tega naslova ne uporablja več: Home Assistant nato znova nadaljuje za njegovimi številkami in spet začne pošiljati. Še ni preverjeno na resničnih napravah: drug odjemalec na naslovu Home Assistanta je bil le simuliran."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
+          "address_in_use": "V novem izvozu ima neko vozlišče naslov Home Assistanta, zato ga vnos ne more uporabiti. Home Assistantu najprej dodelite prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast), nato tam naložite izvoz.",
           "cannot_connect": "Prehod na tem naslovu ni dosegljiv.",
           "cannot_load": "Izvoza mesh ni bilo mogoče prebrati. Preverite, ali je datoteka izvoz JSON iz aplikacije (in pri poti, ali je pot pravilna).",
           "cannot_store": "Izvoza ni bilo mogoče zapisati v konfiguracijsko mapo Home Assistanta.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
-          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
+          "no_gateway_pin": "Home Assistant za prehod {host} nima zabeleženega dostopa ali certifikata, zato mu ne pošlje ničesar: nič se ni spremenilo. Izvoz namesto tega pridobite pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti certifikat prehoda.",
+          "certificate_changed": "Prehod na naslovu {host} predstavlja drug certifikat od tistega, ki ga je zanj pripel Home Assistant: nič mu ni bilo poslano in nič se ni spremenilo. Če ste prehod ali njegov certifikat zamenjali, pridobite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj, kjer je mogoče preveriti novi certifikat; sicer se v vašem omrežju kot prehod morda odziva druga naprava.",
           "token_rejected": "Prehod na naslovu {host} ne sprejema več dostopa Home Assistanta: nič se ni spremenilo. Sledite ponovnemu preverjanju pristnosti, ki ga zahteva Home Assistant (Nastavitve → Naprave in storitve), nato znova popravite to težavo.",
           "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot ta vnos.",
           "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos; dva vnosa enega omrežja mesh bi si delila njegove zaporedne številke. Namesto tega znova konfigurirajte tisti vnos ali ga najprej odstranite."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Certifikat prehoda JUNG HOME se je spremenil",
-      "description": "Prehod JUNG HOME na naslovu {host} se ne ujema več s certifikatom TLS, ki ga je zanj pripel Home Assistant: gostitelj predstavlja drug certifikat ali pa vozlišče prehoda prek omrežja mesh sporoča drugega. Home Assistant je prenehal uporabljati prehod (tja se ne pošiljata niti žeton za dostop niti izvoz); naprave še naprej delujejo prek Bluetootha. Če ste prehod ali njegov certifikat zamenjali, odprite Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj in znova pridobite izvoz s prehoda; sicer se v vašem omrežju kot prehod morda odziva druga naprava — preverite svoje omrežje."
+      "description": "Prehod JUNG HOME na naslovu {host} se ne ujema več s certifikatom TLS, ki ga je zanj pripel Home Assistant: gostitelj predstavlja drug certifikat ali pa vozlišče prehoda prek omrežja mesh sporoča drugega. Home Assistant je prenehal uporabljati prehod (tja se ne pošiljata niti žeton za dostop niti izvoz); naprave še naprej delujejo prek Bluetootha. Če ste prehod ali njegov certifikat zamenjali, odprite Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj in znova pridobite izvoz s prehoda; sicer se v vašem omrežju kot prehod morda odziva druga naprava — preverite svoje omrežje."
     },
     "gateway_sync_failed": {
       "title": "Izvoz JUNG HOME ni bil predan prehodu",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "Prehod JUNG HOME ne sprejema več Home Assistanta",
-      "description": "Prehod JUNG HOME na naslovu {host} zavrača dostop, ki ga je Home Assistant registriral za omrežje mesh {title} (verjetno je bil odstranjen v aplikaciji JUNG HOME pod Nastavitve → Prehod → Dovoljenja za dostop). Home Assistant še naprej spreminja prostore, vezave gumbov in scene v svojem izvozu, vendar ga ne predaja več prehodu, zato aplikacija teh sprememb ne vidi; naprave še naprej delujejo. Home Assistant znova zahteva dostop: sledite njegovi zahtevi za ponovno preverjanje pristnosti JUNG HOME (Nastavitve → Naprave in storitve; Popravila jo navajajo tudi kot poteklo preverjanje pristnosti) in vnesite geslo omrežnega ključa prehoda ali odobrite novo zahtevo za dostop v aplikaciji. Težava izgine, ko prehod znova sprejme Home Assistant; dejanje „Sinhroniziraj prehod“ nato preda spremembe, narejene medtem."
+      "description": "Prehod JUNG HOME na naslovu {host} zavrača dostop, ki ga je Home Assistant registriral za omrežje mesh {title} (verjetno je bil odstranjen v aplikaciji JUNG HOME pod Nastavitve → Prehod → Dovoljenja za dostop). Home Assistant še naprej spreminja prostore, vezave gumbov in scene v svojem izvozu, vendar ga ne predaja več prehodu, zato aplikacija teh sprememb ne vidi; naprave še naprej delujejo. Home Assistant znova zahteva dostop: sledite njegovi zahtevi za ponovno preverjanje pristnosti JUNG HOME Bluetooth Mesh (Nastavitve → Naprave in storitve; Popravila jo navajajo tudi kot poteklo preverjanje pristnosti) in vnesite geslo omrežnega ključa prehoda ali odobrite novo zahtevo za dostop v aplikaciji. Težava izgine, ko prehod znova sprejme Home Assistant; dejanje „Sinhroniziraj prehod“ nato preda spremembe, narejene medtem."
     },
     "seq_store_lost": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME {title} so izgubljene",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
-          "cannot_load": "Izvoza vnosa ni bilo mogoče prebrati, zato prostega naslova ni mogoče določiti: nič se ni spremenilo. Naložite nov izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj.",
-          "no_free_address": "Izvoz ne pušča nobenega prostega naslova za Home Assistant: nič se ni spremenilo. Preverite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj.",
+          "cannot_load": "Izvoza vnosa ni bilo mogoče prebrati, zato prostega naslova ni mogoče določiti: nič se ni spremenilo. Naložite nov izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj.",
+          "no_free_address": "Izvoz ne pušča nobenega prostega naslova za Home Assistant: nič se ni spremenilo. Preverite izvoz pod Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj.",
           "address_taken": "{suggestion} v izvozu ni več prost (izvoz se je medtem spremenil): nič se ni spremenilo. Za nov predlog znova popravite težavo."
         }
       }
     },
     "address_reserved": {
       "title": "Naslov JUNG HOME Home Assistanta bi lahko bil dodeljen",
-      "description": "Naslov unicast {unicast}, s katerega Home Assistant pošilja v omrežju mesh {title}, leži znotraj obsega naslovov enega od provisionerjev aplikacije ali pa ga je uporabljalo odstranjeno vozlišče. Deluje, dokler aplikacija tam ne pripravi vozlišča; pred tem premaknite Home Assistant na prost naslov (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast; {suggestion} je prost)."
+      "description": "Naslov unicast {unicast}, s katerega Home Assistant pošilja v omrežju mesh {title}, leži znotraj obsega naslovov enega od provisionerjev aplikacije ali pa ga je uporabljalo odstranjeno vozlišče. Deluje, dokler aplikacija tam ne pripravi vozlišča; pred tem premaknite Home Assistant na prost naslov (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast; {suggestion} je prost)."
     },
     "sequence_space_low": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME pohajajo",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "Omrežje mesh JUNG HOME je na drugem indeksu IV",
-      "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours}: preveč narazen, da bi Home Assistant lahko sledil (omrežju mesh sledi do 42 naprej, največ enkrat na 192 ur, in nikoli nazaj). Naprave medtem Home Assistanta ne upoštevajo. To se zgodi, ko Home Assistanta ni bilo med številnimi posodobitvami IV, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Home Assistantu dodelite nov naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj → Napredno → Naš naslov unicast): tam začne pri indeksu IV omrežja mesh. Shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi zaporedne številke, ki so jih naprave že videle, naslednji zagon pa ročni popravek tako ali tako prepiše. Težava izgine sama, ko prispe beacon v dosegu."
+      "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours}: preveč narazen, da bi Home Assistant lahko sledil (omrežju mesh sledi do 42 naprej, največ enkrat na 192 ur, in nikoli nazaj). Naprave medtem Home Assistanta ne upoštevajo. To se zgodi, ko Home Assistanta ni bilo med številnimi posodobitvami IV, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Home Assistantu dodelite nov naslov unicast (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj → vir izvoza → Napredno → Naš naslov unicast): tam začne pri indeksu IV omrežja mesh. Shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi zaporedne številke, ki so jih naprave že videle, naslednji zagon pa ročni popravek tako ali tako prepiše. Težava izgine sama, ko prispe beacon v dosegu."
     },
     "iv_index_ahead": {
       "title": "Home Assistant je pred indeksom IV omrežja mesh JUNG HOME",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Vrni se na indeks IV omrežja mesh",
-            "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours} — pred njim, kar omrežje mesh nikoli ni: naprave Home Assistanta ne upoštevajo, ta pa ne more slediti omrežju mesh, ki je za njim. To se zgodi, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Potrdite, da Home Assistant vrnete na indeks IV omrežja mesh in znova nastavite integracijo: njegove zaporedne številke se nadaljujejo nad vsemi številkami, ki jih je poslal od tega indeksa naprej, tako da nobena ni uporabljena dvakrat. Namesto tega shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi številke, ki so jih naprave že videle. Druga pot nazaj je nov naslov unicast za Home Assistant (Nastavitve → Naprave in storitve → JUNG HOME → Znova konfiguriraj). Še ni preverjeno na resničnih napravah: indeks IV pred omrežjem mesh še ni bil zaznan na resničnem omrežju."
+            "description": "Omrežje mesh {title} je na indeksu IV {mesh}, shramba zaporednih številk Home Assistanta pa na {ours} — pred njim, kar omrežje mesh nikoli ni: naprave Home Assistanta ne upoštevajo, ta pa ne more slediti omrežju mesh, ki je za njim. To se zgodi, ko njegova shramba (`.storage/junghome_ble.seq.*`) pripada drugemu omrežju mesh ali ko so ga naprej potisnili beaconi, ponarejeni z omrežnim ključem. Potrdite, da Home Assistant vrnete na indeks IV omrežja mesh in znova nastavite integracijo: njegove zaporedne številke se nadaljujejo nad vsemi številkami, ki jih je poslal od tega indeksa naprej, tako da nobena ni uporabljena dvakrat. Namesto tega shrambe ne obnavljajte iz varnostne kopije in je ne urejajte: starejši ali urejen zapis ponovi številke, ki so jih naprave že videle. Druga pot nazaj je nov naslov unicast za Home Assistant (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj). Še ni preverjeno na resničnih napravah: indeks IV pred omrežjem mesh še ni bil zaznan na resničnem omrežju."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Prenesi izvoz",
-      "description": "Odgovori s povezavo, ki prenese izvoz, ki ga Home Assistant hrani za omrežje JUNG HOME (JungHome.json, s prostori, tipkami, povezavami in scenami, ki jih je spremenil Home Assistant), da ga uvozite v aplikacijo JUNG HOME ali shranite kot varnostno kopijo. Povezava je pot na naslovu Home Assistant in deluje pet minut, samo za skrbnika, ki jo je zahteval. Datoteka vsebuje vse ključe namestitve: izbrišite jo, ko je uvožena ali varno shranjena. Samo za skrbnike. Uvoz v aplikacijo z aplikacijo še ni preverjen.",
+      "description": "Odgovori s povezavo, ki prenese izvoz, ki ga Home Assistant hrani za omrežje JUNG HOME (JungHome.json, s prostori, tipkami, povezavami in scenami, ki jih je spremenil Home Assistant), da ga uvozite v aplikacijo JUNG HOME ali shranite kot varnostno kopijo. Kdor koli ima povezavo, lahko pet minut prenaša datoteko kot skrbnik, ki jo je zahteval: odprite jo sami in je ne posredujte nikomur. Odgovor jo poda kot pot na naslovu Home Assistant (`url`) in, ko Home Assistant pozna svoj naslov, kot polni URL (`absolute_url`); `stale` pomeni, da je aplikacija JUNG HOME spremenila namestitev, potem ko je bila datoteka zapisana: najprej naložite izvoz aplikacije v Home Assistant. Datoteka vsebuje vse ključe namestitve: izbrišite jo, ko je uvožena ali varno shranjena. Samo za skrbnike. Uvoz v aplikacijo z aplikacijo še ni preverjen.",
       "fields": {
         "device": {
           "name": "Naprava",

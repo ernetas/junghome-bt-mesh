@@ -45,6 +45,7 @@ from .jhmesh.devices import (
     BATTERY_PIDS,
     GATEWAY_PID,
     Blind,
+    Button,
     Light,
     Socket,
     Thermostat,
@@ -57,7 +58,7 @@ from .jhmesh.properties import (
 
 if TYPE_CHECKING:
     from .jhmesh.cdb import Node
-    from .jhmesh.devices import Button, Device, KeyConnection, MeteredLoad
+    from .jhmesh.devices import Device, KeyConnection, MeteredLoad
     from .protocols import HubView
 
 
@@ -541,6 +542,44 @@ def node_label(hub: HubView, registry: dr.DeviceRegistry, node: Node) -> str:
     device = node_device(hub, registry, node)
     names = (device.name_by_user, device.name) if device is not None else ()
     return next((name for name in names if name), f"{node.name} {node.unicast:04X}")
+
+
+def _registry_name(
+    hub: HubView, registry: dr.DeviceRegistry, identifier: str
+) -> str | None:
+    """Return the name the entry's device `identifier` shows, the user's rename first; None if unregistered."""
+    device = registry.async_get_device_by_identifier(
+        (DOMAIN, identifier), hub.entry.entry_id
+    )
+    return (device.name_by_user or device.name) if device is not None else None
+
+
+def address_label(hub: HubView, address: int) -> str:
+    """Name what is at a mesh address as the device list shows it, the address in brackets: `Kitchen light (0415)`.
+
+    The errors of the actions name devices this way: the owner finds a device by its name, while the address is
+    shown nowhere but in a fallback name (and stays, to tell two devices of one name apart). A light, socket or
+    blind goes by its own device, a key by its gang's device and its letter, anything else of a node (a detector,
+    a thermostat, the node's other elements) by the node device (`node_label`); each by the name the registry
+    shows, the user's rename first, else the integration's. An address no node of the export has stays bare, and a
+    name that ends in the address already is not given it twice.
+    """
+    registry = dr.async_get(hub.hass)
+    device = hub.devices.by_address.get(address)
+    if isinstance(device, (Light, Socket, Blind)):
+        name = _registry_name(hub, registry, device.unique_id) or device.name
+    elif isinstance(device, Button):
+        gang = button_gang(hub, device)
+        group = (
+            _registry_name(hub, registry, buttons_device_id(gang)) or device.group_name
+        )
+        name = f"{group} {device.key}"
+    elif (node := hub.cdb.node_by_addr(address)) is not None:
+        name = node_label(hub, registry, node)
+    else:
+        return f"{address:04X}"
+    # a node named after its product and address (`node_device_name`) says the address already
+    return name if name.endswith(f" {address:04X}") else f"{name} ({address:04X})"
 
 
 def node_areas(hub: HubView) -> dict[int, str]:

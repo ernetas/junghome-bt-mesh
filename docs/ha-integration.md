@@ -835,7 +835,7 @@ entry otherwise does a few minutes after the phone was heard and every six hours
 | Device | Represents | Details |
 |---|---|---|
 | *JUNG HOME mesh &lt;uuid&gt;* (service) | The mesh network | Hosts the central *All …* entities, the link diagnostics (*Proxy node*, *Link state*) and the mesh health entities (*Mesh connection*, *Unreachable devices*, *Mesh overview*, *Mesh topology*) |
-| *&lt;unit&gt; - &lt;product&gt;* or *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room; any other node with exactly one load — or, without a load, one gang of keys — that the app named is *&lt;that name&gt; (&lt;product&gt;)*, e.g. *WC mirror (Push-button 1-gang)* (its `name`, never one you gave it); the others keep *&lt;node name&gt; &lt;address&gt;* |
+| *&lt;unit&gt; - &lt;product&gt;* or *&lt;node name&gt; &lt;address&gt;* | One physical JUNG node | Identifier `node:<node uuid>`; model from the product ID — a push-button's with its insert once known, *Push-button 2-gang (DALI insert)* (see [Inserts and key layouts](#inserts-and-key-layouts)) — serial number and Bluetooth connection = the node's MAC address, linked to the mesh device; firmware, hardware revision and manufacturer as the node reports them (SIG `0x001A` / `0x0010` / `0x0011`, read once a node has a device parameter, the version once per start and again after the node restarted (a firmware update restarts it), the other two once and kept; *JUNG* until then). Hosts the entities that belong to the node as a whole: a detector's motion / occupancy and illuminance, a battery product's battery level, a room thermostat's `climate` entity, and the node-level device parameters. A thermostat's or detector's node device takes its app name and first room; any other node with exactly one load — or, without a load, one gang of keys — that the app named is *&lt;that name&gt; - &lt;product&gt;*, e.g. *WC mirror - Push-button 1-gang* (its `name`, never one you gave it); the others keep *&lt;node name&gt; &lt;address&gt;* |
 | Light / socket device | One output of a node | Identifier `<node uuid>-<element location>` (`0001` / `0002`); model *Switched light*, *Dimmable light* or *Tunable-white (DALI) light* for a light, the product name (*Socket (metering)*, *Socket*) for a socket; linked to the node device |
 | Blind device | One blind / shutter / awning drive of a node | Identifier `<node uuid>-<location of the position element>`, the same scheme as a light; model *Blind / shutter drive*; hosts the `cover` and the blind parameters; linked to the node device |
 | *Push-buttons* device | One **gang** of keys: the keys the app presents as one device (a 2-gang push-button set up as two devices in the app gives two of these, both linked to the same node device) | Identifier `<node uuid>-<lowest key location>-buttons`; model *Push-buttons*, with the node's key layout once known (*Push-buttons (Rocker &#124; Button)*); linked to the node device |
@@ -1500,6 +1500,15 @@ script or dashboard button a non-administrator starts runs as that user and is r
 `get_schedules`, `audit_network`, `find_new_devices` (they only read) and the dimming actions of the lights; recalling
 a scene is the `scene` entities' own `scene.turn_on`.
 
+**How errors name a device.** By the name the device list shows for it, your rename first, with its mesh address in
+brackets: *Device Kitchen light (0415) did not store scene 7*, *The JUNG device Hall ceiling (0300) did not answer about
+its schedules*. A light, socket or blind goes by its own device, a key by its push-buttons device and its letter
+(*Hall buttons A (0421)*), anything else of a node by the node's device, whose fallback name already ends in its
+address (*Push-button 1-gang 0300*, said once). Only an address no device has yet — a new device for `add_device`,
+Home Assistant's own unicast address, a group — stays bare. The pre-flight error names the groups it compares by the
+export's names for them (a room's is the room's), with the address (*Kitchen (C005)*); a dry run's
+`preflight.differences` keep `element`, `expected` and `found` as bare addresses, for scripts.
+
 ### Actions: rooms and key connections
 
 The integration can change the installation itself — the same operations as the JUNG HOME app's *Areas* tab and *Key
@@ -1665,7 +1674,7 @@ Review-4 W I3, W I6, W I7, W I9, U4-13.
 **Dry run.** `set_room`, `add_to_room`, `remove_from_room`, `create_room`, `delete_room`, `assign_key`, `clear_key`,
 `create_scene`, `delete_scene` and `remove_device` take `dry_run: true`: the action builds its plan as it would and
 answers it — `steps`, the messages in the order they would go out, each with the device it goes to
-(`"0232 (Living room DALI): Config Model Subscription Add elem=0232 address=C00F model=1000"`, a key's KeyMode and a
+(`"Living room DALI (0232): Config Model Subscription Add elem=0232 address=C00F model=1000"`, a key's KeyMode and a
 scene's member writes after them, a removal's *Config Node Reset* first), and `diff`, how the export would change
 (`path`, `before`, `after`; an entry is named by its address, number or name, a key is never shown) — plus what a
 real run would answer of its own (`create_room`'s address, `create_scene`'s number). Nothing is written (the
@@ -2049,12 +2058,15 @@ shell access to the host:
 ```yaml
 action: junghome_ble.download_export
 data: {}   # optional: config_entry_id, or any device of the entry as device
-# answers {url: /api/junghome_ble/export/<entry id>?authSig=…, expires_in: 300}
+# answers {url: /api/junghome_ble/export/<entry id>?authSig=…, absolute_url: https://…/api/junghome_ble/export/…,
+#          expires_in: 300, stale: false}
 ```
 
 - **How to use it.** *Developer tools → Actions*, pick *Download export*, switch on *Return response* (the action
-  only answers) and run it; put the answered `url` after your Home Assistant address in the same browser
-  (`https://homeassistant.local:8123/api/junghome_ble/export/…`) within five minutes. The browser saves the file as
+  only answers) and run it; open the answered `absolute_url` within five minutes. It is `url` after the address you
+  reached Home Assistant at, when Home Assistant knows that one, else after its configured internal or external URL
+  (`get_url`); `None` when it knows no address of its own: then put `url` after your Home Assistant address yourself
+  (`https://homeassistant.local:8123/api/junghome_ble/export/…`). The browser saves the file as
   `JungHome.json`, the name of the app's own share file; an entry set up from the iOS app's mesh database and its
   metadata folder keeps the database, which is saved under its own name (`MeshNetwork.json`; `export_network` with
   flavour `share` renders the share file from it).
@@ -2065,8 +2077,17 @@ data: {}   # optional: config_entry_id, or any device of the entry as device
   fetched or adopted, with its own changes carried over. An entry that is not loaded — retrying its setup, or
   failed to set up, when a copy is wanted most — gets its link too, named by `config_entry_id` or as the only entry
   (the only loaded one wins when there are several), and is served as it is on disk.
+- **When the app knows more.** `stale` is `true` while the entry's
+  [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) or
+  *JUNG HOME devices missing from the export* repair is open: the app changed the installation, or devices were added
+  to it, after Home Assistant's file was written. Imported into the app, the file would take those changes back out
+  of the app's project (importing replaces it). Load the app's new export into Home Assistant first (the repair does
+  it), then download again.
 - **Who.** The link is made with Home Assistant's own `async_sign_path` for the session of the administrator who asked
-  (the browser's connection, or the token of a REST API call) and expires after five minutes; the view behind it,
+  (the browser's connection, or the token of a REST API call) and expires after five minutes. **The signature is a
+  bearer credential:** whoever holds the link within those five minutes downloads the file without a login, as that
+  administrator — nothing binds it to the browser that asked. Open it yourself; do not paste it into a chat or send it
+  to another device through anything others can read. The view behind it,
   `GET /api/junghome_ble/export/<entry id>` (authenticated), answers an administrator only — 403 to any other user,
   401 without a login or with an expired or forged signature, 404 for an id that is no entry of this integration or
   an export gone from the host. A call without such a session — an automation started by the system — is refused,
@@ -2217,9 +2238,11 @@ refused too — both before the device learns anything. No JUNG device is known 
 practice this is the app's method; add devices where nobody else is in range. What a device offered and the method
 used are kept in the vault and shown in the diagnostics (`added_devices`).
 
-**`junghome_ble.remove_device`** (`device`, `force`, `skip_preflight`, `confirm`, `dry_run`; administrators only, same option; without
-`confirm: true` it is refused, as it cannot be undone — a dry run needs none) takes a device out the app's
-way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
+**`junghome_ble.remove_device`** (`device`, `force`, `skip_preflight`, `confirm`, `dry_run`; administrators only, same
+option; without `confirm: true` it is refused, as it cannot be undone — a dry run needs none) takes a device out, reset
+first — unlike the app, which unwires it first unless forced (its RTR operation mode, the thresholds pointing at it,
+the others' wiring to it, then the reset), so here a device that refuses the reset keeps its wiring and still works:
+*Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
 only once it confirmed, every other device's wiring to it is removed — its element groups with whoever subscribed or
 published to them, publications to its elements — its elements leave the scenes, its app device rows and room-link
 rows go, and so do the other rows the app keeps of it (review-4 F4-6: its scene values `sceneInfo`, the legacy timer
@@ -2838,23 +2861,22 @@ reach arrives.
 
 ### Repair issue "Home Assistant's JUNG HOME address is taken"
 
-A node of the export has the unicast address Home Assistant sends from — the app provisioned a device there after
-Home Assistant's address was chosen. Both would be taken for one sender (the devices drop one as a replay, answers
-go astray), so the setup is refused (an export with such a node taken over at runtime reloads the entry into the same
-refusal). **Submit**
-(unverified on air) moves Home Assistant to the free address the issue names — worked out from the export on disk
-when the repair opens (`CDB.suggest_unicast`) and checked again before it is used — and sets the entry up again, as
-*Reconfigure → Advanced → Our unicast address* would. The sequence-number store keeps one record per address: the
-new address continues its own record, or starts 2^20 in when Home Assistant has none for it but has sent from another
-(see *Known limitations*), so no number is sent twice. Make sure no other client (the command-line tools, another Home
-Assistant) sends from the new address.
+A node of the export has the unicast address Home Assistant sends from — the app provisioned a device there after Home
+Assistant's address was chosen. Both would be taken for one sender (the devices drop one as a replay, answers go
+astray), so the setup is refused (an export with such a node taken over at runtime reloads the entry into the same
+refusal). **Submit** (unverified on air) moves Home Assistant to the free address the issue names — worked out from the
+export on disk when the repair opens (`CDB.suggest_unicast`) and checked again before it is used — and sets the entry up
+again, as *Reconfigure →* the export's source *→ Advanced → Our unicast address* would. The sequence-number store keeps
+one record per address: the new address continues its own record, or starts 2^20 in when Home Assistant has none for it
+but has sent from another (see *Known limitations*), so no number is sent twice. Make sure no other client (the
+command-line tools, another Home Assistant) sends from the new address.
 
 ### Repair issue "Home Assistant's JUNG HOME address may be handed out"
 
-Home Assistant's address lies inside the address range of one of the app's provisioners, or a removed node used it:
-it keeps working until the app provisions a device there. Move Home Assistant to the free address the issue names
-before that, under **Reconfigure → Advanced → Our unicast address**. The issue is checked at every setup and with
-every export taken over.
+Home Assistant's address lies inside the address range of one of the app's provisioners, or a removed node used it: it
+keeps working until the app provisions a device there. Move Home Assistant to the free address the issue names before
+that, under **Reconfigure →** the export's source **→ Advanced → Our unicast address**. The issue is checked at every
+setup and with every export taken over.
 
 ### Entities go unavailable every few minutes
 

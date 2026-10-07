@@ -427,8 +427,8 @@ class PlanExecutor:
                 "service_preflight_differs",
                 node=self.store.node_name(first.node),
                 message=first.what,
-                expected=", ".join(first.expected) or "-",
-                found=", ".join(first.found) or "-",
+                expected=self._readable(first, first.expected),
+                found=self._readable(first, first.found),
                 others=str(len(differences) - 1),
                 applied=applied_message(self.hub.hass, applied),
             )
@@ -501,6 +501,29 @@ class PlanExecutor:
                 message=item.what,
                 applied=applied_message(self.hub.hass, applied),
             ) from err
+
+    def _readable(self, difference: Difference, values: list[str]) -> str:
+        """Word a pre-flight difference's addresses for the error: `Kitchen (C005)`, `Kitchen light (0415)`.
+
+        A group by the name the export gives it (a room's is the room's), an element as `ExportStore.node_name`
+        names it; the unassigned address, a scene number and a status name as they are. `-` for none.
+        """
+        if difference.kind == "scene_register":
+            return ", ".join(values) or "-"
+        groups = self.hub.cdb.groups
+
+        def word(value: str) -> str:
+            try:
+                address = int(value, 16)
+            except ValueError:  # the status a refused Get came with
+                return value
+            if address in groups:
+                return f"{groups[address]} ({value})"
+            if 0 < address < 0x8000:  # a unicast address: an element
+                return self.store.node_name(address)
+            return value
+
+        return ", ".join(word(v) for v in values) or "-"
 
     def _silence(self, node: int) -> str:
         """Return the error key for a node that did not answer: *asleep* for a battery node (press a key, then run)."""
@@ -636,7 +659,7 @@ class PlanExecutor:
         except (ConnectionError, OSError) as err:
             raise _failure(
                 "service_send_failed",
-                node=hexaddr(key),
+                node=self.store.node_name(key),
                 message=M.describe(pdu),
                 applied=applied_message(self.hub.hass, applied),
             ) from err
@@ -667,7 +690,7 @@ class PlanExecutor:
             if reply is None:
                 raise _failure(
                     self._silence(key),
-                    node=hexaddr(key),
+                    node=self.store.node_name(key),
                     message=M.describe(pdu),
                     applied=applied_message(self.hub.hass, applied),
                 )
@@ -710,7 +733,7 @@ class PlanExecutor:
         except (ConnectionError, OSError) as err:
             raise _failure(
                 "service_send_failed",
-                node=hexaddr(element),
+                node=self.store.node_name(element),
                 message=M.describe(pdu),
                 applied=applied_message(self.hub.hass, applied),
             ) from err
@@ -744,7 +767,7 @@ class PlanExecutor:
         if reply is None:
             raise _failure(
                 "service_no_reply",
-                node=hexaddr(element),
+                node=self.store.node_name(element),
                 message=M.describe(pdu),
                 applied=applied_message(self.hub.hass, applied),
             )
@@ -753,7 +776,7 @@ class PlanExecutor:
         except ValueError as err:
             raise _failure(
                 "service_config_refused",
-                node=hexaddr(element),
+                node=self.store.node_name(element),
                 message=M.describe(pdu),
                 status="malformed status",
                 applied=applied_message(self.hub.hass, applied),
@@ -783,14 +806,14 @@ class PlanExecutor:
             if reply is None:
                 raise _failure(
                     "service_no_reply",
-                    node=hexaddr(element),
+                    node=self.store.node_name(element),
                     message=M.describe(pdu),
                     applied=applied_message(self.hub.hass, applied),
                 )
         if not _confirms_scene_action(reply.params, scene, action):
             raise _failure(
                 "service_scene_action_not_applied",
-                address=hexaddr(element),
+                address=self.store.node_name(element),
                 scene=str(scene),
                 applied=applied_message(self.hub.hass, applied),
             )

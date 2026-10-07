@@ -28,30 +28,31 @@ welcome.
 *Settings → Devices & services → Add integration → JUNG HOME Bluetooth Mesh*, then fetch the network from your
 JUNG HOME Gateway, or upload the export the JUNG HOME app shares (*Project → Share via file*, `JungHome.json`).
 Everything else — devices, rooms, scenes, key connections — comes from that export. Step by step:
-[Getting started](docs/user/getting-started.md).
+[Getting started][getting-started].
 
 ## Documentation
 
-- **[User guide](docs/user/README.md)** — getting started, everyday use, buttons and automations, energy, changing
-  the installation, maintenance and repairs, FAQ, and the [entity reference](docs/user/entities.md).
-- **[Schnellstart auf Deutsch](docs/de/schnellstart.md)**.
-- **[Reference](docs/ha-integration.md)** — every device, entity, action, option, repair and known limitation in
+- **[User guide][user-guide]** — getting started, everyday use, buttons and automations, energy, changing
+  the installation, maintenance and repairs, FAQ, and the [entity reference][entities].
+- **[Schnellstart auf Deutsch][schnellstart]**.
+- **[Reference][reference]** — every device, entity, action, option, repair and known limitation in
   full detail.
-- **[Developer documentation](docs/dev/README.md)** — architecture, testing, releases.
-- **[Research notes](docs/research/README.md)** — how the JUNG HOME system was reverse-engineered, the command-line
+- **[Developer documentation][dev]** — architecture, testing, releases.
+- **[Research notes][research]** — how the JUNG HOME system was reverse-engineered, the command-line
   tools, the protocol and app notes.
-- The `jhmesh` Bluetooth Mesh library inside the integration is also published on PyPI
-  ([README-pypi.md](README-pypi.md)).
+- The `jhmesh` Bluetooth Mesh library inside the integration is built to be published on PyPI as well
+  ([README-pypi.md][readme-pypi]); it is not published yet, so `pip install jhmesh` finds nothing (or someone
+  else's package) until it is.
 
 ## Security
 
 The app's export holds every key of your mesh: anyone with the file can control and reconfigure every device.
 Keep it private. Home Assistant stores its copy readable by itself only and never puts a key into diagnostics or
-logs. See [SECURITY.md](SECURITY.md) for what is stored where and how to report a vulnerability.
+logs. See [SECURITY.md][security] for what is stored where and how to report a vulnerability.
 
 The research notes describe the maintainer's own installation under pseudonyms (a MAC keeps only its vendor's OUI;
 UUIDs and names are stand-ins), and the tests run on synthetic keys and documentation-range addresses;
-`tools/privacy_scan.py` checks every commit for anything else ([testing](docs/dev/testing.md#synthetic-fixtures)).
+`tools/privacy_scan.py` checks every commit for anything else ([testing][testing]).
 
 ## Disclaimer & legal
 
@@ -76,4 +77,17 @@ used here **only descriptively** (nominative use) to identify the devices this s
   firmware carries risk (misconfiguration, loss of function, or voided manufacturer warranty). **Use at your own
   risk.**
 
-See [DISCLAIMER.md](DISCLAIMER.md) for the full notice.
+See [DISCLAIMER.md][disclaimer] for the full notice.
+
+<!-- HACS shows this page inside Home Assistant, where a relative link leads nowhere: every link is absolute. -->
+[getting-started]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/getting-started.md
+[user-guide]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/README.md
+[entities]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/entities.md
+[schnellstart]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/de/schnellstart.md
+[reference]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/ha-integration.md
+[dev]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/dev/README.md
+[research]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/research/README.md
+[readme-pypi]: https://github.com/ernetas/junghome-bt-mesh/blob/main/README-pypi.md
+[security]: https://github.com/ernetas/junghome-bt-mesh/blob/main/SECURITY.md
+[testing]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/dev/testing.md#synthetic-fixtures
+[disclaimer]: https://github.com/ernetas/junghome-bt-mesh/blob/main/DISCLAIMER.md

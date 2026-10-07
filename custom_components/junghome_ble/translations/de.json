@@ -1075,7 +1075,7 @@
       "message": "Noch ist kein Knoten des JUNG-Mesh über Bluetooth sichtbar."
     },
     "export_keys_stale": {
-      "message": "Geräte des JUNG-Mesh sind über Bluetooth sichtbar, aber keines kündigt den Netzwerk-Key aus dem Export an: Die Keys wurden erneuert, nachdem der Export erstellt wurde. Exportiere das Netzwerk erneut aus der JUNG HOME App und verwende den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren."
+      "message": "Geräte des JUNG-Mesh sind über Bluetooth sichtbar, aber keines kündigt den Netzwerk-Key aus dem Export an: Die Keys wurden erneuert, nachdem der Export erstellt wurde. Exportiere das Netzwerk erneut aus der JUNG HOME App und verwende den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant hat keinen verbindungsfähigen Bluetooth-Adapter oder -Proxy: Das JUNG-Mesh ist nicht erreichbar."
@@ -1276,10 +1276,10 @@
       "message": "Die Verbindung zum JUNG-Mesh ist abgebrochen, während {message} an Knoten {node} gesendet wurde. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Knoten {node} steht im Mesh-Export {path}, aber nicht in dem Netzwerk, das Home Assistant zuvor daraus geladen hat; lade die Integration neu (Einstellungen → Geräte & Dienste → JUNG HOME → Neu laden), damit sie dem Export folgt, und versuche es dann erneut. {applied}"
+      "message": "Knoten {node} steht im Mesh-Export {path}, aber nicht in dem Netzwerk, das Home Assistant zuvor daraus geladen hat; lade die Integration neu (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu laden), damit sie dem Export folgt, und versuche es dann erneut. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "Das JUNG HOME Gateway unter {host} hat einen neueren Export ({gateway}) als die Datei, die Home Assistant hochladen würde ({file}); das Hochladen würde löschen, was die JUNG HOME App seitdem geändert hat. Die nächste Änderung in Home Assistant übernimmt den Export des Gateways und überträgt die eigenen Änderungen von Home Assistant darauf. Kommt dieser Fehler wieder (ein Eintrag ohne Kopie des letzten App-Uploads kann sie nicht auseinanderhalten), hole den Export des Gateways erneut (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren; die ersetzte Datei bleibt daneben als `.pre-reconfigure` erhalten) und wiederhole dann die Änderung in Home Assistant."
+      "message": "Das JUNG HOME Gateway unter {host} hat einen neueren Export ({gateway}) als die Datei, die Home Assistant hochladen würde ({file}); das Hochladen würde löschen, was die JUNG HOME App seitdem geändert hat. Die nächste Änderung in Home Assistant übernimmt den Export des Gateways und überträgt die eigenen Änderungen von Home Assistant darauf. Kommt dieser Fehler wieder (ein Eintrag ohne Kopie des letzten App-Uploads kann sie nicht auseinanderhalten), hole den Export des Gateways erneut (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren; die ersetzte Datei bleibt daneben als `.pre-reconfigure` erhalten) und wiederhole dann die Änderung in Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "Das JUNG HOME Gateway unter {host} hat nur die reine Gerätedatenbank geliefert (ohne Gerätenamen und Raumzuordnungen); sie zu übernehmen, würde diese aus der Datei löschen, die Home Assistant aufbewahrt. Versuche es erneut, sobald das Gateway nicht mehr beschäftigt ist, oder hole den Export der App erneut."
@@ -1747,7 +1747,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1767,8 +1767,8 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
-          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
+          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
+          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
           "token_rejected": "Das Gateway unter {host} akzeptiert den Zugriff von Home Assistant nicht mehr: Es wurde nichts geändert. Folge der erneuten Authentifizierung, um die Home Assistant bittet (Einstellungen → Geräte & Dienste), und starte diese Reparatur danach erneut.",
           "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
           "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst."
@@ -1795,7 +1795,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1815,8 +1815,8 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
-          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
+          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
+          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
           "token_rejected": "Das Gateway unter {host} akzeptiert den Zugriff von Home Assistant nicht mehr: Es wurde nichts geändert. Folge der erneuten Authentifizierung, um die Home Assistant bittet (Einstellungen → Geräte & Dienste), und starte diese Reparatur danach erneut.",
           "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
           "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst."
@@ -1843,7 +1843,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1863,8 +1863,8 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
-          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
+          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
+          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
           "token_rejected": "Das Gateway unter {host} akzeptiert den Zugriff von Home Assistant nicht mehr: Es wurde nichts geändert. Folge der erneuten Authentifizierung, um die Home Assistant bittet (Einstellungen → Geräte & Dienste), und starte diese Reparatur danach erneut.",
           "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
           "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst."
@@ -1873,7 +1873,7 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME Taster mit einem anderen Einsatz als im Export",
-      "description": "{devices}: Diese Taster des JUNG HOME Mesh {title} melden einen anderen Einsatz als den im Export, den Home Assistant geladen hat (Export → Gerät). Der Einsatz wurde nach diesem Export getauscht, daher zeigen Home Assistant und die App für sie möglicherweise die falsche Art von Last. Prüfe die Geräte in der JUNG HOME App, exportiere das Netzwerk erneut und aktualisiere diese Integration (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren); die Reparatur verschwindet, sobald der Export die Einsätze nennt, die die Geräte melden. Auf echten Geräten noch nicht überprüft."
+      "description": "{devices}: Diese Taster des JUNG HOME Mesh {title} melden einen anderen Einsatz als den im Export, den Home Assistant geladen hat (Export → Gerät). Der Einsatz wurde nach diesem Export getauscht, daher zeigen Home Assistant und die App für sie möglicherweise die falsche Art von Last. Prüfe die Geräte in der JUNG HOME App, exportiere das Netzwerk erneut und aktualisiere diese Integration (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren); die Reparatur verschwindet, sobald der Export die Einsätze nennt, die die Geräte melden. Auf echten Geräten noch nicht überprüft."
     },
     "node_clock_wrong": {
       "title": "JUNG HOME Geräte mit falscher Uhrzeit",
@@ -1910,7 +1910,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -1930,8 +1930,8 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
-          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
+          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
+          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
           "token_rejected": "Das Gateway unter {host} akzeptiert den Zugriff von Home Assistant nicht mehr: Es wurde nichts geändert. Folge der erneuten Authentifizierung, um die Home Assistant bittet (Einstellungen → Geräte & Dienste), und starte diese Reparatur danach erneut.",
           "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
           "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst."
@@ -1944,7 +1944,7 @@
         "step": {
           "confirm": {
             "title": "Über die Nummern hinausspringen, die die Geräte kennen",
-            "description": "Home Assistant hört das JUNG HOME Mesh {title} über seinen Proxy-Knoten, aber kein einziges Gerät hat auf seine Statusabfragen geantwortet. Die Knoten verwerfen die Nachrichten von Home Assistant als Wiederholungen (Replays). Zwei Ursachen sind wahrscheinlich: Der Sequenznummern-Speicher dieser Integration (`.storage/junghome_ble.*`) ging verloren oder wurde aus einem älteren Backup wiederhergestellt, sodass Home Assistant jetzt Sequenznummern sendet, die die Knoten schon gesehen haben; oder ein anderer Mesh-Client (zum Beispiel das Werkzeug `mesh_poc.py`) sendet mit derselben Unicast-Adresse {unicast}. Gib Home Assistant entweder eine neue, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse, und stelle sicher, dass kein anderer Client sie verwendet) oder bestätige – wenn der Speicher verloren ging oder wiederhergestellt wurde (und kein anderer Client die Adresse verwendet) –, damit Home Assistant seine Sequenznummern um 1 048 576 vorrückt und sich neu verbindet. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben: Eine ältere Kopie wiederholt nur Nummern, die die Geräte schon gesehen haben. Die Reparatur verschwindet von selbst, sobald ein Gerät Home Assistant wieder antwortet."
+            "description": "Home Assistant hört das JUNG HOME Mesh {title} über seinen Proxy-Knoten, aber kein einziges Gerät hat auf seine Statusabfragen geantwortet. Die Knoten verwerfen die Nachrichten von Home Assistant als Wiederholungen (Replays). Zwei Ursachen sind wahrscheinlich: Der Sequenznummern-Speicher dieser Integration (`.storage/junghome_ble.*`) ging verloren oder wurde aus einem älteren Backup wiederhergestellt, sodass Home Assistant jetzt Sequenznummern sendet, die die Knoten schon gesehen haben; oder ein anderer Mesh-Client (zum Beispiel das Werkzeug `mesh_poc.py`) sendet mit derselben Unicast-Adresse {unicast}. Gib Home Assistant entweder eine neue, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse, und stelle sicher, dass kein anderer Client sie verwendet) oder bestätige – wenn der Speicher verloren ging oder wiederhergestellt wurde (und kein anderer Client die Adresse verwendet) –, damit Home Assistant seine Sequenznummern um 1 048 576 vorrückt und sich neu verbindet. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben: Eine ältere Kopie wiederholt nur Nummern, die die Geräte schon gesehen haben. Die Reparatur verschwindet von selbst, sobald ein Gerät Home Assistant wieder antwortet."
           }
         },
         "abort": {
@@ -1958,7 +1958,7 @@
         "step": {
           "confirm": {
             "title": "Über die Sequenznummern des anderen Clients hinausspringen",
-            "description": "Home Assistant hat eine Nachricht des JUNG HOME Mesh {title} empfangen, die von seiner eigenen Unicast-Adresse {unicast} mit einer Sequenznummer gesendet wurde, die es nie verwendet hat: Ein anderer Mesh-Client sendet mit derselben Adresse – eine zweite Home Assistant Installation, das Werkzeug `mesh_poc.py` mit dieser Adresse oder eine anderswo gestartete Kopie dieser Installation. Zwei Sender auf einer Adresse verwenden gegenseitig ihre Sequenznummern erneut, und die Geräte verwerfen alles, was unter denen des anderen Clients liegt. Deshalb sendet Home Assistant nichts an das Mesh, bis dies repariert ist (Befehle schlagen fehl, Zustände werden nicht aktualisiert). Beende den anderen Client oder gib ihm oder Home Assistant eine andere, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse). Bestätige dann, damit Home Assistant seine Sequenznummern hinter denen fortsetzt, mit denen der andere Client gesehen wurde, und wieder sendet. Sendet der andere Client weiter von dieser Adresse, kommt die Reparatur wieder. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
+            "description": "Home Assistant hat eine Nachricht des JUNG HOME Mesh {title} empfangen, die von seiner eigenen Unicast-Adresse {unicast} mit einer Sequenznummer gesendet wurde, die es nie verwendet hat: Ein anderer Mesh-Client sendet mit derselben Adresse – eine zweite Home Assistant Installation, das Werkzeug `mesh_poc.py` mit dieser Adresse oder eine anderswo gestartete Kopie dieser Installation. Zwei Sender auf einer Adresse verwenden gegenseitig ihre Sequenznummern erneut, und die Geräte verwerfen alles, was unter denen des anderen Clients liegt. Deshalb sendet Home Assistant nichts an das Mesh, bis dies repariert ist (Befehle schlagen fehl, Zustände werden nicht aktualisiert). Beende den anderen Client oder gib ihm oder Home Assistant eine andere, unbenutzte Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse). Bestätige dann, damit Home Assistant seine Sequenznummern hinter denen fortsetzt, mit denen der andere Client gesehen wurde, und wieder sendet. Sendet der andere Client weiter von dieser Adresse, kommt die Reparatur wieder. Stelle den Sequenznummern-Speicher nicht aus einem Backup wieder her, um das zu beheben. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
           }
         },
         "abort": {
@@ -1972,7 +1972,7 @@
         "step": {
           "confirm": {
             "title": "Erneut über die Sequenznummern des anderen Clients hinausspringen",
-            "description": "Home Assistant ist über die Sequenznummern eines anderen Mesh-Clients auf seiner Adresse {unicast} im JUNG HOME Mesh {title} hinausgesprungen, und der andere Client hat seitdem erneut von dieser Adresse gesendet: Er läuft noch. Solange er läuft, hilft das Vorspringen nicht. Gib Home Assistant eine neue, unbenutzte Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) oder beende den anderen Client bzw. gib ihm eine andere Adresse. Bis dahin sendet Home Assistant nichts an das Mesh. Bestätige erst, wenn der andere Client diese Adresse nicht mehr verwendet: Home Assistant setzt dann erneut hinter seinen Nummern fort und sendet wieder. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
+            "description": "Home Assistant ist über die Sequenznummern eines anderen Mesh-Clients auf seiner Adresse {unicast} im JUNG HOME Mesh {title} hinausgesprungen, und der andere Client hat seitdem erneut von dieser Adresse gesendet: Er läuft noch. Solange er läuft, hilft das Vorspringen nicht. Gib Home Assistant eine neue, unbenutzte Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) oder beende den anderen Client bzw. gib ihm eine andere Adresse. Bis dahin sendet Home Assistant nichts an das Mesh. Bestätige erst, wenn der andere Client diese Adresse nicht mehr verwendet: Home Assistant setzt dann erneut hinter seinen Nummern fort und sendet wieder. Auf echten Geräten noch nicht überprüft: Ein zweiter Client auf der Adresse von Home Assistant wurde nur simuliert."
           }
         },
         "abort": {
@@ -2012,7 +2012,7 @@
           }
         },
         "error": {
-          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
+          "address_in_use": "Im neuen Export hat ein Knoten die Adresse von Home Assistant, daher kann der Eintrag ihn nicht verwenden. Gib Home Assistant zuerst eine freie Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse) und lade den Export dann dort.",
           "cannot_connect": "Das Gateway war unter dieser Adresse nicht erreichbar.",
           "cannot_load": "Der Mesh-Export konnte nicht gelesen werden. Prüfe, ob die Datei der JSON-Export der App ist (und bei einem Pfad, ob der Pfad stimmt).",
           "cannot_store": "Der Export konnte nicht in das Konfigurationsverzeichnis von Home Assistant geschrieben werden.",
@@ -2032,8 +2032,8 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
-          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
+          "no_gateway_pin": "Home Assistant hat für das Gateway {host} keinen Zugriff oder kein Zertifikat gespeichert und sendet ihm deshalb nichts: Es wurde nichts geändert. Rufe den Export stattdessen unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das Zertifikat des Gateways geprüft werden kann.",
+          "certificate_changed": "Das Gateway unter {host} zeigt ein anderes Zertifikat als das, das Home Assistant für es hinterlegt hat: Es wurde nichts an es gesendet und nichts geändert. Wenn du das Gateway oder sein Zertifikat ersetzt hast, rufe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren ab, wo das neue Zertifikat geprüft werden kann; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway.",
           "token_rejected": "Das Gateway unter {host} akzeptiert den Zugriff von Home Assistant nicht mehr: Es wurde nichts geändert. Folge der erneuten Authentifizierung, um die Home Assistant bittet (Einstellungen → Geräte & Dienste), und starte diese Reparatur danach erneut.",
           "network_mismatch": "Der Export gehört zu einem anderen Mesh-Netzwerk als dieser Eintrag.",
           "mesh_already_configured": "Dieses Mesh ist bereits als anderer Eintrag eingerichtet; zwei Einträge eines Mesh würden sich seine Sequenznummern teilen. Konfiguriere stattdessen diesen Eintrag neu oder entferne ihn zuerst."
@@ -2042,7 +2042,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Zertifikat des JUNG HOME Gateways geändert",
-      "description": "Das JUNG HOME Gateway unter {host} passt nicht mehr zu dem TLS-Zertifikat, das Home Assistant für es hinterlegt hat: Der Host zeigt ein anderes Zertifikat, oder der Gateway-Knoten meldet über das Mesh ein anderes. Home Assistant verwendet das Gateway nicht mehr (es wird weder ein Zugriffstoken noch ein Export dorthin gesendet); die Geräte funktionieren über Bluetooth weiter. Wenn du das Gateway oder sein Zertifikat ersetzt hast, öffne Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren und rufe den Export erneut vom Gateway ab; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway – prüfe dein Netzwerk."
+      "description": "Das JUNG HOME Gateway unter {host} passt nicht mehr zu dem TLS-Zertifikat, das Home Assistant für es hinterlegt hat: Der Host zeigt ein anderes Zertifikat, oder der Gateway-Knoten meldet über das Mesh ein anderes. Home Assistant verwendet das Gateway nicht mehr (es wird weder ein Zugriffstoken noch ein Export dorthin gesendet); die Geräte funktionieren über Bluetooth weiter. Wenn du das Gateway oder sein Zertifikat ersetzt hast, öffne Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren und rufe den Export erneut vom Gateway ab; andernfalls antwortet möglicherweise ein anderes Gerät in deinem Netzwerk als Gateway – prüfe dein Netzwerk."
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME Export nicht an das Gateway übergeben",
@@ -2117,7 +2117,7 @@
     },
     "gateway_token_rejected": {
       "title": "Das JUNG HOME Gateway akzeptiert Home Assistant nicht mehr",
-      "description": "Das JUNG HOME Gateway unter {host} lehnt den Zugriff ab, den Home Assistant für das Mesh {title} registriert hat (er wurde wahrscheinlich in der JUNG HOME App unter Einstellungen → Gateway → Zugriffsberechtigungen entfernt). Home Assistant ändert Räume, Tastenverknüpfungen und Szenen weiterhin in seinem eigenen Export, übergibt ihn aber nicht mehr an das Gateway, daher sieht die App diese Änderungen nicht; die Geräte funktionieren weiter. Home Assistant bittet erneut um Zugriff: Folge seiner Aufforderung, JUNG HOME erneut zu authentifizieren (Einstellungen → Geräte & Dienste; Reparaturen listet sie auch als abgelaufene Authentifizierung), und gib das Netzwerk-Key-Passwort des Gateways ein oder bestätige die neue Zugriffsanfrage in der App. Die Reparatur verschwindet, sobald das Gateway Home Assistant wieder akzeptiert; die Aktion Gateway synchronisieren übergibt dann die seitdem gemachten Änderungen."
+      "description": "Das JUNG HOME Gateway unter {host} lehnt den Zugriff ab, den Home Assistant für das Mesh {title} registriert hat (er wurde wahrscheinlich in der JUNG HOME App unter Einstellungen → Gateway → Zugriffsberechtigungen entfernt). Home Assistant ändert Räume, Tastenverknüpfungen und Szenen weiterhin in seinem eigenen Export, übergibt ihn aber nicht mehr an das Gateway, daher sieht die App diese Änderungen nicht; die Geräte funktionieren weiter. Home Assistant bittet erneut um Zugriff: Folge seiner Aufforderung, JUNG HOME Bluetooth Mesh erneut zu authentifizieren (Einstellungen → Geräte & Dienste; Reparaturen listet sie auch als abgelaufene Authentifizierung), und gib das Netzwerk-Key-Passwort des Gateways ein oder bestätige die neue Zugriffsanfrage in der App. Die Reparatur verschwindet, sobald das Gateway Home Assistant wieder akzeptiert; die Aktion Gateway synchronisieren übergibt dann die seitdem gemachten Änderungen."
     },
     "seq_store_lost": {
       "title": "Sequenznummern des JUNG HOME Mesh {title} verloren",
@@ -2149,15 +2149,15 @@
         },
         "abort": {
           "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
-          "cannot_load": "Der Export des Eintrags konnte nicht gelesen werden, daher lässt sich keine freie Adresse ermitteln: Es wurde nichts geändert. Lade einen neuen Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren.",
-          "no_free_address": "Der Export lässt keine Adresse für Home Assistant frei: Es wurde nichts geändert. Prüfe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren.",
+          "cannot_load": "Der Export des Eintrags konnte nicht gelesen werden, daher lässt sich keine freie Adresse ermitteln: Es wurde nichts geändert. Lade einen neuen Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren.",
+          "no_free_address": "Der Export lässt keine Adresse für Home Assistant frei: Es wurde nichts geändert. Prüfe den Export unter Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren.",
           "address_taken": "{suggestion} ist im Export nicht mehr frei (er hat sich inzwischen geändert): Es wurde nichts geändert. Starte die Reparatur erneut, um einen neuen Vorschlag zu erhalten."
         }
       }
     },
     "address_reserved": {
       "title": "Die JUNG HOME Adresse von Home Assistant könnte vergeben werden",
-      "description": "Die Unicast-Adresse {unicast}, von der Home Assistant im Mesh {title} sendet, liegt im Adressbereich eines der Provisioner der App oder wurde von einem entfernten Knoten verwendet. Sie funktioniert weiter, bis die App dort einen Knoten in Betrieb nimmt; ziehe Home Assistant vorher auf eine freie Adresse um (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse; {suggestion} ist frei)."
+      "description": "Die Unicast-Adresse {unicast}, von der Home Assistant im Mesh {title} sendet, liegt im Adressbereich eines der Provisioner der App oder wurde von einem entfernten Knoten verwendet. Sie funktioniert weiter, bis die App dort einen Knoten in Betrieb nimmt; ziehe Home Assistant vorher auf eine freie Adresse um (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse; {suggestion} ist frei)."
     },
     "sequence_space_low": {
       "title": "Die Sequenznummern des JUNG HOME Mesh werden knapp",
@@ -2181,7 +2181,7 @@
     },
     "iv_index_mismatch": {
       "title": "Das JUNG HOME Mesh ist auf einem anderen IV-Index",
-      "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours}: zu weit auseinander, als dass Home Assistant folgen könnte (es folgt dem Mesh bis zu 42 voraus, höchstens einmal alle 192 Stunden und nie zurück). Die Geräte ignorieren Home Assistant solange. Das passiert, wenn Home Assistant über viele IV-Updates hinweg nicht da war, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Gib Home Assistant eine neue Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren → Erweitert → Unsere Unicast-Adresse): Dort beginnt es beim IV-Index des Mesh. Stelle den Speicher nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Sequenznummern, die die Geräte schon gesehen haben, und der nächste Start überschreibt eine Handbearbeitung ohnehin. Die Reparatur verschwindet von selbst, wenn ein Beacon in Reichweite eintrifft."
+      "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours}: zu weit auseinander, als dass Home Assistant folgen könnte (es folgt dem Mesh bis zu 42 voraus, höchstens einmal alle 192 Stunden und nie zurück). Die Geräte ignorieren Home Assistant solange. Das passiert, wenn Home Assistant über viele IV-Updates hinweg nicht da war, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Gib Home Assistant eine neue Unicast-Adresse (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren → Quelle des Exports → Erweitert → Unsere Unicast-Adresse): Dort beginnt es beim IV-Index des Mesh. Stelle den Speicher nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Sequenznummern, die die Geräte schon gesehen haben, und der nächste Start überschreibt eine Handbearbeitung ohnehin. Die Reparatur verschwindet von selbst, wenn ein Beacon in Reichweite eintrifft."
     },
     "iv_index_ahead": {
       "title": "Home Assistant ist dem IV-Index des JUNG HOME Mesh voraus",
@@ -2189,7 +2189,7 @@
         "step": {
           "confirm": {
             "title": "Zum IV-Index des Mesh zurückkehren",
-            "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours} – ihm voraus, was das Mesh nie ist: Die Geräte ignorieren Home Assistant, und es kann einem Mesh, das hinter ihm liegt, nicht folgen. Das passiert, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Bestätige, um Home Assistant auf den IV-Index des Mesh zurückzusetzen und die Integration neu einzurichten: Seine Sequenznummern setzen über jeder Nummer fort, die es ab diesem Index gesendet hat, sodass keine doppelt verwendet wird. Stelle den Speicher stattdessen nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Nummern, die die Geräte schon gesehen haben. Der andere Weg zurück ist eine neue Unicast-Adresse für Home Assistant (Einstellungen → Geräte & Dienste → JUNG HOME → Neu konfigurieren). Auf echten Geräten noch nicht überprüft: Ein IV-Index vor dem des Mesh wurde an einem echten Mesh noch nicht beobachtet."
+            "description": "Das Mesh {title} ist auf IV-Index {mesh}, der Sequenznummern-Speicher von Home Assistant auf {ours} – ihm voraus, was das Mesh nie ist: Die Geräte ignorieren Home Assistant, und es kann einem Mesh, das hinter ihm liegt, nicht folgen. Das passiert, wenn sein Speicher (`.storage/junghome_ble.seq.*`) zu einem anderen Mesh gehört oder wenn mit dem Netzwerk-Key gefälschte Beacons ihn vorangetrieben haben. Bestätige, um Home Assistant auf den IV-Index des Mesh zurückzusetzen und die Integration neu einzurichten: Seine Sequenznummern setzen über jeder Nummer fort, die es ab diesem Index gesendet hat, sodass keine doppelt verwendet wird. Stelle den Speicher stattdessen nicht aus einem Backup wieder her und bearbeite ihn nicht: Ein älterer oder bearbeiteter Eintrag wiederholt Nummern, die die Geräte schon gesehen haben. Der andere Weg zurück ist eine neue Unicast-Adresse für Home Assistant (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren). Auf echten Geräten noch nicht überprüft: Ein IV-Index vor dem des Mesh wurde an einem echten Mesh noch nicht beobachtet."
           }
         },
         "abort": {
@@ -2967,7 +2967,7 @@
     },
     "download_export": {
       "name": "Export herunterladen",
-      "description": "Antwortet mit einem Link, der den Export herunterlädt, den Home Assistant für das JUNG HOME Netzwerk hält (JungHome.json, mit den Räumen, Tasten, Verknüpfungen und Szenen, die Home Assistant geändert hat), um ihn in die JUNG HOME App zu importieren oder als Sicherung aufzubewahren. Der Link ist ein Pfad auf der Adresse von Home Assistant und gilt fünf Minuten, nur für den Administrator, der ihn angefordert hat. Die Datei enthält jeden Schlüssel der Installation: Lösche sie, sobald sie importiert oder sicher abgelegt ist. Nur für Administratoren. Der Import in die App ist mit der App noch nicht geprüft.",
+      "description": "Antwortet mit einem Link, der den Export herunterlädt, den Home Assistant für das JUNG HOME Netzwerk hält (JungHome.json, mit den Räumen, Tasten, Verknüpfungen und Szenen, die Home Assistant geändert hat), um ihn in die JUNG HOME App zu importieren oder als Sicherung aufzubewahren. Wer den Link hat, kann die Datei fünf Minuten lang herunterladen, und zwar als der Administrator, der ihn angefordert hat: Öffne ihn selbst und gib ihn niemandem weiter. Die Antwort enthält ihn als Pfad auf der Adresse von Home Assistant (`url`) und, wenn Home Assistant seine Adresse kennt, als vollständige URL (`absolute_url`); `stale` heißt, dass die JUNG HOME App die Installation geändert hat, nachdem die Datei geschrieben wurde: Lade zuerst den Export der App in Home Assistant. Die Datei enthält jeden Schlüssel der Installation: Lösche sie, sobald sie importiert oder sicher abgelegt ist. Nur für Administratoren. Der Import in die App ist mit der App noch nicht geprüft.",
       "fields": {
         "device": {
           "name": "Gerät",

@@ -336,7 +336,8 @@ class Keys(Operations):
             detector = key.node.pid in DETECTOR_PIDS
             if detector and element is None:
                 raise _validation(
-                    "service_detector_device_only", address=hexaddr(key.address)
+                    "service_detector_device_only",
+                    address=self.store.node_name(key.address),
                 )
             if room is not None:
                 plan = plan_room_link(pf, key, room, mode, self.hub.metadata)
@@ -352,7 +353,7 @@ class Keys(Operations):
                 ):
                     raise _validation(
                         "service_detector_mode_unsupported",
-                        address=hexaddr(key.address),
+                        address=self.store.node_name(key.address),
                         mode=plan.mode
                         if target_element is None
                         else f"{plan.mode} ({target_element})",
@@ -365,7 +366,7 @@ class Keys(Operations):
             if not clients:
                 raise _validation(
                     "service_key_mode_unsupported",
-                    address=hexaddr(key.address),
+                    address=self.store.node_name(key.address),
                     mode=plan.mode,
                 )
             if plan.mode in UNTESTED_MODES or target_element is not None:
@@ -504,7 +505,7 @@ class Keys(Operations):
             except (ConnectionError, OSError) as err:
                 raise _failure(
                     "service_send_failed",
-                    node=hexaddr(key),
+                    node=self.store.node_name(key),
                     message=M.describe(pdu),
                     applied=applied_message(self.hub.hass, APPLIED_KEY_WIRED),
                 ) from err
@@ -517,7 +518,7 @@ class Keys(Operations):
         ):
             raise _failure(
                 "service_key_mode_not_applied",
-                address=hexaddr(key),
+                address=self.store.node_name(key),
                 mode=str(P.KEY_MODE.get(key_mode, key_mode)),
             )
 
@@ -541,7 +542,7 @@ class Keys(Operations):
             ):
                 raise _failure(
                     "service_key_lock_not_applied",
-                    address=hexaddr(key),
+                    address=self.store.node_name(key),
                     property=f"{prop:04X}",
                 )
 
@@ -569,7 +570,7 @@ class Keys(Operations):
         ):
             raise _failure(
                 "service_key_scene_not_applied",
-                address=hexaddr(key),
+                address=self.store.node_name(key),
                 scene=str(scene),
             )
 

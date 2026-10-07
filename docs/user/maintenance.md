@@ -174,10 +174,10 @@ Assistant another address.) [Details](../ha-integration.md#repair-issue-another-
 
 #### Home Assistant's JUNG HOME address is taken
 
-A device of the installation has Home Assistant's address, so the integration does not start. **Submit** moves
-Home Assistant to the free address the notice suggests and starts it again (the same as *Reconfigure → Advanced → Our
-unicast address*); make sure nothing else, such as the command-line tools, sends from that address. **Unverified on
-air.** [Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-is-taken)
+A device of the installation has Home Assistant's address, so the integration does not start. **Submit** moves Home
+Assistant to the free address the notice suggests and starts it again (the same as *Reconfigure →* the export's source
+*→ Advanced → Our unicast address*); make sure nothing else, such as the command-line tools, sends from that address.
+**Unverified on air.** [Details](../ha-integration.md#repair-issue-home-assistants-jung-home-address-is-taken)
 
 #### Home Assistant's JUNG HOME address may be handed out
 
@@ -332,11 +332,18 @@ entry hands them over — or to keep a copy, an administrator can download it:
 1. *Developer tools → Actions*, choose **Download export** (`junghome_ble.download_export`), switch on *Return
    response* and run it. With several JUNG HOME networks, pick the network (or any of its devices). It also works
    while the integration is not running (retrying, or failed to set up).
-2. The answer has a `url` such as `/api/junghome_ble/export/…?authSig=…`. Put it after your Home Assistant address in
-   the same browser, for example `https://homeassistant.local:8123/api/junghome_ble/export/…`, **within five
-   minutes**: then the link stops working. It only works for the administrator who asked for it.
+2. Open the answer's `absolute_url` **within five minutes**: then the link stops working. When it is empty (Home
+   Assistant knows no address of its own), put the answer's `url`, such as `/api/junghome_ble/export/…?authSig=…`,
+   after your Home Assistant address, for example `https://homeassistant.local:8123/api/junghome_ble/export/…`.
+   **Anyone who has the link can download the file** for those five minutes, without logging in: open it yourself,
+   and do not paste it into a chat or send it on.
 3. The browser saves `JungHome.json`. In the app, import it as a project file, next to *Share via file* under
    *Project*.
+
+**When the answer says `stale: true`**, the app changed the installation (or devices were added to it) after Home
+Assistant's file was written: the notice *The JUNG HOME app changed the installation* or *JUNG HOME devices missing
+from the export* is open. Importing the file would take those changes out of the app again. Load the app's new
+export into Home Assistant first (the notice's *Submit* does it), then download again.
 
 **The file holds every key of your installation.** Import it, or store it somewhere only you can reach, then delete
 it from the computer it was downloaded to; never send it by e-mail or chat. Importing replaces the app's project: on

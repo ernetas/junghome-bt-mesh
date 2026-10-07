@@ -1074,7 +1074,7 @@
       "message": "Ingen nod i JUNG-meshet syns via Bluetooth ännu."
     },
     "export_keys_stale": {
-      "message": "Enheter i JUNG-meshet syns via Bluetooth, men ingen annonserar nätverksnyckeln i exporten: nycklarna förnyades efter att exporten gjordes. Exportera nätverket igen från JUNG HOME-appen och använd det under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera."
+      "message": "Enheter i JUNG-meshet syns via Bluetooth, men ingen annonserar nätverksnyckeln i exporten: nycklarna förnyades efter att exporten gjordes. Exportera nätverket igen från JUNG HOME-appen och använd det under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant har ingen anslutningsbar Bluetooth-adapter eller -proxy: JUNG-meshet kan inte nås."
@@ -1275,10 +1275,10 @@
       "message": "Anslutningen till JUNG-meshet bröts medan {message} skickades till noden {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Noden {node} finns i mesh-exporten {path} men inte i nätverket som Home Assistant tidigare laddade från den; ladda om integrationen (Inställningar → Enheter och tjänster → JUNG HOME → Ladda om) så att den följer exporten, och försök sedan igen. {applied}"
+      "message": "Noden {node} finns i mesh-exporten {path} men inte i nätverket som Home Assistant tidigare laddade från den; ladda om integrationen (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Ladda om) så att den följer exporten, och försök sedan igen. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "JUNG HOME Gateway på {host} har en nyare export ({gateway}) än filen som Home Assistant skulle ladda upp ({file}); en uppladdning skulle radera det som JUNG HOME-appen har ändrat sedan dess. Nästa ändring i Home Assistant tar över gatewayens export och för över Home Assistants egna ändringar till den. Om felet återkommer (en post utan kopia av appens senaste uppladdning kan inte skilja dem åt), hämta gatewayens export igen (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera; filen den ersätter sparas bredvid som `.pre-reconfigure`) och upprepa sedan ändringen i Home Assistant."
+      "message": "JUNG HOME Gateway på {host} har en nyare export ({gateway}) än filen som Home Assistant skulle ladda upp ({file}); en uppladdning skulle radera det som JUNG HOME-appen har ändrat sedan dess. Nästa ändring i Home Assistant tar över gatewayens export och för över Home Assistants egna ändringar till den. Om felet återkommer (en post utan kopia av appens senaste uppladdning kan inte skilja dem åt), hämta gatewayens export igen (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera; filen den ersätter sparas bredvid som `.pre-reconfigure`) och upprepa sedan ändringen i Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "JUNG HOME Gateway på {host} svarade bara med den nakna enhetsdatabasen (inga enhetsnamn eller rumskopplingar); att ta över den skulle radera dem ur filen som Home Assistant har. Försök igen när gatewayen inte längre är upptagen, eller hämta appens export igen."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
+          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
           "cannot_connect": "Gatewayen kunde inte nås på den adressen.",
           "cannot_load": "Mesh-exporten kunde inte läsas. Kontrollera att filen är appens JSON-export (och, för en sökväg, att sökvägen är korrekt).",
           "cannot_store": "Exporten kunde inte skrivas till Home Assistants konfigurationskatalog.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
-          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
+          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
+          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
           "token_rejected": "Gatewayen på {host} godtar inte längre Home Assistants åtkomst: inget ändrades. Följ den omautentisering som Home Assistant ber om (Inställningar → Enheter och tjänster) och reparera sedan det här problemet igen.",
           "network_mismatch": "Exporten tillhör ett annat mesh-nätverk än den här posten.",
           "mesh_already_configured": "Det här meshet är redan konfigurerat som en annan post; två poster för ett mesh skulle dela dess sekvensnummer. Omkonfigurera den posten i stället, eller ta bort den först."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
+          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
           "cannot_connect": "Gatewayen kunde inte nås på den adressen.",
           "cannot_load": "Mesh-exporten kunde inte läsas. Kontrollera att filen är appens JSON-export (och, för en sökväg, att sökvägen är korrekt).",
           "cannot_store": "Exporten kunde inte skrivas till Home Assistants konfigurationskatalog.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
-          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
+          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
+          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
           "token_rejected": "Gatewayen på {host} godtar inte längre Home Assistants åtkomst: inget ändrades. Följ den omautentisering som Home Assistant ber om (Inställningar → Enheter och tjänster) och reparera sedan det här problemet igen.",
           "network_mismatch": "Exporten tillhör ett annat mesh-nätverk än den här posten.",
           "mesh_already_configured": "Det här meshet är redan konfigurerat som en annan post; två poster för ett mesh skulle dela dess sekvensnummer. Omkonfigurera den posten i stället, eller ta bort den först."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
+          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
           "cannot_connect": "Gatewayen kunde inte nås på den adressen.",
           "cannot_load": "Mesh-exporten kunde inte läsas. Kontrollera att filen är appens JSON-export (och, för en sökväg, att sökvägen är korrekt).",
           "cannot_store": "Exporten kunde inte skrivas till Home Assistants konfigurationskatalog.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
-          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
+          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
+          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
           "token_rejected": "Gatewayen på {host} godtar inte längre Home Assistants åtkomst: inget ändrades. Följ den omautentisering som Home Assistant ber om (Inställningar → Enheter och tjänster) och reparera sedan det här problemet igen.",
           "network_mismatch": "Exporten tillhör ett annat mesh-nätverk än den här posten.",
           "mesh_already_configured": "Det här meshet är redan konfigurerat som en annan post; två poster för ett mesh skulle dela dess sekvensnummer. Omkonfigurera den posten i stället, eller ta bort den först."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME-tryckknappar med en annan insats än i exporten",
-      "description": "{devices}: de här tryckknapparna i JUNG HOME-meshet {title} annonserar en annan insats än den i exporten som Home Assistant laddade (export → enhet). Insatsen byttes ut efter att exporten gjordes, så Home Assistant och appen kan visa fel typ av last för dem. Kontrollera enheterna i JUNG HOME-appen, exportera nätverket igen och uppdatera den här integrationen (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera); problemet försvinner när exporten anger de insatser som enheterna annonserar. Ännu inte verifierat på riktiga enheter."
+      "description": "{devices}: de här tryckknapparna i JUNG HOME-meshet {title} annonserar en annan insats än den i exporten som Home Assistant laddade (export → enhet). Insatsen byttes ut efter att exporten gjordes, så Home Assistant och appen kan visa fel typ av last för dem. Kontrollera enheterna i JUNG HOME-appen, exportera nätverket igen och uppdatera den här integrationen (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera); problemet försvinner när exporten anger de insatser som enheterna annonserar. Ännu inte verifierat på riktiga enheter."
     },
     "node_clock_wrong": {
       "title": "JUNG HOME-enheter med fel klocka",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
+          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
           "cannot_connect": "Gatewayen kunde inte nås på den adressen.",
           "cannot_load": "Mesh-exporten kunde inte läsas. Kontrollera att filen är appens JSON-export (och, för en sökväg, att sökvägen är korrekt).",
           "cannot_store": "Exporten kunde inte skrivas till Home Assistants konfigurationskatalog.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
-          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
+          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
+          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
           "token_rejected": "Gatewayen på {host} godtar inte längre Home Assistants åtkomst: inget ändrades. Följ den omautentisering som Home Assistant ber om (Inställningar → Enheter och tjänster) och reparera sedan det här problemet igen.",
           "network_mismatch": "Exporten tillhör ett annat mesh-nätverk än den här posten.",
           "mesh_already_configured": "Det här meshet är redan konfigurerat som en annan post; två poster för ett mesh skulle dela dess sekvensnummer. Omkonfigurera den posten i stället, eller ta bort den först."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Hoppa förbi numren som enheterna känner till",
-            "description": "Home Assistant hör JUNG HOME-meshet {title} via sin proxynod, men inte en enda enhet svarade på dess tillståndsbegäranden. Noderna kastar Home Assistants meddelanden som repriser. Två orsaker är troliga: den här integrationens sekvensnummerlagring (`.storage/junghome_ble.*`) har gått förlorad eller återställts från en äldre säkerhetskopia, så Home Assistant skickar nu sekvensnummer som noderna redan har sett; eller så sänder en annan mesh-klient (till exempel verktyget `mesh_poc.py`) med samma unicast-adress {unicast}. Ge antingen Home Assistant en ny, oanvänd adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress, och se till att ingen annan klient använder den) eller, om lagringen gick förlorad eller återställdes (och ingen annan klient använder adressen), bekräfta för att låta Home Assistant hoppa fram sina sekvensnummer 1 048 576 steg och ansluta igen. Återställ inte sekvensnummerlagringen från en säkerhetskopia för att åtgärda detta: en äldre kopia upprepar bara nummer som enheterna redan har sett. Problemet försvinner av sig självt så snart en enhet svarar Home Assistant igen."
+            "description": "Home Assistant hör JUNG HOME-meshet {title} via sin proxynod, men inte en enda enhet svarade på dess tillståndsbegäranden. Noderna kastar Home Assistants meddelanden som repriser. Två orsaker är troliga: den här integrationens sekvensnummerlagring (`.storage/junghome_ble.*`) har gått förlorad eller återställts från en äldre säkerhetskopia, så Home Assistant skickar nu sekvensnummer som noderna redan har sett; eller så sänder en annan mesh-klient (till exempel verktyget `mesh_poc.py`) med samma unicast-adress {unicast}. Ge antingen Home Assistant en ny, oanvänd adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress, och se till att ingen annan klient använder den) eller, om lagringen gick förlorad eller återställdes (och ingen annan klient använder adressen), bekräfta för att låta Home Assistant hoppa fram sina sekvensnummer 1 048 576 steg och ansluta igen. Återställ inte sekvensnummerlagringen från en säkerhetskopia för att åtgärda detta: en äldre kopia upprepar bara nummer som enheterna redan har sett. Problemet försvinner av sig självt så snart en enhet svarar Home Assistant igen."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Hoppa förbi den andra klientens sekvensnummer",
-            "description": "Home Assistant tog emot ett meddelande från JUNG HOME-meshet {title} som skickats från dess egen unicast-adress {unicast} med ett sekvensnummer som det aldrig har använt: en annan mesh-klient sänder med samma adress — en andra Home Assistant-installation, verktyget `mesh_poc.py` konfigurerat med den här adressen, eller en kopia av den här installationen som startats någon annanstans. Två sändare på en adress återanvänder varandras sekvensnummer, och enheterna kastar allt som ligger under den andra klientens, så Home Assistant skickar inget till meshet tills detta har reparerats (kommandon misslyckas, tillstånd uppdateras inte). Stoppa den andra klienten, eller ge den eller Home Assistant en annan oanvänd adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress). Bekräfta sedan för att låta Home Assistant fortsätta sina sekvensnummer förbi dem som den andra klienten setts med och skicka igen. Om den andra klienten fortsätter att skicka från den här adressen kommer problemet tillbaka. Återställ inte sekvensnummerlagringen från en säkerhetskopia för att åtgärda detta. Ännu inte verifierat på riktiga enheter: en andra klient på Home Assistants adress har bara simulerats."
+            "description": "Home Assistant tog emot ett meddelande från JUNG HOME-meshet {title} som skickats från dess egen unicast-adress {unicast} med ett sekvensnummer som det aldrig har använt: en annan mesh-klient sänder med samma adress — en andra Home Assistant-installation, verktyget `mesh_poc.py` konfigurerat med den här adressen, eller en kopia av den här installationen som startats någon annanstans. Två sändare på en adress återanvänder varandras sekvensnummer, och enheterna kastar allt som ligger under den andra klientens, så Home Assistant skickar inget till meshet tills detta har reparerats (kommandon misslyckas, tillstånd uppdateras inte). Stoppa den andra klienten, eller ge den eller Home Assistant en annan oanvänd adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress). Bekräfta sedan för att låta Home Assistant fortsätta sina sekvensnummer förbi dem som den andra klienten setts med och skicka igen. Om den andra klienten fortsätter att skicka från den här adressen kommer problemet tillbaka. Återställ inte sekvensnummerlagringen från en säkerhetskopia för att åtgärda detta. Ännu inte verifierat på riktiga enheter: en andra klient på Home Assistants adress har bara simulerats."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Hoppa förbi den andra klientens sekvensnummer igen",
-            "description": "Home Assistant hoppade förbi sekvensnumren för en annan mesh-klient på sin adress {unicast} i JUNG HOME-meshet {title}, och den andra klienten har sedan dess skickat från den adressen igen: den körs fortfarande. Att hoppa framåt hjälper inte så länge den gör det. Ge Home Assistant en ny, oanvänd unicast-adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress), eller stoppa den andra klienten eller flytta den till en annan adress. Tills dess skickar Home Assistant inget till meshet. Bekräfta först när den andra klienten inte längre använder den här adressen: Home Assistant fortsätter då förbi dess nummer igen och återupptar sändningen. Ännu inte verifierat på riktiga enheter: en andra klient på Home Assistants adress har bara simulerats."
+            "description": "Home Assistant hoppade förbi sekvensnumren för en annan mesh-klient på sin adress {unicast} i JUNG HOME-meshet {title}, och den andra klienten har sedan dess skickat från den adressen igen: den körs fortfarande. Att hoppa framåt hjälper inte så länge den gör det. Ge Home Assistant en ny, oanvänd unicast-adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress), eller stoppa den andra klienten eller flytta den till en annan adress. Tills dess skickar Home Assistant inget till meshet. Bekräfta först när den andra klienten inte längre använder den här adressen: Home Assistant fortsätter då förbi dess nummer igen och återupptar sändningen. Ännu inte verifierat på riktiga enheter: en andra klient på Home Assistants adress har bara simulerats."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
+          "address_in_use": "I den nya exporten har en nod Home Assistants adress, så posten kan inte använda den. Ge först Home Assistant en ledig adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress) och ladda sedan exporten där.",
           "cannot_connect": "Gatewayen kunde inte nås på den adressen.",
           "cannot_load": "Mesh-exporten kunde inte läsas. Kontrollera att filen är appens JSON-export (och, för en sökväg, att sökvägen är korrekt).",
           "cannot_store": "Exporten kunde inte skrivas till Home Assistants konfigurationskatalog.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
-          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
+          "no_gateway_pin": "Home Assistant har ingen åtkomst eller inget certifikat registrerat för gatewayen {host}, så det skickar inget till den: inget ändrades. Hämta i stället exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där gatewayens certifikat kan kontrolleras.",
+          "certificate_changed": "Gatewayen på {host} presenterar ett annat certifikat än det som Home Assistant fäste för den: inget skickades till den och inget ändrades. Om du har bytt ut gatewayen eller dess certifikat, hämta exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera, där det nya certifikatet kan kontrolleras; annars kan en annan enhet i ditt nätverk svara som gatewayen.",
           "token_rejected": "Gatewayen på {host} godtar inte längre Home Assistants åtkomst: inget ändrades. Följ den omautentisering som Home Assistant ber om (Inställningar → Enheter och tjänster) och reparera sedan det här problemet igen.",
           "network_mismatch": "Exporten tillhör ett annat mesh-nätverk än den här posten.",
           "mesh_already_configured": "Det här meshet är redan konfigurerat som en annan post; två poster för ett mesh skulle dela dess sekvensnummer. Omkonfigurera den posten i stället, eller ta bort den först."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "JUNG HOME Gateways certifikat har ändrats",
-      "description": "JUNG HOME Gateway på {host} stämmer inte längre med det TLS-certifikat som Home Assistant fäste för den: värden presenterar ett annat certifikat, eller gateway-noden rapporterar ett annat via meshet. Home Assistant har slutat använda gatewayen (ingen åtkomsttoken och ingen export skickas dit); enheterna fortsätter att fungera via Bluetooth. Om du har bytt ut gatewayen eller dess certifikat, öppna Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera och hämta exporten från gatewayen igen; annars kan en annan enhet i ditt nätverk svara som gatewayen — kontrollera ditt nätverk."
+      "description": "JUNG HOME Gateway på {host} stämmer inte längre med det TLS-certifikat som Home Assistant fäste för den: värden presenterar ett annat certifikat, eller gateway-noden rapporterar ett annat via meshet. Home Assistant har slutat använda gatewayen (ingen åtkomsttoken och ingen export skickas dit); enheterna fortsätter att fungera via Bluetooth. Om du har bytt ut gatewayen eller dess certifikat, öppna Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera och hämta exporten från gatewayen igen; annars kan en annan enhet i ditt nätverk svara som gatewayen — kontrollera ditt nätverk."
     },
     "gateway_sync_failed": {
       "title": "JUNG HOME-export inte överlämnad till gatewayen",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway godtar inte längre Home Assistant",
-      "description": "JUNG HOME Gateway på {host} avvisar den åtkomst som Home Assistant registrerade för meshet {title} (den togs troligen bort i JUNG HOME-appen under Inställningar → Gateway → Åtkomstbehörigheter). Home Assistant fortsätter att ändra rum, knappkopplingar och scener i sin egen export men lämnar inte längre över den till gatewayen, så appen ser inte de ändringarna; enheterna fortsätter att fungera. Home Assistant ber om åtkomst igen: följ dess begäran om att autentisera JUNG HOME på nytt (Inställningar → Enheter och tjänster; Reparationer listar det också som utgången autentisering) och ange gatewayens lösenord för nätverksnyckeln eller godkänn den nya åtkomstbegäran i appen. Problemet försvinner när gatewayen godtar Home Assistant igen; åtgärden Synkronisera gateway lämnar sedan över de ändringar som gjorts sedan dess."
+      "description": "JUNG HOME Gateway på {host} avvisar den åtkomst som Home Assistant registrerade för meshet {title} (den togs troligen bort i JUNG HOME-appen under Inställningar → Gateway → Åtkomstbehörigheter). Home Assistant fortsätter att ändra rum, knappkopplingar och scener i sin egen export men lämnar inte längre över den till gatewayen, så appen ser inte de ändringarna; enheterna fortsätter att fungera. Home Assistant ber om åtkomst igen: följ dess begäran om att autentisera JUNG HOME Bluetooth Mesh på nytt (Inställningar → Enheter och tjänster; Reparationer listar det också som utgången autentisering) och ange gatewayens lösenord för nätverksnyckeln eller godkänn den nya åtkomstbegäran i appen. Problemet försvinner när gatewayen godtar Home Assistant igen; åtgärden Synkronisera gateway lämnar sedan över de ändringar som gjorts sedan dess."
     },
     "seq_store_lost": {
       "title": "Sekvensnummer för JUNG HOME-meshet {title} har gått förlorade",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
-          "cannot_load": "Postens export kunde inte läsas, så ingen ledig adress kan tas fram: inget ändrades. Ladda en ny export under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera.",
-          "no_free_address": "Exporten lämnar ingen adress ledig för Home Assistant: inget ändrades. Kontrollera exporten under Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera.",
+          "cannot_load": "Postens export kunde inte läsas, så ingen ledig adress kan tas fram: inget ändrades. Ladda en ny export under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera.",
+          "no_free_address": "Exporten lämnar ingen adress ledig för Home Assistant: inget ändrades. Kontrollera exporten under Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera.",
           "address_taken": "{suggestion} är inte längre ledig i exporten (den har ändrats under tiden): inget ändrades. Reparera problemet igen för ett nytt förslag."
         }
       }
     },
     "address_reserved": {
       "title": "Home Assistants JUNG HOME-adress kan komma att delas ut",
-      "description": "Unicast-adressen {unicast} som Home Assistant skickar från i meshet {title} ligger inom adressintervallet för en av appens provisioners, eller användes av en borttagen nod. Den fungerar tills appen driftsätter en nod där; flytta Home Assistant till en ledig adress innan dess (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress; {suggestion} är ledig)."
+      "description": "Unicast-adressen {unicast} som Home Assistant skickar från i meshet {title} ligger inom adressintervallet för en av appens provisioners, eller användes av en borttagen nod. Den fungerar tills appen driftsätter en nod där; flytta Home Assistant till en ledig adress innan dess (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress; {suggestion} är ledig)."
     },
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnummer börjar ta slut",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-meshet har ett annat IV-index",
-      "description": "Meshet {title} har IV-index {mesh}, Home Assistants sekvensnummerlagring {ours}: för långt ifrån varandra för att Home Assistant ska kunna följa (det följer meshet upp till 42 steg framåt, högst en gång per 192 timmar, och aldrig bakåt). Enheterna ignorerar Home Assistant under tiden. Detta händer när Home Assistant har varit borta under många IV-uppdateringar, när dess lagring (`.storage/junghome_ble.seq.*`) tillhör ett annat mesh, eller när beacons förfalskade med nätverksnyckeln har knuffat det framåt. Ge Home Assistant en ny unicast-adress (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera → Avancerat → Vår unicast-adress): där börjar det från meshets IV-index. Återställ inte lagringen från en säkerhetskopia och redigera den inte: en äldre eller redigerad post upprepar sekvensnummer som enheterna redan har sett, och nästa start skriver ändå över en manuell redigering. Problemet försvinner av sig självt när en beacon inom räckhåll anländer."
+      "description": "Meshet {title} har IV-index {mesh}, Home Assistants sekvensnummerlagring {ours}: för långt ifrån varandra för att Home Assistant ska kunna följa (det följer meshet upp till 42 steg framåt, högst en gång per 192 timmar, och aldrig bakåt). Enheterna ignorerar Home Assistant under tiden. Detta händer när Home Assistant har varit borta under många IV-uppdateringar, när dess lagring (`.storage/junghome_ble.seq.*`) tillhör ett annat mesh, eller när beacons förfalskade med nätverksnyckeln har knuffat det framåt. Ge Home Assistant en ny unicast-adress (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera → exportens källa → Avancerat → Vår unicast-adress): där börjar det från meshets IV-index. Återställ inte lagringen från en säkerhetskopia och redigera den inte: en äldre eller redigerad post upprepar sekvensnummer som enheterna redan har sett, och nästa start skriver ändå över en manuell redigering. Problemet försvinner av sig självt när en beacon inom räckhåll anländer."
     },
     "iv_index_ahead": {
       "title": "Home Assistant ligger före JUNG HOME-meshets IV-index",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Gå tillbaka till meshets IV-index",
-            "description": "Meshet {title} har IV-index {mesh}, Home Assistants sekvensnummerlagring {ours} — före det, vilket meshet aldrig är: enheterna ignorerar Home Assistant, och det kan inte följa ett mesh som ligger efter. Detta händer när dess lagring (`.storage/junghome_ble.seq.*`) tillhör ett annat mesh, eller när beacons förfalskade med nätverksnyckeln har knuffat det framåt. Bekräfta för att ta Home Assistant tillbaka till meshets IV-index och konfigurera integrationen på nytt: dess sekvensnummer fortsätter över varje nummer det har skickat från det indexet och framåt, så inget används två gånger. Återställ inte i stället lagringen från en säkerhetskopia och redigera den inte: en äldre eller redigerad post upprepar nummer som enheterna redan har sett. Den andra vägen tillbaka är en ny unicast-adress för Home Assistant (Inställningar → Enheter och tjänster → JUNG HOME → Omkonfigurera). Ännu inte verifierat på riktiga enheter: ett IV-index före meshet har inte setts på ett riktigt mesh."
+            "description": "Meshet {title} har IV-index {mesh}, Home Assistants sekvensnummerlagring {ours} — före det, vilket meshet aldrig är: enheterna ignorerar Home Assistant, och det kan inte följa ett mesh som ligger efter. Detta händer när dess lagring (`.storage/junghome_ble.seq.*`) tillhör ett annat mesh, eller när beacons förfalskade med nätverksnyckeln har knuffat det framåt. Bekräfta för att ta Home Assistant tillbaka till meshets IV-index och konfigurera integrationen på nytt: dess sekvensnummer fortsätter över varje nummer det har skickat från det indexet och framåt, så inget används två gånger. Återställ inte i stället lagringen från en säkerhetskopia och redigera den inte: en äldre eller redigerad post upprepar nummer som enheterna redan har sett. Den andra vägen tillbaka är en ny unicast-adress för Home Assistant (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera). Ännu inte verifierat på riktiga enheter: ett IV-index före meshet har inte setts på ett riktigt mesh."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Ladda ned export",
-      "description": "Svarar med en länk som laddar ned exporten som Home Assistant har för JUNG HOME-nätverket (JungHome.json, med de rum, knappar, kopplingar och scener som Home Assistant har ändrat), för att importera den i JUNG HOME-appen eller spara den som säkerhetskopia. Länken är en sökväg på Home Assistants adress och fungerar i fem minuter, bara för administratören som bad om den. Filen innehåller alla installationens nycklar: radera den när den är importerad eller sparad på ett säkert ställe. Endast för administratörer. Importen i appen är ännu inte prövad med appen.",
+      "description": "Svarar med en länk som laddar ned exporten som Home Assistant har för JUNG HOME-nätverket (JungHome.json, med de rum, knappar, kopplingar och scener som Home Assistant har ändrat), för att importera den i JUNG HOME-appen eller spara den som säkerhetskopia. Alla som har länken kan ladda ned filen i fem minuter som administratören som bad om den: öppna den själv och ge den inte vidare till någon. Svaret ger den som en sökväg på Home Assistants adress (`url`) och, när Home Assistant känner till sin adress, som en fullständig URL (`absolute_url`); `stale` betyder att JUNG HOME-appen ändrade installationen efter att filen skrevs: läs först in appens export i Home Assistant. Filen innehåller alla installationens nycklar: radera den när den är importerad eller sparad på ett säkert ställe. Endast för administratörer. Importen i appen är ännu inte prövad med appen.",
       "fields": {
         "device": {
           "name": "Enhet",

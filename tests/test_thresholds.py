@@ -476,11 +476,11 @@ async def test_threshold_not_taken(
         )
     assert err.value.translation_key == f"threshold_{which}_not_applied"
     assert err.value.translation_placeholders == {
-        "address": "0172",
+        "address": "Boiler (0172)",
         "applied": english(mesh_config.APPLIED_NOTHING),
     }
     assert str(err.value) == (
-        f"The JUNG socket 0172 did not take its {words} threshold. {english(mesh_config.APPLIED_NOTHING)}"
+        f"The JUNG socket Boiler (0172) did not take its {words} threshold. {english(mesh_config.APPLIED_NOTHING)}"
     )
 
 
@@ -506,11 +506,11 @@ async def test_threshold_lost_link(
         )
     assert err.value.translation_key == f"threshold_{which}_send_failed"
     assert err.value.translation_placeholders == {
-        "address": "0172",
+        "address": "Boiler (0172)",
         "applied": english(mesh_config.APPLIED_NOTHING),
     }
     assert str(err.value) == (
-        f"The {words} threshold could not be sent to the JUNG socket 0172; no proxy node is connected. "
+        f"The {words} threshold could not be sent to the JUNG socket Boiler (0172); no proxy node is connected. "
         f"{english(mesh_config.APPLIED_NOTHING)}"
     )
 
@@ -558,18 +558,18 @@ async def test_a_threshold_failure_names_what_was_written_before_it(
         2: (
             "threshold_switch_off_send_failed",
             (
-                "The switch-on threshold of socket 0172 was written before it. Run the action again with the "
+                "The switch-on threshold of socket Boiler (0172) was written before it. Run the action again with the "
                 "same target to finish."
             ),
         ),
         3: (
             "threshold_switch_on_send_failed",
-            "Before it, socket 0172 was set as asked. Run the action again with the same target to finish.",
+            "Before it, socket Boiler (0172) was set as asked. Run the action again with the same target to finish.",
         ),
         4: (
             "threshold_switch_off_send_failed",
             (
-                "Before it, socket 0172 was set as asked. The switch-on threshold of socket 0172 was written "
+                "Before it, socket Boiler (0172) was set as asked. The switch-on threshold of socket Boiler (0172) was written "
                 "before it. Run the action again with the same target to finish."
             ),
         ),
@@ -613,6 +613,11 @@ def test_threshold_progress_words_a_stopped_wiring_plan() -> None:
     progress.finish(SOCKET + 1)
     assert english(progress.done()) == (
         "Before it, sockets 0172, 0173 were set as asked."
+    )
+    # a socket `write_threshold` named goes by that name (`address_label`)
+    progress.names[SOCKET] = "Boiler (0172)"
+    assert english(progress.done()) == (
+        "Before it, sockets Boiler (0172), 0173 were set as asked."
     )
 
 
@@ -742,7 +747,7 @@ async def test_publication_reset_is_sent_as_planned(
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
     # both thresholds were cleared before the plan (W4-13)
     assert err.value.translation_placeholders["applied"] == (
-        "Both thresholds of socket 0172 were written before it. "
+        "Both thresholds of socket Boiler (0172) were written before it. "
         f"{english(mesh_config.applied_text(3, 4))}"
     )
     await settled(hass, env)
@@ -878,7 +883,7 @@ async def test_set_threshold_devices_refusals(hass: HomeAssistant, env: Env) -> 
         await configurator.unwire_threshold(SOCKET)
     assert err.value.translation_key == "threshold_not_supported"
     assert err.value.translation_placeholders == {
-        "name": "0172"
+        "name": "Boiler (0172)"
     }  # as the message wants
     assert env.config_calls == []
 
@@ -1008,7 +1013,10 @@ async def test_a_meter_the_app_rewired_stops_the_unwiring_and_force_runs_it(
         await call(hass, "delete_threshold", {"entity_id": socket(hass)})
     assert err.value.translation_key == "service_preflight_differs"
     placeholders = err.value.translation_placeholders or {}
-    assert (placeholders["expected"], placeholders["found"]) == ("C001", "C0FE")
+    assert (placeholders["expected"], placeholders["found"]) == (
+        "element group #0x173 (C001)",  # the export's name for the group
+        "C0FE",  # a group the export does not name
+    )
     assert placeholders["applied"].startswith("Nothing before it was applied")
     assert not any(not is_model_get(pdu) for _n, pdu in env.config_calls)
     assert env.thresholds[SOCKET, SWITCH_OFF] != wire(T.CLEARED)  # not cleared

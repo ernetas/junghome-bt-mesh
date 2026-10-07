@@ -1074,7 +1074,7 @@
       "message": "Per Bluetooth dar nematyti nė vieno JUNG tinklo mazgo."
     },
     "export_keys_stale": {
-      "message": "JUNG tinklo įrenginiai matomi per Bluetooth, tačiau nė vienas neskelbia eksporte esančio tinklo rakto: raktai buvo atnaujinti jau po eksporto sukūrimo. Iš naujo eksportuokite tinklą „JUNG HOME“ programėlėje ir pateikite jį per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti."
+      "message": "JUNG tinklo įrenginiai matomi per Bluetooth, tačiau nė vienas neskelbia eksporte esančio tinklo rakto: raktai buvo atnaujinti jau po eksporto sukūrimo. Iš naujo eksportuokite tinklą „JUNG HOME“ programėlėje ir pateikite jį per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant neturi Bluetooth adapterio ar tarpinio serverio, per kurį būtų galima prisijungti, todėl JUNG tinklas nepasiekiamas."
@@ -1275,10 +1275,10 @@
       "message": "Ryšys su JUNG tinklu nutrūko siunčiant {message} mazgui {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Mazgas {node} yra tinklo eksporte {path}, bet jo nėra tinkle, kurį Home Assistant anksčiau iš jo įkėlė; įkelkite integraciją iš naujo (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Įkelti iš naujo), kad ji atitiktų eksportą, ir bandykite dar kartą. {applied}"
+      "message": "Mazgas {node} yra tinklo eksporte {path}, bet jo nėra tinkle, kurį Home Assistant anksčiau iš jo įkėlė; įkelkite integraciją iš naujo (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Įkelti iš naujo), kad ji atitiktų eksportą, ir bandykite dar kartą. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "„JUNG HOME“ sietuve adresu {host} yra naujesnis eksportas ({gateway}) nei failas, kurį Home Assistant įkeltų ({file}); jį įkėlus būtų ištrinta tai, kas nuo tada pakeista „JUNG HOME“ programėlėje. Kitas Home Assistant atliktas pakeitimas perims sietuvo eksportą ir perkels į jį Home Assistant pakeitimus. Jei ši klaida kartojasi (įrašas be paskutinio programėlės įkėlimo kopijos negali jų atskirti), dar kartą gaukite sietuvo eksportą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti; pakeistas failas išsaugomas šalia kaip `.pre-reconfigure`), tada pakartokite Home Assistant atliktą pakeitimą."
+      "message": "„JUNG HOME“ sietuve adresu {host} yra naujesnis eksportas ({gateway}) nei failas, kurį Home Assistant įkeltų ({file}); jį įkėlus būtų ištrinta tai, kas nuo tada pakeista „JUNG HOME“ programėlėje. Kitas Home Assistant atliktas pakeitimas perims sietuvo eksportą ir perkels į jį Home Assistant pakeitimus. Jei ši klaida kartojasi (įrašas be paskutinio programėlės įkėlimo kopijos negali jų atskirti), dar kartą gaukite sietuvo eksportą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti; pakeistas failas išsaugomas šalia kaip `.pre-reconfigure`), tada pakartokite Home Assistant atliktą pakeitimą."
     },
     "service_gateway_export_incomplete": {
       "message": "„JUNG HOME“ sietuvas adresu {host} grąžino tik pliką įrenginių duomenų bazę (be įrenginių pavadinimų ir patalpų susiejimų); ją perėmus, šie duomenys būtų ištrinti iš Home Assistant saugomo failo. Bandykite dar kartą, kai sietuvas nebebus užimtas, arba dar kartą gaukite programėlės eksportą."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
           "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
           "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
           "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
-          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
           "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
           "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
           "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
           "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
           "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
           "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
-          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
           "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
           "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
           "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
           "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
           "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
           "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
-          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
           "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
           "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
           "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "„JUNG HOME“ mygtukiniai jungikliai su kitu mechanizmu nei eksporte",
-      "description": "{devices}: šie „JUNG HOME“ tinklo {title} mygtukiniai jungikliai skelbia kitą mechanizmą nei nurodytas Home Assistant įkeltame eksporte (eksportas → įrenginys). Mechanizmas pakeistas jau sukūrus tą eksportą, todėl Home Assistant ir programėlė gali rodyti netinkamą jų valdomo įrenginio tipą. Patikrinkite įrenginius „JUNG HOME“ programėlėje, dar kartą eksportuokite tinklą ir atnaujinkite šią integraciją (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti); problema išnyks, kai eksporte bus nurodyti įrenginių skelbiami mechanizmai. Dar nepatikrinta su tikrais įrenginiais."
+      "description": "{devices}: šie „JUNG HOME“ tinklo {title} mygtukiniai jungikliai skelbia kitą mechanizmą nei nurodytas Home Assistant įkeltame eksporte (eksportas → įrenginys). Mechanizmas pakeistas jau sukūrus tą eksportą, todėl Home Assistant ir programėlė gali rodyti netinkamą jų valdomo įrenginio tipą. Patikrinkite įrenginius „JUNG HOME“ programėlėje, dar kartą eksportuokite tinklą ir atnaujinkite šią integraciją (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti); problema išnyks, kai eksporte bus nurodyti įrenginių skelbiami mechanizmai. Dar nepatikrinta su tikrais įrenginiais."
     },
     "node_clock_wrong": {
       "title": "„JUNG HOME“ įrenginiai, kurių laikrodis rodo netikslų laiką",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
           "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
           "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
           "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
-          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
           "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
           "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
           "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Peršokti įrenginiams žinomus numerius",
-            "description": "Home Assistant girdi „JUNG HOME“ tinklą {title} per savo tarpinį mazgą, bet nė vienas įrenginys neatsakė į jo būsenos užklausas. Mazgai atmeta Home Assistant pranešimus kaip pakartotinius (replay). Tikėtinos dvi priežastys: šios integracijos sekos numerių saugykla (`.storage/junghome_ble.*`) prarasta arba atkurta iš senesnės atsarginės kopijos, todėl Home Assistant dabar siunčia mazgų jau matytus sekos numerius; arba kitas tinklo klientas (pavyzdžiui, įrankis `mesh_poc.py`) siunčia tuo pačiu unicast adresu {unicast}. Arba suteikite Home Assistant naują, nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas ir įsitikinkite, kad jo nenaudoja joks kitas klientas), arba, jei saugykla buvo prarasta ar atkurta (ir adreso nenaudoja joks kitas klientas), patvirtinkite, kad Home Assistant peršoktų savo sekos numeriais 1 048 576 į priekį ir prisijungtų iš naujo. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos: senesnė kopija tik kartoja įrenginių jau matytus numerius. Problema išnyks savaime, kai tik kuris nors įrenginys vėl atsakys Home Assistant."
+            "description": "Home Assistant girdi „JUNG HOME“ tinklą {title} per savo tarpinį mazgą, bet nė vienas įrenginys neatsakė į jo būsenos užklausas. Mazgai atmeta Home Assistant pranešimus kaip pakartotinius (replay). Tikėtinos dvi priežastys: šios integracijos sekos numerių saugykla (`.storage/junghome_ble.*`) prarasta arba atkurta iš senesnės atsarginės kopijos, todėl Home Assistant dabar siunčia mazgų jau matytus sekos numerius; arba kitas tinklo klientas (pavyzdžiui, įrankis `mesh_poc.py`) siunčia tuo pačiu unicast adresu {unicast}. Arba suteikite Home Assistant naują, nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas ir įsitikinkite, kad jo nenaudoja joks kitas klientas), arba, jei saugykla buvo prarasta ar atkurta (ir adreso nenaudoja joks kitas klientas), patvirtinkite, kad Home Assistant peršoktų savo sekos numeriais 1 048 576 į priekį ir prisijungtų iš naujo. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos: senesnė kopija tik kartoja įrenginių jau matytus numerius. Problema išnyks savaime, kai tik kuris nors įrenginys vėl atsakys Home Assistant."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Peršokti kito kliento sekos numerius",
-            "description": "Home Assistant gavo „JUNG HOME“ tinklo {title} pranešimą, išsiųstą iš jo paties unicast adreso {unicast} su sekos numeriu, kurio jis niekada nenaudojo: tuo pačiu adresu siunčia kitas tinklo klientas – antra Home Assistant sistema, šiuo adresu sukonfigūruotas įrankis `mesh_poc.py` arba kitur paleista šios sistemos kopija. Du siuntėjai vienu adresu pakartotinai naudoja vienas kito sekos numerius, o įrenginiai atmeta viską, kas mažiau už kito kliento numerius, todėl Home Assistant nieko nesiunčia į tinklą, kol tai nebus pataisyta (komandos nepavyksta, būsenos neatnaujinamos). Sustabdykite kitą klientą arba suteikite jam ar Home Assistant kitą nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas). Tada patvirtinkite, kad Home Assistant tęstų savo sekos numerius nuo didesnių nei pastebėti kito kliento ir vėl siųstų. Jei kitas klientas toliau siunčia šiuo adresu, problema grįš. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
+            "description": "Home Assistant gavo „JUNG HOME“ tinklo {title} pranešimą, išsiųstą iš jo paties unicast adreso {unicast} su sekos numeriu, kurio jis niekada nenaudojo: tuo pačiu adresu siunčia kitas tinklo klientas – antra Home Assistant sistema, šiuo adresu sukonfigūruotas įrankis `mesh_poc.py` arba kitur paleista šios sistemos kopija. Du siuntėjai vienu adresu pakartotinai naudoja vienas kito sekos numerius, o įrenginiai atmeta viską, kas mažiau už kito kliento numerius, todėl Home Assistant nieko nesiunčia į tinklą, kol tai nebus pataisyta (komandos nepavyksta, būsenos neatnaujinamos). Sustabdykite kitą klientą arba suteikite jam ar Home Assistant kitą nenaudojamą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas). Tada patvirtinkite, kad Home Assistant tęstų savo sekos numerius nuo didesnių nei pastebėti kito kliento ir vėl siųstų. Jei kitas klientas toliau siunčia šiuo adresu, problema grįš. Netaisykite to atkurdami sekos numerių saugyklą iš atsarginės kopijos. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Dar kartą peršokti kito kliento sekos numerius",
-            "description": "Home Assistant peršoko kito tinklo kliento sekos numerius savo adresu {unicast} „JUNG HOME“ tinkle {title}, tačiau kitas klientas nuo to laiko vėl siuntė šiuo adresu: jis vis dar veikia. Kol jis veikia, peršokimas nepadeda. Suteikite Home Assistant naują, nenaudojamą unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas) arba sustabdykite kitą klientą ar perkelkite jį kitu adresu. Iki tol Home Assistant nieko nesiunčia į tinklą. Patvirtinkite tik tada, kai kitas klientas nebenaudos šio adreso: tada Home Assistant vėl peršoks jo numerius ir atnaujins siuntimą. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
+            "description": "Home Assistant peršoko kito tinklo kliento sekos numerius savo adresu {unicast} „JUNG HOME“ tinkle {title}, tačiau kitas klientas nuo to laiko vėl siuntė šiuo adresu: jis vis dar veikia. Kol jis veikia, peršokimas nepadeda. Suteikite Home Assistant naują, nenaudojamą unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas) arba sustabdykite kitą klientą ar perkelkite jį kitu adresu. Iki tol Home Assistant nieko nesiunčia į tinklą. Patvirtinkite tik tada, kai kitas klientas nebenaudos šio adreso: tada Home Assistant vėl peršoks jo numerius ir atnaujins siuntimą. Dar nepatikrinta su tikrais įrenginiais: antras klientas Home Assistant adresu tik imituotas."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
+          "address_in_use": "Naujajame eksporte vienas mazgas turi Home Assistant adresą, todėl įrašas negali jo naudoti. Pirmiausia suteikite Home Assistant laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas), tada ten įkelkite eksportą.",
           "cannot_connect": "Šiuo adresu nepavyko pasiekti sietuvo.",
           "cannot_load": "Nepavyko nuskaityti tinklo eksporto. Patikrinkite, ar failas yra programėlės JSON eksportas (o nurodant kelią – ar kelias teisingas).",
           "cannot_store": "Nepavyko įrašyti eksporto į Home Assistant konfigūracijos katalogą.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
-          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
+          "no_gateway_pin": "Home Assistant neturi išsaugotos prieigos ar sertifikato sietuvui {host}, todėl jam nieko nesiunčia: niekas nepakeista. Verčiau gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti sietuvo sertifikatą.",
+          "certificate_changed": "Sietuvas {host} pateikia kitą sertifikatą nei tas, kurį jam prisegė Home Assistant: jam nieko neišsiųsta ir niekas nepakeista. Jei pakeitėte sietuvą ar jo sertifikatą, gaukite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti, kur galima patikrinti naująjį sertifikatą; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys.",
           "token_rejected": "Sietuvas {host} nebepriima Home Assistant prieigos: niekas nepakeista. Atlikite Home Assistant prašomą pakartotinį tapatybės nustatymą (Nustatymai → Įrenginiai ir paslaugos), tada dar kartą taisykite šią problemą.",
           "network_mismatch": "Eksportas priklauso kitam tinklui nei šis įrašas.",
           "mesh_already_configured": "Šis tinklas jau sukonfigūruotas kaip kitas įrašas; du to paties tinklo įrašai dalytųsi jo sekos numeriais. Verčiau perkonfigūruokite tą įrašą arba pirmiausia jį pašalinkite."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Pasikeitė „JUNG HOME“ sietuvo sertifikatas",
-      "description": "„JUNG HOME“ sietuvas {host} nebeatitinka TLS sertifikato, kurį jam prisegė Home Assistant: serveris pateikia kitą sertifikatą arba sietuvo mazgas per tinklą praneša apie kitą. Home Assistant nustojo naudoti sietuvą (ten nesiunčiamas nei prieigos raktas, nei eksportas); įrenginiai ir toliau veikia per Bluetooth. Jei pakeitėte sietuvą ar jo sertifikatą, atidarykite Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti ir dar kartą gaukite eksportą iš sietuvo; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys – patikrinkite savo tinklą."
+      "description": "„JUNG HOME“ sietuvas {host} nebeatitinka TLS sertifikato, kurį jam prisegė Home Assistant: serveris pateikia kitą sertifikatą arba sietuvo mazgas per tinklą praneša apie kitą. Home Assistant nustojo naudoti sietuvą (ten nesiunčiamas nei prieigos raktas, nei eksportas); įrenginiai ir toliau veikia per Bluetooth. Jei pakeitėte sietuvą ar jo sertifikatą, atidarykite Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti ir dar kartą gaukite eksportą iš sietuvo; kitu atveju jūsų tinkle sietuvo vardu gali atsakinėti kitas įrenginys – patikrinkite savo tinklą."
     },
     "gateway_sync_failed": {
       "title": "„JUNG HOME“ eksportas neperduotas sietuvui",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "„JUNG HOME“ sietuvas nebepriima Home Assistant",
-      "description": "„JUNG HOME“ sietuvas {host} atmeta prieigą, kurią Home Assistant užregistravo tinklui {title} (tikriausiai ji pašalinta „JUNG HOME“ programėlėje skiltyje Nustatymai → Sietuvas → Prieigos teisės). Home Assistant ir toliau keičia patalpas, mygtukų susiejimus ir scenas savo eksporte, bet nebeperduoda jo sietuvui, todėl programėlė tų pakeitimų nemato; įrenginiai ir toliau veikia. Home Assistant vėl prašo prieigos: vykdykite jo prašymą iš naujo nustatyti JUNG HOME tapatybę (Nustatymai → Įrenginiai ir paslaugos; Taisymuose tai taip pat rodoma kaip pasibaigęs autentifikavimas) ir įveskite sietuvo tinklo rakto slaptažodį arba patvirtinkite naują prieigos užklausą programėlėje. Problema išnyks, kai sietuvas vėl priims Home Assistant; tada veiksmas „Sinchronizuoti sietuvą“ perduos nuo to laiko padarytus pakeitimus."
+      "description": "„JUNG HOME“ sietuvas {host} atmeta prieigą, kurią Home Assistant užregistravo tinklui {title} (tikriausiai ji pašalinta „JUNG HOME“ programėlėje skiltyje Nustatymai → Sietuvas → Prieigos teisės). Home Assistant ir toliau keičia patalpas, mygtukų susiejimus ir scenas savo eksporte, bet nebeperduoda jo sietuvui, todėl programėlė tų pakeitimų nemato; įrenginiai ir toliau veikia. Home Assistant vėl prašo prieigos: vykdykite jo prašymą iš naujo nustatyti JUNG HOME Bluetooth Mesh tapatybę (Nustatymai → Įrenginiai ir paslaugos; Taisymuose tai taip pat rodoma kaip pasibaigęs autentifikavimas) ir įveskite sietuvo tinklo rakto slaptažodį arba patvirtinkite naują prieigos užklausą programėlėje. Problema išnyks, kai sietuvas vėl priims Home Assistant; tada veiksmas „Sinchronizuoti sietuvą“ perduos nuo to laiko padarytus pakeitimus."
     },
     "seq_store_lost": {
       "title": "Prarasti „JUNG HOME“ tinklo {title} sekos numeriai",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
-          "cannot_load": "Nepavyko nuskaityti įrašo eksporto, todėl laisvo adreso nustatyti neįmanoma: niekas nepakeista. Įkelkite naują eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti.",
-          "no_free_address": "Eksporte nėra laisvo adreso Home Assistant: niekas nepakeista. Patikrinkite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti.",
+          "cannot_load": "Nepavyko nuskaityti įrašo eksporto, todėl laisvo adreso nustatyti neįmanoma: niekas nepakeista. Įkelkite naują eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti.",
+          "no_free_address": "Eksporte nėra laisvo adreso Home Assistant: niekas nepakeista. Patikrinkite eksportą per Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti.",
           "address_taken": "{suggestion} eksporte nebėra laisvas (eksportas tuo metu pasikeitė): niekas nepakeista. Dar kartą taisykite problemą, kad gautumėte naują pasiūlymą."
         }
       }
     },
     "address_reserved": {
       "title": "„JUNG HOME“ adresas, kurį naudoja Home Assistant, gali būti suteiktas kitam",
-      "description": "Unicast adresas {unicast}, kuriuo Home Assistant siunčia tinkle {title}, patenka į vieno iš programėlės įtraukėjų (provisioner) adresų intervalą arba jį naudojo pašalintas mazgas. Jis veiks, kol programėlė tuo adresu neįtrauks mazgo; iki tol perkelkite Home Assistant į laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas; {suggestion} yra laisvas)."
+      "description": "Unicast adresas {unicast}, kuriuo Home Assistant siunčia tinkle {title}, patenka į vieno iš programėlės įtraukėjų (provisioner) adresų intervalą arba jį naudojo pašalintas mazgas. Jis veiks, kol programėlė tuo adresu neįtrauks mazgo; iki tol perkelkite Home Assistant į laisvą adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas; {suggestion} yra laisvas)."
     },
     "sequence_space_low": {
       "title": "Baigiasi „JUNG HOME“ tinklo sekos numeriai",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "„JUNG HOME“ tinklo IV indeksas kitas",
-      "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}: skirtumas per didelis, kad Home Assistant galėtų jį sekti (jis seka tinklą iki 42 į priekį, ne dažniau nei kas 192 valandas ir niekada atgal). Iki tol įrenginiai Home Assistant nepaiso. Taip nutinka, kai Home Assistant neveikė per daug IV atnaujinimų, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Suteikite Home Assistant naują unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti → Išplėstiniai nustatymai → Mūsų unicast adresas): juo jis pradeda nuo tinklo IV indekso. Saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus sekos numerius, o rankinį pakeitimą kitas paleidimas vis tiek perrašo. Problema išnyks savaime, kai gaus švyturį, kurio IV indeksą galima pasiekti."
+      "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}: skirtumas per didelis, kad Home Assistant galėtų jį sekti (jis seka tinklą iki 42 į priekį, ne dažniau nei kas 192 valandas ir niekada atgal). Iki tol įrenginiai Home Assistant nepaiso. Taip nutinka, kai Home Assistant neveikė per daug IV atnaujinimų, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Suteikite Home Assistant naują unicast adresą (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti → eksporto šaltinis → Išplėstiniai nustatymai → Mūsų unicast adresas): juo jis pradeda nuo tinklo IV indekso. Saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus sekos numerius, o rankinį pakeitimą kitas paleidimas vis tiek perrašo. Problema išnyks savaime, kai gaus švyturį, kurio IV indeksą galima pasiekti."
     },
     "iv_index_ahead": {
       "title": "Home Assistant lenkia „JUNG HOME“ tinklo IV indeksą",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Grįžti prie tinklo IV indekso",
-            "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}, t. y. didesnis, nors tinklas niekada nebūna atsilikęs: įrenginiai Home Assistant nepaiso, o jis negali sekti tinklo, kuris yra už jo. Taip nutinka, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Patvirtinkite, kad Home Assistant grįžtų prie tinklo IV indekso ir iš naujo nustatytų integraciją: jo sekos numeriai tęsis virš visų numerių, kuriuos jis išsiuntė nuo to indekso, todėl nė vienas nebus panaudotas du kartus. Užuot taip darę, saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus numerius. Kitas būdas grįžti – naujas Home Assistant unicast adresas (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME → Perkonfigūruoti). Dar nepatikrinta su tikrais įrenginiais: tinklą lenkiantis IV indeksas tikrame tinkle dar nepastebėtas."
+            "description": "Tinklo {title} IV indeksas yra {mesh}, o Home Assistant sekos numerių saugyklos – {ours}, t. y. didesnis, nors tinklas niekada nebūna atsilikęs: įrenginiai Home Assistant nepaiso, o jis negali sekti tinklo, kuris yra už jo. Taip nutinka, kai jo saugykla (`.storage/junghome_ble.seq.*`) priklauso kitam tinklui arba kai jį į priekį nustūmė tinklo raktu suklastoti švyturiai. Patvirtinkite, kad Home Assistant grįžtų prie tinklo IV indekso ir iš naujo nustatytų integraciją: jo sekos numeriai tęsis virš visų numerių, kuriuos jis išsiuntė nuo to indekso, todėl nė vienas nebus panaudotas du kartus. Užuot taip darę, saugyklos neatkurkite iš atsarginės kopijos ir jos neredaguokite: senesnis ar redaguotas įrašas kartoja įrenginių jau matytus numerius. Kitas būdas grįžti – naujas Home Assistant unicast adresas (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti). Dar nepatikrinta su tikrais įrenginiais: tinklą lenkiantis IV indeksas tikrame tinkle dar nepastebėtas."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Atsisiųsti eksportą",
-      "description": "Atsako nuoroda, kuria atsisiunčiamas eksportas, kurį Home Assistant laiko „JUNG HOME“ tinklui (JungHome.json, su Home Assistant pakeistomis patalpomis, mygtukais, sąsajomis ir scenomis), kad jį būtų galima importuoti į „JUNG HOME“ programėlę arba laikyti kaip atsarginę kopiją. Nuoroda yra kelias Home Assistant adresu ir galioja penkias minutes, tik ją paprašiusiam administratoriui. Faile yra visi instaliacijos raktai: ištrinkite jį, kai tik jis bus importuotas arba saugiai padėtas. Tik administratoriams. Importas į programėlę su programėle dar nepatikrintas.",
+      "description": "Atsako nuoroda, kuria atsisiunčiamas eksportas, kurį Home Assistant laiko „JUNG HOME“ tinklui (JungHome.json, su Home Assistant pakeistomis patalpomis, mygtukais, sąsajomis ir scenomis), kad jį būtų galima importuoti į „JUNG HOME“ programėlę arba laikyti kaip atsarginę kopiją. Bet kas, turintis nuorodą, penkias minutes gali atsisiųsti failą kaip ją paprašęs administratorius: atidarykite ją patys ir niekam neperduokite. Atsakyme ji pateikiama kaip kelias Home Assistant adresu (`url`) ir, kai Home Assistant žino savo adresą, kaip visas URL (`absolute_url`); `stale` reiškia, kad „JUNG HOME“ programėlė pakeitė instaliaciją po to, kai failas buvo įrašytas: pirmiausia įkelkite programėlės eksportą į Home Assistant. Faile yra visi instaliacijos raktai: ištrinkite jį, kai tik jis bus importuotas arba saugiai padėtas. Tik administratoriams. Importas į programėlę su programėle dar nepatikrintas.",
       "fields": {
         "device": {
           "name": "Įrenginys",

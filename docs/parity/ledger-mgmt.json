@@ -5299,7 +5299,7 @@
     "tests/test_onboard.py::test_remove_device_resets_it_and_takes_it_out",
     "tests/test_onboard.py::test_remove_device_refusals"
    ],
-   "missing": "Config Node Reset + unwiring + export work; differences: the reset goes first and the unwiring after it (the app unwires first unless forced), the RTR operation-mode reset (mgmt:flow:resetoperationmode) and the deletion of thresholds pointing at the node are not done. To build: reorder + the threshold step, tests/sim.",
+   "missing": "Config Node Reset + unwiring + export work. The order is declined: the reset goes first and the unwiring after it, unlike the app (which unwires first unless forced), so a node that refuses the reset keeps its wiring and still works (Nodes.remove_node). Not done: the RTR operation-mode reset (mgmt:flow:resetoperationmode) and the deletion of thresholds pointing at the node. To build: the threshold step, tests/sim.",
    "class": "build",
    "verify": "offline"
   },

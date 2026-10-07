@@ -1117,8 +1117,8 @@ async def test_remove_from_room_needs_force_for_a_load_a_key_drives(
         await call(hass, "remove_from_room", {"entity_id": mirror, "room": "WC"})
     assert exc.value.translation_key == "service_room_key_drives_load"
     placeholders = exc.value.translation_placeholders
-    assert placeholders["device"] == "0148 (WC mirror)"
-    assert placeholders["button"].startswith("0301 (")
+    assert placeholders["device"] == "WC mirror (0148)"
+    assert placeholders["button"].endswith(" (0301)")
     assert placeholders["room"] == "WC"
     assert env.config_calls == []
     assert env.path.read_bytes() == before
@@ -3280,7 +3280,9 @@ async def test_a_dry_run_through_the_action_sends_writes_and_places_nothing(
             assert "preflight" not in response, service
         elif data.get("force"):  # an override of its own: the comparison still runs
             assert "preflight" in response, service
-    assert response["steps"][0].startswith("0232 (")  # named by the device
+    assert response["steps"][0].startswith(
+        "Living room DALI (0232): "
+    )  # named by the device
     # without a response asked for, a dry run answers nothing and does nothing either
     await call(hass, "set_room", {**target, "dry_run": True})
     assert config_writes(env) == []  # the pre-flight reads only
@@ -3319,14 +3321,14 @@ async def test_a_rewiring_action_answers_what_it_applied_and_logs_it(
         "applied": 8,
         "total": 8,
         "recorded": True,
-        "nodes": ["0232 (Living room DALI)"],
+        "nodes": ["Living room DALI (0232)"],
     }
     assert plans[-1].data["outcome"] == "finished"
     assert plans[-1].data["message"] == "plan_key_device"
     line = describers(hass)[EVENT_PLAN](plans[-1])
     assert line == {
         "name": "JUNG HOME mesh test",
-        "message": "0234 (Push-button 2-gang 0232 buttons A) now drives 0300 (WC ceiling); 8 messages",
+        "message": "Push-button 2-gang 0232 buttons A (0234) now drives WC ceiling (0300); 8 messages",
     }
     history = list(mesh_config.plan_history(hass, env.entry.entry_id))
     assert history[-1]["outcome"] == "finished"
@@ -3334,7 +3336,7 @@ async def test_a_rewiring_action_answers_what_it_applied_and_logs_it(
     # the other summaries
     response = await respond(hass, "assign_key", {"key_entity": key, "room": "WC"})
     assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
-        "0234 (Push-button 2-gang 0232 buttons A) now drives room WC; "
+        "Push-button 2-gang 0232 buttons A (0234) now drives room WC; "
     )
     await respond(hass, "assign_key", {"key_entity": key, "scene": "All off"})
     assert "now recalls scene 2" in describers(hass)[EVENT_PLAN](plans[-1])["message"]
@@ -3344,7 +3346,7 @@ async def test_a_rewiring_action_answers_what_it_applied_and_logs_it(
     light = entity_id(hass, "light", UID_LIGHT_DIMMER)
     await respond(hass, "add_to_room", {"entity_id": light, "room": "Kitchen"})
     assert describers(hass)[EVENT_PLAN](plans[-1])["message"].startswith(
-        "0300 (WC ceiling) now in room Kitchen; "
+        "WC ceiling (0300) now in room Kitchen; "
     )
     await respond(hass, "remove_from_room", {"entity_id": light, "room": "Kitchen"})
     assert (
@@ -3384,13 +3386,13 @@ async def test_a_stopped_plan_says_how_far_it_got(
         )
     placeholders = exc.value.translation_placeholders or {}
     assert (
-        placeholders["node"] == "0232 (Living room DALI)"
+        placeholders["node"] == "Living room DALI (0232)"
     )  # a name, not an address alone
     assert {k: v for k, v in placeholders.items() if k.startswith("outcome_")} == {
         "outcome_applied": "3",
         "outcome_total": "8",
         "outcome_recorded": "true",
-        "outcome_nodes": "0232 (Living room DALI)",
+        "outcome_nodes": "Living room DALI (0232)",
     }
     assert plans[-1].data["outcome"] == "stopped"
     message = describers(hass)[EVENT_PLAN](plans[-1])["message"]
@@ -3583,14 +3585,18 @@ async def test_a_node_the_app_changed_stops_the_action_and_force_runs_it(
         await call(hass, "clear_key", {"key_entity": key})
     assert exc.value.translation_key == "service_preflight_differs"
     placeholders = exc.value.translation_placeholders or {}
-    assert (placeholders["expected"], placeholders["found"]) == ("C044", "C070")
-    assert placeholders["node"] == "0232 (Living room DALI)"
+    # the groups by the export's names for them, with their addresses
+    assert (placeholders["expected"], placeholders["found"]) == (
+        "element group #0x232 (C044)",
+        "element group #0x300 (C070)",
+    )
+    assert placeholders["node"] == "Living room DALI (0232)"
     assert "with `force` it runs without this check" in str(exc.value)
     assert config_writes(env) == []
     response = await respond(hass, "clear_key", {"key_entity": key, "dry_run": True})
     assert response["preflight"]["differences"] == [
         {
-            "node": "0232 (Living room DALI)",
+            "node": "Living room DALI (0232)",
             "element": "0234",
             "model": "1001",
             "kind": "subscriptions",

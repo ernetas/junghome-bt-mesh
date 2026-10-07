@@ -25,6 +25,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
 from .config_entities import EntityTarget, node_version, property_reader
 from .const import DOMAIN
+from .device_info import address_label
 from .entity import socket_device_info
 from .jhmesh import properties as P
 from .jhmesh.export import cdb_element_groups
@@ -141,11 +142,17 @@ class ThresholdProgress:
     A call writes socket after socket, each its threshold(s) and then its wiring: the error of a later one used
     to say that nothing before it was applied, though thresholds and whole sockets were. `written` are the
     thresholds of the socket under way, `finished` the sockets done. Said as data (`Applied`): one sentence per
-    threshold or pair of a socket, so no `{which}` word is a placeholder's value.
+    threshold or pair of a socket, so no `{which}` word is a placeholder's value. `names`: each socket as the
+    errors name it (`address_label`), noted by `write_threshold`; one it did not note goes by its address.
     """
 
     written: dict[int, list[Which]] = field(default_factory=dict)
     finished: list[int] = field(default_factory=list)
+    names: dict[int, str] = field(default_factory=dict)
+
+    def name(self, address: int) -> str:
+        """Return the socket at `address` as the errors name it."""
+        return self.names.get(address, f"{address:04X}")
 
     def wrote(self, address: int, which: Which) -> None:
         """Note that the socket at `address` took its `which` threshold."""
@@ -160,13 +167,13 @@ class ThresholdProgress:
         """Return the sentences naming what was written; empty when nothing was."""
         done = Applied()
         if len(self.finished) == 1:
-            done += said("socket_set", socket=f"{self.finished[0]:04X}")
+            done += said("socket_set", socket=self.name(self.finished[0]))
         elif self.finished:
-            sockets = ", ".join(f"{a:04X}" for a in self.finished)
+            sockets = ", ".join(self.name(a) for a in self.finished)
             done += said("sockets_set", sockets=sockets)
         for address, which in self.written.items():
             key = "thresholds" if len(set(which)) > 1 else which[0]
-            done += said(f"{key}_written", socket=f"{address:04X}")
+            done += said(f"{key}_written", socket=self.name(address))
         return done
 
     def text(self) -> Applied:
@@ -246,7 +253,7 @@ async def write_threshold(
     progress = progress if progress is not None else ThresholdProgress()
     reader = property_reader(hass, hub)
     spec = P.PROPERTIES[THRESHOLD_PROPERTIES[which]]
-    address = f"{socket.address:04X}"
+    address = progress.names[socket.address] = address_label(hub, socket.address)
     try:
         await reader.write(socket.address, spec, value)
     except OSError as err:  # a lost link (ConnectionError)

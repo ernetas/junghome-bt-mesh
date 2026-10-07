@@ -1074,7 +1074,7 @@
       "message": "Niciun nod al rețelei mesh JUNG nu este încă vizibil prin Bluetooth."
     },
     "export_keys_stale": {
-      "message": "Dispozitivele rețelei mesh JUNG sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din export: cheile au fost reînnoite după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME și folosește exportul la Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează."
+      "message": "Dispozitivele rețelei mesh JUNG sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din export: cheile au fost reînnoite după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME și folosește exportul la Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant nu are niciun adaptor sau proxy Bluetooth la care să se poată conecta: rețeaua mesh JUNG nu poate fi accesată."
@@ -1275,10 +1275,10 @@
       "message": "Conexiunea cu rețeaua mesh JUNG s-a pierdut în timpul trimiterii {message} către nodul {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Nodul {node} se află în exportul rețelei mesh {path}, dar nu și în rețeaua pe care Home Assistant a încărcat-o anterior din acesta; reîncarcă integrarea (Setări → Dispozitive și servicii → JUNG HOME → Reîncarcă) pentru ca ea să urmeze exportul, apoi încearcă din nou. {applied}"
+      "message": "Nodul {node} se află în exportul rețelei mesh {path}, dar nu și în rețeaua pe care Home Assistant a încărcat-o anterior din acesta; reîncarcă integrarea (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reîncarcă) pentru ca ea să urmeze exportul, apoi încearcă din nou. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "Gateway-ul JUNG HOME de la {host} conține un export mai nou ({gateway}) decât fișierul pe care Home Assistant l-ar încărca ({file}); încărcarea lui ar șterge modificările făcute între timp în aplicația JUNG HOME. Următoarea modificare făcută în Home Assistant preia exportul gateway-ului și aplică peste el modificările proprii ale lui Home Assistant. Dacă eroarea reapare (o intrare fără o copie a ultimei încărcări a aplicației nu le poate deosebi), preia din nou exportul gateway-ului (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează; fișierul înlocuit este păstrat alături ca `.pre-reconfigure`), apoi repetă modificarea făcută în Home Assistant."
+      "message": "Gateway-ul JUNG HOME de la {host} conține un export mai nou ({gateway}) decât fișierul pe care Home Assistant l-ar încărca ({file}); încărcarea lui ar șterge modificările făcute între timp în aplicația JUNG HOME. Următoarea modificare făcută în Home Assistant preia exportul gateway-ului și aplică peste el modificările proprii ale lui Home Assistant. Dacă eroarea reapare (o intrare fără o copie a ultimei încărcări a aplicației nu le poate deosebi), preia din nou exportul gateway-ului (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează; fișierul înlocuit este păstrat alături ca `.pre-reconfigure`), apoi repetă modificarea făcută în Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "Gateway-ul JUNG HOME de la {host} a răspuns doar cu baza de date simplă a dispozitivelor (fără numele dispozitivelor sau legăturile cu camerele); adoptarea ei le-ar șterge din fișierul păstrat de Home Assistant. Încearcă din nou când gateway-ul nu mai este ocupat sau preia din nou exportul aplicației."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
           "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
           "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
           "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
-          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
           "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
           "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
           "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
           "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
           "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
           "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
-          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
           "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
           "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
           "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
           "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
           "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
           "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
-          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
           "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
           "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
           "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Butoane JUNG HOME cu alt mecanism decât în export",
-      "description": "{devices}: aceste butoane din rețeaua mesh JUNG HOME {title} anunță alt mecanism decât cel din exportul încărcat de Home Assistant (export → dispozitiv). Mecanismul a fost înlocuit după realizarea acelui export, așa că Home Assistant și aplicația pot afișa un tip greșit de consumator pentru ele. Verifică dispozitivele în aplicația JUNG HOME, exportă din nou rețeaua și actualizează această integrare (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează); problema dispare după ce exportul indică mecanismele pe care le anunță dispozitivele. Neverificat încă pe dispozitive reale."
+      "description": "{devices}: aceste butoane din rețeaua mesh JUNG HOME {title} anunță alt mecanism decât cel din exportul încărcat de Home Assistant (export → dispozitiv). Mecanismul a fost înlocuit după realizarea acelui export, așa că Home Assistant și aplicația pot afișa un tip greșit de consumator pentru ele. Verifică dispozitivele în aplicația JUNG HOME, exportă din nou rețeaua și actualizează această integrare (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează); problema dispare după ce exportul indică mecanismele pe care le anunță dispozitivele. Neverificat încă pe dispozitive reale."
     },
     "node_clock_wrong": {
       "title": "Dispozitive JUNG HOME cu ceasul greșit",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
           "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
           "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
           "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
-          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
           "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
           "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
           "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Sari peste numerele pe care dispozitivele le cunosc",
-            "description": "Home Assistant aude rețeaua mesh JUNG HOME {title} prin nodul său proxy, dar niciun dispozitiv nu i-a răspuns la cererile de stare. Nodurile resping mesajele lui Home Assistant ca reluări (replay). Două cauze sunt probabile: depozitul numerelor de secvență al acestei integrări (`.storage/junghome_ble.*`) s-a pierdut sau a fost restaurat dintr-un backup mai vechi, așa că Home Assistant trimite acum numere de secvență pe care nodurile le-au văzut deja; sau un alt client mesh (de exemplu instrumentul `mesh_poc.py`) transmite cu aceeași adresă unicast {unicast}. Fie dă-i lui Home Assistant o adresă nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast, și asigură-te că niciun alt client nu o folosește), fie, dacă depozitul s-a pierdut sau a fost restaurat (și niciun alt client nu folosește adresa), confirmă pentru a-l lăsa pe Home Assistant să își avanseze numerele de secvență cu 1 048 576 și să se reconecteze. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta: o copie mai veche doar repetă numere pe care dispozitivele le-au văzut deja. Problema dispare de la sine imediat ce un dispozitiv îi răspunde din nou lui Home Assistant."
+            "description": "Home Assistant aude rețeaua mesh JUNG HOME {title} prin nodul său proxy, dar niciun dispozitiv nu i-a răspuns la cererile de stare. Nodurile resping mesajele lui Home Assistant ca reluări (replay). Două cauze sunt probabile: depozitul numerelor de secvență al acestei integrări (`.storage/junghome_ble.*`) s-a pierdut sau a fost restaurat dintr-un backup mai vechi, așa că Home Assistant trimite acum numere de secvență pe care nodurile le-au văzut deja; sau un alt client mesh (de exemplu instrumentul `mesh_poc.py`) transmite cu aceeași adresă unicast {unicast}. Fie dă-i lui Home Assistant o adresă nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast, și asigură-te că niciun alt client nu o folosește), fie, dacă depozitul s-a pierdut sau a fost restaurat (și niciun alt client nu folosește adresa), confirmă pentru a-l lăsa pe Home Assistant să își avanseze numerele de secvență cu 1 048 576 și să se reconecteze. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta: o copie mai veche doar repetă numere pe care dispozitivele le-au văzut deja. Problema dispare de la sine imediat ce un dispozitiv îi răspunde din nou lui Home Assistant."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Sari peste numerele de secvență ale celuilalt client",
-            "description": "Home Assistant a primit un mesaj al rețelei mesh JUNG HOME {title} trimis de la propria sa adresă unicast {unicast} cu un număr de secvență pe care nu l-a folosit niciodată: un alt client mesh transmite cu aceeași adresă — o a doua instalare Home Assistant, instrumentul `mesh_poc.py` configurat cu această adresă sau o copie a acestei instalări pornită în altă parte. Doi expeditori pe aceeași adresă își refolosesc unul altuia numerele de secvență, iar dispozitivele resping tot ce se află sub numerele celuilalt client, așa că Home Assistant nu trimite nimic în rețeaua mesh până când problema nu este reparată (comenzile eșuează, stările nu sunt actualizate). Oprește celălalt client sau dă-i lui ori lui Home Assistant o altă adresă nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast). Apoi confirmă pentru a-l lăsa pe Home Assistant să își continue numerele de secvență după cele cu care a fost văzut celălalt client și să trimită din nou. Dacă celălalt client continuă să trimită de pe această adresă, problema reapare. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
+            "description": "Home Assistant a primit un mesaj al rețelei mesh JUNG HOME {title} trimis de la propria sa adresă unicast {unicast} cu un număr de secvență pe care nu l-a folosit niciodată: un alt client mesh transmite cu aceeași adresă — o a doua instalare Home Assistant, instrumentul `mesh_poc.py` configurat cu această adresă sau o copie a acestei instalări pornită în altă parte. Doi expeditori pe aceeași adresă își refolosesc unul altuia numerele de secvență, iar dispozitivele resping tot ce se află sub numerele celuilalt client, așa că Home Assistant nu trimite nimic în rețeaua mesh până când problema nu este reparată (comenzile eșuează, stările nu sunt actualizate). Oprește celălalt client sau dă-i lui ori lui Home Assistant o altă adresă nefolosită (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast). Apoi confirmă pentru a-l lăsa pe Home Assistant să își continue numerele de secvență după cele cu care a fost văzut celălalt client și să trimită din nou. Dacă celălalt client continuă să trimită de pe această adresă, problema reapare. Nu restaura depozitul numerelor de secvență dintr-un backup pentru a remedia asta. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Sari din nou peste numerele de secvență ale celuilalt client",
-            "description": "Home Assistant a sărit peste numerele de secvență ale unui alt client mesh de pe adresa sa {unicast} din rețeaua mesh JUNG HOME {title}, iar celălalt client a trimis de atunci din nou de pe acea adresă: încă rulează. Saltul înainte nu ajută cât timp rulează. Dă-i lui Home Assistant o adresă unicast nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast) sau oprește celălalt client ori mută-l pe altă adresă. Până atunci, Home Assistant nu trimite nimic în rețeaua mesh. Confirmă doar după ce celălalt client nu mai folosește această adresă: Home Assistant sare atunci din nou peste numerele lui și reia trimiterea. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
+            "description": "Home Assistant a sărit peste numerele de secvență ale unui alt client mesh de pe adresa sa {unicast} din rețeaua mesh JUNG HOME {title}, iar celălalt client a trimis de atunci din nou de pe acea adresă: încă rulează. Saltul înainte nu ajută cât timp rulează. Dă-i lui Home Assistant o adresă unicast nouă, nefolosită (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast) sau oprește celălalt client ori mută-l pe altă adresă. Până atunci, Home Assistant nu trimite nimic în rețeaua mesh. Confirmă doar după ce celălalt client nu mai folosește această adresă: Home Assistant sare atunci din nou peste numerele lui și reia trimiterea. Neverificat încă pe dispozitive reale: un al doilea client pe adresa lui Home Assistant a fost doar simulat."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
+          "address_in_use": "În noul export, un nod are adresa lui Home Assistant, așa că intrarea nu îl poate folosi. Dă-i mai întâi lui Home Assistant o adresă liberă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast), apoi încarcă exportul acolo.",
           "cannot_connect": "Gateway-ul nu a putut fi contactat la acea adresă.",
           "cannot_load": "Exportul rețelei mesh nu a putut fi citit. Verifică dacă fișierul este exportul JSON al aplicației (și, pentru o cale, dacă aceasta este corectă).",
           "cannot_store": "Exportul nu a putut fi scris în directorul de configurare Home Assistant.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
-          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
+          "no_gateway_pin": "Home Assistant nu are înregistrat niciun acces sau niciun certificat pentru gateway-ul {host}, așa că nu îi trimite nimic: nu s-a schimbat nimic. Preia în schimb exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde certificatul gateway-ului poate fi verificat.",
+          "certificate_changed": "Gateway-ul de la {host} prezintă un alt certificat decât cel fixat pentru el de Home Assistant: nu i s-a trimis nimic și nu s-a schimbat nimic. Dacă ai înlocuit gateway-ul sau certificatul lui, preia exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează, unde noul certificat poate fi verificat; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului.",
           "token_rejected": "Gateway-ul de la {host} nu mai acceptă accesul lui Home Assistant: nu s-a schimbat nimic. Urmează reautentificarea cerută de Home Assistant (Setări → Dispozitive și servicii), apoi repară din nou această problemă.",
           "network_mismatch": "Exportul aparține altei rețele mesh decât această intrare.",
           "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare; două intrări ale aceleiași rețele mesh și-ar împărți numerele de secvență. Reconfigurează în schimb acea intrare sau elimin-o mai întâi."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Certificatul gateway-ului JUNG HOME s-a schimbat",
-      "description": "Gateway-ul JUNG HOME de la {host} nu mai corespunde certificatului TLS fixat pentru el de Home Assistant: gazda prezintă alt certificat sau nodul gateway raportează altul prin rețeaua mesh. Home Assistant a încetat să folosească gateway-ul (nu i se mai trimite niciun token de acces și niciun export); dispozitivele continuă să funcționeze prin Bluetooth. Dacă ai înlocuit gateway-ul sau certificatul lui, deschide Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează și preia din nou exportul de la gateway; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului — verifică-ți rețeaua."
+      "description": "Gateway-ul JUNG HOME de la {host} nu mai corespunde certificatului TLS fixat pentru el de Home Assistant: gazda prezintă alt certificat sau nodul gateway raportează altul prin rețeaua mesh. Home Assistant a încetat să folosească gateway-ul (nu i se mai trimite niciun token de acces și niciun export); dispozitivele continuă să funcționeze prin Bluetooth. Dacă ai înlocuit gateway-ul sau certificatul lui, deschide Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează și preia din nou exportul de la gateway; altfel, este posibil ca un alt dispozitiv din rețeaua ta să răspundă în locul gateway-ului — verifică-ți rețeaua."
     },
     "gateway_sync_failed": {
       "title": "Exportul JUNG HOME nu a fost transmis gateway-ului",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "Gateway-ul JUNG HOME nu mai acceptă Home Assistant",
-      "description": "Gateway-ul JUNG HOME de la {host} respinge accesul înregistrat de Home Assistant pentru rețeaua mesh {title} (probabil a fost eliminat în aplicația JUNG HOME în Setări → Gateway → Permisiuni de acces). Home Assistant continuă să modifice camere, legături de taste și scene în propriul export, dar nu îl mai transmite gateway-ului, așa că aplicația nu vede aceste modificări; dispozitivele continuă să funcționeze. Home Assistant cere din nou acces: urmează solicitarea sa de reautentificare JUNG HOME (Setări → Dispozitive și servicii; Reparații o listează și ca autentificare expirată) și introdu parola cheii de rețea a gateway-ului sau aprobă noua cerere de acces în aplicație. Problema dispare după ce gateway-ul acceptă din nou Home Assistant; acțiunea „Sincronizează gateway-ul” transmite apoi modificările făcute între timp."
+      "description": "Gateway-ul JUNG HOME de la {host} respinge accesul înregistrat de Home Assistant pentru rețeaua mesh {title} (probabil a fost eliminat în aplicația JUNG HOME în Setări → Gateway → Permisiuni de acces). Home Assistant continuă să modifice camere, legături de taste și scene în propriul export, dar nu îl mai transmite gateway-ului, așa că aplicația nu vede aceste modificări; dispozitivele continuă să funcționeze. Home Assistant cere din nou acces: urmează solicitarea sa de reautentificare JUNG HOME Bluetooth Mesh (Setări → Dispozitive și servicii; Reparații o listează și ca autentificare expirată) și introdu parola cheii de rețea a gateway-ului sau aprobă noua cerere de acces în aplicație. Problema dispare după ce gateway-ul acceptă din nou Home Assistant; acțiunea „Sincronizează gateway-ul” transmite apoi modificările făcute între timp."
     },
     "seq_store_lost": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME {title} s-au pierdut",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
-          "cannot_load": "Exportul intrării nu a putut fi citit, așa că nu se poate determina o adresă liberă: nu s-a schimbat nimic. Încarcă un export nou din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează.",
-          "no_free_address": "Exportul nu lasă nicio adresă liberă pentru Home Assistant: nu s-a schimbat nimic. Verifică exportul din Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează.",
+          "cannot_load": "Exportul intrării nu a putut fi citit, așa că nu se poate determina o adresă liberă: nu s-a schimbat nimic. Încarcă un export nou din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează.",
+          "no_free_address": "Exportul nu lasă nicio adresă liberă pentru Home Assistant: nu s-a schimbat nimic. Verifică exportul din Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează.",
           "address_taken": "{suggestion} nu mai este liberă în export (acesta s-a schimbat între timp): nu s-a schimbat nimic. Repară din nou problema pentru o nouă sugestie."
         }
       }
     },
     "address_reserved": {
       "title": "Adresa JUNG HOME a lui Home Assistant ar putea fi atribuită altui dispozitiv",
-      "description": "Adresa unicast {unicast} de pe care trimite Home Assistant în rețeaua mesh {title} se află în intervalul de adrese al unuia dintre provizionerii aplicației sau a fost folosită de un nod eliminat. Funcționează în continuare până când aplicația provizionează un nod acolo; mută Home Assistant pe o adresă liberă înainte de asta (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast; {suggestion} este liberă)."
+      "description": "Adresa unicast {unicast} de pe care trimite Home Assistant în rețeaua mesh {title} se află în intervalul de adrese al unuia dintre provizionerii aplicației sau a fost folosită de un nod eliminat. Funcționează în continuare până când aplicația provizionează un nod acolo; mută Home Assistant pe o adresă liberă înainte de asta (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast; {suggestion} este liberă)."
     },
     "sequence_space_low": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "Rețeaua mesh JUNG HOME are alt index IV",
-      "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours}: prea departe unul de altul pentru ca Home Assistant să îl poată urma (urmează rețeaua mesh cu cel mult 42 înainte, cel mult o dată la 192 de ore și niciodată înapoi). Între timp, dispozitivele ignoră Home Assistant. Acest lucru se întâmplă când Home Assistant a lipsit pe parcursul multor actualizări IV, când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Dă-i lui Home Assistant o adresă unicast nouă (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează → Avansat → Adresa noastră unicast): acolo pornește de la indexul IV al rețelei mesh. Nu restaura depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere de secvență pe care dispozitivele le-au văzut deja, iar următoarea pornire suprascrie oricum o editare manuală. Problema dispare de la sine când sosește un beacon cu un index IV pe care îl poate urma."
+      "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours}: prea departe unul de altul pentru ca Home Assistant să îl poată urma (urmează rețeaua mesh cu cel mult 42 înainte, cel mult o dată la 192 de ore și niciodată înapoi). Între timp, dispozitivele ignoră Home Assistant. Acest lucru se întâmplă când Home Assistant a lipsit pe parcursul multor actualizări IV, când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Dă-i lui Home Assistant o adresă unicast nouă (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează → sursa exportului → Avansat → Adresa noastră unicast): acolo pornește de la indexul IV al rețelei mesh. Nu restaura depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere de secvență pe care dispozitivele le-au văzut deja, iar următoarea pornire suprascrie oricum o editare manuală. Problema dispare de la sine când sosește un beacon cu un index IV pe care îl poate urma."
     },
     "iv_index_ahead": {
       "title": "Home Assistant este înaintea indexului IV al rețelei mesh JUNG HOME",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Revino la indexul IV al rețelei mesh",
-            "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours} — înaintea ei, o stare în care rețeaua mesh nu ajunge niciodată: dispozitivele ignoră Home Assistant, iar acesta nu poate urma o rețea mesh aflată în urma lui. Acest lucru se întâmplă când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Confirmă pentru a readuce Home Assistant la indexul IV al rețelei mesh și a configura din nou integrarea: numerele sale de secvență continuă peste orice număr trimis de la acel index încolo, astfel încât niciunul nu este folosit de două ori. Nu restaura în schimb depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere pe care dispozitivele le-au văzut deja. Cealaltă cale de revenire este o adresă unicast nouă pentru Home Assistant (Setări → Dispozitive și servicii → JUNG HOME → Reconfigurează). Neverificat încă pe dispozitive reale: un index IV înaintea celui al rețelei mesh nu a fost observat într-o rețea reală."
+            "description": "Rețeaua mesh {title} are indexul IV {mesh}, iar depozitul numerelor de secvență al lui Home Assistant are {ours} — înaintea ei, o stare în care rețeaua mesh nu ajunge niciodată: dispozitivele ignoră Home Assistant, iar acesta nu poate urma o rețea mesh aflată în urma lui. Acest lucru se întâmplă când depozitul său (`.storage/junghome_ble.seq.*`) aparține altei rețele mesh sau când beaconuri falsificate cu cheia de rețea l-au împins înainte. Confirmă pentru a readuce Home Assistant la indexul IV al rețelei mesh și a configura din nou integrarea: numerele sale de secvență continuă peste orice număr trimis de la acel index încolo, astfel încât niciunul nu este folosit de două ori. Nu restaura în schimb depozitul dintr-un backup și nu îl edita: o înregistrare mai veche sau editată repetă numere pe care dispozitivele le-au văzut deja. Cealaltă cale de revenire este o adresă unicast nouă pentru Home Assistant (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează). Neverificat încă pe dispozitive reale: un index IV înaintea celui al rețelei mesh nu a fost observat într-o rețea reală."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Descarcă exportul",
-      "description": "Răspunde cu un link care descarcă exportul pe care Home Assistant îl păstrează pentru rețeaua JUNG HOME (JungHome.json, cu camerele, tastele, legăturile și scenele modificate de Home Assistant), pentru a-l importa în aplicația JUNG HOME sau a-l păstra ca copie de rezervă. Linkul este o cale la adresa Home Assistant și funcționează cinci minute, doar pentru administratorul care l-a cerut. Fișierul conține toate cheile instalației: șterge-l după ce a fost importat sau pus la loc sigur. Doar pentru administratori. Importul în aplicație nu a fost încă verificat cu aplicația.",
+      "description": "Răspunde cu un link care descarcă exportul pe care Home Assistant îl păstrează pentru rețeaua JUNG HOME (JungHome.json, cu camerele, tastele, legăturile și scenele modificate de Home Assistant), pentru a-l importa în aplicația JUNG HOME sau a-l păstra ca copie de rezervă. Oricine are linkul poate descărca fișierul timp de cinci minute, ca administratorul care l-a cerut: deschide-l tu și nu-l da nimănui. Răspunsul îl dă ca o cale la adresa Home Assistant (`url`) și, când Home Assistant își cunoaște adresa, ca URL complet (`absolute_url`); `stale` arată că aplicația JUNG HOME a schimbat instalația după ce fișierul a fost scris: încarcă mai întâi exportul aplicației în Home Assistant. Fișierul conține toate cheile instalației: șterge-l după ce a fost importat sau pus la loc sigur. Doar pentru administratori. Importul în aplicație nu a fost încă verificat cu aplicația.",
       "fields": {
         "device": {
           "name": "Dispozitiv",

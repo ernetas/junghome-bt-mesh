@@ -11,11 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from custom_components.junghome_ble.jhmesh.export import (
-    ModelChange,
-    ProjectFile,
-    hexaddr,
-)
+from custom_components.junghome_ble.jhmesh.export import ModelChange, ProjectFile
 from custom_components.junghome_ble.jhmesh.plan import ConfigStep
 
 
@@ -33,7 +29,8 @@ class PlanError(Exception):
 # sentence differs per outcome, and the file must always tell the truth about what the mesh holds). Said as data —
 # `applied_<key>` messages of `exceptions` and their placeholders, worded in Home Assistant's language where the
 # error is raised (`configurator.store.applied_message`): Home Assistant translates a message, never a
-# placeholder's value. The placeholders are numbers and addresses, never words.
+# placeholder's value. The placeholders are numbers, addresses and device names (`ExportStore.node_name`: the owner's
+# own names, which no language translates), never words.
 
 
 @dataclass(frozen=True)
@@ -71,18 +68,21 @@ def applied_text(accepted: int, total: int) -> Applied:
     return said("partly", accepted=accepted, total=total)
 
 
-def applied_removed(node: int, accepted: int, total: int) -> Applied:
-    """After a node's reset, when the plan taking the other nodes' wiring to it away stopped after `accepted`."""
-    return said("removed", device=hexaddr(node), accepted=accepted, total=total)
+def applied_removed(node: str, accepted: int, total: int) -> Applied:
+    """After a node's reset, when the plan taking the other nodes' wiring to it away stopped after `accepted`.
+
+    `node` as the error names it (`ExportStore.node_name`).
+    """
+    return said("removed", device=node, accepted=accepted, total=total)
 
 
-def applied_scene_stored(store: int, number: int) -> Applied:
-    """After a Scene Store took but the JUNG description did not."""
-    return said("scene_stored", scene=number, device=hexaddr(store))
+def applied_scene_stored(store: str, number: int) -> Applied:
+    """After a Scene Store took on `store` (as the error names it) but the JUNG description did not."""
+    return said("scene_stored", scene=number, device=store)
 
 
 def applied_scene_cleared(
-    element: int, number: int, done: int = 0, total: int = 1
+    element: str, number: int, done: int = 0, total: int = 1
 ) -> Applied:
     """After a channel's JUNG scene description was cleared but the register still holds the scene.
 
@@ -93,7 +93,7 @@ def applied_scene_cleared(
         if done
         else Applied()
     )
-    return before + said("scene_cleared", element=hexaddr(element), scene=number)
+    return before + said("scene_cleared", element=element, scene=number)
 
 
 def applied_scene_members(done: int, total: int, number: int) -> Applied:

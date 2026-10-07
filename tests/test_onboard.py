@@ -684,7 +684,12 @@ async def test_an_unconfirmed_reset_is_looked_for_among_new_devices(
                 {"device": device, "confirm": True},
                 blocking=True,
             )
-        assert caught.value.translation_placeholders == {"address": "0300"}
+        assert (
+            caught.value.translation_placeholders
+            == {
+                "address": "Push-button 1-gang 0300"  # the node device's name, which says its address
+            }
+        )
         assert "may have been reset" in str(caught.value)
         assert ProjectFile.load(path).cdb.node_by_addr(0x0300) is not None
         return
@@ -732,7 +737,9 @@ async def test_the_node_carrying_the_link_is_removed_only_with_force(
         await hass.services.async_call(
             DOMAIN, "remove_device", {"device": device, "confirm": True}, blocking=True
         )
-    assert caught.value.translation_placeholders == {"address": f"{proxy:04X}"}
+    assert caught.value.translation_placeholders == {
+        "address": f"WC mirror (share) ({proxy:04X})"  # the light at the node's address
+    }
     assert sent == []
     request = hub.proxy.request_config
 
@@ -911,7 +918,7 @@ async def test_a_removal_whose_unwiring_stops_still_records_the_reset_node(
     assert unwired == [0x0148, 0x0300][: accepted + 1]
     placeholders = caught.value.translation_placeholders
     assert placeholders["applied"] == english(
-        mesh_config.applied_removed(ACTUATOR, accepted, 2)
+        mesh_config.applied_removed(f"2-channel actuator {ACTUATOR:04X}", accepted, 2)
     )
     pf = ProjectFile.load(path)
     assert pf.cdb.node_by_addr(ACTUATOR) is None
@@ -944,7 +951,7 @@ async def test_a_lost_link_during_the_reset_is_a_translated_error(
             blocking=True,
         )
     assert caught.value.translation_placeholders == {
-        "node": "0300",
+        "node": "Push-button 1-gang 0300",
         "message": "Config Node Reset",
         "applied": english(mesh_config.APPLIED_NOTHING),
     }

@@ -1074,7 +1074,7 @@
       "message": "Encara no es veu per Bluetooth cap node del mesh JUNG."
     },
     "export_keys_stale": {
-      "message": "Es veuen per Bluetooth dispositius del mesh JUNG, però cap no anuncia la clau de xarxa de l'exportació: les claus es van renovar després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME i fes-la servir a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura."
+      "message": "Es veuen per Bluetooth dispositius del mesh JUNG, però cap no anuncia la clau de xarxa de l'exportació: les claus es van renovar després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME i fes-la servir a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant no té cap adaptador ni proxy Bluetooth connectable: no es pot accedir al mesh JUNG."
@@ -1275,10 +1275,10 @@
       "message": "S'ha perdut la connexió amb el mesh JUNG mentre s'enviava {message} al node {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "El node {node} és a l'exportació del mesh {path} però no a la xarxa que Home Assistant n'havia carregat abans; torna a carregar la integració (Configuració → Dispositius i serveis → JUNG HOME → Torna a carregar) perquè segueixi l'exportació i torna-ho a provar. {applied}"
+      "message": "El node {node} és a l'exportació del mesh {path} però no a la xarxa que Home Assistant n'havia carregat abans; torna a carregar la integració (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Torna a carregar) perquè segueixi l'exportació i torna-ho a provar. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "La passarel·la JUNG HOME a {host} conté una exportació més recent ({gateway}) que el fitxer que Home Assistant carregaria ({file}); carregar-lo esborraria el que l'aplicació JUNG HOME ha canviat des d'aleshores. El següent canvi fet a Home Assistant adopta l'exportació de la passarel·la i hi trasllada els canvis propis de Home Assistant. Si aquest error torna a aparèixer (una entrada sense còpia de l'última càrrega de l'aplicació no els pot distingir), torna a obtenir l'exportació de la passarel·la (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura; el fitxer que substitueix es conserva al costat com a `.pre-reconfigure`) i després repeteix el canvi fet a Home Assistant."
+      "message": "La passarel·la JUNG HOME a {host} conté una exportació més recent ({gateway}) que el fitxer que Home Assistant carregaria ({file}); carregar-lo esborraria el que l'aplicació JUNG HOME ha canviat des d'aleshores. El següent canvi fet a Home Assistant adopta l'exportació de la passarel·la i hi trasllada els canvis propis de Home Assistant. Si aquest error torna a aparèixer (una entrada sense còpia de l'última càrrega de l'aplicació no els pot distingir), torna a obtenir l'exportació de la passarel·la (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura; el fitxer que substitueix es conserva al costat com a `.pre-reconfigure`) i després repeteix el canvi fet a Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "La passarel·la JUNG HOME a {host} ha respost només amb la base de dades de dispositius sense res més (sense noms de dispositius ni vincles d'habitacions); adoptar-la els esborraria del fitxer que conserva Home Assistant. Torna-ho a provar quan la passarel·la ja no estigui ocupada, o torna a obtenir l'exportació de l'aplicació."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
           "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
           "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
           "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
-          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
           "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
           "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
           "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
           "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
           "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
           "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
-          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
           "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
           "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
           "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
           "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
           "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
           "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
-          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
           "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
           "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
           "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Polsadors JUNG HOME amb un mecanisme diferent del de l'exportació",
-      "description": "{devices}: aquests polsadors del mesh JUNG HOME {title} anuncien un mecanisme diferent del de l'exportació que ha carregat Home Assistant (exportació → dispositiu). El mecanisme es va substituir després de fer aquesta exportació, així que pot ser que Home Assistant i l'aplicació hi mostrin un tipus de càrrega erroni. Comprova els dispositius a l'aplicació JUNG HOME, torna a exportar la xarxa i actualitza aquesta integració (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura); el problema desapareix quan l'exportació indica els mecanismes que anuncien els dispositius. No verificat en dispositius reals."
+      "description": "{devices}: aquests polsadors del mesh JUNG HOME {title} anuncien un mecanisme diferent del de l'exportació que ha carregat Home Assistant (exportació → dispositiu). El mecanisme es va substituir després de fer aquesta exportació, així que pot ser que Home Assistant i l'aplicació hi mostrin un tipus de càrrega erroni. Comprova els dispositius a l'aplicació JUNG HOME, torna a exportar la xarxa i actualitza aquesta integració (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura); el problema desapareix quan l'exportació indica els mecanismes que anuncien els dispositius. No verificat en dispositius reals."
     },
     "node_clock_wrong": {
       "title": "Dispositius JUNG HOME amb el rellotge incorrecte",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
           "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
           "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
           "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
-          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
           "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
           "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
           "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Salta més enllà dels números que coneixen els dispositius",
-            "description": "Home Assistant sent el mesh JUNG HOME {title} a través del seu node proxy, però cap dispositiu no ha respost a les seves consultes d'estat. Els nodes descarten els missatges de Home Assistant com a repeticions. Hi ha dues causes probables: el magatzem de números de seqüència d'aquesta integració (`.storage/junghome_ble.*`) s'ha perdut o s'ha restaurat d'una còpia de seguretat més antiga, de manera que Home Assistant envia ara números de seqüència que els nodes ja han vist; o un altre client mesh (per exemple l'eina `mesh_poc.py`) transmet amb la mateixa adreça unicast {unicast}. O bé dona a Home Assistant una adreça nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast, i assegura't que cap altre client no la faci servir) o bé, si el magatzem s'ha perdut o restaurat (i cap altre client no fa servir l'adreça), confirma per deixar que Home Assistant avanci els seus números de seqüència 1 048 576 posicions i es torni a connectar. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho: una còpia més antiga només repeteix números que els dispositius ja han vist. El problema desapareix tot sol tan bon punt un dispositiu torna a respondre a Home Assistant."
+            "description": "Home Assistant sent el mesh JUNG HOME {title} a través del seu node proxy, però cap dispositiu no ha respost a les seves consultes d'estat. Els nodes descarten els missatges de Home Assistant com a repeticions. Hi ha dues causes probables: el magatzem de números de seqüència d'aquesta integració (`.storage/junghome_ble.*`) s'ha perdut o s'ha restaurat d'una còpia de seguretat més antiga, de manera que Home Assistant envia ara números de seqüència que els nodes ja han vist; o un altre client mesh (per exemple l'eina `mesh_poc.py`) transmet amb la mateixa adreça unicast {unicast}. O bé dona a Home Assistant una adreça nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast, i assegura't que cap altre client no la faci servir) o bé, si el magatzem s'ha perdut o restaurat (i cap altre client no fa servir l'adreça), confirma per deixar que Home Assistant avanci els seus números de seqüència 1 048 576 posicions i es torni a connectar. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho: una còpia més antiga només repeteix números que els dispositius ja han vist. El problema desapareix tot sol tan bon punt un dispositiu torna a respondre a Home Assistant."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Salta més enllà dels números de seqüència de l'altre client",
-            "description": "Home Assistant ha rebut un missatge del mesh JUNG HOME {title} enviat des de la seva pròpia adreça unicast {unicast} amb un número de seqüència que no ha fet servir mai: un altre client mesh transmet amb la mateixa adreça — una segona instal·lació de Home Assistant, l'eina `mesh_poc.py` configurada amb aquesta adreça o una còpia d'aquesta instal·lació iniciada en un altre lloc. Dos emissors en una mateixa adreça reutilitzen els números de seqüència l'un de l'altre, i els dispositius descarten tot el que queda per sota dels de l'altre client, així que Home Assistant no envia res al mesh fins que es repari (les ordres fallen i els estats no s'actualitzen). Atura l'altre client, o dona-li a ell o a Home Assistant una altra adreça que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast). Després confirma per deixar que Home Assistant continuï els seus números de seqüència més enllà d'aquells amb què s'ha vist l'altre client i torni a enviar. Si l'altre client continua enviant des d'aquesta adreça, el problema torna a aparèixer. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
+            "description": "Home Assistant ha rebut un missatge del mesh JUNG HOME {title} enviat des de la seva pròpia adreça unicast {unicast} amb un número de seqüència que no ha fet servir mai: un altre client mesh transmet amb la mateixa adreça — una segona instal·lació de Home Assistant, l'eina `mesh_poc.py` configurada amb aquesta adreça o una còpia d'aquesta instal·lació iniciada en un altre lloc. Dos emissors en una mateixa adreça reutilitzen els números de seqüència l'un de l'altre, i els dispositius descarten tot el que queda per sota dels de l'altre client, així que Home Assistant no envia res al mesh fins que es repari (les ordres fallen i els estats no s'actualitzen). Atura l'altre client, o dona-li a ell o a Home Assistant una altra adreça que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast). Després confirma per deixar que Home Assistant continuï els seus números de seqüència més enllà d'aquells amb què s'ha vist l'altre client i torni a enviar. Si l'altre client continua enviant des d'aquesta adreça, el problema torna a aparèixer. No restauris el magatzem de números de seqüència d'una còpia de seguretat per solucionar-ho. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Torna a saltar més enllà dels números de seqüència de l'altre client",
-            "description": "Home Assistant ha saltat més enllà dels números de seqüència d'un altre client mesh a la seva adreça {unicast} al mesh JUNG HOME {title}, i des d'aleshores l'altre client ha tornat a enviar des d'aquesta adreça: encara està en funcionament. Mentre ho estigui, saltar endavant no serveix de res. Dona a Home Assistant una adreça unicast nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast), o atura l'altre client o mou-lo a una altra adreça. Fins aleshores, Home Assistant no envia res al mesh. Confirma només quan l'altre client ja no faci servir aquesta adreça: Home Assistant tornarà a continuar més enllà dels seus números i reprendrà l'enviament. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
+            "description": "Home Assistant ha saltat més enllà dels números de seqüència d'un altre client mesh a la seva adreça {unicast} al mesh JUNG HOME {title}, i des d'aleshores l'altre client ha tornat a enviar des d'aquesta adreça: encara està en funcionament. Mentre ho estigui, saltar endavant no serveix de res. Dona a Home Assistant una adreça unicast nova que no es faci servir (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast), o atura l'altre client o mou-lo a una altra adreça. Fins aleshores, Home Assistant no envia res al mesh. Confirma només quan l'altre client ja no faci servir aquesta adreça: Home Assistant tornarà a continuar més enllà dels seus números i reprendrà l'enviament. No verificat en dispositius reals: un segon client a l'adreça de Home Assistant només s'ha simulat."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
+          "address_in_use": "A l'exportació nova, un node té l'adreça de Home Assistant, de manera que l'entrada no la pot fer servir. Primer dona a Home Assistant una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast) i després carrega-hi l'exportació.",
           "cannot_connect": "No s'ha pogut contactar amb la passarel·la en aquesta adreça.",
           "cannot_load": "No s'ha pogut llegir l'exportació del mesh. Comprova que el fitxer sigui l'exportació JSON de l'aplicació (i, si és un camí, que el camí sigui correcte).",
           "cannot_store": "No s'ha pogut escriure l'exportació al directori de configuració de Home Assistant.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
-          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
+          "no_gateway_pin": "Home Assistant no té registrat cap accés ni cap certificat per a la passarel·la {host}, així que no li envia res: no ha canviat res. Obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat de la passarel·la.",
+          "certificate_changed": "La passarel·la a {host} presenta un certificat diferent del que Home Assistant hi va fixar: no se li ha enviat res i no ha canviat res. Si has substituït la passarel·la o el seu certificat, obtén l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura, on es pot comprovar el certificat nou; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la.",
           "token_rejected": "La passarel·la a {host} ja no accepta l'accés de Home Assistant: no ha canviat res. Segueix la reautenticació que demana Home Assistant (Configuració → Dispositius i serveis) i després torna a reparar aquest problema.",
           "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la d'aquesta entrada.",
           "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada; dues entrades d'un mateix mesh compartirien els seus números de seqüència. Reconfigura aquella entrada, o elimina-la primer."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "El certificat de la passarel·la JUNG HOME ha canviat",
-      "description": "La passarel·la JUNG HOME a {host} ja no coincideix amb el certificat TLS que Home Assistant hi va fixar: l'amfitrió presenta un altre certificat, o el node de la passarel·la n'informa d'un altre pel mesh. Home Assistant ha deixat de fer servir la passarel·la (no s'hi envia cap testimoni d'accés ni cap exportació); els dispositius continuen funcionant per Bluetooth. Si has substituït la passarel·la o el seu certificat, obre Configuració → Dispositius i serveis → JUNG HOME → Reconfigura i torna a obtenir l'exportació de la passarel·la; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la — comprova la teva xarxa."
+      "description": "La passarel·la JUNG HOME a {host} ja no coincideix amb el certificat TLS que Home Assistant hi va fixar: l'amfitrió presenta un altre certificat, o el node de la passarel·la n'informa d'un altre pel mesh. Home Assistant ha deixat de fer servir la passarel·la (no s'hi envia cap testimoni d'accés ni cap exportació); els dispositius continuen funcionant per Bluetooth. Si has substituït la passarel·la o el seu certificat, obre Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura i torna a obtenir l'exportació de la passarel·la; si no, pot ser que un altre dispositiu de la teva xarxa estigui responent com si fos la passarel·la — comprova la teva xarxa."
     },
     "gateway_sync_failed": {
       "title": "L'exportació JUNG HOME no s'ha lliurat a la passarel·la",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "La passarel·la JUNG HOME ja no accepta Home Assistant",
-      "description": "La passarel·la JUNG HOME a {host} rebutja l'accés que Home Assistant va registrar per al mesh {title} (probablement es va eliminar a l'aplicació JUNG HOME a Configuració → Passarel·la → Permisos d'accés). Home Assistant continua canviant habitacions, vinculacions de tecla i escenes a la seva pròpia exportació, però ja no la lliura a la passarel·la, de manera que l'aplicació no veu aquests canvis; els dispositius continuen funcionant. Home Assistant torna a demanar accés: segueix la seva sol·licitud per tornar a autenticar JUNG HOME (Configuració → Dispositius i serveis; Reparacions també la mostra com a autenticació caducada) i introdueix la contrasenya de la clau de xarxa de la passarel·la o aprova la nova sol·licitud d'accés a l'aplicació. El problema desapareix quan la passarel·la torna a acceptar Home Assistant; llavors l'acció Sincronitza la passarel·la lliura els canvis fets des d'aleshores."
+      "description": "La passarel·la JUNG HOME a {host} rebutja l'accés que Home Assistant va registrar per al mesh {title} (probablement es va eliminar a l'aplicació JUNG HOME a Configuració → Passarel·la → Permisos d'accés). Home Assistant continua canviant habitacions, vinculacions de tecla i escenes a la seva pròpia exportació, però ja no la lliura a la passarel·la, de manera que l'aplicació no veu aquests canvis; els dispositius continuen funcionant. Home Assistant torna a demanar accés: segueix la seva sol·licitud per tornar a autenticar JUNG HOME Bluetooth Mesh (Configuració → Dispositius i serveis; Reparacions també la mostra com a autenticació caducada) i introdueix la contrasenya de la clau de xarxa de la passarel·la o aprova la nova sol·licitud d'accés a l'aplicació. El problema desapareix quan la passarel·la torna a acceptar Home Assistant; llavors l'acció Sincronitza la passarel·la lliura els canvis fets des d'aleshores."
     },
     "seq_store_lost": {
       "title": "S'han perdut els números de seqüència del mesh JUNG HOME {title}",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
-          "cannot_load": "No s'ha pogut llegir l'exportació de l'entrada, així que no es pot determinar cap adreça lliure: no ha canviat res. Carrega una exportació nova a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura.",
-          "no_free_address": "L'exportació no deixa cap adreça lliure per a Home Assistant: no ha canviat res. Comprova l'exportació a Configuració → Dispositius i serveis → JUNG HOME → Reconfigura.",
+          "cannot_load": "No s'ha pogut llegir l'exportació de l'entrada, així que no es pot determinar cap adreça lliure: no ha canviat res. Carrega una exportació nova a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura.",
+          "no_free_address": "L'exportació no deixa cap adreça lliure per a Home Assistant: no ha canviat res. Comprova l'exportació a Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura.",
           "address_taken": "{suggestion} ja no està lliure a l'exportació (ha canviat mentrestant): no ha canviat res. Torna a reparar el problema per obtenir un suggeriment nou."
         }
       }
     },
     "address_reserved": {
       "title": "L'adreça JUNG HOME de Home Assistant es podria assignar a un altre",
-      "description": "L'adreça unicast {unicast} des de la qual envia Home Assistant al mesh {title} és dins de l'interval d'adreces d'un dels aprovisionadors de l'aplicació, o la va fer servir un node eliminat. Continua funcionant fins que l'aplicació hi posi en servei un node; abans d'això, mou Home Assistant a una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast; {suggestion} està lliure)."
+      "description": "L'adreça unicast {unicast} des de la qual envia Home Assistant al mesh {title} és dins de l'interval d'adreces d'un dels aprovisionadors de l'aplicació, o la va fer servir un node eliminat. Continua funcionant fins que l'aplicació hi posi en servei un node; abans d'això, mou Home Assistant a una adreça lliure (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast; {suggestion} està lliure)."
     },
     "sequence_space_low": {
       "title": "Els números de seqüència del mesh JUNG HOME s'estan esgotant",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "El mesh JUNG HOME és en un altre índex IV",
-      "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours}: massa allunyats perquè Home Assistant el pugui seguir (segueix el mesh fins a 42 per endavant, com a màxim una vegada cada 192 hores, i mai enrere). Mentrestant, els dispositius ignoren Home Assistant. Això passa quan Home Assistant ha estat absent durant moltes IV Updates, quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Dona a Home Assistant una adreça unicast nova (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura → Avançat → La nostra adreça unicast): allà comença des de l'índex IV del mesh. No restauris el magatzem d'una còpia de seguretat ni l'editis: un registre més antic o editat repeteix números de seqüència que els dispositius ja han vist, i de tota manera el següent inici sobreescriu una edició manual. El problema desapareix tot sol quan arriba una balisa dins de l'abast."
+      "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours}: massa allunyats perquè Home Assistant el pugui seguir (segueix el mesh fins a 42 per endavant, com a màxim una vegada cada 192 hores, i mai enrere). Mentrestant, els dispositius ignoren Home Assistant. Això passa quan Home Assistant ha estat absent durant moltes IV Updates, quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Dona a Home Assistant una adreça unicast nova (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura → l'origen de l'exportació → Avançat → La nostra adreça unicast): allà comença des de l'índex IV del mesh. No restauris el magatzem d'una còpia de seguretat ni l'editis: un registre més antic o editat repeteix números de seqüència que els dispositius ja han vist, i de tota manera el següent inici sobreescriu una edició manual. El problema desapareix tot sol quan arriba una balisa dins de l'abast."
     },
     "iv_index_ahead": {
       "title": "Home Assistant va per davant de l'índex IV del mesh JUNG HOME",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Torna a l'índex IV del mesh",
-            "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours} — per davant, cosa que el mesh no és mai: els dispositius ignoren Home Assistant, i aquest no pot seguir un mesh que va per darrere seu. Això passa quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Confirma per tornar Home Assistant a l'índex IV del mesh i tornar a configurar la integració: els seus números de seqüència continuen per sobre de tots els números que va enviar des d'aquest índex, de manera que cap no es fa servir dues vegades. No restauris el magatzem d'una còpia de seguretat ni l'editis en lloc d'això: un registre més antic o editat repeteix números que els dispositius ja han vist. L'altra manera de tornar enrere és una adreça unicast nova per a Home Assistant (Configuració → Dispositius i serveis → JUNG HOME → Reconfigura). No verificat en dispositius reals: no s'ha vist mai un índex IV per davant del mesh en un de real."
+            "description": "El mesh {title} és a l'índex IV {mesh}, el magatzem de números de seqüència de Home Assistant a {ours} — per davant, cosa que el mesh no és mai: els dispositius ignoren Home Assistant, i aquest no pot seguir un mesh que va per darrere seu. Això passa quan el seu magatzem (`.storage/junghome_ble.seq.*`) pertany a un altre mesh, o quan balises (beacons) falsificades amb la clau de xarxa l'han fet avançar. Confirma per tornar Home Assistant a l'índex IV del mesh i tornar a configurar la integració: els seus números de seqüència continuen per sobre de tots els números que va enviar des d'aquest índex, de manera que cap no es fa servir dues vegades. No restauris el magatzem d'una còpia de seguretat ni l'editis en lloc d'això: un registre més antic o editat repeteix números que els dispositius ja han vist. L'altra manera de tornar enrere és una adreça unicast nova per a Home Assistant (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura). No verificat en dispositius reals: no s'ha vist mai un índex IV per davant del mesh en un de real."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Baixa l'exportació",
-      "description": "Respon amb un enllaç que baixa l'exportació que Home Assistant conserva de la xarxa JUNG HOME (JungHome.json, amb les estances, les tecles, les connexions i les escenes que Home Assistant ha canviat), per importar-la a l'aplicació JUNG HOME o guardar-la com a còpia de seguretat. L'enllaç és un camí a l'adreça de Home Assistant i funciona cinc minuts, només per a l'administrador que l'ha demanat. El fitxer conté totes les claus de la instal·lació: suprimeix-lo un cop importat o desat en un lloc segur. Només per a administradors. La importació a l'aplicació encara no s'ha verificat amb l'aplicació.",
+      "description": "Respon amb un enllaç que baixa l'exportació que Home Assistant conserva de la xarxa JUNG HOME (JungHome.json, amb les estances, les tecles, les connexions i les escenes que Home Assistant ha canviat), per importar-la a l'aplicació JUNG HOME o guardar-la com a còpia de seguretat. Qualsevol persona que tingui l'enllaç pot baixar el fitxer durant cinc minuts, com l'administrador que l'ha demanat: obre'l tu mateix i no el passis a ningú. La resposta el dona com a camí a l'adreça de Home Assistant (`url`) i, quan Home Assistant coneix la seva adreça, com a URL completa (`absolute_url`); `stale` indica que l'aplicació JUNG HOME ha canviat la instal·lació després que s'escrivís el fitxer: carrega primer l'exportació de l'aplicació a Home Assistant. El fitxer conté totes les claus de la instal·lació: suprimeix-lo un cop importat o desat en un lloc segur. Només per a administradors. La importació a l'aplicació encara no s'ha verificat amb l'aplicació.",
       "fields": {
         "device": {
           "name": "Dispositiu",

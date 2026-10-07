@@ -1074,7 +1074,7 @@
       "message": "Cez Bluetooth zatiaľ nie je viditeľný žiadny uzol siete JUNG mesh."
     },
     "export_keys_stale": {
-      "message": "Zariadenia siete JUNG mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z exportu: kľúče boli obnovené po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME a použite ju v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať."
+      "message": "Zariadenia siete JUNG mesh sú viditeľné cez Bluetooth, ale žiadne nevysiela sieťový kľúč z exportu: kľúče boli obnovené po vytvorení exportu. Exportujte sieť znova z aplikácie JUNG HOME a použite ju v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať."
     },
     "bluetooth_unavailable": {
       "message": "Home Assistant nemá žiadny pripojiteľný adaptér ani proxy Bluetooth: sieť JUNG mesh je nedosiahnuteľná."
@@ -1275,10 +1275,10 @@
       "message": "Spojenie so sieťou JUNG mesh sa stratilo počas odosielania {message} uzlu {node}. {applied}"
     },
     "service_export_unknown_node": {
-      "message": "Uzol {node} je v exporte mesh {path}, ale nie je v sieti, ktorú z neho Home Assistant predtým načítal; znova načítajte integráciu (Nastavenia → Zariadenia a služby → JUNG HOME → Znova načítať), aby sa riadila exportom, a potom to skúste znova. {applied}"
+      "message": "Uzol {node} je v exporte mesh {path}, ale nie je v sieti, ktorú z neho Home Assistant predtým načítal; znova načítajte integráciu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Znova načítať), aby sa riadila exportom, a potom to skúste znova. {applied}"
     },
     "service_gateway_export_newer": {
-      "message": "Brána JUNG HOME na adrese {host} obsahuje novší export ({gateway}) než súbor, ktorý by Home Assistant nahral ({file}); jeho nahratím by sa vymazalo, čo aplikácia JUNG HOME odvtedy zmenila. Ďalšia zmena vykonaná v Home Assistant prevezme export brány a prenesie naň vlastné zmeny Home Assistant. Ak sa táto chyba vráti (záznam bez kópie posledného nahratia z aplikácie ich nedokáže rozlíšiť), znova načítajte export brány (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať; súbor, ktorý nahrádza, sa ponechá vedľa neho ako `.pre-reconfigure`) a potom zopakujte zmenu vykonanú v Home Assistant."
+      "message": "Brána JUNG HOME na adrese {host} obsahuje novší export ({gateway}) než súbor, ktorý by Home Assistant nahral ({file}); jeho nahratím by sa vymazalo, čo aplikácia JUNG HOME odvtedy zmenila. Ďalšia zmena vykonaná v Home Assistant prevezme export brány a prenesie naň vlastné zmeny Home Assistant. Ak sa táto chyba vráti (záznam bez kópie posledného nahratia z aplikácie ich nedokáže rozlíšiť), znova načítajte export brány (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať; súbor, ktorý nahrádza, sa ponechá vedľa neho ako `.pre-reconfigure`) a potom zopakujte zmenu vykonanú v Home Assistant."
     },
     "service_gateway_export_incomplete": {
       "message": "Brána JUNG HOME na adrese {host} odpovedala len holou databázou zariadení (bez názvov zariadení a prepojení s miestnosťami); jej prevzatím by sa vymazali zo súboru, ktorý uchováva Home Assistant. Skúste to znova, keď brána už nebude zaneprázdnená, alebo znova načítajte export aplikácie."
@@ -1746,7 +1746,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
           "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
           "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
           "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
@@ -1766,8 +1766,8 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
-          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
           "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
           "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
           "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
@@ -1794,7 +1794,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
           "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
           "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
           "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
@@ -1814,8 +1814,8 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
-          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
           "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
           "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
           "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
@@ -1842,7 +1842,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
           "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
           "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
           "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
@@ -1862,8 +1862,8 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
-          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
           "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
           "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
           "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
@@ -1872,7 +1872,7 @@
     },
     "insert_mismatch": {
       "title": "Tlačidlové ovládače JUNG HOME s inou vložkou než v exporte",
-      "description": "{devices}: tieto tlačidlové ovládače siete JUNG HOME mesh {title} ohlasujú inú vložku než tú v exporte, ktorý Home Assistant načítal (export → zariadenie). Vložka bola vymenená po vytvorení tohto exportu, takže Home Assistant aj aplikácia pre ne môžu zobrazovať nesprávny druh záťaže. Skontrolujte zariadenia v aplikácii JUNG HOME, exportujte sieť znova a aktualizujte túto integráciu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať); oprava zmizne, keď export uvedie vložky, ktoré zariadenia ohlasujú. Zatiaľ neoverené na skutočných zariadeniach."
+      "description": "{devices}: tieto tlačidlové ovládače siete JUNG HOME mesh {title} ohlasujú inú vložku než tú v exporte, ktorý Home Assistant načítal (export → zariadenie). Vložka bola vymenená po vytvorení tohto exportu, takže Home Assistant aj aplikácia pre ne môžu zobrazovať nesprávny druh záťaže. Skontrolujte zariadenia v aplikácii JUNG HOME, exportujte sieť znova a aktualizujte túto integráciu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať); oprava zmizne, keď export uvedie vložky, ktoré zariadenia ohlasujú. Zatiaľ neoverené na skutočných zariadeniach."
     },
     "node_clock_wrong": {
       "title": "Zariadenia JUNG HOME s nesprávnymi hodinami",
@@ -1909,7 +1909,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
           "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
           "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
           "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
@@ -1929,8 +1929,8 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
-          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
           "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
           "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
           "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
@@ -1943,7 +1943,7 @@
         "step": {
           "confirm": {
             "title": "Preskočiť za čísla, ktoré zariadenia poznajú",
-            "description": "Home Assistant počuje sieť JUNG HOME mesh {title} cez svoj proxy uzol, ale ani jedno zariadenie neodpovedalo na jeho požiadavky na stav. Uzly zahadzujú správy Home Assistant ako opakované (replay). Pravdepodobné sú dve príčiny: úložisko sekvenčných čísel tejto integrácie (`.storage/junghome_ble.*`) sa stratilo alebo bolo obnovené zo staršej zálohy, takže Home Assistant teraz posiela sekvenčné čísla, ktoré uzly už videli; alebo iný klient siete mesh (napríklad nástroj `mesh_poc.py`) vysiela s rovnakou adresou unicast {unicast}. Buď dajte Home Assistant novú, nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast a uistite sa, že ju nepoužíva žiadny iný klient), alebo, ak sa úložisko stratilo či bolo obnovené (a adresu nepoužíva žiadny iný klient), potvrďte, aby Home Assistant posunul svoje sekvenčné čísla o 1 048 576 dopredu a znova sa pripojil. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy: staršia kópia len zopakuje čísla, ktoré zariadenia už videli. Oprava zmizne sama, len čo niektoré zariadenie znova odpovie Home Assistant."
+            "description": "Home Assistant počuje sieť JUNG HOME mesh {title} cez svoj proxy uzol, ale ani jedno zariadenie neodpovedalo na jeho požiadavky na stav. Uzly zahadzujú správy Home Assistant ako opakované (replay). Pravdepodobné sú dve príčiny: úložisko sekvenčných čísel tejto integrácie (`.storage/junghome_ble.*`) sa stratilo alebo bolo obnovené zo staršej zálohy, takže Home Assistant teraz posiela sekvenčné čísla, ktoré uzly už videli; alebo iný klient siete mesh (napríklad nástroj `mesh_poc.py`) vysiela s rovnakou adresou unicast {unicast}. Buď dajte Home Assistant novú, nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast a uistite sa, že ju nepoužíva žiadny iný klient), alebo, ak sa úložisko stratilo či bolo obnovené (a adresu nepoužíva žiadny iný klient), potvrďte, aby Home Assistant posunul svoje sekvenčné čísla o 1 048 576 dopredu a znova sa pripojil. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy: staršia kópia len zopakuje čísla, ktoré zariadenia už videli. Oprava zmizne sama, len čo niektoré zariadenie znova odpovie Home Assistant."
           }
         },
         "abort": {
@@ -1957,7 +1957,7 @@
         "step": {
           "confirm": {
             "title": "Preskočiť za sekvenčné čísla druhého klienta",
-            "description": "Home Assistant prijal správu siete JUNG HOME mesh {title} odoslanú z jeho vlastnej adresy unicast {unicast} so sekvenčným číslom, ktoré nikdy nepoužil: iný klient siete mesh vysiela s rovnakou adresou — druhá inštalácia Home Assistant, nástroj `mesh_poc.py` nakonfigurovaný s touto adresou alebo kópia tejto inštalácie spustená inde. Dvaja odosielatelia na jednej adrese si navzájom opakujú sekvenčné čísla a zariadenia zahadzujú všetko, čo je pod číslami druhého klienta, preto Home Assistant do siete mesh nič neposiela, kým sa to neopraví (príkazy zlyhávajú, stavy sa neobnovujú). Zastavte druhého klienta alebo dajte jemu či Home Assistant inú nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast). Potom potvrďte, aby Home Assistant pokračoval so sekvenčnými číslami za tými, s ktorými bol zachytený druhý klient, a znova vysielal. Ak druhý klient z tejto adresy vysiela ďalej, oprava sa vráti. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
+            "description": "Home Assistant prijal správu siete JUNG HOME mesh {title} odoslanú z jeho vlastnej adresy unicast {unicast} so sekvenčným číslom, ktoré nikdy nepoužil: iný klient siete mesh vysiela s rovnakou adresou — druhá inštalácia Home Assistant, nástroj `mesh_poc.py` nakonfigurovaný s touto adresou alebo kópia tejto inštalácie spustená inde. Dvaja odosielatelia na jednej adrese si navzájom opakujú sekvenčné čísla a zariadenia zahadzujú všetko, čo je pod číslami druhého klienta, preto Home Assistant do siete mesh nič neposiela, kým sa to neopraví (príkazy zlyhávajú, stavy sa neobnovujú). Zastavte druhého klienta alebo dajte jemu či Home Assistant inú nepoužitú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast). Potom potvrďte, aby Home Assistant pokračoval so sekvenčnými číslami za tými, s ktorými bol zachytený druhý klient, a znova vysielal. Ak druhý klient z tejto adresy vysiela ďalej, oprava sa vráti. Na vyriešenie tohto problému neobnovujte úložisko sekvenčných čísel zo zálohy. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
           }
         },
         "abort": {
@@ -1971,7 +1971,7 @@
         "step": {
           "confirm": {
             "title": "Znova preskočiť za sekvenčné čísla druhého klienta",
-            "description": "Home Assistant v sieti JUNG HOME mesh {title} preskočil za sekvenčné čísla iného klienta siete mesh na svojej adrese {unicast} a druhý klient odvtedy z tejto adresy znova vysielal: stále beží. Kým beží, preskočenie dopredu nepomôže. Dajte Home Assistant novú, nepoužitú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) alebo zastavte druhého klienta či ho presuňte na inú adresu. Dovtedy Home Assistant do siete mesh nič neposiela. Potvrďte až vtedy, keď druhý klient túto adresu už nepoužíva: Home Assistant potom znova pokračuje za jeho číslami a obnoví vysielanie. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
+            "description": "Home Assistant v sieti JUNG HOME mesh {title} preskočil za sekvenčné čísla iného klienta siete mesh na svojej adrese {unicast} a druhý klient odvtedy z tejto adresy znova vysielal: stále beží. Kým beží, preskočenie dopredu nepomôže. Dajte Home Assistant novú, nepoužitú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) alebo zastavte druhého klienta či ho presuňte na inú adresu. Dovtedy Home Assistant do siete mesh nič neposiela. Potvrďte až vtedy, keď druhý klient túto adresu už nepoužíva: Home Assistant potom znova pokračuje za jeho číslami a obnoví vysielanie. Zatiaľ neoverené na skutočných zariadeniach: druhý klient na adrese Home Assistant bol len simulovaný."
           }
         },
         "abort": {
@@ -2011,7 +2011,7 @@
           }
         },
         "error": {
-          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
+          "address_in_use": "V novom exporte má adresu Home Assistant iný uzol, preto ho záznam nemôže použiť. Najprv dajte Home Assistant voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast) a potom tam načítajte export.",
           "cannot_connect": "Bránu sa na tejto adrese nepodarilo kontaktovať.",
           "cannot_load": "Export mesh sa nepodarilo prečítať. Skontrolujte, či je súbor exportom JSON z aplikácie (a pri ceste, či je cesta správna).",
           "cannot_store": "Export sa nepodarilo zapísať do konfiguračného adresára Home Assistant.",
@@ -2031,8 +2031,8 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
-          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
+          "no_gateway_pin": "Home Assistant nemá pre bránu {host} uložený prístup ani certifikát, preto jej nič neposiela: nič sa nezmenilo. Namiesto toho načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá certifikát brány skontrolovať.",
+          "certificate_changed": "Brána na adrese {host} predkladá iný certifikát než ten, ktorý si pre ňu Home Assistant pripol: nič sa jej neodoslalo a nič sa nezmenilo. Ak ste bránu alebo jej certifikát vymenili, načítajte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať, kde sa dá nový certifikát skontrolovať; inak môže na vašej sieti odpovedať ako brána iné zariadenie.",
           "token_rejected": "Brána na adrese {host} už neakceptuje prístup Home Assistant: nič sa nezmenilo. Vykonajte opätovné overenie, ktoré Home Assistant vyžaduje (Nastavenia → Zariadenia a služby), a potom túto opravu spustite znova.",
           "network_mismatch": "Export patrí inej sieti mesh než tento záznam.",
           "mesh_already_configured": "Táto sieť mesh je už nastavená ako iný záznam; dva záznamy jednej siete mesh by zdieľali jej sekvenčné čísla. Namiesto toho tento záznam prekonfigurujte alebo ho najprv odstráňte."
@@ -2041,7 +2041,7 @@
     },
     "gateway_certificate_changed": {
       "title": "Certifikát brány JUNG HOME sa zmenil",
-      "description": "Brána JUNG HOME na adrese {host} už nezodpovedá certifikátu TLS, ktorý si pre ňu Home Assistant pripol: hostiteľ predkladá iný certifikát alebo uzol brány cez sieť mesh hlási iný. Home Assistant prestal bránu používať (neposiela jej prístupový token ani export); zariadenia naďalej fungujú cez Bluetooth. Ak ste bránu alebo jej certifikát vymenili, otvorte Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať a znova načítajte export z brány; inak môže na vašej sieti odpovedať ako brána iné zariadenie — skontrolujte svoju sieť."
+      "description": "Brána JUNG HOME na adrese {host} už nezodpovedá certifikátu TLS, ktorý si pre ňu Home Assistant pripol: hostiteľ predkladá iný certifikát alebo uzol brány cez sieť mesh hlási iný. Home Assistant prestal bránu používať (neposiela jej prístupový token ani export); zariadenia naďalej fungujú cez Bluetooth. Ak ste bránu alebo jej certifikát vymenili, otvorte Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať a znova načítajte export z brány; inak môže na vašej sieti odpovedať ako brána iné zariadenie — skontrolujte svoju sieť."
     },
     "gateway_sync_failed": {
       "title": "Export JUNG HOME sa neodovzdal bráne",
@@ -2116,7 +2116,7 @@
     },
     "gateway_token_rejected": {
       "title": "Brána JUNG HOME už neakceptuje Home Assistant",
-      "description": "Brána JUNG HOME na adrese {host} odmieta prístup, ktorý Home Assistant zaregistroval pre sieť mesh {title} (pravdepodobne bol odstránený v aplikácii JUNG HOME v časti Nastavenia → Brána → Prístupové oprávnenia). Home Assistant naďalej mení miestnosti, prepojenia tlačidiel a scény vo svojom vlastnom exporte, ale už ho neodovzdáva bráne, takže aplikácia tieto zmeny nevidí; zariadenia naďalej fungujú. Home Assistant znova žiada o prístup: postupujte podľa jeho výzvy na opätovné overenie JUNG HOME (Nastavenia → Zariadenia a služby; v časti Opravy je uvedené aj ako vypršané overenie) a zadajte heslo sieťového kľúča brány alebo schváľte novú žiadosť o prístup v aplikácii. Oprava zmizne, keď brána znova akceptuje Home Assistant; akcia „Synchronizovať bránu“ potom odovzdá zmeny vykonané medzitým."
+      "description": "Brána JUNG HOME na adrese {host} odmieta prístup, ktorý Home Assistant zaregistroval pre sieť mesh {title} (pravdepodobne bol odstránený v aplikácii JUNG HOME v časti Nastavenia → Brána → Prístupové oprávnenia). Home Assistant naďalej mení miestnosti, prepojenia tlačidiel a scény vo svojom vlastnom exporte, ale už ho neodovzdáva bráne, takže aplikácia tieto zmeny nevidí; zariadenia naďalej fungujú. Home Assistant znova žiada o prístup: postupujte podľa jeho výzvy na opätovné overenie JUNG HOME Bluetooth Mesh (Nastavenia → Zariadenia a služby; v časti Opravy je uvedené aj ako vypršané overenie) a zadajte heslo sieťového kľúča brány alebo schváľte novú žiadosť o prístup v aplikácii. Oprava zmizne, keď brána znova akceptuje Home Assistant; akcia „Synchronizovať bránu“ potom odovzdá zmeny vykonané medzitým."
     },
     "seq_store_lost": {
       "title": "Sekvenčné čísla siete JUNG HOME mesh {title} sa stratili",
@@ -2148,15 +2148,15 @@
         },
         "abort": {
           "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
-          "cannot_load": "Export záznamu sa nepodarilo prečítať, preto sa nedá určiť voľná adresa: nič sa nezmenilo. Načítajte nový export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať.",
-          "no_free_address": "Export nenecháva pre Home Assistant voľnú žiadnu adresu: nič sa nezmenilo. Skontrolujte export v časti Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať.",
+          "cannot_load": "Export záznamu sa nepodarilo prečítať, preto sa nedá určiť voľná adresa: nič sa nezmenilo. Načítajte nový export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať.",
+          "no_free_address": "Export nenecháva pre Home Assistant voľnú žiadnu adresu: nič sa nezmenilo. Skontrolujte export v časti Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať.",
           "address_taken": "{suggestion} už v exporte nie je voľná (export sa medzitým zmenil): nič sa nezmenilo. Spustite opravu znova, aby ste dostali nový návrh."
         }
       }
     },
     "address_reserved": {
       "title": "Adresa JUNG HOME Home Assistant môže byť pridelená",
-      "description": "Adresa unicast {unicast}, z ktorej Home Assistant vysiela v sieti mesh {title}, leží v rozsahu adries jedného z provisionerov aplikácie alebo ju používal odstránený uzol. Funguje, kým aplikácia na nej nepridá uzol cez provisioning; predtým presuňte Home Assistant na voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast; voľná je {suggestion})."
+      "description": "Adresa unicast {unicast}, z ktorej Home Assistant vysiela v sieti mesh {title}, leží v rozsahu adries jedného z provisionerov aplikácie alebo ju používal odstránený uzol. Funguje, kým aplikácia na nej nepridá uzol cez provisioning; predtým presuňte Home Assistant na voľnú adresu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast; voľná je {suggestion})."
     },
     "sequence_space_low": {
       "title": "Sekvenčné čísla siete JUNG HOME mesh dochádzajú",
@@ -2180,7 +2180,7 @@
     },
     "iv_index_mismatch": {
       "title": "Sieť JUNG HOME mesh je na inom IV indexe",
-      "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours}: príliš ďaleko od seba na to, aby ju Home Assistant mohol sledovať (sleduje sieť mesh najviac o 42 dopredu, najviac raz za 192 hodín a nikdy späť). Zariadenia medzitým Home Assistant ignorujú. Stáva sa to, keď bol Home Assistant mimo počas mnohých IV Update, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Dajte Home Assistant novú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať → Rozšírené → Naša adresa unicast): tam začne od IV indexu siete mesh. Úložisko neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje sekvenčné čísla, ktoré zariadenia už videli, a ručnú úpravu aj tak prepíše ďalší štart. Oprava zmizne sama, keď príde beacon v dosahu."
+      "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours}: príliš ďaleko od seba na to, aby ju Home Assistant mohol sledovať (sleduje sieť mesh najviac o 42 dopredu, najviac raz za 192 hodín a nikdy späť). Zariadenia medzitým Home Assistant ignorujú. Stáva sa to, keď bol Home Assistant mimo počas mnohých IV Update, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Dajte Home Assistant novú adresu unicast (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať → zdroj exportu → Rozšírené → Naša adresa unicast): tam začne od IV indexu siete mesh. Úložisko neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje sekvenčné čísla, ktoré zariadenia už videli, a ručnú úpravu aj tak prepíše ďalší štart. Oprava zmizne sama, keď príde beacon v dosahu."
     },
     "iv_index_ahead": {
       "title": "Home Assistant je pred IV indexom siete JUNG HOME mesh",
@@ -2188,7 +2188,7 @@
         "step": {
           "confirm": {
             "title": "Vrátiť sa na IV index siete mesh",
-            "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours} — pred ňou, čo sieť mesh nikdy nie je: zariadenia Home Assistant ignorujú a ten nemôže sledovať sieť mesh, ktorá je za ním. Stáva sa to, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Potvrďte, aby sa Home Assistant vrátil na IV index siete mesh a integrácia sa znova nastavila: jeho sekvenčné čísla pokračujú nad každým číslom, ktoré od tohto indexu odoslal, takže sa žiadne nepoužije dvakrát. Úložisko namiesto toho neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje čísla, ktoré zariadenia už videli. Druhou cestou späť je nová adresa unicast pre Home Assistant (Nastavenia → Zariadenia a služby → JUNG HOME → Prekonfigurovať). Zatiaľ neoverené na skutočných zariadeniach: IV index pred sieťou mesh sa na skutočnej sieti zatiaľ nevyskytol."
+            "description": "Sieť mesh {title} je na IV indexe {mesh}, úložisko sekvenčných čísel Home Assistant na {ours} — pred ňou, čo sieť mesh nikdy nie je: zariadenia Home Assistant ignorujú a ten nemôže sledovať sieť mesh, ktorá je za ním. Stáva sa to, keď jeho úložisko (`.storage/junghome_ble.seq.*`) patrí inej sieti mesh, alebo keď ho posunuli dopredu beacony sfalšované so sieťovým kľúčom. Potvrďte, aby sa Home Assistant vrátil na IV index siete mesh a integrácia sa znova nastavila: jeho sekvenčné čísla pokračujú nad každým číslom, ktoré od tohto indexu odoslal, takže sa žiadne nepoužije dvakrát. Úložisko namiesto toho neobnovujte zo zálohy ani ho neupravujte: starší alebo upravený záznam zopakuje čísla, ktoré zariadenia už videli. Druhou cestou späť je nová adresa unicast pre Home Assistant (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať). Zatiaľ neoverené na skutočných zariadeniach: IV index pred sieťou mesh sa na skutočnej sieti zatiaľ nevyskytol."
           }
         },
         "abort": {
@@ -2966,7 +2966,7 @@
     },
     "download_export": {
       "name": "Stiahnuť export",
-      "description": "Vráti odkaz, ktorým sa stiahne export, ktorý Home Assistant uchováva pre sieť JUNG HOME (JungHome.json, s miestnosťami, tlačidlami, prepojeniami a scénami, ktoré Home Assistant zmenil), aby sa dal importovať do aplikácie JUNG HOME alebo uschovať ako záloha. Odkaz je cesta na adrese Home Assistant a platí päť minút, len pre správcu, ktorý oň požiadal. Súbor obsahuje všetky kľúče inštalácie: vymažte ho, hneď ako je importovaný alebo bezpečne uložený. Len pre správcov. Import do aplikácie zatiaľ nebol s aplikáciou overený.",
+      "description": "Vráti odkaz, ktorým sa stiahne export, ktorý Home Assistant uchováva pre sieť JUNG HOME (JungHome.json, s miestnosťami, tlačidlami, prepojeniami a scénami, ktoré Home Assistant zmenil), aby sa dal importovať do aplikácie JUNG HOME alebo uschovať ako záloha. Ktokoľvek, kto má odkaz, môže súbor stiahnuť počas piatich minút ako správca, ktorý oň požiadal: otvorte ho sami a nikomu ho neposúvajte. Odpoveď ho uvádza ako cestu na adrese Home Assistant (`url`) a, ak Home Assistant pozná svoju adresu, ako úplnú URL (`absolute_url`); `stale` znamená, že aplikácia JUNG HOME po zapísaní súboru zmenila inštaláciu: najprv načítajte do Home Assistant export z aplikácie. Súbor obsahuje všetky kľúče inštalácie: vymažte ho, hneď ako je importovaný alebo bezpečne uložený. Len pre správcov. Import do aplikácie zatiaľ nebol s aplikáciou overený.",
       "fields": {
         "device": {
           "name": "Zariadenie",

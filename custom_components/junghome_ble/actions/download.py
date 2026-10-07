@@ -1,12 +1,19 @@
-"""The `download_export` action: a short-lived signed link to the export Home Assistant holds (review-4 U4-17).
+"""The `download_export` action: a short-lived signed link to the export Home Assistant holds.
 
 The export on the host carries Home Assistant's changes, which the app never receives unless a gateway entry uploads
 them. The action answers the path of `export_view.ExportDownloadView` for the entry, signed with Home Assistant's
 own `async_sign_path` for `LINK_LIFETIME` and for the session of the administrator who asks — the browser tab of
-*Developer tools → Actions*, the API token of a script — so the link opens without a login only for five minutes and
-only as that administrator (the view checks it again). A call without such a session (an automation of the system)
-is refused: a link signed for nobody would open for nobody, and one signed for Home Assistant's content user would
-answer 403. Neither the link nor its signature is logged; the log says that a link was made, and for whom.
+*Developer tools → Actions*, the API token of a script. The signature is a bearer credential: whoever holds the link
+opens it without a login for five minutes, as that administrator (the view checks the administrator again), so the
+texts tell the owner to open it themselves and pass it to no one. The path comes with the absolute URL Home
+Assistant knows for itself, when it knows one, so it can be opened from the response. A call without such a session
+(an automation of the system) is refused: a link signed for nobody would open for nobody, and one signed for Home
+Assistant's content user would answer 403. Neither the link nor its signature is logged; the log says that a link
+was made, and for whom.
+
+The file is the export as Home Assistant last wrote it. An open *the JUNG HOME app changed the installation* or
+*devices missing from the export* repair means the app knows more than that file: imported into the app, it would
+take those changes back out, so the response says `stale` (and the guide says to load the app's export first).
 
 That the JUNG HOME app imports the downloaded file — with the rows Home Assistant wrote — is unverified with the
 app (docs/on-air-sweep.md).
@@ -15,6 +22,7 @@ app (docs/on-air-sweep.md).
 from __future__ import annotations
 
 import logging
+from contextlib import suppress
 from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
@@ -24,9 +32,17 @@ from homeassistant.components.http.const import KEY_HASS_REFRESH_TOKEN_ID, KEY_H
 from homeassistant.components.websocket_api.connection import current_connection
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.http import current_request
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 
-from custom_components.junghome_ble.const import CONF_CDB_PATH, DOMAIN
+from custom_components.junghome_ble.const import (
+    CONF_CDB_PATH,
+    DOMAIN,
+    ISSUE_APP_CHANGED,
+    ISSUE_UNKNOWN_NODES,
+    issue_id,
+)
 from custom_components.junghome_ble.export_view import export_path
 
 from .common import _ENTRY_FIELD, ATTR_CONFIG_ENTRY, ATTR_DEVICE, _validation
@@ -34,6 +50,7 @@ from .resolve import _registry_device
 
 if TYPE_CHECKING:
     from homeassistant.auth.models import User
+    from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,11 +111,36 @@ def _entry_with_export(hass: HomeAssistant, entry_id: str | None) -> str:
     return candidates[0].entry_id
 
 
-async def _download_export(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
-    """Answer `{"url", "expires_in"}`: the entry's export, signed for five minutes (admin only).
+def _absolute(hass: HomeAssistant, path: str) -> str | None:
+    """Return `path` as a full URL: on the address the caller reached Home Assistant at, else its configured one.
 
-    The entry is `config_entry_id`'s, `device`'s (any device of the entry), or the only one loaded (the only one
-    at all when none is), loaded or not (`_entry_with_export`). The URL is a path on Home Assistant's own address. Unverified with the app: no app has been seen importing the file.
+    None when Home Assistant knows no address of its own (no internal or external URL, no usable request host):
+    the caller then puts the path after the address they use.
+    """
+    for current in (True, False):
+        with suppress(NoURLAvailableError):
+            return get_url(hass, require_current_request=current) + path
+    return None
+
+
+def _stale(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Whether the app is known to hold changes the file lacks: `app_changed` or `unknown_nodes` is open."""
+    registry = ir.async_get(hass)
+    return any(
+        (issue := registry.async_get_issue(DOMAIN, issue_id(entry, key))) is not None
+        and issue.active
+        for key in (ISSUE_APP_CHANGED, ISSUE_UNKNOWN_NODES)
+    )
+
+
+async def _download_export(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
+    """Answer `{"url", "absolute_url", "expires_in", "stale"}`: the entry's export, signed for five minutes.
+
+    Administrators only. The entry is `config_entry_id`'s, `device`'s (any device of the entry), or the only one
+    loaded (the only one at all when none is), loaded or not (`_entry_with_export`). `url` is a path on Home
+    Assistant's own address, `absolute_url` the same with that address (None when Home Assistant knows none), `stale`
+    whether the app holds changes the file lacks (`_stale`). Unverified with the app: no app has been seen importing
+    the file.
     """
     if (device_id := call.data.get(ATTR_DEVICE)) is not None:
         _device, entry_id = _registry_device(hass, device_id)
@@ -118,4 +160,9 @@ async def _download_export(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
         LINK_LIFETIME.total_seconds(),
         user.name,
     )
-    return {"url": url, "expires_in": int(LINK_LIFETIME.total_seconds())}
+    return {
+        "url": url,
+        "absolute_url": _absolute(hass, url),
+        "expires_in": int(LINK_LIFETIME.total_seconds()),
+        "stale": _stale(hass, entry),
+    }

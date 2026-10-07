@@ -53,6 +53,7 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.data import jung_data, store_lock
+from custom_components.junghome_ble.device_info import address_label
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -68,7 +69,6 @@ from custom_components.junghome_ble.jhmesh.export import (
     InvalidName,
     NewerExportError,
     ProjectFile,
-    hexaddr,
     timestamp_advanced,
     write_private,
     write_private_with_backup,
@@ -638,22 +638,12 @@ class ExportStore:
         )
 
     def node_name(self, unicast: int) -> str:
-        """`0232 (Kitchen)`: a node by its address, with the name of the load at that address or the node's own."""
-        device = self.hub.devices.by_address.get(unicast)
-        node = self.hub.cdb.node_by_addr(unicast)
-        name = (
-            device.name
-            if device is not None
-            else (node.name if node is not None else None)
-        )
-        return f"{hexaddr(unicast)} ({name})" if name else hexaddr(unicast)
+        """`Kitchen light (0232)`: a node, or an element of one, as the device list names it (`address_label`)."""
+        return address_label(self.hub, unicast)
 
     def member_name(self, element: int) -> str:
-        """`0232 (Kitchen)`: a register element by its address, with the name of its load when the hub has one."""
-        device = self.hub.devices.by_address.get(element)
-        if device is None:
-            return hexaddr(element)
-        return f"{hexaddr(element)} ({device.name})"
+        """`Kitchen light (0232)`: a register element, as `node_name` names it."""
+        return self.node_name(element)
 
     @property
     def path(self) -> str:

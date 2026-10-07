@@ -14,6 +14,7 @@ from custom_components.junghome_ble.const import (
     DOMAIN,
     OPTION_ALLOW_PROVISIONING,
 )
+from custom_components.junghome_ble.device_info import address_label
 from custom_components.junghome_ble.errors import mesh_errors
 from custom_components.junghome_ble.jhmesh import config_messages as C
 
@@ -255,24 +256,20 @@ async def _locate_node(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
         hub = configurator.hub
         node = hub.cdb.node_by_addr(unicast)
         assert node is not None  # `_resolve_node` found it in this export
-        with mesh_errors(
-            timeout_key="locate_no_answer", placeholders={"node": f"{unicast:04X}"}
-        ):
+        name = address_label(hub, unicast)
+        with mesh_errors(timeout_key="locate_no_answer", placeholders={"node": name}):
             status = await hub.async_locate(node, seconds)
         if not status.ok:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="locate_refused",
-                translation_placeholders={
-                    "node": f"{unicast:04X}",
-                    "status": status.status_name,
-                },
+                translation_placeholders={"node": name, "status": status.status_name},
             )
         if status.identity != C.NODE_IDENTITY_RUNNING:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="locate_not_supported",
-                translation_placeholders={"node": f"{unicast:04X}"},
+                translation_placeholders={"node": name},
             )
         response.update(node=f"{unicast:04X}", seconds=seconds)
         return False

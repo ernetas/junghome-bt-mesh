@@ -70,6 +70,19 @@
   double click is ruled out* on), and the click option's text says where the list is and when it shows.
 - **A `junghome_ble:` key in `configuration.yaml` gets Home Assistant's "does not support YAML" error** and repair,
   instead of being accepted without a word.
+- **Errors name devices the way the device list does** (review-5 U5-6). An action's error named a device by its hex
+  mesh address (*Device 0415 did not store scene 7*), shown nowhere in Home Assistant; it now says *Device Kitchen
+  light (0415) …*: the name the device list shows, your rename first, with the address in brackets — a light, socket
+  or blind by its own device, a key by its push-buttons device and letter, anything else by its node's device. So do
+  the pre-flight error (*Living room DALI (0232)*, before *0232 (Living room DALI)*) and the groups it compares, by
+  the export's names for them (*Kitchen (C005)*), a dry run's `steps`, the logbook's plan lines and the
+  *what was applied* sentences. An address no device has yet (a new device, Home Assistant's own) stays bare.
+- **`download_export` answers a full URL, and says when the app has moved past the file** (review-5 U5-3, U5-9). Next
+  to the signed path (`url`) the answer carries `absolute_url`, the path on the address you reached Home Assistant at
+  (else its configured internal or external URL; `None` when it knows none), so the link opens from the response.
+  `stale` is `true` while *The JUNG HOME app changed the installation* or *JUNG HOME devices missing from the export*
+  is open: imported into the app, the file would take those changes out of its project again, so load the app's
+  export into Home Assistant first.
 
 ### Fixed
 
@@ -187,6 +200,26 @@
   around; it now says what is missing and names the `active: true` line.
 - **A logbook line whose text no longer fits its stored placeholders is skipped, not an error** (a row stored by an
   older version, of a text that gained a placeholder since).
+- **Repairs and errors send you to *JUNG HOME Bluetooth Mesh*** (review-5 U5-1). 28 texts, in every language, said
+  *Settings → Devices & services → JUNG HOME → Reconfigure* (or *Reload*): since the integration was renamed, *JUNG
+  HOME* is the gateway integration, which has no such option. The texts that lead to *Our unicast address* now also
+  name the step before *Advanced* (*Reconfigure → the export's source → Advanced*), and the expired-token repair
+  names this integration's re-authentication. A test keeps the old name out of every language and page.
+- **The download link's texts say what it is** (review-5 U5-3). The action's description, the user guide, the FAQ
+  and `SECURITY.md` said the link works only for the administrator who asked for it; Home Assistant's signed path is
+  a bearer link: **anyone who has it can download the file within five minutes**, as that administrator. They now
+  say so: open it yourself and pass it to no one.
+- **The FAQ is right about a file on the host** (review-5 U5-4). It told every owner Home Assistant keeps its own copy
+  and to delete the file on the host; an entry set up with *Use a file on the Home Assistant host* has no copy and
+  reads that file at every start, so deleting it stops the integration. The FAQ, getting started and the German quick
+  start say so, and how to move the export into Home Assistant's own folder (*Reconfigure → Upload*).
+- Documentation (review-5 U5-10, U5-11, U5-12, F5-6, F5-7, F5-8): the node device name format is *WC mirror -
+  Push-button 1-gang*; the German quick start describes the *Räume und Bereiche* step and its alias rule; the README
+  and the architecture notes no longer say `jhmesh` is on PyPI (it is not published yet); the device-settings gap
+  analysis and the Bluetooth recheck cite sweep C1 (the DALI insert answers and applies a CTL Temperature Range Set);
+  the roadmap's *Where we are* table lists what is built and what is still missing; `remove_device`'s reset-first
+  order is no longer called the app's (the app unwires first unless forced), and the parity ledger records it as
+  declined, with the reason. The README's links are absolute, as HACS shows it inside Home Assistant.
 
 ## 1.4.1 (unreleased)
 

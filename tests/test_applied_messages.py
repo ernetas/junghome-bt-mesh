@@ -1,7 +1,8 @@
 """What a stopped plan applied — an error's `{applied}` — is worded in Home Assistant's language.
 
 Every variant (`configurator.plan`, `thresholds.ThresholdProgress`) is an `applied_<key>` message of `exceptions`
-with numbers and addresses as placeholders, read through the translation cache (`configurator.store.applied_message`).
+with numbers, addresses and device names as placeholders, read through the translation cache
+(`configurator.store.applied_message`).
 """
 
 from __future__ import annotations
@@ -72,32 +73,32 @@ VARIANTS: dict[str, tuple[Applied, str]] = {
         ),
     ),
     "removed": (
-        mc.applied_removed(0x0300, 1, 2),
+        mc.applied_removed("WC mirror (0300)", 1, 2),
         (
-            "Device 0300 was reset and the mesh export records it as removed from the network; 1 of the 2 messages "
+            "Device WC mirror (0300) was reset and the mesh export records it as removed from the network; 1 of the 2 messages "
             "taking the other devices' links to it away were applied and are recorded too. The links left on the other "
             "devices point at a device that no longer answers; the mesh export keeps them, so nothing new reuses their "
             "groups."
         ),
     ),
     "scene_stored": (
-        mc.applied_scene_stored(0x0232, 2),
+        mc.applied_scene_stored("Living room DALI (0232)", 2),
         (
-            "Scene 2 is stored on device 0232 and the member is recorded in the mesh export; only the scene description "
+            "Scene 2 is stored on device Living room DALI (0232) and the member is recorded in the mesh export; only the scene description "
             "is missing — run the action again to write it."
         ),
     ),
     "scene_cleared": (
-        mc.applied_scene_cleared(0x0232, 2),
+        mc.applied_scene_cleared("Living room DALI (0232)", 2),
         (
-            "The scene description of 0232 for scene 2 was cleared; the scene itself is still stored on the device and "
+            "The scene description of Living room DALI (0232) for scene 2 was cleared; the scene itself is still stored on the device and "
             "recorded in the mesh export — run the action again to finish."
         ),
     ),
     "scene_forgotten": (
-        mc.applied_scene_cleared(0x0172, 2, 1, 2),
+        mc.applied_scene_cleared("Boiler (0172)", 2, 1, 2),
         (
-            "1 of 2 devices already forgot scene 2 and the mesh export records that. The scene description of 0172 for "
+            "1 of 2 devices already forgot scene 2 and the mesh export records that. The scene description of Boiler (0172) for "
             "scene 2 was cleared; the scene itself is still stored on the device and recorded in the mesh export — run "
             "the action again to finish."
         ),
@@ -187,12 +188,15 @@ def test_every_applied_message_has_a_variant() -> None:
     assert said == keys
 
 
-def test_placeholders_are_numbers_and_addresses() -> None:
-    """Home Assistant translates a message, never a placeholder's value: no word is one."""
+def test_placeholders_are_numbers_addresses_and_device_names() -> None:
+    """Home Assistant translates a message, never a placeholder's value: no word to translate is one. A device goes
+    by the owner's own name for it, which no language translates, with its address (`address_label`)."""
     for applied, _ in VARIANTS.values():
         for _key, placeholders in applied.sentences:
             for value in placeholders.values():
-                assert re.fullmatch(r"[0-9A-F:;, ]+", value), value
+                assert re.fullmatch(r"[0-9A-F:;, ]+|[^()]+ \([0-9A-F]{4}\)", value), (
+                    value
+                )
 
 
 @pytest.mark.parametrize("variant", VARIANTS)
