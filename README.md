@@ -5,6 +5,9 @@ thermostats and detectors directly over Bluetooth Mesh — through Home Assistan
 Bluetooth proxy, no JUNG HOME Gateway and no cloud needed. It works next to the JUNG HOME app and a gateway, and
 keeps the gateway in sync.
 
+> An independent, unofficial project, not affiliated with or endorsed by JUNG
+> ([disclaimer](https://github.com/ernetas/junghome-bt-mesh/blob/main/DISCLAIMER.md)).
+
 - **Lights, sockets, blinds and thermostats** as Home Assistant entities, updated within about a second whoever
   switched them — a wall switch, the app, a timer.
 - **Push-buttons** as event entities and device triggers, for automations of your own.

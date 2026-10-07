@@ -288,9 +288,8 @@ notes), so what users must know goes there — the move of the sequence-number s
 - [ ] `dependency-transparency` (`quality_scale.yaml`): the rule's "public repository" clause is met by the act
   itself; the rest of that item (trusted publisher on pypi.org, first tagged publication, `requirements` entry) is the
   list above — reword the comment once those are done.
-- [ ] HACS `hacsjson` exemption: nothing to do — `ci.yml` computes the ignore list from
-  `github.event.repository.visibility`, so the validator gates by itself on the first public run (check the `validate`
-  job then; `hacs.json` has to pass it).
+- [x] HACS validation ignores nothing: the exemptions that only held while the repository was private are gone
+  from `ci.yml`, and every validator gates the run and every release.
 - [x] Brands: the JUNG HOME brand images (as home-assistant/brands publishes them for `custom_integrations/junghome`)
   ship in `custom_components/junghome_ble/brand/`, which Home Assistant 2026.3+ and the HACS `brands` validator read;
   the brands repository no longer takes custom integrations. `quality_scale.yaml` `brands: done`; the HACS `brands`

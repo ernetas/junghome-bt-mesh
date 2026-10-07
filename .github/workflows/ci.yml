@@ -300,22 +300,12 @@ jobs:
         # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
         # repository token in hand. The image is therefore run directly, by digest (Renovate moves the digest along
         # the `main` tag: renovate.json `docker:pinDigests`); the wrapper's inputs become the INPUT_* variables its
-        # entrypoint (hacs/integration action/action.py) reads. Ignored validators (slugs from
-        # https://hacs.xyz/docs/publish/action/):
-        #   hacsjson - the one validator that downloads hacs.json from raw.githubusercontent.com without the token
-        #              (everything else, the manifest included, goes through the authenticated API), so it reports
-        #              the file invalid while the repository is not public. The expression drops the exemption by
-        #              itself the day the repository is public; if the event ever lacks the visibility field, the
-        #              exemption stays (a muted validator, not a blocked release).
-        #   integration_manifest - on a private repository the validator gets no manifest back ("expected a
-        #              dictionary. Got None") however the token is scoped; hassfest above validates the manifest in
-        #              full, so nothing is lost while the repository is private. Exempted by the same expression.
-        # All the other validators gate the run (and every release: release.yml calls this workflow).
+        # entrypoint (hacs/integration action/action.py) reads. Every validator gates the run, none is ignored (and
+        # every release: release.yml calls this workflow).
         uses: docker://ghcr.io/hacs/action:main@sha256:dc92fdad2f6ffbe74bffb7269d781ea8e064f52d9bb486cdf3925d74e7ab6ebf
         env:
           INPUT_CATEGORY: integration
           INPUT_GITHUB_TOKEN: ${{ github.token }}
-          INPUT_IGNORE: ${{ github.event.repository.visibility != 'public' && 'hacsjson integration_manifest' || '' }}
 
   package:
     # The manual-install zip (scripts/package_ha.sh), built and checked on every run once everything else passed (and

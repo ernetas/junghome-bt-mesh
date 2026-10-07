@@ -289,6 +289,8 @@
 
 ### Internal
 
+- The HACS validation in CI ignores no validator: the exemptions for a private repository are gone. The README says
+  near the top that the project is unofficial.
 - The parity ledger matches the tree again (review-5 F5-1, F5-5): the time keeper (*Time keeper* switch,
   `time_keeper_missing` repair; unverified on air, no PP2 puck here), the SAR Acknowledgment timer, the CTL
   Temperature Set and the lock of a load were still listed as work to do although built; their rows are
