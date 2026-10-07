@@ -17,7 +17,6 @@ import re
 from dataclasses import dataclass
 
 __all__ = [
-    "ADVERT_TYPE_LENGTHS",
     "JUNG_COMPANY_ID",
     "JungAdvertisement",
     "mac_from_uuid",

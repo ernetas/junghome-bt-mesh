@@ -44,6 +44,12 @@
 
 ### Changed
 
+- **`jhmesh`: a smaller public API** (decision M18, review-5 A5-6). The 285 names of the modules' `__all__` that
+  nothing but their own module used — tuning constants (`SEGMENT_SIZE`, `commission.DEFAULT_TTL`), lookup tables
+  and opcodes no caller sends (`messages.HEALTH_FAULT_NAMES`, `messages.TIME_GET`), the audit's finding kinds, the
+  repository path `commission.NL` — are no longer listed, so they are no longer promised across releases; every one
+  of them is still importable as before. `state.check_range` (re-exported by `client`), which the integration's
+  sequence-number store checks its records with, is public now in place of the private `_check_range`.
 - Internal: section numbers say Mesh Protocol 1.1's (§3.11.5, §3.11.6) instead of Mesh Profile's; the heartbeat's
   `hops` docstring says what 0 and 1 are (the proxy itself, a node the proxy hears directly).
 - **A dry run says which devices are out of reach** (review 5): `reachability` lists the devices the real run would

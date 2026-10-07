@@ -30,7 +30,6 @@ from .provisioning import (
 
 __all__ = [
     "BEACON_WAIT",
-    "FAILED_COOLDOWN",
     "SILENCE_TIMEOUT",
     "StandaloneLink",
     "connect",

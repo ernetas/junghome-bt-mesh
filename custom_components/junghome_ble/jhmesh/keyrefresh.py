@@ -44,7 +44,6 @@ from typing import Any
 
 __all__ = [
     "MAX_CANDIDATES",
-    "PROOFS",
     "PROOF_BEACON",
     "PROOF_EXPORT",
     "PROOF_PROXY",

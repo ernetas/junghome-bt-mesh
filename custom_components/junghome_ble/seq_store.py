@@ -51,10 +51,10 @@ from .jhmesh.client import (
     LocalState,
     SequenceExhausted,
     SequenceStalled,
-    _check_range,
 )
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.keyrefresh import KeyRefreshRecord
+from .jhmesh.state import check_range
 from .jhmesh.vault import recognise
 
 if TYPE_CHECKING:
@@ -449,8 +449,8 @@ def _furthest(records: Sequence[Any]) -> tuple[int, int] | None:
     best: tuple[int, int] | None = None
     for record in records:
         try:
-            _check_range("IV index", int(record.get("iv_index", 0)), 0, IV_INDEX_MAX)
-            _check_range("sequence number", int(record.get("seq", 0)), 0, SEQ_MAX)
+            check_range("IV index", int(record.get("iv_index", 0)), 0, IV_INDEX_MAX)
+            check_range("sequence number", int(record.get("seq", 0)), 0, SEQ_MAX)
             rank = _tx_rank(record)
         except (AttributeError, ValueError, TypeError):
             continue
@@ -1044,8 +1044,8 @@ def _stored_address_shared(record: Any) -> tuple[int, int] | None:
         return None
     try:
         iv_index, seq = (int(value) for value in raw)
-        _check_range("IV index", iv_index, 0, IV_INDEX_MAX)
-        _check_range("sequence number", seq, 0, SEQ_MAX)
+        check_range("IV index", iv_index, 0, IV_INDEX_MAX)
+        check_range("sequence number", seq, 0, SEQ_MAX)
     except (TypeError, ValueError):
         _LOGGER.warning(
             "Ignoring an unusable record of another client on our address: %r", raw

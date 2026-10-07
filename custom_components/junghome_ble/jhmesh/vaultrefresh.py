@@ -45,7 +45,6 @@ if TYPE_CHECKING:
     from .vault import VaultNode
 
 __all__ = [
-    "NET_KEY_INDEX",
     "Target",
     "carry",
     "target_of",

@@ -57,8 +57,7 @@ from .pdu import (
     upper_encrypt,
 )
 
-# `LocalState`, its exceptions and constants moved to `state`; re-exported below. `_check_range` keeps
-# an explicit alias instead: it is private, so not in `__all__`, and the integration checks its stored records with it.
+# `LocalState`, its exceptions, constants and `check_range` moved to `state`; re-exported below.
 from .state import (
     IV_ABANDONED_ABORTED,
     IV_ABANDONED_NOT_TAKEN,
@@ -76,9 +75,7 @@ from .state import (
     SequenceExhausted,
     SequenceStalled,
     StateInUse,
-)
-from .state import (
-    _check_range as _check_range,  # noqa: PLC0414  # the alias is the re-export
+    check_range,
 )
 from .stats import LinkStats
 
@@ -93,7 +90,6 @@ __all__ = [
     "FILTER_SET_TRIES",
     "FOREIGN_SOURCE_REPORT_INTERVAL",
     "GATT_TIMEOUT",
-    "HEARTBEAT_OPCODE",
     "IV_BEACON_INTERVAL",
     "IV_BEACON_INTERVAL_MAX",
     "MESH_PROXY_DATA_IN",
@@ -108,7 +104,6 @@ __all__ = [
     "SEGMENT_ACK_TIMEOUT",
     "SEGMENT_RESTARTS",
     "SEGMENT_RETRIES",
-    "SEGMENT_SIZE",
     "AccessMessage",
     "Heartbeat",
     "ProxyCandidate",
@@ -135,6 +130,7 @@ __all__ += [
     "SequenceExhausted",
     "SequenceStalled",
     "StateInUse",
+    "check_range",
 ]
 
 log = logging.getLogger("jhmesh")

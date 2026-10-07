@@ -60,6 +60,7 @@ __all__ = [
     "SequenceExhausted",
     "SequenceStalled",
     "StateInUse",
+    "check_range",
 ]
 
 log = logging.getLogger("jhmesh")
@@ -139,8 +140,11 @@ def _check_time(what: str, value: Any) -> float:
     return float(value)
 
 
-def _check_range(what: str, value: int, low: int, high: int) -> None:
-    """`ValueError` unless `low <= value <= high` (a stored record's field, `LocalState.parse_record`)."""
+def check_range(what: str, value: int, low: int, high: int) -> None:
+    """`ValueError` unless `low <= value <= high` (a stored record's field, `LocalState.parse_record`).
+
+    Public for a subclass that checks records of its own (the integration's `HAState`).
+    """
     if not low <= value <= high:
         raise ValueError(f"{what} {value} is outside {low:#x}..{high:#x}")
 
@@ -320,13 +324,13 @@ class LocalState:
         # out-of-range values convert fine but make every send raise OverflowError (`to_bytes`) for good, or lock
         # a source out of the replay list forever: a record holding one is as unusable as a torn one, and the
         # `.bak` copy gets its chance instead
-        _check_range("source address", stored_src, 1, 0x7FFF)
-        _check_range("sequence number", seq, 0, SEQ_MAX)
-        _check_range("IV index", iv_index, 0, IV_INDEX_MAX)
+        check_range("source address", stored_src, 1, 0x7FFF)
+        check_range("sequence number", seq, 0, SEQ_MAX)
+        check_range("IV index", iv_index, 0, IV_INDEX_MAX)
         for src, (entry_iv, entry_seq) in rpl.items():
-            _check_range("replay-list source", src, 1, 0x7FFF)
-            _check_range("replay-list IV index", entry_iv, 0, IV_INDEX_MAX)
-            _check_range("replay-list sequence number", entry_seq, 0, SEQ_MAX)
+            check_range("replay-list source", src, 1, 0x7FFF)
+            check_range("replay-list IV index", entry_iv, 0, IV_INDEX_MAX)
+            check_range("replay-list sequence number", entry_seq, 0, SEQ_MAX)
         key_refresh: KeyRefreshRecord | None = None
         if (kr := d.get("key_refresh")) is not None:
             key_refresh = KeyRefreshRecord.from_stored(kr)
@@ -345,7 +349,7 @@ class LocalState:
             return None
         if isinstance(guard, bool) or not isinstance(guard, int):
             raise TypeError(f"sequence guard {guard!r} is not an IV index")
-        _check_range("sequence guard", guard, SEQ_GUARD_FIRST_BEACON, IV_INDEX_MAX)
+        check_range("sequence guard", guard, SEQ_GUARD_FIRST_BEACON, IV_INDEX_MAX)
         return guard
 
     @staticmethod
@@ -416,8 +420,8 @@ class LocalState:
             raise TypeError(f"sequence peak {peak!r} is not a number")
         if isinstance(start, bool) or not isinstance(start, int):
             raise TypeError(f"sequence peak index {start!r} is not an IV index")
-        _check_range("sequence peak", peak, 0, SEQ_MAX)
-        _check_range("sequence peak index", start, 0, IV_INDEX_MAX)
+        check_range("sequence peak", peak, 0, SEQ_MAX)
+        check_range("sequence peak index", start, 0, IV_INDEX_MAX)
         return peak, start
 
     def _restore(

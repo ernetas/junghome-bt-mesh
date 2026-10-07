@@ -42,7 +42,6 @@ if TYPE_CHECKING:
     from .export import ProjectFile
 
 __all__ = [
-    "UNICAST_MAX",
     "CommissioningError",
     "DeviceCount",
     "commission",
