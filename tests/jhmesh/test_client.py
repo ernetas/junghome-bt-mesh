@@ -18,6 +18,7 @@ import pytest
 from jhmesh import client as client_mod
 from jhmesh import config_messages as C
 from jhmesh import messages as M
+from jhmesh import sar as sar_mod
 from jhmesh import state as state_mod
 from jhmesh.cdb import CDB, Element, Node
 from jhmesh.client import (
@@ -3768,11 +3769,11 @@ async def test_link_loss_during_a_segmented_send_is_a_connection_error(
                 asyncio.get_running_loop().call_soon(attached.handle_disconnected, link)
 
     link.responders.append(drop_after_the_first_round)
-    monkeypatch.setattr(client_mod, "SEGMENT_RETRIES", 1)
+    monkeypatch.setattr(sar_mod, "SEGMENT_RETRIES", 1)
     with pytest.raises(ConnectionError):
         await attached.send_access(PROXY_NODE, bytes(20))
 
-    monkeypatch.setattr(client_mod, "SEGMENT_RETRIES", 4)
+    monkeypatch.setattr(sar_mod, "SEGMENT_RETRIES", 4)
     await attached.attach(link)
     segments[0] = 0
     seq0 = state.seq
@@ -3899,7 +3900,7 @@ async def test_done_reassembly_is_kept_ten_seconds_after_completion(
     """CLI-13: the reassembly timer counts from the last segment (§3.5.3.4), so a message that took 9 s to
     complete still answers a retransmission 6 s later with its ack instead of dropping it as a replay."""
     clock = [0.0]
-    monkeypatch.setattr(client_mod, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+    monkeypatch.setattr(sar_mod, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     _seq, pdus = link.access_pdus(PROXY_NODE, OUR_SRC, bytes(20))
     link.deliver(PROXY_NETWORK_PDU, pdus[0])
     clock[0] = 9.0
@@ -4185,6 +4186,7 @@ async def test_sends_describe_their_message_only_when_debug_is_logged(
         return real(pdu, **kw)
 
     monkeypatch.setattr(client_mod, "describe", counting)
+    monkeypatch.setattr(sar_mod, "describe", counting)
     link.auto_ack()
     with caplog.at_level(logging.INFO, logger="jhmesh"):
         await attached.send_access(LIGHT_2G, M.generic_onoff_get())

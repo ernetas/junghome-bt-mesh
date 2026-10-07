@@ -45,7 +45,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_segmented",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._send_segmented",
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient.request"
    ],
    "tests": [
@@ -2293,12 +2293,12 @@
    "id": "mgmt:const:lowertransportlayer.block_ack_timer",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_complete",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack",
-    "custom_components/junghome_ble/jhmesh/client.py::SAR_ACK_DELAY_INCREMENT",
-    "custom_components/junghome_ble/jhmesh/client.py::SAR_SEGMENT_INTERVAL"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._ack_timer",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._ack_complete",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._send_ack",
+    "custom_components/junghome_ble/jhmesh/sar.py::SAR_ACK_DELAY_INCREMENT",
+    "custom_components/junghome_ble/jhmesh/sar.py::SAR_SEGMENT_INTERVAL"
    ],
    "tests": [
     "tests/jhmesh/test_sar_receive.py::test_the_defaults_are_the_specs",
@@ -2314,7 +2314,7 @@
    "id": "mgmt:const:lowertransportlayer.incomplete_timer_delay",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_stale_segment_state_is_discarded",
@@ -2826,7 +2826,7 @@
    "id": "mgmt:const:uppertransportlayer.max_segmented_access_payload_length",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::SEGMENT_SIZE",
+    "custom_components/junghome_ble/jhmesh/sar.py::SEGMENT_SIZE",
     "custom_components/junghome_ble/jhmesh/pdu.py::SEGMENT_DATA_MAX"
    ],
    "tests": [
@@ -3000,7 +3000,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/pdu.py::seq_auth_from",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._segment_rounds"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._segment_rounds"
    ],
    "tests": [
     "tests/jhmesh/test_pdu.py::test_seq_auth_from_reconstructs_first_segment_seq",
@@ -6259,7 +6259,7 @@
    "id": "mgmt:nordic:blockacknowledgementmessage.getsegmentstoberetransmitted",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._segment_rounds"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._segment_rounds"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_send_access_segmented_partial_ack_retransmits_missing_segment",
@@ -6281,8 +6281,8 @@
    "id": "mgmt:nordic:lowertransportlayer.initsegmentedaccessacknowledgementtimer",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._ack_timer"
    ],
    "tests": [
     "tests/jhmesh/test_sar_receive.py::test_the_timer_acknowledges_what_arrived_and_restarts_with_each_new_segment",
@@ -6297,7 +6297,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._is_replay",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_replay_protection",
@@ -6364,9 +6364,9 @@
    "id": "mgmt:nordic:meshmessagestate.executeresend",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._segment_rounds",
-    "custom_components/junghome_ble/jhmesh/client.py::SEGMENT_ACK_TIMEOUT",
-    "custom_components/junghome_ble/jhmesh/client.py::SEGMENT_RETRIES"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._segment_rounds",
+    "custom_components/junghome_ble/jhmesh/sar.py::SEGMENT_ACK_TIMEOUT",
+    "custom_components/junghome_ble/jhmesh/sar.py::SEGMENT_RETRIES"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_send_access_segmented_partial_ack_retransmits_missing_segment",

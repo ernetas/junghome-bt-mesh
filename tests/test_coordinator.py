@@ -76,6 +76,7 @@ from custom_components.junghome_ble.hub import export_watch
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.jhmesh import sar as sar_mod
 from custom_components.junghome_ble.jhmesh import state as state_mod
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import AccessMessage
@@ -1268,6 +1269,7 @@ async def test_segmented_send_to_a_node_that_never_acks_times_out(
     (a real node applies a segmented message it got in full and answers all the same, only the ack is lost;
     the sender has no way to tell the two apart, which is exactly why it keeps retrying)."""
     monkeypatch.setattr(client_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
+    monkeypatch.setattr(sar_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
     hub = hub_of(init_integration)
     src = hub.proxy.state.src
     fake_link.ack_segments = False

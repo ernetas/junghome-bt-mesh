@@ -58,6 +58,7 @@ from custom_components.junghome_ble.identity import VaultKeeper
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.jhmesh import sar as sar_mod
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.cdb import CDB, InvalidExport
 from custom_components.junghome_ble.jhmesh.client import LocalState, ProxyClient
@@ -523,7 +524,9 @@ def fast(monkeypatch: pytest.MonkeyPatch) -> FastAsyncio:
     """Instant sleeps and short timeouts in the integration's copy of the mesh client."""
     fa = FastAsyncio()
     monkeypatch.setattr(client_mod, "asyncio", fa)
+    monkeypatch.setattr(sar_mod, "asyncio", fa)
     monkeypatch.setattr(client_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
+    monkeypatch.setattr(sar_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
     monkeypatch.setattr(executor_mod, "CONFIG_TIMEOUT", 0.05)
     monkeypatch.setattr(executor_mod, "KEY_MODE_TIMEOUT", 0.05)
     monkeypatch.setattr(executor_mod, "SCENE_TIMEOUT", 0.05)

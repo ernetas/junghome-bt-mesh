@@ -13,6 +13,7 @@ import pytest
 
 from jhmesh import client as client_mod
 from jhmesh import config_messages as C
+from jhmesh import sar as sar_mod
 from jhmesh import standalone as standalone_mod
 from jhmesh.cdb import CDB, Node
 from jhmesh.client import (
@@ -105,8 +106,10 @@ def fast(monkeypatch: pytest.MonkeyPatch) -> FastAsyncio:
     """Make every ``asyncio.sleep`` in jhmesh.client / jhmesh.standalone instantaneous and shorten the ack timeout."""
     fa = FastAsyncio()
     monkeypatch.setattr(client_mod, "asyncio", fa)
+    monkeypatch.setattr(sar_mod, "asyncio", fa)
     monkeypatch.setattr(standalone_mod, "asyncio", fa)
     monkeypatch.setattr(client_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
+    monkeypatch.setattr(sar_mod, "SEGMENT_ACK_TIMEOUT", 0.01)
     return fa
 
 

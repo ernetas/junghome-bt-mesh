@@ -2210,12 +2210,12 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_network_pdu",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_complete",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._send_ack",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._ack_timer",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._ack_complete",
     "custom_components/junghome_ble/jhmesh/pdu.py::segment_ack",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._wait_for_acks"
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._wait_for_acks"
    ],
    "tests": [
     "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
@@ -2291,7 +2291,7 @@
    "id": "air:segment:segment",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
+    "custom_components/junghome_ble/jhmesh/sar.py::Segmentation._on_segment",
     "custom_components/junghome_ble/jhmesh/sniffer.py::MeshDecoder._segment"
    ],
    "tests": [

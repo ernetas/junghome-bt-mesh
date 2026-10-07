@@ -13,6 +13,7 @@ import asyncio
 import pytest
 
 from jhmesh import client as client_mod
+from jhmesh import sar as sar_mod
 from jhmesh.client import (
     SAR_ACK_DELAY_INCREMENT,
     SAR_DISCARD_TIMEOUT,
@@ -119,7 +120,7 @@ async def test_long_messages_repeat_the_acknowledgment_as_configured(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Above the SAR Segments Threshold an acknowledgment goes 1 + retransmissions count times, an interval apart."""
-    monkeypatch.setattr(client_mod, "SAR_ACK_RETRANSMISSIONS", 1)
+    monkeypatch.setattr(sar_mod, "SAR_ACK_RETRANSMISSIONS", 1)
     seq0, pdus = link.access_pdus(PROXY_NODE, OUR_SRC, bytes(40))  # 4 segments: above 3
     for p in pdus:
         link.deliver(PROXY_NETWORK_PDU, p)

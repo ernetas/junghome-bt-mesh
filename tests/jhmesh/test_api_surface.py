@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 import jhmesh
-from jhmesh import client, state
+from jhmesh import client, sar, state
 
 API: dict[str, list[str]] = {
     "jhmesh": [],
@@ -842,6 +842,16 @@ API: dict[str, list[str]] = {
         "session_nonce",
         "start_no_oob",
     ],
+    "jhmesh.sar": [
+        "SAR_ACK_DELAY_INCREMENT",
+        "SAR_ACK_RETRANSMISSIONS",
+        "SAR_DISCARD_TIMEOUT",
+        "SAR_SEGMENTS_THRESHOLD",
+        "SAR_SEGMENT_INTERVAL",
+        "SEGMENT_ACK_TIMEOUT",
+        "SEGMENT_RESTARTS",
+        "SEGMENT_RETRIES",
+    ],
     "jhmesh.sniffer": [
         "AD_BEACON",
         "AD_MESSAGE",
@@ -1028,3 +1038,8 @@ def test_every_logger_is_named_under_jhmesh() -> None:
         for file, name in names
         if not name.startswith(("'jhmesh", '"jhmesh'))
     ] == []
+
+
+def test_client_re_exports_the_sar_constants() -> None:
+    assert all(getattr(client, attr) is getattr(sar, attr) for attr in sar.__all__)
+    assert set(sar.__all__) <= set(client.__all__)

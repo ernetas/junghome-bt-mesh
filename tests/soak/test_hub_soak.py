@@ -77,6 +77,7 @@ from custom_components.junghome_ble.hub import link as link_mod
 from custom_components.junghome_ble.hub import liveness as liveness_mod
 from custom_components.junghome_ble.hub import refresh as refresh_mod
 from custom_components.junghome_ble.jhmesh import client as client_mod
+from custom_components.junghome_ble.jhmesh import sar as sar_mod
 from custom_components.junghome_ble.jhmesh import state as state_mod
 from custom_components.junghome_ble.properties import reader as reader_mod
 from tests.conftest import META_DIR, setup_entry
@@ -122,6 +123,7 @@ TIMED = (
     liveness_mod,
     reader_mod,
     refresh_mod,
+    sar_mod,
     sensor,
     state_mod,
     switch,

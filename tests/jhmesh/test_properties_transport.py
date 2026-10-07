@@ -27,6 +27,7 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 from jhmesh import client as client_mod
+from jhmesh import sar as sar_mod
 from jhmesh.cdb import CDB
 from jhmesh.client import SEQ_MAX, AccessMessage, LocalState, ProxyClient
 from jhmesh.crypto import NetKeyMaterial, aes_cmac
@@ -296,7 +297,7 @@ def test_segmented_messages_are_reassembled_once_whatever_the_air_does(
         assert len(got) == len(messages)
         await client.detach()
 
-    with _no_errors_logged(), patch.object(client_mod, "SAR_ACK_DELAY_INCREMENT", 0):
+    with _no_errors_logged(), patch.object(sar_mod, "SAR_ACK_DELAY_INCREMENT", 0):
         asyncio.run(scenario())
 
 
@@ -438,8 +439,10 @@ def test_client_access_messages_reach_the_proxy_intact_at_every_mtu(
         await client.detach()
 
     with (
-        patch.object(client_mod, "asyncio", FastAsyncio()),
+        patch.object(client_mod, "asyncio", fast := FastAsyncio()),
+        patch.object(sar_mod, "asyncio", fast),
         patch.object(client_mod, "SEGMENT_ACK_TIMEOUT", 0.01),
+        patch.object(sar_mod, "SEGMENT_ACK_TIMEOUT", 0.01),
     ):
         asyncio.run(scenario())
 

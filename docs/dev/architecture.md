@@ -116,7 +116,8 @@ configuration, planned as data), `plan` (the plan model of `commission` and of t
 `ConfigStep`, the order on air, the replay into the export), `onboarding` (adding a node end to end: its addresses, commissioning, read-back and
 recording in the export), `vault` (a provisioner entry of your own and the device keys of the nodes you provisioned)
 and `sniffer` (decode passive nRF Sniffer captures). The rest
-(`crypto`, `pdu`, `properties`, `export`, `merge`, `audit`, `advert`, `keyrefresh`, `vaultrefresh`, `fileio`) serves
+(`crypto`, `pdu`, `sar` — the client's segmentation and reassembly, `properties`, `export`, `merge`, `audit`, `advert`,
+`keyrefresh`, `vaultrefresh`, `fileio`) serves
 those and the integration. Every module's `__all__` is its public API, pinned by `tests/jhmesh/test_api_surface.py`
 (a change to it is a change to the published package); underscore names are private, and `jhmesh/__init__.py` imports
 nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.

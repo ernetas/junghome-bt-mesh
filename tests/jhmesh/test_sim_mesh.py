@@ -21,6 +21,7 @@ from jhmesh import client as client_mod
 from jhmesh import commission
 from jhmesh import config_messages as C
 from jhmesh import messages as M
+from jhmesh import sar as sar_mod
 from jhmesh import state as state_mod
 from jhmesh.client import IV_UPDATE_MIN_STATE, AccessMessage, LocalState, ProxyClient
 from jhmesh.crypto import NetKeyMaterial
@@ -58,7 +59,7 @@ HOP_MATRIX = Path(__file__).resolve().parents[2] / "docs" / "hop-matrix.md"
 def virtual_monotonic(monkeypatch: pytest.MonkeyPatch) -> VirtualClocks:
     """The client's `time.monotonic()` (reassembly expiry, `last_rx`, message stamps) and its wall clock (the IV
     Update timing) on the virtual clock."""
-    return patch_monotonic(monkeypatch, client_mod, state_mod)
+    return patch_monotonic(monkeypatch, client_mod, sar_mod, state_mod)
 
 
 class Session:

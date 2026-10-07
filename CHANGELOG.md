@@ -296,6 +296,9 @@
   *Mesh overview* and *Mesh topology* read the hub's nodes once, the same way (`mesh_topology.node_rows`).
   `jhmesh.access` holds `AccessMessage` (`jhmesh.client` still exports it): the sniffer, the audit and the plan
   model no longer load the proxy client for it.
+  Segmentation and reassembly — the segmented sends with their acknowledgments, the reassembly with the SAR
+  Acknowledgment and Discard timers — are `jhmesh/sar.py` (`Segmentation`, which `ProxyClient` is built on; its
+  constants still import from `jhmesh.client`).
 
 ## 1.4.1 (unreleased)
 
