@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.0 (unreleased)
+## 1.5.0
 
 ### Upgrading
 
@@ -120,6 +120,14 @@
   Renovate holds the Python of the workflow jobs, which follows Home Assistant's. The nightly run against the newest
   Home Assistant test stack states which one pip installed and annotates when it is not PyPI's newest. Review and
   brief citations are gone from the code's docstrings and comments, and a test keeps them out.
+- **The *Mesh topology* picture speaks the server's language.** Its title, summary, state and feature words, band
+  titles, legend and footnote were English only; they are now translations (`common.topology_*`) in all 26
+  languages, taken from Home Assistant's translation cache for the server's language (English where a language lacks
+  one), and the picture is redrawn at once when that language changes. A count now follows its word — *Hops: 3*,
+  *reachable: 4*, *Devices: 6* instead of *3 hops*, *4 reachable*, *6 devices* — so no language needs plural rules
+  the backend does not have. Longer words are cut to the room they have (a CJK character counts twice), the footnote
+  wraps onto a second line, and the gap between Home Assistant and its proxy is wider for the link's word. The
+  diagnostics' `topology` is unchanged.
 
 ### Fixed
 
@@ -272,6 +280,12 @@
   (a Status on after one off, or one the load published because a key, the app or an automation switched it) is off
   that long after it; every such on starts it again, off clears it. A fade to off still shows its own remaining
   time. Unverified on air.
+- **The *LED night mode* switch writes only the LEDs not in the asked mode.** Turning it on (or off) when it already
+  is wrote every LED mode of the node again, and the node lights its LEDs at every such write: an automation asserting
+  night mode on a schedule made the buttons' LEDs flash each time. Now an LED already in the mode is skipped, and
+  asserting the mode the switch shows writes nothing. The value compared is the one read at every link, updated by
+  every Status heard and by the read-back of each write; `homeassistant.update_entity` reads it again on demand.
+  That a write lights the LEDs is inferred from their timing, unverified on air.
 
 ### Internal
 
@@ -299,28 +313,6 @@
   Segmentation and reassembly — the segmented sends with their acknowledgments, the reassembly with the SAR
   Acknowledgment and Discard timers — are `jhmesh/sar.py` (`Segmentation`, which `ProxyClient` is built on; its
   constants still import from `jhmesh.client`).
-
-## 1.4.1 (unreleased)
-
-### Changed
-
-- **The *Mesh topology* picture speaks the server's language.** Its title, summary, state and feature words, band
-  titles, legend and footnote were English only; they are now translations (`common.topology_*`) in all 26
-  languages, taken from Home Assistant's translation cache for the server's language (English where a language lacks
-  one), and the picture is redrawn at once when that language changes. A count now follows its word — *Hops: 3*,
-  *reachable: 4*, *Devices: 6* instead of *3 hops*, *4 reachable*, *6 devices* — so no language needs plural rules
-  the backend does not have. Longer words are cut to the room they have (a CJK character counts twice), the footnote
-  wraps onto a second line, and the gap between Home Assistant and its proxy is wider for the link's word. The
-  diagnostics' `topology` is unchanged.
-
-### Fixed
-
-- **The *LED night mode* switch writes only the LEDs not in the asked mode.** Turning it on (or off) when it already
-  is wrote every LED mode of the node again, and the node lights its LEDs at every such write: an automation asserting
-  night mode on a schedule made the buttons' LEDs flash each time. Now an LED already in the mode is skipped, and
-  asserting the mode the switch shows writes nothing. The value compared is the one read at every link, updated by
-  every Status heard and by the read-back of each write; `homeassistant.update_entity` reads it again on demand.
-  That a write lights the LEDs is inferred from their timing, unverified on air.
 
 ## 1.4.0
 

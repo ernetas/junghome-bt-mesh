@@ -18,6 +18,6 @@
   "issue_tracker": "https://github.com/ernetas/junghome-bt-mesh/issues",
   "loggers": ["jhmesh", "custom_components.junghome_ble"],
   "requirements": [],
-  "version": "1.4.0",
+  "version": "1.5.0",
   "zeroconf": [{ "type": "_junghome._tcp.local." }]
 }
