@@ -293,6 +293,7 @@
   rule for model ids (`Element.model_entry`).
   `jhmesh.vaultrefresh` logs under that name inside Home Assistant too, not its module path (A5-7), so the
   documented `jhmesh` logger setting covers it; a test keeps every `jhmesh` logger named under `jhmesh`.
+  *Mesh overview* and *Mesh topology* read the hub's nodes once, the same way (`mesh_topology.node_rows`).
 
 ## 1.4.1 (unreleased)
 

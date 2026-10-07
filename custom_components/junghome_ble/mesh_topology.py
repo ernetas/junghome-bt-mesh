@@ -1,5 +1,6 @@
 """The topology snapshot of a hub (`topology_svg.Topology`): what the *Mesh topology* image and the diagnostics show.
 
+Its rows come from `node_rows`, the one reading of the hub's nodes the *Mesh overview* sensor's rows come from too.
 Read off the hub as it stands: each node's device name (a rename too) and area (`device_info.node_label`,
 `node_areas`, as the *Mesh overview* shows them), its features from the export (`features`: 1 is enabled; 0
 disabled and 2 unsupported are not shown), the hops of its last heartbeat, whether it answers (`JungHomeHub.
@@ -13,6 +14,7 @@ each key of `topology_svg.TEXTS`, English where it has none.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from homeassistant.helpers import device_registry as dr
@@ -24,6 +26,8 @@ from .texts import cached_texts
 from .topology_svg import TEXTS, Topology, TopologyNode
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from homeassistant.core import HomeAssistant
 
     from .coordinator import JungHomeHub
@@ -40,41 +44,80 @@ def _feature(node: Node, name: str) -> bool:
     return isinstance(features, dict) and features.get(name) == FEATURE_ENABLED
 
 
-def topology_snapshot(hub: JungHomeHub) -> Topology:
-    """Return the hub's topology now: Home Assistant, its link and proxy, every provisioned node sorted by address."""
+@dataclass(frozen=True)
+class NodeRow:
+    """One provisioned node as the hub has it now: what *Mesh overview* and *Mesh topology* show of it.
+
+    `reachable` is `JungHomeHub.node_alive`, None for a battery node (it sleeps) and for every node without a link;
+    `proxy` whether the link goes through it.
+    """
+
+    node: Node
+    name: str
+    area: str | None
+    battery: bool
+    reachable: bool | None
+    hops: int | None
+    last_seen: datetime | None
+    proxy: bool
+
+
+def node_rows(hub: JungHomeHub) -> list[NodeRow]:
+    """Return a row per provisioned node of the export (a phone, another company's node: none), in export order.
+
+    Name and area as the node's device shows them (`device_info.node_label`, `node_areas`), the hops of its last
+    heartbeat and when it was last heard.
+    """
     registry = dr.async_get(hub.hass)
     areas = node_areas(hub)
     link = hub.link_available
-    nodes: list[TopologyNode] = []
-    for node in sorted(hub.cdb.nodes, key=lambda n: n.unicast):
+    rows: list[NodeRow] = []
+    for node in hub.cdb.nodes:
         if node.pid is None:
             continue  # a phone, another company's node: no device of ours
         battery = node.pid in BATTERY_PIDS
-        reachable = None if battery or not link else hub.node_alive(node.unicast)
         beat = hub.heartbeats.get(node.unicast)
-        seen = hub.last_seen.get(node.unicast)
-        nodes.append(
-            TopologyNode(
-                unicast=node.unicast,
+        rows.append(
+            NodeRow(
+                node=node,
                 name=node_label(hub, registry, node),
-                room=areas.get(node.unicast),
-                relay=_feature(node, "relay"),
-                proxy=_feature(node, "proxy"),
-                friend=_feature(node, "friend"),
-                low_power=_feature(node, "lowPower"),
+                area=areas.get(node.unicast),
                 battery=battery,
+                reachable=None if battery or not link else hub.node_alive(node.unicast),
                 hops=None if beat is None else beat.hops,
-                reachable=reachable,
-                last_heard=None
-                if seen is None or reachable
-                else dt_util.as_local(seen).strftime("%Y-%m-%d %H:%M"),
+                last_seen=hub.last_seen.get(node.unicast),
+                proxy=link and node.unicast == hub.proxy_node,
             )
         )
+    return rows
+
+
+def topology_snapshot(hub: JungHomeHub) -> Topology:
+    """Return the hub's topology now: Home Assistant, its link and proxy, every provisioned node sorted by address."""
+    link = hub.link_available
+    nodes = tuple(
+        TopologyNode(
+            unicast=row.node.unicast,
+            name=row.name,
+            room=row.area,
+            relay=_feature(row.node, "relay"),
+            proxy=_feature(row.node, "proxy"),
+            friend=_feature(row.node, "friend"),
+            low_power=_feature(row.node, "lowPower"),
+            battery=row.battery,
+            hops=row.hops,
+            reachable=row.reachable,
+            last_heard=None
+            if row.last_seen is None or row.reachable
+            else dt_util.as_local(row.last_seen).strftime("%Y-%m-%d %H:%M"),
+        )
+        for row in sorted(node_rows(hub), key=lambda r: r.node.unicast)
+    )
     return Topology(
         address=hub.proxy.state.src,
         connected=link,
         proxy=hub.proxy_node if link else None,
-        nodes=tuple(nodes),
+        nodes=nodes,
         heartbeats=hub.heartbeats_enabled,
     )
 

@@ -126,7 +126,6 @@ from .entity import (
     light_device_info,
     load_entity_id,
     metered_device_info,
-    node_areas,
     node_device_info,
     node_label,
     product_name,
@@ -143,9 +142,10 @@ from .gateway_status import (
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.advert import mac_from_uuid
-from .jhmesh.devices import BATTERY_PIDS, Blind, Light, Socket, Thermostat
+from .jhmesh.devices import Blind, Light, Socket, Thermostat
 from .jhmesh.properties import parse_version
 from .mesh_config import gateway_sync
+from .mesh_topology import node_rows
 from .node_clocks import time_server
 from .schedules import ScheduleTarget, schedule_targets, scheduler
 from .thresholds import ThresholdTarget, switched_devices, threshold_targets
@@ -1362,34 +1362,25 @@ def mesh_overview(hub: JungHomeHub) -> list[dict[str, Any]]:
 
     The area is the node device's, else the first one among the devices that hang off it (a light's, a socket's:
     the room the app put the load in). A battery node sleeps: its `reachable` is None rather than a verdict, and it
-    has no hops. Without a link no node is reachable and none is the proxy.
+    has no hops. Without a link no node is reachable and none is the proxy. The rows are `mesh_topology.node_rows`,
+    the *Mesh topology* picture's too.
     """
-    hass = hub.hass
-    registry = dr.async_get(hass)
-    areas = node_areas(hub)
-    link = hub.link_available
-    rows: list[dict[str, Any]] = []
-    for node in hub.cdb.nodes:
-        if node.pid is None:
-            continue
-        seen = hub.last_seen.get(node.unicast)
-        beat = hub.heartbeats.get(node.unicast)
-        rows.append(
-            {
-                "name": node_label(hub, registry, node),
-                "area": areas.get(node.unicast),
-                "product": product_name(node.pid),
-                "reachable": None
-                if node.pid in BATTERY_PIDS
-                else link and hub.node_alive(node.unicast),
-                "last_seen": seen.isoformat() if seen is not None else None,
-                "rssi": hub.node_rssi.get(node.unicast),
-                "scanner": best_scanner(hass, mac_from_uuid(node.uuid)),
-                "hops": beat.hops if beat is not None else None,
-                "proxy": link and node.unicast == hub.proxy_node,
-            }
-        )
-    return rows
+    return [
+        {
+            "name": row.name,
+            "area": row.area,
+            "product": product_name(row.node.pid),
+            "reachable": None if row.battery else bool(row.reachable),
+            "last_seen": row.last_seen.isoformat()
+            if row.last_seen is not None
+            else None,
+            "rssi": hub.node_rssi.get(row.node.unicast),
+            "scanner": best_scanner(hub.hass, mac_from_uuid(row.node.uuid)),
+            "hops": row.hops,
+            "proxy": row.proxy,
+        }
+        for row in node_rows(hub)
+    ]
 
 
 class JungHomeUnreachableDevices(JungHomeEntity, SensorEntity):
