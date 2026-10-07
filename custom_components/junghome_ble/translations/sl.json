@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         },
         "force": {
           "name": "Tudi če se naprave razlikujejo od izvoza",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         },
         "dry_run": {
           "name": "Preizkusni zagon",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         },
         "dry_run": {
           "name": "Preizkusni zagon",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         },
         "force": {
           "name": "Tudi če se naprave razlikujejo od izvoza",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Prostor prek območja",
-          "description": "Namesto vnosa imena prostora: območje, ki je poimenovano kot prostor."
+          "description": "Namesto vnosa imena prostora: območje, kamor spada prostor — tisto, ki mu ga dodeli korak integracije „Prostori in območja“, sicer območje, ki je poimenovano kot prostor ali ima njegovo ime kot vzdevek."
         },
         "scene_entity": {
           "name": "Entiteta scene",

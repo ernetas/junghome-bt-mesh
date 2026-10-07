@@ -215,6 +215,11 @@
   placeholder warnings, from now on.
 - **`start_iv_update` is translated.** Its name, description, fields and eight refusals were English in all 25 other
   languages; the translation test now fails on a key a language lacks instead of printing a share.
+- **The other 25 languages say what the English says of `force` and `room_area`.** They still said `force` skips the
+  comparison with the export on `remove_from_room`, `delete_scene` and `remove_device`, and that *Room by area* is
+  the area named like the room (it is the area the rooms-and-areas step gives the room, else one named or aliased
+  like it). `tests/translation_sources.json` now records the English each key was translated from: a change of the
+  English fails the translation test until every language follows and `tools/translation_sources.py` refreshes it.
 - **The *app overrode a change* repair goes with its entry.** `carry_over_conflict` stayed in *Settings → Repairs*
   after the entry was removed (or disabled), naming a mesh that was gone; removing an entry now deletes every repair
   issue the entry can have, whoever raised it.

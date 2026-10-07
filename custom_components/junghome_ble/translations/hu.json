@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         },
         "force": {
           "name": "Akkor is, ha az eszközök eltérnek az exporttól",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         },
         "dry_run": {
           "name": "Próbafuttatás",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         },
         "dry_run": {
           "name": "Próbafuttatás",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         },
         "force": {
           "name": "Akkor is, ha az eszközök eltérnek az exporttól",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Helyiség terület alapján",
-          "description": "A helyiség nevének begépelése helyett: a helyiséggel azonos nevű terület."
+          "description": "A helyiség nevének begépelése helyett: az a terület, amelyhez a helyiség tartozik — amelyet az integráció „Helyiségek és területek” lépése ad neki, egyébként a helyiséggel azonos nevű terület, vagy az, amelynek egyik álneve a helyiség neve."
         },
         "scene_entity": {
           "name": "Jelenetentitás",

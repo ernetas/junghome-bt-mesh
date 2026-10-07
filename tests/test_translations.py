@@ -10,6 +10,7 @@ checks below are the only automated guard:
 - the same `{placeholder}` set per key,
 - every other language has exactly English's keys (none missing unless listed in `UNTRANSLATED`), with the same
   placeholders and `literal` spans, and naming every field English's descriptions name by its label,
+- every key's English is the one the translations were made from (`tests/translation_sources.json`),
 - every `icons.json` entry points at an entity translation key or an action, and every action has an icon,
 - every translation key the code uses (literal or a `CONSTANT` reference, per-property config entity, service
   error, repair issue, event type, device trigger, select option) exists in `strings.json`,
@@ -65,6 +66,7 @@ from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.properties import BLIND_MODE
 from custom_components.junghome_ble.select import UNKNOWN_OPTION
 from custom_components.junghome_ble.topology_svg import TEXTS as TOPOLOGY_TEXTS
+from tools import translation_sources
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / DOMAIN
 STRINGS = COMPONENT / "strings.json"
@@ -381,6 +383,31 @@ def test_translation_cites_the_fields_english_cites(
         if service["fields"][name]["name"] not in text:
             missing.append(f"{action}.{text_key} -> {name}")
     assert not missing, f"{path.name}: does not cite the field English cites: {missing}"
+
+
+def test_translations_follow_the_current_english() -> None:
+    """Every key's English is the one the record says the other languages were translated from.
+
+    A translation that predates a change of the English keeps its key, so the checks above pass on it: after brief 80
+    every language still said `force` also skips the comparison with the export, and still described `room_area`
+    as the area named like the room, while English had changed both. `tests/translation_sources.json` holds a hash
+    of each key's English; when the English changes, this fails until `tools/translation_sources.py` refreshes the
+    record, which it does only once every language's text of the key changed too (or `--same-meaning` says the
+    meaning did not). A record, not the git history: CI's shallow checkout has no history to compare with.
+    """
+    record = json.loads(translation_sources.RECORD.read_text(encoding="utf-8"))
+    wanted = translation_sources.expected()
+    changed = sorted(
+        key for key in wanted if key in record and record[key] != wanted[key]
+    )
+    assert not changed, (
+        f"English changed for {changed}: re-translate them in every language, then run "
+        "tools/translation_sources.py"
+    )
+    assert set(record) == set(wanted), (
+        "keys added or removed: run tools/translation_sources.py "
+        f"(new {sorted(set(wanted) - set(record))}, gone {sorted(set(record) - set(wanted))})"
+    )
 
 
 def test_model_names_are_the_english_strings(strings: dict[str, Any]) -> None:

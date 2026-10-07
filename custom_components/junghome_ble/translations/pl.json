@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         },
         "force": {
           "name": "Nawet jeśli urządzenia różnią się od eksportu",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         },
         "dry_run": {
           "name": "Próba",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         },
         "dry_run": {
           "name": "Próba",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         },
         "force": {
           "name": "Nawet jeśli urządzenia różnią się od eksportu",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
-          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar o takiej samej nazwie jak pomieszczenie."
+          "description": "Zamiast wpisywać nazwę pomieszczenia: obszar, do którego należy pomieszczenie — ten, który przypisuje mu krok integracji „Pomieszczenia i obszary”, a w przeciwnym razie obszar o takiej samej nazwie jak pomieszczenie lub mający jego nazwę jako alias."
         },
         "scene_entity": {
           "name": "Encja sceny",

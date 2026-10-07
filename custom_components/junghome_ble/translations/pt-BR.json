@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         },
         "force": {
           "name": "Mesmo que os dispositivos sejam diferentes da exportação",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         },
         "dry_run": {
           "name": "Simulação",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         },
         "dry_run": {
           "name": "Simulação",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         },
         "force": {
           "name": "Mesmo que os dispositivos sejam diferentes da exportação",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Cômodo pela área",
-          "description": "Em vez de digitar o nome do cômodo: a área com o mesmo nome do cômodo."
+          "description": "Em vez de digitar o nome do cômodo: a área à qual o cômodo pertence — a que a etapa \"Cômodos e áreas\" da integração lhe dá ou, senão, a área com o mesmo nome do cômodo ou que tem o nome dele como alias."
         },
         "scene_entity": {
           "name": "Entidade de cena",

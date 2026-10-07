@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         },
         "force": {
           "name": "Net jei įrenginiai skiriasi nuo eksporto",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         },
         "dry_run": {
           "name": "Bandomasis vykdymas",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         },
         "dry_run": {
           "name": "Bandomasis vykdymas",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         },
         "force": {
           "name": "Net jei įrenginiai skiriasi nuo eksporto",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
-          "description": "Užuot įvedę patalpos pavadinimą: sritis, pavadinta taip pat kaip patalpa."
+          "description": "Užuot įvedę patalpos pavadinimą: sritis, kuriai priklauso patalpa — ta, kurią jai priskiria integracijos žingsnis „Patalpos ir sritys“, kitaip sritis, pavadinta taip pat kaip patalpa arba turinti jos pavadinimą kaip slapyvardį."
         },
         "scene_entity": {
           "name": "Scenos objektas",

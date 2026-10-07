@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         },
         "force": {
           "name": "Vaikka laitteet poikkeaisivat viennistä",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         },
         "dry_run": {
           "name": "Koeajo",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         },
         "dry_run": {
           "name": "Koeajo",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         },
         "force": {
           "name": "Vaikka laitteet poikkeaisivat viennistä",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Huone alueen mukaan",
-          "description": "Huoneen nimen kirjoittamisen sijaan: alue, jonka nimi on sama kuin huoneen."
+          "description": "Huoneen nimen kirjoittamisen sijaan: alue, johon huone kuuluu — se, jonka integraation vaihe \"Huoneet ja alueet\" sille antaa, muuten alue, jonka nimi tai alias on sama kuin huoneen."
         },
         "scene_entity": {
           "name": "Tilanne-entiteetti",

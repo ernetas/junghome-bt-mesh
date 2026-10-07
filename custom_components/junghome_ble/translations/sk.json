@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         },
         "force": {
           "name": "Aj keď sa zariadenia líšia od exportu",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         },
         "dry_run": {
           "name": "Skúšobný beh",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         },
         "dry_run": {
           "name": "Skúšobný beh",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         },
         "force": {
           "name": "Aj keď sa zariadenia líšia od exportu",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
-          "description": "Namiesto zadania názvu miestnosti: oblasť pomenovaná rovnako ako miestnosť."
+          "description": "Namiesto zadania názvu miestnosti: oblasť, do ktorej miestnosť patrí — tá, ktorú jej pridelí krok integrácie „Miestnosti a oblasti“, inak oblasť pomenovaná rovnako ako miestnosť alebo s jej názvom ako aliasom."
         },
         "scene_entity": {
           "name": "Entita scény",

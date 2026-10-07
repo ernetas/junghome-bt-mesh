@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         },
         "force": {
           "name": "Selv om enhetene avviker fra eksporten",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         },
         "dry_run": {
           "name": "Prøvekjøring",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         },
         "dry_run": {
           "name": "Prøvekjøring",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         },
         "force": {
           "name": "Selv om enhetene avviker fra eksporten",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Rom via område",
-          "description": "I stedet for å skrive rommets navn: området som heter det samme som rommet."
+          "description": "I stedet for å skrive rommets navn: området rommet hører til — det integrasjonens trinn “Rom og områder” gir det, ellers området som heter det samme som rommet eller har navnet som alias."
         },
         "scene_entity": {
           "name": "Sceneentitet",

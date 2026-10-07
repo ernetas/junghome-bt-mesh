@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         },
         "force": {
           "name": "Även om enheterna skiljer sig från exporten",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         },
         "dry_run": {
           "name": "Testkörning",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         },
         "dry_run": {
           "name": "Testkörning",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         },
         "force": {
           "name": "Även om enheterna skiljer sig från exporten",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Rum via område",
-          "description": "I stället för att skriva rummets namn: området som heter som rummet."
+          "description": "I stället för att skriva rummets namn: området som rummet hör till — det som integrationens steg “Rum och områden” ger det, annars området som heter som rummet eller har dess namn som alias."
         },
         "scene_entity": {
           "name": "Scenentitet",

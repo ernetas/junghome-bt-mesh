@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         },
         "force": {
           "name": "Encara que els dispositius difereixin de l'exportació",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         },
         "dry_run": {
           "name": "Simulació",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         },
         "dry_run": {
           "name": "Simulació",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         },
         "force": {
           "name": "Encara que els dispositius difereixin de l'exportació",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Habitació per àrea",
-          "description": "En lloc d'escriure el nom de l'habitació: l'àrea que es diu com l'habitació."
+          "description": "En lloc d'escriure el nom de l'habitació: l'àrea on va l'habitació — la que li dona el pas «Habitacions i àrees» de la integració, o si no, l'àrea que es diu com l'habitació o que en té el nom com a àlies."
         },
         "scene_entity": {
           "name": "Entitat d'escena",

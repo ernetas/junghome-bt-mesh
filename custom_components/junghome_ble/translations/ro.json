@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         },
         "force": {
           "name": "Chiar dacă dispozitivele diferă de export",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         },
         "dry_run": {
           "name": "Simulare",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         },
         "dry_run": {
           "name": "Simulare",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         },
         "force": {
           "name": "Chiar dacă dispozitivele diferă de export",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Cameră după zonă",
-          "description": "În loc să tastezi numele camerei: zona care poartă numele camerei."
+          "description": "În loc să tastezi numele camerei: zona în care merge camera — cea pe care i-o dă pasul „Camere și zone” al integrării, altfel zona care poartă numele camerei sau îl are ca alias."
         },
         "scene_entity": {
           "name": "Entitate scenă",

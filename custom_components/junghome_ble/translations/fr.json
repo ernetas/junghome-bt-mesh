@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         },
         "force": {
           "name": "Même si les appareils diffèrent de l'export",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         },
         "dry_run": {
           "name": "Simulation",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         },
         "dry_run": {
           "name": "Simulation",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         },
         "force": {
           "name": "Même si les appareils diffèrent de l'export",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Zone par pièce",
-          "description": "Au lieu de saisir le nom de la zone : la pièce nommée comme la zone."
+          "description": "Au lieu de saisir le nom de la zone : la pièce à laquelle la zone revient — celle que lui donne l'étape « Zones et pièces » de l'intégration, sinon la pièce nommée comme la zone ou qui porte son nom comme alias."
         },
         "scene_entity": {
           "name": "Entité de scène",

@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         },
         "force": {
           "name": "I když se zařízení liší od exportu",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         },
         "dry_run": {
           "name": "Zkušební běh",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         },
         "dry_run": {
           "name": "Zkušební běh",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         },
         "force": {
           "name": "I když se zařízení liší od exportu",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Místnost podle oblasti",
-          "description": "Místo zadání názvu místnosti: oblast pojmenovaná stejně jako místnost."
+          "description": "Místo zadání názvu místnosti: oblast, do které místnost patří — ta, kterou jí přidělí krok integrace „Místnosti a oblasti“, jinak oblast pojmenovaná stejně jako místnost nebo s jejím názvem jako aliasem."
         },
         "scene_entity": {
           "name": "Entita scény",

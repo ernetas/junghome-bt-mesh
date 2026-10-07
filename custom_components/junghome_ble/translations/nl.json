@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         },
         "force": {
           "name": "Ook als de apparaten afwijken van de export",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         },
         "dry_run": {
           "name": "Proefrun",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         },
         "dry_run": {
           "name": "Proefrun",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         },
         "force": {
           "name": "Ook als de apparaten afwijken van de export",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Kamer via ruimte",
-          "description": "In plaats van de naam van de kamer te typen: de ruimte die net zo heet als de kamer."
+          "description": "In plaats van de naam van de kamer te typen: de ruimte waar de kamer bij hoort — die welke de stap “Kamers en ruimtes” van de integratie haar geeft, anders de ruimte die net zo heet als de kamer of haar naam als alias heeft."
         },
         "scene_entity": {
           "name": "Scène-entiteit",

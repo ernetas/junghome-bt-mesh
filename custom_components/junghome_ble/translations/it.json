@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         },
         "force": {
           "name": "Anche se i dispositivi differiscono dall'esportazione",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         },
         "dry_run": {
           "name": "Simulazione",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         },
         "dry_run": {
           "name": "Simulazione",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         },
         "force": {
           "name": "Anche se i dispositivi differiscono dall'esportazione",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Stanza per area",
-          "description": "Invece di digitare il nome della stanza: l'area che ha lo stesso nome della stanza."
+          "description": "Invece di digitare il nome della stanza: l'area a cui va la stanza — quella che le assegna il passaggio «Stanze e aree» dell'integrazione, altrimenti l'area che ha lo stesso nome della stanza o ne ha il nome come alias."
         },
         "scene_entity": {
           "name": "Entità scena",

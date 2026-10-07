@@ -2252,7 +2252,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         },
         "force": {
           "name": "Auch wenn die Geräte vom Export abweichen",
@@ -2278,7 +2278,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         },
         "dry_run": {
           "name": "Probelauf",
@@ -2304,7 +2304,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         },
         "dry_run": {
           "name": "Probelauf",
@@ -2348,7 +2348,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         }
       }
     },
@@ -2366,7 +2366,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         },
         "force": {
           "name": "Auch wenn die Geräte vom Export abweichen",
@@ -2424,7 +2424,7 @@
         },
         "room_area": {
           "name": "Raum über Bereich",
-          "description": "Statt den Namen des Raums einzugeben: der Bereich, der wie der Raum heißt."
+          "description": "Statt den Namen des Raums einzugeben: der Bereich, in den der Raum gehört — der, den ihm der Schritt „Räume und Bereiche“ der Integration gibt, sonst der Bereich, der wie der Raum heißt oder dessen Namen als Alias hat."
         },
         "scene_entity": {
           "name": "Szenen-Entität",

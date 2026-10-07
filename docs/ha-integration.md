@@ -953,7 +953,9 @@ area. The other languages take JUNG terms from the gateway integration's transla
 Home Assistant's wording for its own concepts, and keep a JUNG room apart from a Home Assistant area the same way;
 they are machine translations nobody fluent has read yet, so corrections are welcome. A key a language lacks shows in
 English; `tests/test_translations.py` keeps every language's keys and
-`{placeholders}` in line with `en.json` and prints how much of each section is translated.
+`{placeholders}` in line with `en.json`. A change of a key's English fails it as well, until every language's text of
+the key is re-translated and `tools/translation_sources.py` records the new English in
+`tests/translation_sources.json` (`--same-meaning KEY` for a change that keeps the meaning).
 
 What Home Assistant builds in the backend follows the server's language instead (the language set under *Settings →
 System → General*): the device models (*Taster 1-fach (Schalteinsatz)*, *Schaltbare Leuchte*, …, loaded at setup),

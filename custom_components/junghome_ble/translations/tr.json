@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         },
         "force": {
           "name": "Cihazlar dışa aktarımdan farklı olsa bile",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         },
         "dry_run": {
           "name": "Deneme çalıştırması",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         },
         "dry_run": {
           "name": "Deneme çalıştırması",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         },
         "force": {
           "name": "Cihazlar dışa aktarımdan farklı olsa bile",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Alana göre oda",
-          "description": "Odanın adını yazmak yerine: odayla aynı adı taşıyan alan."
+          "description": "Odanın adını yazmak yerine: odanın ait olduğu alan — entegrasyonun “Odalar ve alanlar” adımının ona verdiği alan, yoksa odayla aynı adı ya da odanın adını takma ad olarak taşıyan alan."
         },
         "scene_entity": {
           "name": "Sahne varlığı",

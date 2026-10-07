@@ -2251,7 +2251,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         },
         "force": {
           "name": "Aunque los dispositivos difieran de la exportación",
@@ -2277,7 +2277,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         },
         "dry_run": {
           "name": "Simulación",
@@ -2303,7 +2303,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         },
         "dry_run": {
           "name": "Simulación",
@@ -2347,7 +2347,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         }
       }
     },
@@ -2365,7 +2365,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         },
         "force": {
           "name": "Aunque los dispositivos difieran de la exportación",
@@ -2423,7 +2423,7 @@
         },
         "room_area": {
           "name": "Estancia por área",
-          "description": "En lugar de escribir el nombre de la estancia: el área que se llama como la estancia."
+          "description": "En lugar de escribir el nombre de la estancia: el área a la que va la estancia — la que le asigna el paso «Estancias y áreas» de la integración o, si no, el área que se llama como la estancia o tiene su nombre como alias."
         },
         "scene_entity": {
           "name": "Entidad de escena",
