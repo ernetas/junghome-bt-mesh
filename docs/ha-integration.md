@@ -85,16 +85,17 @@ One `light` entity per output. The entity is the device, so its name is the name
   sent, so a stale cached one cannot make the light jump);
   with a colour temperature and a brightness, or to switch it on, a *Light CTL Set* carrying the brightness (the last
   known one, full brightness when none is known or the light is off); with neither, a *Generic OnOff Set*.
-- **Transitions** are not offered yet: neither the app nor the gateway ever sends a transition time. The on-air
-  sweep (B8, statuses only) found that every kind answers a Set that carries one: the DALI light reports a Lightness
-  fade with its target and remaining time and statuses until it ends, reports none for a CTL Set and switches on at
-  once, and a switch insert switches off only once the transition has run out (`docs/hidden-features.md` §11);
-  whether a light visibly fades, and the dimmer insert and a scene, are still to be checked. The support is built
-  and switched off: once a kind of light is
-  known to fade, its lights offer `transition`, which goes into the Set as the nearest transition time (100 ms steps
-  up to 6.2 s, then 1 s, 10 s and 10 min steps), *All lights* passes it on when all its lights fade, and the light is
-  asked for its state a second after the fade it announced ends. Until then a `transition` (from a light profile, say)
-  is ignored and the commands are sent exactly as before. **Unverified on air.**
+- **Transitions** are off by default (the option *Fade brightness changes*): neither the app nor the gateway ever
+  sends a transition time, and nobody has watched a fade from Home Assistant yet. The on-air sweep (B8, statuses
+  only) found that every kind answers a Set that carries one: the DALI light reports a Lightness fade with its target
+  and remaining time and statuses until it ends, reports none for a CTL Set and switches on at once, and a switch
+  insert switches off only once the transition has run out (`docs/hidden-features.md` §11). So, as decided (M19),
+  with the option on only a dimmer or DALI light offers `transition`, and only a **brightness change of a light that
+  is on** carries it — a *Light Lightness Set* with the nearest transition time (100 ms steps up to 6.2 s, then 1 s,
+  10 s and 10 min steps); the light is asked for its state a second after the fade it announced ends. Switching on
+  or off, a colour temperature (a CTL or CTL Temperature Set), a switched light and *All lights* never carry one; a
+  scene carries it only when every member is a dimmer or DALI light. With the option off a `transition` (from a
+  light profile, say) is ignored and the commands are sent exactly as before. **Unverified on air.**
 - A colour temperature changed elsewhere is followed from the light's *Light CTL Status* and also from a *Light CTL
   Temperature Status* of its temperature element (whether JUNG lights publish the latter is not observed yet).
 - The second output of a two-output insert is a separate light; without app metadata it is named `<node> out 2`.
@@ -624,9 +625,10 @@ reports no current scene). A recall from a key, the app or the gateway counts as
 Assistant: the entity's state is the time of the last one. The scenes the app makes for its timers (named
 `TimerScene …`) get no entity, as the app's scene list leaves them out. Scenes are created, filled and removed with
 the [scene actions](#actions-scenes) — or in the app, after which the export must be loaded again. A `transition`
-given to `scene.turn_on` is ignored for now: whether the devices fade a recall that carries one is still to be probed
-on air (`docs/hidden-features.md` §11); once it is known, the one recall carries it for every device (**unverified on
-air**).
+given to `scene.turn_on` goes into the recall only with the option *Fade brightness changes* on and when every member
+of the scene is a dimmer or DALI light (decision M19): the one recall carries it for every device, and a switched
+light or socket would only switch off that much later. Otherwise it is ignored. No recall was seen fading yet
+(**unverified on air**).
 
 Every load a scene can be stored on also has a diagnostic **Scenes** sensor (off by default): how many of the app's
 scenes it is in, with their names as the `scenes` attribute — the export's members, narrowed on a channel of a
@@ -914,7 +916,8 @@ insert, a buttons device's model the layout, and each key's event entity gets a 
 Assistant's language. The positions of the mixed layouts (*Rocker | Button*, *Button | Rocker*) follow the documented
 element order and are unverified on air. A push-button that advertises another insert than the export's raises the
 repair issue [*JUNG HOME push-buttons with another insert than in the export*](#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export);
-the export's insert keeps deciding its devices until a new export is loaded. On air the adverts of every push-button
+the export's insert keeps deciding its devices until the repair's fix adopts the advertised one (or an export names
+another insert). On air the adverts of every push-button
 matched the export but one, a 1-gang push-button exported with a switch insert and advertising an extension: the
 repair was raised for it at start and its device kept the export's insert, and no InsertId or layout Get went out,
 since the export named every insert. The device diagnostics show, per node,
@@ -1097,6 +1100,8 @@ options without a reload is unverified on air.
 |---|---|---|
 | Report clicks only once a double click is ruled out | off | Off: a press fires `click` at once and the second press of a double press fires `double_click` as well, so an automation on `click` also runs on every double press. On: every `click` of **every key** is held back for 0.5 s (the double-click window) and dropped when a second click arrives, so a double press fires only `double_click` — at the price of a 0.5 s delay on single clicks. A hold that follows a click within the window ends the wait early: the `click` is fired first, then `hold_start`. |
 | Keys that wait for a double click | none | The same wait, for the keys picked here only: a key with a double-click automation gets the clean `click` / `double_click` distinction, every other key keeps reporting its `click` at once. Offered while the integration runs, for the keys that can click (linked to the gateway, or of unknown wiring), by their event entity's name; a key picked before and no longer offered (removed, or wired elsewhere) is dropped when the options are saved. Has no effect while the option above is on, and is not shown then (what it holds stays for when that option is off again). **Unverified on air.** |
+| Push-buttons using the insert they advertise | none | Listed only while there are some: the push-buttons whose advertised insert the repair [*JUNG HOME push-buttons with another insert than in the export*](#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export) adopted. Take one off to go back to the insert the export names; the entry is set up again. |
+| Fade brightness changes (experimental) | off | On: a brightness change of a dimmer or DALI light that is on fades over the `transition` asked for, and so does a scene whose members are all dimmer or DALI lights; nothing else ever carries a transition (see [Light](#light), *Transitions*). Off until someone has watched a fade from Home Assistant (`docs/on-air-sweep.md` B8). **Unverified on air.** |
 | Allow Home Assistant to add and remove devices (experimental) | off | Enables `add_device` and `remove_device`, see [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental). |
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
 | Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
@@ -2669,11 +2674,17 @@ Reconfigure does the same. Raised once, kept across restarts, cleared when the n
 ### Repair issue "JUNG HOME push-buttons with another insert than in the export"
 
 A push-button advertises another insert (switch, dimmer, DALI, blinds, extension) than the one the export cached for
-it, listed as *export → device*: the insert was replaced after the export was made. Its devices are still built from
-the export's insert, so a blind may show as a light or the other way round, in the app too. Check the device in the
-JUNG HOME app, export the network again and update the integration (**Reconfigure**); the issue clears as soon as
-the device advertises the export's insert again, and is not raised again by an export that names the new insert.
-Seen raised on air for a push-button whose advert really differs; its clearing is unverified on air.
+it, listed as *export → device*: the insert was replaced after the device was added. Its devices are still built from
+the export's insert, so a blind may show as a light, or an extension insert (no load) as a light that switches
+nothing. A new export need not fix it: the app reads a push-button's InsertId only when it adds the device
+(`RequestRequiredData`), so the export most likely keeps naming the old insert. **Submit** uses the insert each listed
+push-button advertises instead: it is kept per push-button in the entry's options and the entry is set up again,
+which builds the node's devices from it (and clears the issue); the export and the app are not changed. The adopted
+insert holds while the export still names the one it replaced: an export that names another one for the push-button
+takes over again. To go back, take the push-button off *Push-buttons using the insert they advertise* in the
+integration's options (listed only while there are some). The issue also clears as soon as the device advertises the
+export's insert again. Seen raised on air for a push-button whose advert really differs; the fix is unverified on
+air.
 
 ### Repair issue "JUNG HOME devices with a wrong clock"
 

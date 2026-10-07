@@ -10,6 +10,11 @@ The scenes the app makes for its SIG timers (`TimerScene …`, `devices.SceneDef
 scene list leaves them out. A recall heard on the mesh — a key's, the app's, the gateway's, or one only the members'
 Scene Status told of — counts as an activation, as HA's own does (the entity's state is the last one), and
 `active_members` names the members whose Scene Server reports the scene as its current one.
+
+A recall carries HA's `transition` only when every member of the scene fades (decision M19: a dimmer or DALI light,
+`const.TRANSITION_KINDS`) and the option *Fade brightness changes* is on: the Recall goes to every node with one
+transition, and a switch insert or a socket among the members would only switch off that much later. Neither the app
+nor the gateway sends one, and no recall was seen fading yet. Unverified on air.
 """
 
 from __future__ import annotations
@@ -24,9 +29,10 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .bus_events import scene_unique_id
-from .const import DOMAIN, SIGNAL_SCENE_RECALLED, SIGNAL_SCENES
-from .entity import JungHomeEntity, async_setup_platform
+from .const import DOMAIN, SIGNAL_SCENE_RECALLED, SIGNAL_SCENES, TRANSITION_KINDS
+from .entity import JungHomeEntity, async_setup_platform, transitions_on
 from .errors import mesh_errors
+from .jhmesh.devices import Light
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -37,11 +43,6 @@ if TYPE_CHECKING:
     from .jhmesh.devices import SceneDef
 
 PARALLEL_UPDATES = 0  # push-based
-# Whether a Scene Recall carries HA's `transition`. Neither the app nor the gateway sends one, and
-# whether JUNG firmware fades a recall — or ignores a Recall that carries a transition — is up to the on-air probe
-# (`docs/hidden-features.md` §11): off until it ran (unverified on air), and a `transition` is ignored, the Recall
-# keeping the bytes it always had.
-SCENE_TRANSITIONS = False
 
 
 async def async_setup_entry(
@@ -115,22 +116,15 @@ class JungHomeScene(JungHomeEntity, Scene):
         members whose register reports this scene as its current one.
         """
         actions = self.hub.scene_actions.get(self.scene.number, {})
-        # the export lists the element the scene was stored on (a two-channel node's primary, for either channel):
-        # once read, the member is each channel of that node holding an action for the scene, as in the app
-        addresses: dict[int, None] = {}
         current: set[int] = (
             set()
         )  # the member addresses whose register has this scene current
-        for stored_on in self.hub.cdb.scenes.get(self.scene.number, []):
-            acting = [
-                channel
-                for channel in self.hub.scene_action_channels(stored_on)
-                if actions.get(channel) is not None
-            ]
-            addresses.update(dict.fromkeys(acting or [stored_on]))
+        stored = self._members()
+        for stored_on, acting in stored:
             state = self.hub.states.get(stored_on)
             if state is not None and state.scene == self.scene.number:
-                current.update(acting or [stored_on])
+                current.update(acting)
+        addresses = dict.fromkeys(a for _, acting in stored for a in acting)
         rows: list[tuple[str, int, str]] = []
         for address in addresses:
             device = self.hub.devices.by_address.get(address)
@@ -153,8 +147,41 @@ class JungHomeScene(JungHomeEntity, Scene):
             ],
         }
 
+    def _members(self) -> list[tuple[int, list[int]]]:
+        """Return each element the export stored the scene on, with the member addresses it stands for.
+
+        The export lists the element the scene was stored on (a two-channel node's primary, for either channel):
+        once read, the members are the channels of that node holding an action for the scene, as in the app; until
+        then the element itself.
+        """
+        actions = self.hub.scene_actions.get(self.scene.number, {})
+        out = []
+        for stored_on in self.hub.cdb.scenes.get(self.scene.number, []):
+            acting = [
+                channel
+                for channel in self.hub.scene_action_channels(stored_on)
+                if actions.get(channel) is not None
+            ]
+            out.append((stored_on, acting or [stored_on]))
+        return out
+
+    def _fades(self) -> bool:
+        """Whether every member fades a recall's transition (decision M19) and the option to fade is on."""
+        members = [
+            self.hub.devices.by_address.get(a)
+            for _, acting in self._members()
+            for a in acting
+        ]
+        return (
+            transitions_on(self.hub)
+            and bool(members)
+            and all(
+                isinstance(m, Light) and m.kind in TRANSITION_KINDS for m in members
+            )
+        )
+
     async def async_activate(self, **kwargs: Any) -> None:
-        """Recall the scene on every node; with HA's `transition` (one for every node) once `SCENE_TRANSITIONS`."""
-        transition = kwargs.get(ATTR_TRANSITION) if SCENE_TRANSITIONS else None
+        """Recall the scene on every node; with HA's `transition` (one for every node) when every member fades."""
+        transition = kwargs.get(ATTR_TRANSITION) if self._fades() else None
         with mesh_errors():
             await self.hub.recall_scene(self.scene.number, transition)

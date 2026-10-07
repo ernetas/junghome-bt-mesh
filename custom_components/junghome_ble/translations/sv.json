@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Rapportera klick först när ett dubbelklick är uteslutet",
           "double_click_keys": "Knappar som väntar på ett dubbelklick",
+          "insert_overrides": "Tryckknappar som använder insatsen de annonserar",
           "heartbeats": "Heartbeats från noder (markera en tyst enhet som inte tillgänglig)",
+          "transitions": "Mjuka ljusstyrkeändringar (experimentellt)",
           "allow_provisioning": "Tillåt Home Assistant att lägga till och ta bort enheter (experimentellt)",
           "provisioner_identity": "Skriv in Home Assistant i nätverkets fil som provisioner (experimentellt, ej verifierat med appen)",
           "follow_app": "Följ ändringar som görs i JUNG HOME-appen",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "En `click`-händelse hålls tillbaka en halv sekund och släpps om ett andra klick följer, så att ett dubbeltryck bara utlöser `double_click`. Av: varje tryck utlöser `click` direkt och det andra trycket i ett dubbeltryck utlöser även `double_click`. Det gäller alla knappar; för att bara vänta på vissa, låt det vara av och välj dem under *Knappar som väntar på ett dubbelklick*, som visas medan detta är av och integrationen körs.",
           "double_click_keys": "Bara dessa knappar håller tillbaka sitt `click` en halv sekund och släpper det om ett andra klick följer, så att ett dubbeltryck bara utlöser `double_click`; alla andra knappar utlöser `click` direkt. Välj de knappar som har en dubbelklicksautomation. Bara knappar som kan klicka visas. Ännu inte verifierat på riktiga enheter.",
+          "insert_overrides": "Tryckknapparna vars annonserade insats du tog över i reparationen *JUNG HOME-tryckknappar med en annan insats än i exporten*: Home Assistant skapar deras enheter utifrån den insatsen i stället för exportens. Ta bort en från listan för att gå tillbaka till insatsen som exporten anger. Visas bara så länge det finns några.",
           "heartbeats": "Varje nätdriven enhet ombeds skicka ett heartbeat till Home Assistant var 64:e sekund (en standardinställning i Bluetooth Mesh som JUNG-appen lämnar avstängd). En enhet som inte skickar något på ungefär tre och en halv minut får sina entiteter markerade som inte tillgängliga tills den hörs igen. När detta stängs av ombeds enheterna sluta (igen vid nästa anslutning om inte alla kunde nås på en gång); stäng av det innan du tar bort integrationen, som inte kan meddela dem efteråt.",
+          "transitions": "En ljusstyrkeändring av ett tänt dimbart ljus eller DALI-ljus sker gradvis under den `transition` som en åtgärd eller en ljusprofil begär, och så gör även en scen vars enheter alla är dimbara ljus eller DALI-ljus. Tända eller släcka, en ändring av färgtemperaturen och grupperna med alla ljus sker aldrig gradvis (enheterna skulle växla direkt, eller först senare). Inget som JUNG HOME-appen eller gatewayen skickar använder det, och ingen har ännu sett en övergång från Home Assistant; avstängt ignoreras en `transition`. Ännu inte verifierat på riktiga enheter.",
           "allow_provisioning": "Låter åtgärden `junghome_ble.add_device` driftsätta en ny JUNG-enhet och konfigurera den som appen skulle göra, efter förebild av en enhet av samma produkt som redan finns i nätverket, och `junghome_ble.remove_device` återställa en enhet och ta bort den ur nätverket. Ännu inte provat på riktiga enheter: prova först med en reservenhet. Att lägga till ger enheten nätverkets nycklar; att ta bort kan inte ångras.",
           "provisioner_identity": "Varje fil som Home Assistant skriver eller lämnar till gatewayen får en provisioner-post för Home Assistant, med egna adressintervall som inte krockar med appens och med Home Assistants adress inom dem, och de enheter som Home Assistant har lagt till och som saknas i appens fil läggs tillbaka. Rum, scener och enheter som Home Assistant skapar tar då sina adresser från dess egna intervall. Ingen JUNG-app har importerat en sådan fil ännu: prova på en reservinstallation av appen (importera filen från `junghome_ble.export_network`) innan din egen app eller gateway ser den. Av: filerna skrivs exakt som utan detta.",
           "follow_app": "När telefonen med JUNG HOME-appen hörs i meshet hämtar en post som konfigurerats från gatewayen gatewayens export några minuter efter att telefonen har tystnat (högst var 15:e minut) och tar över den om den har ändrats: enheter, rum, scener och knappkopplingar som ändrats i appen når Home Assistant utan Omkonfigurera. En post som konfigurerats från en fil visar i stället en reparationsnotis när appen setts ändra en enhets konfiguration. Inget skickas i meshet för detta. Ännu inte verifierat på riktiga enheter.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME-tryckknappar med en annan insats än i exporten",
-      "description": "{devices}: de här tryckknapparna i JUNG HOME-meshet {title} annonserar en annan insats än den i exporten som Home Assistant laddade (export → enhet). Insatsen byttes ut efter att exporten gjordes, så Home Assistant och appen kan visa fel typ av last för dem. Kontrollera enheterna i JUNG HOME-appen, exportera nätverket igen och uppdatera den här integrationen (Inställningar → Enheter och tjänster → JUNG HOME Bluetooth Mesh → Omkonfigurera); problemet försvinner när exporten anger de insatser som enheterna annonserar. Ännu inte verifierat på riktiga enheter."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Använd insatsen som tryckknapparna annonserar",
+            "description": "{devices}: dessa tryckknappar i JUNG HOME-meshen {title} annonserar en annan insats än den i exporten som Home Assistant har läst in (export → enhet). Insatsen byttes troligen ut efter att enheten lades till, och en ny export hjälper inte nödvändigtvis: appen läser en tryckknapps insats bara när den lägger till enheten. Till dess skapar Home Assistant fel sorts last för dem (en brytar-, dimmer- eller DALI-insats är ett ljus, en persiennsinsats en gardin, en tillsatsinsats ingen). Bekräfta för att använda den insats varje tryckknapp annonserar: Home Assistant konfigurerar posten på nytt och skapar deras enheter utifrån den. Exporten och appen behåller den gamla insatsen; Home Assistant fortsätter använda den annonserade tills en export anger en annan insats för tryckknappen. Ännu inte verifierat på riktiga enheter."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME-posten som det här problemet hör till är inte längre konfigurerad.",
+          "not_loaded": "JUNG HOME-posten som det här problemet hör till körs inte just nu. Försök igen när den är konfigurerad.",
+          "inserts_agree": "Alla tryckknappar annonserar nu den insats som exporten anger: inget att ändra."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME-enheter med fel klocka",

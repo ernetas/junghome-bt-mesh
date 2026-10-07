@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Kattintások jelentése csak akkor, ha a dupla kattintás kizárható",
           "double_click_keys": "Dupla kattintásra váró gombok",
+          "insert_overrides": "A hirdetett betétet használó nyomógombok",
           "heartbeats": "Csomópontok életjele (a néma eszköz megjelölése nem elérhetőként)",
+          "transitions": "Fényerő-változások áttűnéssel (kísérleti)",
           "allow_provisioning": "Eszközök hozzáadásának és eltávolításának engedélyezése a Home Assistant számára (kísérleti)",
           "provisioner_identity": "A Home Assistant beírása a hálózat fájljába provisionerként (kísérleti, az alkalmazással nem ellenőrzött)",
           "follow_app": "A JUNG HOME alkalmazásban végzett módosítások követése",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is. Ez minden gombra vonatkozik; ha csak néhány gombnál szeretnél várni, hagyd kikapcsolva, és válaszd ki őket itt: *Dupla kattintásra váró gombok*, amely akkor látható, ha ez ki van kapcsolva és az integráció fut.",
           "double_click_keys": "Csak ezek a gombok tartják vissza fél másodpercig a `click` eseményüket, és vetik el, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki; minden más gomb azonnal `click` eseményt vált ki. Válaszd ki azokat a gombokat, amelyekhez dupla kattintásos automatizálás tartozik. Csak a kattintani képes gombok szerepelnek a listában. Valós eszközökön még nem ellenőrzött.",
+          "insert_overrides": "Azok a nyomógombok, amelyek hirdetett betétjét a(z) *JUNG HOME nyomógombok az exportban szereplőtől eltérő betéttel* javításban átvette: a Home Assistant ebből a betétből hozza létre az eszközeiket az export betétje helyett. Vegyen le egyet a listáról, hogy visszatérjen az exportban megnevezett betéthez. Csak akkor jelenik meg, ha van ilyen.",
           "heartbeats": "A rendszer minden hálózati tápellátású eszközt arra kér, hogy 64 másodpercenként küldjön életjelet (heartbeat) a Home Assistantnak (ez egy szabványos Bluetooth Mesh beállítás, amelyet a JUNG alkalmazás kikapcsolva hagy). Annak az eszköznek az entitásai, amely körülbelül három és fél percig semmit sem küld, nem elérhetőként lesznek megjelölve, amíg újra nem hallható. A kikapcsolás leállítja az eszközök életjelküldését (a következő kapcsolódáskor ismét megpróbálja, ha nem sikerült egyszerre mindegyiket elérni); kapcsolja ki az integráció eltávolítása előtt, mert utána az integráció már nem tudja értesíteni őket.",
+          "transitions": "Egy bekapcsolt dimmelhető vagy DALI lámpa fényerő-változása fokozatosan történik a művelet vagy fényprofil által kért `transition` alatt, és ugyanígy egy olyan jelenet is, amelynek minden eszköze dimmelhető vagy DALI lámpa. A be- vagy kikapcsolás, a színhőmérséklet változása és az összes lámpa csoportjai soha nem fokozatosak (az eszközök azonnal vagy csak később váltanának). A JUNG HOME alkalmazás vagy átjáró által küldöttek közül semmi sem használja, és még senki nem látott áttűnést a Home Assistantből; kikapcsolva a `transition` figyelmen kívül marad. Valós eszközökön még nem ellenőrzött.",
           "allow_provisioning": "Lehetővé teszi, hogy a `junghome_ble.add_device` művelet hálózatba léptessen egy új JUNG eszközt, és az alkalmazáshoz hasonlóan konfigurálja a hálózatban már meglévő, azonos termékű eszköz mintájára, a `junghome_ble.remove_device` pedig visszaállítson egy eszközt, és eltávolítsa a hálózatból. Valós eszközön még nem próbálták ki: először egy tartalék eszközzel próbálja ki. Hozzáadáskor az eszköz megkapja a hálózat kulcsait; az eltávolítás nem vonható vissza.",
           "provisioner_identity": "Minden fájl, amelyet a Home Assistant ír vagy átad az átjárónak, provisioner-bejegyzést kap a Home Assistant számára, saját, az alkalmazásétól elkülönülő címtartományokkal, amelyekben a Home Assistant címe is benne van, és a Home Assistant által hozzáadott, az alkalmazás fájljából hiányzó eszközök visszakerülnek. A Home Assistant által létrehozott helyiségek, jelenetek és eszközök ezután a saját címtartományaiból kapják a címüket. Ilyen fájlt még egyetlen JUNG alkalmazás sem importált: próbálja ki egy tartalék alkalmazástelepítésen (importálja a `junghome_ble.export_network` által készített fájlt), mielőtt a saját alkalmazása vagy átjárója megkapná. Kikapcsolva: a fájlok pontosan úgy készülnek, mint e beállítás nélkül.",
           "follow_app": "Amikor a JUNG HOME alkalmazást futtató telefon hallható a mesh hálózaton, az átjáróról beállított bejegyzés néhány perccel azután, hogy a telefon elhallgatott, lekéri az átjáró exportját (legfeljebb 15 percenként), és átveszi, ha megváltozott: az alkalmazásban módosított eszközök, helyiségek, jelenetek és gombhozzárendelések Újrakonfigurálás nélkül eljutnak a Home Assistantba. A fájlból beállított bejegyzés ehelyett javítási értesítést jelenít meg, amint észleli, hogy az alkalmazás módosította egy eszköz konfigurációját. Ehhez a rendszer semmit sem küld a mesh hálózaton. Valós eszközökön még nem ellenőrzött.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME nyomógombok az exportban szereplőtől eltérő betéttel",
-      "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen nyomógombjai más betétet hirdetnek, mint amely a Home Assistant által betöltött exportban szerepel (export → eszköz). A betétet az export elkészülte után cserélték ki, így a Home Assistant és az alkalmazás rossz fogyasztótípust mutathat hozzájuk. Ellenőrizze az eszközöket a JUNG HOME alkalmazásban, exportálja újra a hálózatot, és frissítse ezt az integrációt (Beállítások → Eszközök és szolgáltatások → JUNG HOME Bluetooth Mesh → Újrakonfigurálás); a probléma megszűnik, amint az export az eszközök által hirdetett betéteket tartalmazza. Valós eszközökön még nem ellenőrzött."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "A nyomógombok által hirdetett betét használata",
+            "description": "{devices}: a(z) {title} JUNG HOME mesh hálózat ezen nyomógombjai más betétet hirdetnek, mint a Home Assistant által betöltött exportban szereplő (export → eszköz). A betétet valószínűleg az eszköz hozzáadása után cserélték ki, és egy új export nem feltétlenül segít: az alkalmazás csak az eszköz hozzáadásakor olvassa ki a nyomógomb betétjét. Addig a Home Assistant rossz fajta terhelést hoz létre hozzájuk (a kapcsoló-, dimmer- vagy DALI-betét lámpa, a redőnybetét árnyékoló, a mellékállomás-betét semmi). Erősítse meg, hogy minden nyomógombnál az általa hirdetett betét legyen használva: a Home Assistant újra beállítja a bejegyzést, és ez alapján hozza létre az eszközeiket. Az export és az alkalmazás megtartja a régi betétet; a Home Assistant addig használja a hirdetettet, amíg egy export más betétet nem nevez meg a nyomógombhoz. Valós eszközökön még nem ellenőrzött."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "not_loaded": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, jelenleg nem fut. Próbálja újra, amint be van állítva.",
+          "inserts_agree": "Most minden nyomógomb az exportban megnevezett betétet hirdeti: nincs mit módosítani."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME eszközök hibás órával",

@@ -18,7 +18,8 @@ entry set up from a file only) load a new export — fetched again from the gate
 uploaded for an entry set up from a file (`NewExportFlow`, with the config flow's own steps:
 `config_flow.async_fetch_to_store`, `async_take_upload`, `async_replace_export`);
 `device_name_rejected` asks for a name the app accepts (`DeviceNameFlow`); `sequence_space_low` starts an IV Update
-with the action's guards (`StartIVUpdateFlow`). Each changes something only once
+with the action's guards (`StartIVUpdateFlow`); `insert_mismatch` uses the insert each push-button advertises instead
+of the export's (`AdoptInsertFlow`). Each changes something only once
 confirmed, and none touches the sequence numbers: a new address starts its own record by the store's rules.
 Unverified on air.
 """
@@ -78,6 +79,7 @@ from .const import (
     ISSUE_DEVICE_NAME,
     ISSUE_EXPORT_STALE,
     ISSUE_GATEWAY_SYNC,
+    ISSUE_INSERT_MISMATCH,
     ISSUE_IV_INDEX_MISMATCH,
     ISSUE_KEY_REFRESH,
     ISSUE_NODE_CLOCK_WRONG,
@@ -86,6 +88,7 @@ from .const import (
     ISSUE_SEQ_STORE_LOST,
     ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_UNKNOWN_NODES,
+    OPTION_INSERT_OVERRIDES,
 )
 from .coordinator import async_skip_seq_store_ahead, forget_known_mesh
 from .gateway_api import (
@@ -589,6 +592,48 @@ class StartIVUpdateFlow(_IssueFlow):
         return self.async_create_entry(data={})
 
 
+class AdoptInsertFlow(_IssueFlow):
+    """`insert_mismatch`: confirm, then use the insert each push-button advertises instead of the export's.
+
+    The app reads a push-button's InsertId only when it adds the device, so a new export may well keep naming the
+    insert that was swapped out. The fix records each such node's advertised insert in the entry's options
+    (`NodeInserts.overrides`); the options change sets the entry up again (`__init__._async_entry_updated`), which
+    builds the node's devices from it (`inserts.apply_reported`). The export and the app keep their insert.
+    Unverified on air.
+    """
+
+    async def async_step_init(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Show the confirmation."""
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Adopt the advertised inserts once confirmed; abort when the entry is not running or they agree again."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="confirm",
+                data_schema=vol.Schema({}),
+                description_placeholders=self._placeholders(),
+            )
+        entry = self._entry()
+        if entry is None:
+            return self.async_abort(reason="entry_gone")
+        if entry.state is not ConfigEntryState.LOADED:
+            # the advertised inserts are the running hub's
+            return self.async_abort(reason="not_loaded")
+        inserts = entry.runtime_data.inserts
+        if not inserts.swapped():
+            return self.async_abort(reason="inserts_agree")
+        self.hass.config_entries.async_update_entry(
+            entry,
+            options={**entry.options, OPTION_INSERT_OVERRIDES: inserts.overrides()},
+        )
+        return self._done()
+
+
 # the fix flow of each fixable issue, by the issue id's prefix (`<ISSUE_*>_<entry id>`)
 FIX_FLOWS: dict[str, type[_IssueFlow]] = {
     ISSUE_GATEWAY_SYNC: GatewaySyncFlow,
@@ -599,6 +644,7 @@ FIX_FLOWS: dict[str, type[_IssueFlow]] = {
     ISSUE_KEY_REFRESH: NewExportFlow,
     ISSUE_DEVICE_NAME: DeviceNameFlow,
     ISSUE_SEQUENCE_SPACE_LOW: StartIVUpdateFlow,
+    ISSUE_INSERT_MISMATCH: AdoptInsertFlow,
 }
 
 

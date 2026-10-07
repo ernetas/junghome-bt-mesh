@@ -19,10 +19,10 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from pytest_homeassistant_custom_component.common import async_capture_events
 
-from custom_components.junghome_ble import scene as scene_platform
 from custom_components.junghome_ble.const import (
     DOMAIN,
     EVENT_SCENE_RECALLED,
+    OPTION_TRANSITIONS,
     SIGNAL_SCENES,
 )
 from custom_components.junghome_ble.coordinator import (
@@ -34,7 +34,7 @@ from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES, encode_opcode
 from custom_components.junghome_ble.scene import JungHomeScene
 from custom_components.junghome_ble.sensor import scene_list_sensors
 
-from .conftest import FakeProxyLink, settle
+from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link
 from .helpers import (
     LIGHT_CTL,
     LIGHT_DIMMER,
@@ -89,11 +89,13 @@ async def test_activate(
     )  # the activation time
 
 
-async def test_a_transition_is_ignored_until_the_probe(
+async def test_a_transition_is_ignored_while_the_option_is_off(
     hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
-    """F4-1: until the on-air probe showed JUNG nodes fade a recall (`SCENE_TRANSITIONS`), a `transition` is
-    dropped silently: the Recall keeps its bytes, nothing raises."""
+    """Decision M19: until a person watched a fade the option is off, and a `transition` is dropped silently: the
+    Recall keeps its bytes, nothing raises — even for a scene whose members all fade."""
+    hub = init_integration.runtime_data
+    hub.cdb.scenes[2] = [LIGHT_DIMMER, LIGHT_CTL]
     fake_link.sent.clear()
     await hass.services.async_call(
         SCENE_DOMAIN,
@@ -106,30 +108,45 @@ async def test_a_transition_is_ignored_until_the_probe(
     assert pdu == M.scene_recall(2, ack=False, tid=pdu[4])
 
 
-async def test_activate_with_a_transition(
+async def test_a_scene_fades_only_when_every_member_does(
     hass: HomeAssistant,
-    init_integration: MockConfigEntry,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
     fake_link: FakeProxyLink,
-    monkeypatch: pytest.MonkeyPatch,
+    fast_sleep: list[float],
 ) -> None:
-    """F4-1: once recalls fade, HA's `transition` goes into the one Recall every node takes; without one the
-    Recall is as before."""
-    monkeypatch.setattr(scene_platform, "SCENE_TRANSITIONS", True)
-    fake_link.sent.clear()
-    await hass.services.async_call(
-        SCENE_DOMAIN,
-        SERVICE_TURN_ON,
-        {ATTR_ENTITY_ID: "scene.all_off", ATTR_TRANSITION: 3},
-        blocking=True,
+    """Decision M19: with the option on, HA's `transition` goes into the one Recall every node takes only when every
+    member of the scene is a dimmer or DALI light; a switched light or a socket among them, or no member at all,
+    and the Recall carries none — it would only switch them off later. Without a `transition` it is as before."""
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry, options={OPTION_TRANSITIONS: True}
     )
-    await hass.services.async_call(
-        SCENE_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: "scene.wc_off"}, blocking=True
-    )
-    (_, dst, faded), (_, _, plain) = fake_link.sent
-    assert dst == ALL_NODES
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    hub = mock_config_entry.runtime_data
+
+    async def recall(entity: str, members: list[int], **data: Any) -> bytes:
+        hub.cdb.scenes[2] = members
+        fake_link.sent.clear()
+        await hass.services.async_call(
+            SCENE_DOMAIN,
+            SERVICE_TURN_ON,
+            {ATTR_ENTITY_ID: entity, **data},
+            blocking=True,
+        )
+        ((_, dst, pdu),) = fake_link.sent
+        assert dst == ALL_NODES
+        return pdu
+
+    faded = await recall("scene.all_off", [LIGHT_DIMMER, LIGHT_CTL], transition=3)
     assert faded == M.scene_recall(2, ack=False, tid=faded[4], transition=0x1E)
     assert faded[5:] == bytes([0x1E, 0])  # 30 x 100 ms, no delay
-    assert plain == M.scene_recall(1, ack=False, tid=plain[4])
+    for members in ([LIGHT_DIMMER, LIGHT_SWITCH], [LIGHT_DIMMER, SOCKET], []):
+        pdu = await recall("scene.all_off", members, transition=3)
+        assert pdu == M.scene_recall(2, ack=False, tid=pdu[4]), members
+    plain = await recall("scene.all_off", [LIGHT_DIMMER])
+    assert plain == M.scene_recall(2, ack=False, tid=plain[4])
 
 
 async def test_send_failure_raises(

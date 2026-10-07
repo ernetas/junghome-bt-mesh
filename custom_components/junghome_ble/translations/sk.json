@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Hlásiť kliknutia až po vylúčení dvojkliku",
           "double_click_keys": "Tlačidlá, ktoré čakajú na dvojklik",
+          "insert_overrides": "Tlačidlové ovládače s ohlásenou vložkou",
           "heartbeats": "Heartbeat uzlov (označiť tiché zariadenie ako nedostupné)",
+          "transitions": "Plynulé zmeny jasu (experimentálne)",
           "allow_provisioning": "Povoliť Home Assistantu pridávať a odstraňovať zariadenia (experimentálne)",
           "provisioner_identity": "Zapísať Home Assistant do súboru siete ako provisioner (experimentálne, s aplikáciou neoverené)",
           "follow_app": "Sledovať zmeny vykonané v aplikácii JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Udalosť `click` sa pozdrží o pol sekundy a zahodí sa, ak nasleduje druhé kliknutie, takže dvojité stlačenie vyvolá len `double_click`. Vypnuté: každé stlačenie okamžite vyvolá `click` a druhé stlačenie dvojitého stlačenia vyvolá navyše `double_click`. Platí to pre všetky tlačidlá; ak chcete čakať len pri niektorých, nechajte to vypnuté a vyberte ich v poli *Tlačidlá, ktoré čakajú na dvojklik*, ktoré sa zobrazí, keď je táto voľba vypnutá a integrácia beží.",
           "double_click_keys": "Len tieto tlačidlá pozdržia svoj `click` o pol sekundy a zahodia ho, ak nasleduje druhé kliknutie, takže dvojité stlačenie vyvolá len `double_click`; každé iné tlačidlo vyvolá `click` okamžite. Vyberte tlačidlá, ktoré majú automatizáciu na dvojklik. Zobrazené sú len tlačidlá, ktoré vedia kliknúť. Zatiaľ neoverené na skutočných zariadeniach.",
+          "insert_overrides": "Tlačidlové ovládače, ktorých ohlásenú vložku ste prevzali v oprave *Tlačidlové ovládače JUNG HOME s inou vložkou než v exporte*: Home Assistant vytvára ich zariadenia z tejto vložky namiesto vložky z exportu. Odstráňte ovládač zo zoznamu, aby sa vrátil k vložke uvedenej v exporte. Zobrazuje sa, len kým nejaké sú.",
           "heartbeats": "Každé zariadenie napájané zo siete je požiadané, aby každých 64 sekúnd posielalo do Home Assistant heartbeat (štandardné nastavenie Bluetooth Mesh, ktoré aplikácia JUNG necháva vypnuté). Entity zariadenia, ktoré približne tri a pol minúty nič nepošle, sa označia ako nedostupné, kým ho znova nezachytí. Vypnutím sa zariadeniam oznámi, aby prestali (pri ďalšom pripojení znova, ak sa nepodarilo oznámiť to všetkým naraz); vypnite to pred odstránením integrácie, ktorá im to potom už oznámiť nemôže.",
+          "transitions": "Zmena jasu zapnutého stmievateľného alebo DALI svetla prebehne plynulo počas `transition`, o ktorú žiada akcia alebo svetelný profil, a rovnako aj scéna, ktorej zariadenia sú všetky stmievateľné alebo DALI svetlá. Zapnutie či vypnutie, zmena teploty farby a skupiny všetkých svetiel nikdy neprebiehajú plynulo (zariadenia by prepli hneď, alebo až neskôr). Nič, čo posiela aplikácia alebo brána JUNG HOME, to nevyužíva, a plynulý prechod z Home Assistantu zatiaľ nikto nevidel; vypnuté, `transition` sa ignoruje. Zatiaľ neoverené na skutočných zariadeniach.",
           "allow_provisioning": "Umožní akcii `junghome_ble.add_device` pridať nové zariadenie JUNG cez provisioning a nakonfigurovať ho ako aplikácia podľa zariadenia rovnakého produktu, ktoré už v sieti je, a akcii `junghome_ble.remove_device` resetovať zariadenie a vyradiť ho zo siete. Zatiaľ nevyskúšané na skutočných zariadeniach: najprv to skúste s náhradným zariadením. Pridanie odovzdá zariadeniu kľúče siete; odstránenie sa nedá vrátiť späť.",
           "provisioner_identity": "Každý súbor, ktorý Home Assistant zapíše alebo odovzdá bráne, dostane záznam provisionera pre Home Assistant s vlastnými rozsahmi adries mimo rozsahov aplikácie a s adresou Home Assistant v nich, a zariadenia, ktoré pridal Home Assistant a v súbore aplikácie chýbajú, sa doň vrátia. Miestnosti, scény a zariadenia, ktoré Home Assistant vytvorí, potom berú adresy z jeho vlastných rozsahov. Žiadna aplikácia JUNG zatiaľ taký súbor neimportovala: vyskúšajte to na náhradnej inštalácii aplikácie (importujte súbor z `junghome_ble.export_network`) skôr, než ho uvidí vaša vlastná aplikácia alebo brána. Vypnuté: súbory sa zapisujú presne ako bez tejto možnosti.",
           "follow_app": "Keď je v sieti mesh zachytený telefón s aplikáciou JUNG HOME, záznam nastavený z brány načíta export brány niekoľko minút po tom, čo telefón stíchol (najviac raz za 15 minút), a prevezme ho, ak sa zmenil: zariadenia, miestnosti, scény a prepojenia tlačidiel zmenené v aplikácii sa dostanú do Home Assistant bez „Prekonfigurovať“. Záznam nastavený zo súboru namiesto toho zobrazí upozornenie na opravu, keď sa zistí, že aplikácia zmenila konfiguráciu zariadenia. Do siete mesh sa kvôli tomu nič neodosiela. Zatiaľ neoverené na skutočných zariadeniach.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Tlačidlové ovládače JUNG HOME s inou vložkou než v exporte",
-      "description": "{devices}: tieto tlačidlové ovládače siete JUNG HOME mesh {title} ohlasujú inú vložku než tú v exporte, ktorý Home Assistant načítal (export → zariadenie). Vložka bola vymenená po vytvorení tohto exportu, takže Home Assistant aj aplikácia pre ne môžu zobrazovať nesprávny druh záťaže. Skontrolujte zariadenia v aplikácii JUNG HOME, exportujte sieť znova a aktualizujte túto integráciu (Nastavenia → Zariadenia a služby → JUNG HOME Bluetooth Mesh → Prekonfigurovať); oprava zmizne, keď export uvedie vložky, ktoré zariadenia ohlasujú. Zatiaľ neoverené na skutočných zariadeniach."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Použiť vložku, ktorú tlačidlové ovládače ohlasujú",
+            "description": "{devices}: tieto tlačidlové ovládače mesh siete JUNG HOME {title} ohlasujú inú vložku než v exporte, ktorý Home Assistant načítal (export → zariadenie). Vložku pravdepodobne vymenili po pridaní zariadenia a nový export nemusí pomôcť: aplikácia číta vložku tlačidlového ovládača len pri pridávaní zariadenia. Dovtedy pre ne Home Assistant vytvára nesprávny druh záťaže (spínacia, stmievacia alebo DALI vložka je svetlo, žalúziová vložka tienenie, rozširujúca vložka nič). Potvrďte, aby sa použila vložka, ktorú ohlasuje každý ovládač: Home Assistant položku znova nastaví a vytvorí z nej ich zariadenia. Export a aplikácia si ponechajú starú vložku; Home Assistant používa ohlásenú, kým export neuvedie pre ovládač inú vložku. Zatiaľ neoverené na skutočných zariadeniach."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ku ktorému táto oprava patrí, už nie je nastavený.",
+          "not_loaded": "Záznam JUNG HOME, ku ktorému táto oprava patrí, práve nebeží. Skúste to znova, keď bude nastavený.",
+          "inserts_agree": "Všetky tlačidlové ovládače teraz ohlasujú vložku uvedenú v exporte: nie je čo meniť."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Zariadenia JUNG HOME s nesprávnymi hodinami",

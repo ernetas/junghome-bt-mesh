@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Informa dels clics només quan es descarta un doble clic",
           "double_click_keys": "Tecles que esperen un doble clic",
+          "insert_overrides": "Polsadors que utilitzen el mecanisme que anuncien",
           "heartbeats": "Heartbeats dels nodes (marca com a no disponible un dispositiu silenciós)",
+          "transitions": "Transicions suaus en els canvis de brillantor (experimental)",
           "allow_provisioning": "Permet que Home Assistant afegeixi i elimini dispositius (experimental)",
           "provisioner_identity": "Escriu Home Assistant al fitxer de la xarxa com a aprovisionador (experimental, no verificat amb l'aplicació)",
           "follow_app": "Segueix els canvis fets a l'aplicació JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`. Això s'aplica a totes les tecles; per esperar només en algunes, deixa-ho desactivat i tria-les a *Tecles que esperen un doble clic*, que es mostra mentre això està desactivat i la integració funciona.",
           "double_click_keys": "Només aquestes tecles retenen el seu `click` mig segon i el descarten si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`; qualsevol altra tecla genera `click` immediatament. Tria les tecles que tenen una automatització de doble clic. Només es mostren les tecles que poden fer clic. No verificat en dispositius reals.",
+          "insert_overrides": "Els polsadors el mecanisme anunciat dels quals has adoptat a la reparació *Polsadors JUNG HOME amb un mecanisme diferent del de l'exportació*: Home Assistant en crea els dispositius a partir d'aquest mecanisme en lloc del de l'exportació. Treu-ne un de la llista per tornar al mecanisme que indica l'exportació. Només es mostra mentre n'hi hagi.",
           "heartbeats": "A cada dispositiu alimentat per la xarxa elèctrica se li demana que enviï un heartbeat a Home Assistant cada 64 segons (un paràmetre estàndard de Bluetooth Mesh que l'aplicació JUNG deixa desactivat). Si un dispositiu no envia res durant uns tres minuts i mig, les seves entitats es marquen com a no disponibles fins que se'l torna a sentir. Desactivar-ho indica als dispositius que s'aturin (de nou a la connexió següent si no s'ha pogut avisar-los tots alhora); desactiva-ho abans d'eliminar la integració, que després ja no els ho pot indicar.",
+          "transitions": "Un canvi de brillantor d'un llum regulable o DALI encès es fa de manera gradual durant la `transition` que demana una acció o un perfil de llum, i també una escena els dispositius de la qual són tots llums regulables o DALI. Encendre o apagar, un canvi de temperatura de color i els grups de tots els llums no es fan mai de manera gradual (els dispositius canviarien de cop, o només més tard). Res del que envien l'aplicació o la passarel·la JUNG HOME no ho fa servir, i encara ningú no ha observat una transició des de Home Assistant; desactivat, s'ignora una `transition`. No verificat en dispositius reals.",
           "allow_provisioning": "Permet que l'acció `junghome_ble.add_device` posi en servei un dispositiu JUNG nou i el configuri com ho faria l'aplicació, a partir d'un dispositiu del mateix producte que ja és a la xarxa, i que `junghome_ble.remove_device` restableixi un dispositiu i el tregui de la xarxa. Encara no s'ha provat en dispositius reals: prova-ho primer amb un dispositiu de recanvi. En afegir un dispositiu se li lliuren les claus de la xarxa; l'eliminació no es pot desfer.",
           "provisioner_identity": "Cada fitxer que Home Assistant escriu o lliura a la passarel·la rep una entrada d'aprovisionador per a Home Assistant, amb intervals d'adreces propis, separats dels de l'aplicació i que contenen l'adreça de Home Assistant, i s'hi tornen a afegir els dispositius que Home Assistant ha afegit i que falten al fitxer de l'aplicació. Les habitacions, escenes i dispositius que crea Home Assistant prenen llavors les adreces dels seus propis intervals. Cap aplicació JUNG no ha importat encara un fitxer així: prova-ho en una instal·lació de recanvi de l'aplicació (importa el fitxer de `junghome_ble.export_network`) abans que el vegin la teva pròpia aplicació o la teva passarel·la. Desactivat: els fitxers s'escriuen exactament com sense aquesta opció.",
           "follow_app": "Quan se sent al mesh el telèfon que executa l'aplicació JUNG HOME, una entrada configurada des de la passarel·la n'obté l'exportació uns minuts després que el telèfon hagi callat (com a màxim cada 15 minuts) i l'adopta si ha canviat: els dispositius, habitacions, escenes i vinculacions de tecla canviats a l'aplicació arriben a Home Assistant sense Reconfigura. Una entrada configurada des d'un fitxer mostra en canvi un avís de reparació, un cop s'ha vist l'aplicació canviant la configuració d'un dispositiu. No s'envia res al mesh per fer-ho. No verificat en dispositius reals.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Polsadors JUNG HOME amb un mecanisme diferent del de l'exportació",
-      "description": "{devices}: aquests polsadors del mesh JUNG HOME {title} anuncien un mecanisme diferent del de l'exportació que ha carregat Home Assistant (exportació → dispositiu). El mecanisme es va substituir després de fer aquesta exportació, així que pot ser que Home Assistant i l'aplicació hi mostrin un tipus de càrrega erroni. Comprova els dispositius a l'aplicació JUNG HOME, torna a exportar la xarxa i actualitza aquesta integració (Configuració → Dispositius i serveis → JUNG HOME Bluetooth Mesh → Reconfigura); el problema desapareix quan l'exportació indica els mecanismes que anuncien els dispositius. No verificat en dispositius reals."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Utilitza el mecanisme que anuncien els polsadors",
+            "description": "{devices}: aquests polsadors de la xarxa mesh JUNG HOME {title} anuncien un mecanisme diferent del de l'exportació que ha carregat Home Assistant (exportació → dispositiu). Probablement el mecanisme es va canviar després d'afegir el dispositiu, i una exportació nova no té per què ajudar: l'aplicació només llegeix el mecanisme d'un polsador quan afegeix el dispositiu. Mentrestant, Home Assistant hi crea un tipus de càrrega equivocat (un mecanisme d'interruptor, regulador o DALI és un llum, un de persianes una coberta, un d'extensió cap). Confirma per utilitzar el mecanisme que anuncia cada polsador: Home Assistant torna a configurar l'entrada i en crea els dispositius a partir d'aquest. L'exportació i l'aplicació conserven el mecanisme antic; Home Assistant continua utilitzant l'anunciat fins que una exportació indiqui un altre mecanisme per al polsador. No verificat en dispositius reals."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "not_loaded": "L'entrada JUNG HOME a la qual pertany aquest problema no s'està executant ara mateix. Torna-ho a provar quan estigui configurada.",
+          "inserts_agree": "Ara tots els polsadors anuncien el mecanisme que indica l'exportació: no hi ha res a canviar."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Dispositius JUNG HOME amb el rellotge incorrecte",

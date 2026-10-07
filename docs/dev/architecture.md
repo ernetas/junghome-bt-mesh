@@ -134,13 +134,14 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   `Light CTL Temperature Set` to the element after a tunable-white light's, which hosts its `1306` server, in the
   gateway's 7-byte form with transition 0 and delay 0) but
   never waits for the reply: JUNG firmware answers a state change only by publishing the status to the element's group,
-  which is what updates the entity. Scene recall is one `Scene Recall Unacknowledged` to `0xFFFF`. The setters take
-  a `transition` in seconds (`JungHomeHub.set_lightness` and the others, `recall_scene`, `central_command`,
-  `room_command`): it becomes the Set's transition-time byte (`jhmesh.messages.encode_transition`, delay 0), and a
-  status announcing a remaining time schedules a state Get that much later plus a second
-  (`_reread_after_transition`). The entities pass one only for a kind in `light.TRANSITION_KINDS` and when
-  `scene.SCENE_TRANSITIONS` is set, both empty / off until the probe of `docs/hidden-features.md` §11 (unverified on
-  air).
+  which is what updates the entity. Scene recall is one `Scene Recall Unacknowledged` to `0xFFFF`. Two calls take
+  a `transition` in seconds (decision M19, from sweep B8): `JungHomeHub.set_lightness` and `recall_scene`. It
+  becomes the Set's transition-time byte (`jhmesh.messages.encode_transition`, delay 0), and a status announcing a
+  remaining time schedules a state Get that much later plus a second (`_reread_after_transition`). The entities pass
+  one only with the option *Fade brightness changes* on (`const.OPTION_TRANSITIONS`, off by default): a light of a
+  kind in `const.TRANSITION_KINDS` (dimmer, DALI) for a brightness change while it is on, and a scene whose members
+  are all of those kinds. OnOff, CTL and CTL Temperature Sets and the central / room commands never carry one
+  (unverified on air).
 - After every connect `_after_connect` broadcasts Time Set and the location first (unacknowledged, right after the
   proxy filter), then `_refresh_all` sends one Get per light and socket (`REFRESH_CHUNK = 5` jobs between 0.5 s
   pauses), one job per metered load's meter element (`Devices.metered`, `jhmesh.devices.meter_element`) that sends

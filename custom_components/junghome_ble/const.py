@@ -83,8 +83,19 @@ DEFAULT_PROVISIONER_IDENTITY: Final = False
 # `delete_unused_scenes` lists what it would delete unless told `dry_run: false`: a call
 # without fields, as an automation made it before, must not delete the app's scenes from a stale export
 DEFAULT_UNUSED_SCENES_DRY_RUN: Final = True
+# push-buttons that use the insert they advertise instead of the export's, set by the `insert_mismatch` repair (not a
+# form field): node unicast "%04X" -> {"export": the export's InsertId it replaces, "insert": the advertised one}
+OPTION_INSERT_OVERRIDES: Final = "insert_overrides"
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
 DEFAULT_HEARTBEATS: Final = False
+# fade the brightness changes of dimmer and DALI lights, and the scenes whose members all fade, over Home Assistant's
+# `transition` (decision M19, `TRANSITION_KINDS`); off until a person watched a fade (sweep B8)
+OPTION_TRANSITIONS: Final = "transitions"
+DEFAULT_TRANSITIONS: Final = False
+# The light kinds (`Light.kind`) that fade a brightness change sent as a Lightness Set with a transition time
+# (decision M19): the DALI insert did on air (sweep B8), a dimmer insert is taken to do the same (none here). Never
+# a switch insert, which waits a transition out before it switches off.
+TRANSITION_KINDS: Final = frozenset({"dimmer", "ctl"})
 # Follow the app (`app_follow.py`): the phone heard on the mesh makes an entry set up from
 # the gateway fetch its export once the phone went quiet, and an entry set up from a file raise `app_changed` when the
 # phone was seen configuring a device; and an entry set up from the gateway checks its export every few hours

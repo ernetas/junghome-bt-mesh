@@ -2123,8 +2123,10 @@ class JungHomeHub:
         A status answering a Set with a transition time carries the present state, the target and the time still to
         run; the entity shows the present one (see the status handlers), which a load that publishes nothing at the
         end of its fade would leave behind. Nothing is scheduled for a status at rest or one whose remaining time is
-        unknown; a newer Set replaces the pending read. Unverified on air: no JUNG firmware was seen taking a
-        transition time (`docs/hidden-features.md` §11).
+        unknown; a newer Set replaces the pending read. Only a Lightness Set carries a transition (`set_lightness`,
+        decision M19); on air the DALI insert answered one with its target and remaining time and published a final
+        status at the end (sweep B8, CLI only), so the read is a safeguard for a load that does not. Unverified on air
+        from Home Assistant.
         """
         remaining = M.remaining_time(reply.opcode, reply.params)
         if not remaining:
@@ -2150,23 +2152,16 @@ class JungHomeHub:
             f"{DOMAIN} transition {load:04X}",
         )
 
-    async def set_onoff(
-        self, addr: int, on: bool, transition: float | None = None
-    ) -> None:
-        """Switch the element at `addr` on or off, over `transition` seconds when given (else transition time 0).
+    async def set_onoff(self, addr: int, on: bool) -> None:
+        """Switch the element at `addr` on or off, with transition time 0.
 
-        A transition is unverified on air (`_reread_after_transition`).
+        Never with a transition (decision M19, from sweep B8): a switch insert waits it out before it switches off,
+        and the DALI insert switches on at once whatever it says.
         """
         self._note_request(addr, on=on)
-        byte = self._transition_byte(transition)
-        reply = await self._load_command(
-            addr,
-            M.generic_onoff_set(on, transition=0 if byte is None else byte),
-            M.GEN_ONOFF_STATUS,
-            "switch",
+        await self._load_command(
+            addr, M.generic_onoff_set(on, transition=0), M.GEN_ONOFF_STATUS, "switch"
         )
-        if byte is not None:
-            self._reread_after_transition(addr, reply)
 
     async def identify(self, node: Node, seconds: int = IDENTIFY_SECONDS) -> None:
         """Make `node` draw attention to itself (Health Attention Set to its primary element; its LED blinks)."""
@@ -2191,30 +2186,20 @@ class JungHomeHub:
         )
 
     async def central_command(
-        self,
-        group: int,
-        on: bool,
-        lightness: int | None = None,
-        transition: float | None = None,
+        self, group: int, on: bool, lightness: int | None = None
     ) -> None:
         """Switch every load listening to a device-type group at once, as the app's central functions do.
 
         Unacknowledged Sets (an acknowledged one would have every member answer at the same moment): a lightness
         first, which only the dimmable members take, then OnOff, which switches the others and leaves a dimmer that
-        is already on where the lightness put it. Both carry `transition` seconds when given (unverified on air).
+        is already on where the lightness put it. No transition: the group's Lightness Set also switches on the
+        members that are off, and an *on* takes none (decision M19).
         """
-        byte = self._transition_byte(transition)
         if lightness is not None:
             await self._command(
-                group,
-                M.light_lightness_set(
-                    max(1, min(65535, lightness)), ack=False, transition=byte
-                ),
+                group, M.light_lightness_set(max(1, min(65535, lightness)), ack=False)
             )
-        await self._command(
-            group,
-            M.generic_onoff_set(on, ack=False, transition=0 if byte is None else byte),
-        )
+        await self._command(group, M.generic_onoff_set(on, ack=False, transition=0))
 
     async def central_level(self, group: int, level: int) -> None:
         """Send every member of a device-type group one Unacknowledged Generic Level Set: blinds, slats, set-points."""
@@ -2230,12 +2215,7 @@ class JungHomeHub:
         await self._command(group, M.generic_delta_set(0, ack=False))
 
     async def room_command(
-        self,
-        room: int,
-        members: Sequence[int],
-        on: bool,
-        lightness: int | None = None,
-        transition: float | None = None,
+        self, room: int, members: Sequence[int], on: bool, lightness: int | None = None
     ) -> None:
         """Switch a room's lights or sockets as the app's area sheet does: a dim level to the room, on / off per load.
 
@@ -2243,19 +2223,13 @@ class JungHomeHub:
         the dimmable members (the Lightness server shares the room subscription of the OnOff / Level servers it
         extends). On / off never goes to the room address, where the lights and the sockets both listen: every
         member gets an Unacknowledged OnOff Set of its own (`CommunicateWithDevice` not waiting for a status), after
-        the lightness, as `central_command` orders them, and with its `transition`.
+        the lightness, as `central_command` orders them, and as it without a transition.
         """
-        byte = self._transition_byte(transition)
         if lightness is not None:
             await self._command(
-                room,
-                M.light_lightness_set(
-                    max(1, min(65535, lightness)), ack=False, transition=byte
-                ),
+                room, M.light_lightness_set(max(1, min(65535, lightness)), ack=False)
             )
-        onoff = M.generic_onoff_set(
-            on, ack=False, transition=0 if byte is None else byte
-        )
+        onoff = M.generic_onoff_set(on, ack=False, transition=0)
         for addr in members:
             await self._command(addr, onoff)
 
@@ -2275,6 +2249,8 @@ class JungHomeHub:
         """Set the lightness (0-65535) of the element at `addr`, over `transition` seconds when given.
 
         Without a transition the Set carries none (the light's Default Transition Time, 0 on every JUNG load seen).
+        The one Set that takes a transition (decision M19, `const.TRANSITION_KINDS`): a brightness change of a dimmer
+        or DALI load, which the DALI insert fades and reports (sweep B8). Unverified on air from Home Assistant.
         """
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness)
@@ -2288,46 +2264,37 @@ class JungHomeHub:
         if byte is not None:
             self._reread_after_transition(addr, reply)
 
-    async def set_ctl(
-        self, addr: int, lightness: int, kelvin: int, transition: float | None = None
-    ) -> None:
-        """Set lightness (0-65535) and colour temperature (Kelvin) of the element at `addr`, over `transition` s."""
+    async def set_ctl(self, addr: int, lightness: int, kelvin: int) -> None:
+        """Set lightness (0-65535) and colour temperature (Kelvin) of the element at `addr`.
+
+        Never with a transition (decision M19): the DALI insert answers a CTL Set at once and reports no fade
+        (sweep B8).
+        """
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness, kelvin=kelvin)
-        byte = self._transition_byte(transition)
-        reply = await self._load_command(
-            addr,
-            M.light_ctl_set(lightness, kelvin, transition=byte),
-            M.LIGHT_CTL_STATUS,
-            "ctl",
+        await self._load_command(
+            addr, M.light_ctl_set(lightness, kelvin), M.LIGHT_CTL_STATUS, "ctl"
         )
-        if byte is not None:
-            self._reread_after_transition(addr, reply)
 
-    async def set_ctl_temperature(
-        self, light: Light, kelvin: int, transition: float | None = None
-    ) -> None:
+    async def set_ctl_temperature(self, light: Light, kelvin: int) -> None:
         """Set the colour temperature (Kelvin) of a CTL light alone: Light CTL Temperature Set to its temperature element.
 
         A full CTL Set would have to carry a lightness, and the cached one lags behind a light that is dimming or
         was dimmed elsewhere without a status reaching us: the light jumped back to it. The temperature element
         answers with a Light CTL Temperature Status, which lands on the light (`_ctl_light_of`); the Set is noted
         on the light too, whose Light CTL Get `async_wait_settled` reads. The Set is the gateway's 7-byte form,
-        transition 0 and delay 0: without them the light would fall back to its Default Transition Time — or with
-        `transition` seconds when given (unverified on air).
+        transition 0 and delay 0: without them the light would fall back to its Default Transition Time. A colour
+        temperature never fades (decision M19).
         """
         assert light.temperature_address is not None  # the caller checks it has one
         self._note_request(light.address, kelvin=kelvin)
-        byte = self._transition_byte(transition)
-        reply = await self._load_command(
+        await self._load_command(
             light.temperature_address,
-            M.light_ctl_temperature_set(kelvin, transition=0 if byte is None else byte),
+            M.light_ctl_temperature_set(kelvin, transition=0),
             M.LIGHT_CTL_TEMP_STATUS,
             "ctl",
             load=light.address,
         )
-        if byte is not None:
-            self._reread_after_transition(light.address, reply)
 
     async def set_level(self, addr: int, level: int) -> None:
         """Set the Generic Level (-32768..32767) of the element at `addr`: a blind's position or slat target."""

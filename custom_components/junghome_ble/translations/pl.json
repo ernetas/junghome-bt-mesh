@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Zgłaszaj kliknięcia dopiero po wykluczeniu dwukrotnego kliknięcia",
           "double_click_keys": "Przyciski czekające na dwukrotne kliknięcie",
+          "insert_overrides": "Łączniki przyciskowe używające rozgłaszanego wkładu",
           "heartbeats": "Heartbeaty węzłów (oznacz milczące urządzenie jako niedostępne)",
+          "transitions": "Płynne zmiany jasności (eksperymentalne)",
           "allow_provisioning": "Zezwól Home Assistant na dodawanie i usuwanie urządzeń (eksperymentalne)",
           "provisioner_identity": "Zapisz Home Assistant w pliku sieci jako provisioner (eksperymentalne, niesprawdzone z aplikacją)",
           "follow_app": "Śledź zmiany wprowadzone w aplikacji JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Zdarzenie `click` jest wstrzymywane na pół sekundy i odrzucane, gdy nastąpi drugie kliknięcie, więc podwójne naciśnięcie wyzwala tylko `double_click`. Wyłączone: każde naciśnięcie od razu wyzwala `click`, a drugie naciśnięcie podwójnego naciśnięcia dodatkowo wyzwala `double_click`. Dotyczy to każdego przycisku; aby czekać tylko przy niektórych, pozostaw to wyłączone i wybierz je w polu *Przyciski czekające na dwukrotne kliknięcie*, widocznym, gdy ta opcja jest wyłączona i integracja działa.",
           "double_click_keys": "Tylko te przyciski wstrzymują swoje `click` na pół sekundy i odrzucają je, gdy nastąpi drugie kliknięcie, więc podwójne naciśnięcie wyzwala tylko `double_click`; każdy inny przycisk wyzwala `click` od razu. Wybierz przyciski, które mają automatyzację dwukrotnego kliknięcia. Wyświetlane są tylko przyciski, które mogą klikać. Jeszcze niesprawdzone na prawdziwych urządzeniach.",
+          "insert_overrides": "Łączniki przyciskowe, których rozgłaszany wkład przyjęto w naprawie *Łączniki przyciskowe JUNG HOME z innym wkładem niż w eksporcie*: Home Assistant tworzy ich urządzenia na podstawie tego wkładu zamiast wkładu z eksportu. Usuń łącznik z listy, aby wrócić do wkładu wskazanego w eksporcie. Wyświetlane tylko wtedy, gdy takie są.",
           "heartbeats": "Każde urządzenie zasilane z sieci jest proszone o wysyłanie heartbeatu do Home Assistant co 64 sekundy (standardowe ustawienie Bluetooth Mesh, które aplikacja JUNG pozostawia wyłączone). Encje urządzenia, które przez około trzy i pół minuty nic nie wysyła, są oznaczane jako niedostępne, dopóki znów nie zostanie usłyszane. Wyłączenie tej opcji każe urządzeniom przestać (ponownie przy następnym połączeniu, jeśli nie udało się powiadomić wszystkich naraz); wyłącz ją przed usunięciem integracji, która później nie może już ich o tym powiadomić.",
+          "transitions": "Zmiana jasności włączonego światła ściemnianego lub DALI następuje płynnie w czasie `transition`, o który prosi akcja lub profil światła, podobnie jak scena, której wszystkie urządzenia są światłami ściemnianymi lub DALI. Włączanie lub wyłączanie, zmiana temperatury barwowej i grupy wszystkich świateł nigdy nie są płynne (urządzenia przełączyłyby się od razu albo dopiero później). Nic z tego, co wysyła aplikacja lub bramka JUNG HOME, z tego nie korzysta, i nikt jeszcze nie widział płynnego przejścia z Home Assistant; po wyłączeniu `transition` jest ignorowany. Jeszcze niesprawdzone na prawdziwych urządzeniach.",
           "allow_provisioning": "Pozwala akcji `junghome_ble.add_device` prowizjonować nowe urządzenie JUNG i konfigurować je tak jak aplikacja, na wzór urządzenia tego samego produktu już obecnego w sieci, a akcji `junghome_ble.remove_device` resetować urządzenie i usuwać je z sieci. Jeszcze nie wypróbowane na prawdziwych urządzeniach: najpierw spróbuj z zapasowym urządzeniem. Dodanie przekazuje urządzeniu klucze sieci; usunięcia nie można cofnąć.",
           "provisioner_identity": "Każdy plik, który Home Assistant zapisuje lub przekazuje do bramki, otrzymuje wpis provisionera dla Home Assistant z własnymi zakresami adresów, oddzielnymi od zakresów aplikacji, i z adresem Home Assistant w ich obrębie, a urządzenia dodane przez Home Assistant, których brakuje w pliku aplikacji, zostają przywrócone. Pomieszczenia, sceny i urządzenia tworzone przez Home Assistant biorą wtedy adresy z jego własnych zakresów. Żadna aplikacja JUNG nie zaimportowała jeszcze takiego pliku: wypróbuj to na zapasowej instalacji aplikacji (zaimportuj plik z `junghome_ble.export_network`), zanim zobaczy go Twoja aplikacja lub bramka. Wyłączone: pliki są zapisywane dokładnie tak jak bez tej opcji.",
           "follow_app": "Gdy telefon z aplikacją JUNG HOME zostanie usłyszany w sieci mesh, wpis skonfigurowany z bramki pobiera eksport bramki kilka minut po tym, jak telefon ucichnie (najwyżej co 15 minut), i przejmuje go, jeśli się zmienił: urządzenia, pomieszczenia, sceny i powiązania przycisków zmienione w aplikacji docierają do Home Assistant bez ponownej konfiguracji. Wpis skonfigurowany z pliku zamiast tego pokazuje powiadomienie w Naprawach, gdy zauważy, że aplikacja zmieniła konfigurację urządzenia. Nic nie jest w tym celu wysyłane w sieci mesh. Jeszcze niesprawdzone na prawdziwych urządzeniach.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Łączniki przyciskowe JUNG HOME z innym wkładem niż w eksporcie",
-      "description": "{devices}: te łączniki przyciskowe sieci mesh JUNG HOME {title} rozgłaszają inny wkład niż ten w eksporcie wczytanym przez Home Assistant (eksport → urządzenie). Wkład został wymieniony po utworzeniu tego eksportu, więc Home Assistant i aplikacja mogą pokazywać dla nich niewłaściwy rodzaj odbiornika. Sprawdź urządzenia w aplikacji JUNG HOME, wyeksportuj sieć ponownie i zaktualizuj tę integrację (Ustawienia → Urządzenia oraz usługi → JUNG HOME Bluetooth Mesh → Skonfiguruj ponownie); problem zniknie, gdy eksport będzie wskazywał wkłady rozgłaszane przez urządzenia. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Użyj wkładu rozgłaszanego przez łączniki przyciskowe",
+            "description": "{devices}: te łączniki przyciskowe sieci mesh JUNG HOME {title} rozgłaszają inny wkład niż ten w eksporcie wczytanym przez Home Assistant (eksport → urządzenie). Wkład najpewniej wymieniono po dodaniu urządzenia, a nowy eksport niekoniecznie pomoże: aplikacja odczytuje wkład łącznika przyciskowego tylko podczas dodawania urządzenia. Do tego czasu Home Assistant tworzy dla nich niewłaściwy rodzaj obciążenia (wkład łącznika, ściemniacza lub DALI to światło, wkład żaluzjowy to osłona, wkład rozszerzający nic). Potwierdź, aby użyć wkładu rozgłaszanego przez każdy łącznik: Home Assistant ponownie skonfiguruje wpis i utworzy na jego podstawie ich urządzenia. Eksport i aplikacja zachowują stary wkład; Home Assistant używa rozgłaszanego, dopóki eksport nie wskaże innego wkładu dla łącznika. Jeszcze niesprawdzone na prawdziwych urządzeniach."
+          }
+        },
+        "abort": {
+          "entry_gone": "Wpis JUNG HOME, do którego należy ten problem, nie jest już skonfigurowany.",
+          "not_loaded": "Wpis JUNG HOME, do którego należy ten problem, nie działa w tej chwili. Spróbuj ponownie, gdy zostanie skonfigurowany.",
+          "inserts_agree": "Wszystkie łączniki przyciskowe rozgłaszają teraz wkład wskazany w eksporcie: nie ma nic do zmiany."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Urządzenia JUNG HOME z nieprawidłowym zegarem",

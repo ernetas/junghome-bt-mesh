@@ -688,10 +688,13 @@ def test_config_flow_keys_exist(strings: dict[str, Any]) -> None:
         f"form fields without a data translation: {sorted(fields - data_translations)}"
     )
 
-    # with a key to offer, so the keys that wait for a double click are on the form too
+    # with a key to offer and an adopted insert, so the keys that wait for a double click and the push-buttons using
+    # their advertised insert are on the form too
     key = config_flow.SelectOptionDict(value="key", label="Key")
+    adopted = config_flow.SelectOptionDict(value="0148", label="0148")
     option_keys = {
-        str(marker) for marker in config_flow._options_schema({}, [key]).schema
+        str(marker)
+        for marker in config_flow._options_schema({}, [key], [adopted]).schema
     }
     assert option_keys == set(options["step"]["init"]["data"]), (
         "options form fields vs strings.options.step.init.data"

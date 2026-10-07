@@ -83,6 +83,7 @@ from custom_components.junghome_ble.const import (
     OPTION_HEARTBEATS,
     OPTION_PROVISIONER_IDENTITY,
     OPTION_SYNC_AREAS,
+    OPTION_TRANSITIONS,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -3425,6 +3426,7 @@ async def test_options_flow(
     assert result["data_schema"]({}) == {
         OPTION_CLICK_DELAY: False,
         OPTION_HEARTBEATS: False,
+        OPTION_TRANSITIONS: False,  # decision M19: off until a person watched a fade
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,  # decision M12: following the app is on by default
@@ -3445,6 +3447,7 @@ async def test_options_flow(
         **areas,
         OPTION_CLICK_DELAY: True,
         OPTION_HEARTBEATS: True,
+        OPTION_TRANSITIONS: False,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,
@@ -3456,6 +3459,7 @@ async def test_options_flow(
     assert result["data_schema"]({}) == {
         OPTION_CLICK_DELAY: True,
         OPTION_HEARTBEATS: True,
+        OPTION_TRANSITIONS: False,
         OPTION_ALLOW_PROVISIONING: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,

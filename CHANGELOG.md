@@ -28,6 +28,19 @@
 - **`jhmesh`: `ProxyClient(on_control=…)`.** Called with the source and opcode of every control message the keys open
   that is no replay (a Segment Ack, a Heartbeat, a Friend message), before `on_heartbeat`: traffic a link watchdog may
   count.
+- **Transitions, as decided from the on-air probe** (decision M19, review-5 F5-4): the option *Fade brightness
+  changes* (off by default). With it on, a dimmer or DALI light offers `transition`, and a brightness change of such a
+  light that is on fades over it — a *Light Lightness Set* with the transition time, the light read again a second
+  after the fade it announced; a scene fades when every member is a dimmer or DALI light. Switching on or off, a
+  colour temperature, a switched light (a switch insert only switches off later) and *All lights* never carry one.
+  Off until a person has watched a fade from Home Assistant (sweep B8); unverified on air.
+- **The *JUNG HOME push-buttons with another insert than in the export* repair fixes it** (review-5 F5-3). A new
+  export rarely helped: the app reads a push-button's insert only when it adds the device. **Submit** now uses the
+  insert each listed push-button advertises — kept per push-button in the entry's options, while the export still
+  names the insert it replaced — and sets the entry up again, so a push-button with an extension insert loses its
+  light that switched nothing. The export and the app are not changed; the options list the push-buttons concerned
+  (*Push-buttons using the insert they advertise*), and taking one off goes back to the export's insert. Unverified
+  on air.
 
 ### Changed
 

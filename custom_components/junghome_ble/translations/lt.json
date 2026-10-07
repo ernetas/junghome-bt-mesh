@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Pranešti apie spustelėjimą tik įsitikinus, kad tai ne dvigubas spustelėjimas",
           "double_click_keys": "Mygtukai, laukiantys dvigubo spustelėjimo",
+          "insert_overrides": "Mygtukiniai jungikliai, naudojantys savo skelbiamą mechanizmą",
           "heartbeats": "Mazgų gyvybingumo signalai (tylintį įrenginį žymėti kaip nepasiekiamą)",
+          "transitions": "Sklandūs ryškumo pokyčiai (eksperimentinė funkcija)",
           "allow_provisioning": "Leisti Home Assistant pridėti ir pašalinti įrenginius (eksperimentinė funkcija)",
           "provisioner_identity": "Įrašyti Home Assistant į tinklo failą kaip įtraukėją (eksperimentinė funkcija, su programėle nepatikrinta)",
           "follow_app": "Sekti „JUNG HOME“ programėlėje atliktus pakeitimus",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`. Tai taikoma visiems mygtukams; jei norite laukti tik kai kurių, palikite išjungtą ir pasirinkite juos lauke *Mygtukai, laukiantys dvigubo spustelėjimo*, kuris rodomas, kai ši parinktis išjungta ir integracija veikia.",
           "double_click_keys": "Tik šie mygtukai sulaiko savo `click` pusę sekundės ir jį atmeta, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`; bet kuris kitas mygtukas `click` sukelia iš karto. Pasirinkite mygtukus, kuriems sukurta dvigubo spustelėjimo automatizacija. Rodomi tik mygtukai, galintys spustelėti. Dar nepatikrinta su tikrais įrenginiais.",
+          "insert_overrides": "Mygtukiniai jungikliai, kurių skelbiamą mechanizmą perėmėte taisyme *„JUNG HOME“ mygtukiniai jungikliai su kitu mechanizmu nei eksporte*: Home Assistant jų įrenginius kuria pagal šį mechanizmą, o ne pagal eksporto. Pašalinkite jungiklį iš sąrašo, kad grįžtumėte prie eksporte nurodyto mechanizmo. Rodoma tik tada, kai tokių yra.",
           "heartbeats": "Kiekvieno iš elektros tinklo maitinamo įrenginio prašoma kas 64 sekundes siųsti Home Assistant gyvybingumo signalą (tai standartinis Bluetooth Mesh nustatymas, kurio JUNG programėlė neįjungia). Jei įrenginys apie tris su puse minutės nieko nesiunčia, jo objektai pažymimi kaip nepasiekiami, kol jis vėl atsilieps. Išjungus šią parinktį, įrenginiams nurodoma signalų nebesiųsti (jei visiems iš karto pranešti nepavyko, tai pakartojama kito prisijungimo metu); išjunkite ją prieš šalindami integraciją, nes vėliau įrenginiams to nurodyti nebus galima.",
+          "transitions": "Įjungto reguliuojamo ar DALI šviestuvo ryškumo pokytis vyksta sklandžiai per veiksmo ar šviesos profilio prašomą `transition`, kaip ir scena, kurios visi įrenginiai yra reguliuojami ar DALI šviestuvai. Įjungimas ar išjungimas, spalvos temperatūros pakeitimas ir visų šviestuvų grupės niekada nevyksta sklandžiai (įrenginiai persijungtų iš karto arba tik vėliau). Niekas, ką siunčia „JUNG HOME“ programėlė ar šliuzas, to nenaudoja, ir dar niekas nematė sklandaus perėjimo iš Home Assistant; išjungus `transition` nepaisoma. Dar nepatikrinta su tikrais įrenginiais.",
           "allow_provisioning": "Leidžia veiksmui `junghome_ble.add_device` įtraukti naują JUNG įrenginį į tinklą ir sukonfigūruoti jį taip, kaip tai darytų programėlė, pagal tinkle jau esantį to paties gaminio įrenginį, o veiksmui `junghome_ble.remove_device` – atkurti įrenginio gamyklinius nustatymus ir pašalinti jį iš tinklo. Su tikrais įrenginiais dar neišbandyta: pirmiausia išbandykite su atsarginiu įrenginiu. Pridedant įrenginiui perduodami tinklo raktai; pašalinimo atšaukti neįmanoma.",
           "provisioner_identity": "Į kiekvieną failą, kurį Home Assistant įrašo arba perduoda sietuvui, įtraukiamas Home Assistant įtraukėjo įrašas su atskirais, programėlės intervalų nekertančiais adresų intervalais, į kuriuos patenka ir Home Assistant adresas, o Home Assistant pridėti įrenginiai, kurių programėlės faile nėra, į jį grąžinami. Tada Home Assistant kuriamos patalpos, scenos ir įrenginiai adresus gauna iš šių intervalų. Nė viena JUNG programėlė tokio failo dar nėra importavusi: prieš jį pamatant jūsų programėlei ar sietuvui, išbandykite jį su atskirai įdiegta programėle (importuokite failą iš `junghome_ble.export_network`). Išjungus failai įrašomi lygiai taip pat kaip be šios parinkties.",
           "follow_app": "Kai tinkle išgirstamas telefonas su „JUNG HOME“ programėle, iš sietuvo nustatytas įrašas po kelių minučių nuo to, kai telefonas nutyla (ne dažniau kaip kas 15 minučių), gauna sietuvo eksportą ir, jei šis pasikeitė, jį perima: programėlėje pakeisti įrenginiai, patalpos, scenos ir mygtukų susiejimai pasiekia Home Assistant nenaudojant „Perkonfigūruoti“. Iš failo nustatytas įrašas vietoj to parodo taisymo pranešimą, kai pastebima, kad programėlė pakeitė įrenginio konfigūraciją. Tam tinkle nieko nesiunčiama. Dar nepatikrinta su tikrais įrenginiais.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "„JUNG HOME“ mygtukiniai jungikliai su kitu mechanizmu nei eksporte",
-      "description": "{devices}: šie „JUNG HOME“ tinklo {title} mygtukiniai jungikliai skelbia kitą mechanizmą nei nurodytas Home Assistant įkeltame eksporte (eksportas → įrenginys). Mechanizmas pakeistas jau sukūrus tą eksportą, todėl Home Assistant ir programėlė gali rodyti netinkamą jų valdomo įrenginio tipą. Patikrinkite įrenginius „JUNG HOME“ programėlėje, dar kartą eksportuokite tinklą ir atnaujinkite šią integraciją (Nustatymai → Įrenginiai ir paslaugos → JUNG HOME Bluetooth Mesh → Perkonfigūruoti); problema išnyks, kai eksporte bus nurodyti įrenginių skelbiami mechanizmai. Dar nepatikrinta su tikrais įrenginiais."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Naudoti mechanizmą, kurį skelbia mygtukiniai jungikliai",
+            "description": "{devices}: šie „JUNG HOME“ mesh tinklo {title} mygtukiniai jungikliai skelbia kitą mechanizmą nei Home Assistant įkeltame eksporte (eksportas → įrenginys). Mechanizmas greičiausiai pakeistas jau pridėjus įrenginį, o naujas eksportas nebūtinai padės: programėlė mygtukinio jungiklio mechanizmą nuskaito tik pridėdama įrenginį. Iki tol Home Assistant jiems sukuria netinkamą apkrovos rūšį (jungiklio, šviesos reguliatoriaus ar DALI mechanizmas yra šviestuvas, žaliuzių mechanizmas – uždanga, išplėtimo mechanizmas – nieko). Patvirtinkite, kad būtų naudojamas kiekvieno jungiklio skelbiamas mechanizmas: Home Assistant iš naujo nustato įrašą ir pagal jį sukuria jų įrenginius. Eksportas ir programėlė pasilieka senąjį mechanizmą; Home Assistant naudoja skelbiamąjį, kol kuris nors eksportas nurodys jungikliui kitą mechanizmą. Dar nepatikrinta su tikrais įrenginiais."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "not_loaded": "„JUNG HOME“ įrašas, kuriam priklauso ši problema, šiuo metu neveikia. Bandykite dar kartą, kai jis bus paleistas.",
+          "inserts_agree": "Dabar visi mygtukiniai jungikliai skelbia eksporte nurodytą mechanizmą: nėra ką keisti."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "„JUNG HOME“ įrenginiai, kurių laikrodis rodo netikslų laiką",

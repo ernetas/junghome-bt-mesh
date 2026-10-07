@@ -23,7 +23,9 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.util.hass_dict import HassKey
 
 from .const import (
+    DEFAULT_TRANSITIONS,
     DOMAIN,
+    OPTION_TRANSITIONS,
     SIGNAL_CONNECTION,
     SIGNAL_UPDATE,
 )
@@ -157,6 +159,11 @@ UPDATE_READS: HassKey[dict[str, dict[tuple[int, str], float]]] = HassKey(
 
 # a platform's `build_entities`: every entity the hub's device model gives the platform, the disabled ones included
 type EntityBuilder = Callable[[JungHomeHub], Iterable[Entity]]
+
+
+def transitions_on(hub: JungHomeHub) -> bool:
+    """Whether the entry's option *Fade brightness changes* is on (`OPTION_TRANSITIONS`; a change reloads the entry)."""
+    return bool(hub.entry.options.get(OPTION_TRANSITIONS, DEFAULT_TRANSITIONS))
 
 
 def entities_by_unique_id(entities: Iterable[Entity]) -> dict[str, Entity]:
@@ -457,19 +464,13 @@ class JungHomeCentralEntity(JungHomeEntity):
         ]
         return any(known) if known else None
 
-    async def _switch(
-        self, on: bool, lightness: int | None = None, transition: float | None = None
-    ) -> None:
-        """Switch every member, the dimmable ones to `lightness` first when given, over `transition` s when given."""
+    async def _switch(self, on: bool, lightness: int | None = None) -> None:
+        """Switch every member, the dimmable ones to `lightness` first when given."""
         if self.room is None:
-            await self._send(
-                self.hub.central_command(self.address, on, lightness, transition)
-            )
+            await self._send(self.hub.central_command(self.address, on, lightness))
         else:
             addresses = [m.address for m in self.members]
-            await self._send(
-                self.hub.room_command(self.room, addresses, on, lightness, transition)
-            )
+            await self._send(self.hub.room_command(self.room, addresses, on, lightness))
 
     async def _level(self, group: int, addresses: list[int], level: int) -> None:
         """Set a Generic Level: once to the device-type `group` home-wide, on each of `addresses` in a room."""

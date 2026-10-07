@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Klikken pas melden als een dubbelklik is uitgesloten",
           "double_click_keys": "Knoppen die op een dubbelklik wachten",
+          "insert_overrides": "Drukknoppen die de inzet gebruiken die ze adverteren",
           "heartbeats": "Heartbeats van nodes (een stil apparaat als niet beschikbaar markeren)",
+          "transitions": "Helderheidswijzigingen laten overvloeien (experimenteel)",
           "allow_provisioning": "Home Assistant toestaan apparaten toe te voegen en te verwijderen (experimenteel)",
           "provisioner_identity": "Home Assistant als provisioner in het bestand van het netwerk schrijven (experimenteel, niet geverifieerd met de app)",
           "follow_app": "Wijzigingen in de JUNG HOME-app volgen",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Een `click`-gebeurtenis wordt een halve seconde vastgehouden en vervalt als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt. Uit: elke druk vuurt meteen `click` af en de tweede druk van een dubbele druk vuurt ook `double_click` af. Dit geldt voor elke knop; om alleen bij sommige knoppen te wachten, laat je dit uit en kies je ze onder *Knoppen die op een dubbelklik wachten*, dat wordt getoond zolang dit uit staat en de integratie draait.",
           "double_click_keys": "Alleen deze knoppen houden hun `click` een halve seconde vast en laten die vervallen als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt; elke andere knop vuurt `click` meteen af. Kies de knoppen die een dubbelklik-automatisering hebben. Alleen knoppen die kunnen klikken worden getoond. Nog niet op echte apparaten geverifieerd.",
+          "insert_overrides": "De drukknoppen waarvan je de geadverteerde inzet hebt overgenomen in de reparatie *JUNG HOME-drukknoppen met een andere inzet dan in de export*: Home Assistant maakt hun apparaten aan op basis van die inzet in plaats van die van de export. Haal er een uit de lijst om terug te gaan naar de inzet die de export noemt. Alleen getoond zolang er zijn.",
           "heartbeats": "Elk apparaat op netstroom wordt gevraagd om elke 64 seconden een heartbeat naar Home Assistant te sturen (een standaard Bluetooth Mesh-instelling die de JUNG-app uit laat). Van een apparaat dat ongeveer drieënhalve minuut niets stuurt, worden de entiteiten als niet beschikbaar gemarkeerd tot het weer wordt gehoord. Uitschakelen vertelt de apparaten te stoppen (opnieuw bij de volgende verbinding als ze niet allemaal tegelijk bereikt konden worden); schakel het uit voordat je de integratie verwijdert, want daarna kan die het ze niet meer vertellen.",
+          "transitions": "Een helderheidswijziging van een ingeschakelde dimbare of DALI-lamp vloeit over gedurende de `transition` die een actie of een lichtprofiel vraagt, en dat geldt ook voor een scène waarvan alle apparaten dimbare of DALI-lampen zijn. In- of uitschakelen, een wijziging van de kleurtemperatuur en de groepen van alle lampen vloeien nooit over (de apparaten zouden meteen of pas later schakelen). Niets wat de JUNG HOME-app of -gateway verstuurt gebruikt het, en nog niemand heeft een overgang vanuit Home Assistant gezien; uitgeschakeld wordt een `transition` genegeerd. Nog niet op echte apparaten geverifieerd.",
           "allow_provisioning": "Laat de actie `junghome_ble.add_device` een nieuw JUNG-apparaat inleren en het configureren zoals de app zou doen, naar het voorbeeld van een apparaat van hetzelfde product dat al in het netwerk zit, en `junghome_ble.remove_device` een apparaat resetten en uit het netwerk halen. Nog niet op echte apparaten geprobeerd: probeer het eerst met een reserveapparaat. Toevoegen geeft het apparaat de sleutels van het netwerk; verwijderen kan niet ongedaan worden gemaakt.",
           "provisioner_identity": "Elk bestand dat Home Assistant schrijft of aan de gateway geeft, krijgt een provisioner-item voor Home Assistant, met eigen adresbereiken die vrij zijn van die van de app en met het adres van Home Assistant erbinnen, en de apparaten die Home Assistant heeft toegevoegd en die in het bestand van de app ontbreken, worden teruggezet. Kamers, scènes en apparaten die Home Assistant aanmaakt, nemen hun adressen dan uit diens eigen bereiken. Nog geen enkele JUNG-app heeft zo'n bestand geïmporteerd: probeer het op een reserve-installatie van de app (importeer het bestand van `junghome_ble.export_network`) voordat je eigen app of gateway het ziet. Uit: de bestanden worden precies zo geschreven als zonder deze optie.",
           "follow_app": "Als de telefoon met de JUNG HOME-app op de mesh wordt gehoord, haalt een item dat vanaf de gateway is ingesteld de export van de gateway op, een paar minuten nadat de telefoon stil is geworden (hoogstens elke 15 minuten), en neemt hem over als hij is gewijzigd: apparaten, kamers, scènes en knopkoppelingen die in de app zijn gewijzigd, bereiken Home Assistant zonder Herconfigureren. Een item dat vanuit een bestand is ingesteld, toont in plaats daarvan een reparatiemelding zodra de app is gezien terwijl die de configuratie van een apparaat wijzigde. Hiervoor wordt niets op de mesh verzonden. Nog niet op echte apparaten geverifieerd.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME-drukknoppen met een andere inzet dan in de export",
-      "description": "{devices}: deze drukknoppen van de JUNG HOME-mesh {title} adverteren een andere inzet dan die in de export die Home Assistant heeft geladen (export → apparaat). De inzet is vervangen nadat die export is gemaakt, dus Home Assistant en de app tonen mogelijk het verkeerde soort belasting voor ze. Controleer de apparaten in de JUNG HOME-app, exporteer het netwerk opnieuw en werk deze integratie bij (Instellingen → Apparaten & diensten → JUNG HOME Bluetooth Mesh → Herconfigureren); het probleem verdwijnt zodra de export de inzetten noemt die de apparaten adverteren. Nog niet op echte apparaten geverifieerd."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "De inzet gebruiken die de drukknoppen adverteren",
+            "description": "{devices}: deze drukknoppen van het JUNG HOME-mesh {title} adverteren een andere inzet dan die in de export die Home Assistant heeft geladen (export → apparaat). De inzet is waarschijnlijk vervangen nadat het apparaat werd toegevoegd, en een nieuwe export helpt niet per se: de app leest de inzet van een drukknop alleen als hij het apparaat toevoegt. Tot dan maakt Home Assistant er het verkeerde soort belasting voor aan (een schakel-, dim- of DALI-inzet is een lamp, een jaloezie-inzet een bedekking, een nevenpost-inzet geen). Bevestig om de inzet te gebruiken die elke drukknop adverteert: Home Assistant zet de vermelding opnieuw op en maakt hun apparaten op basis daarvan aan. De export en de app houden de oude inzet; Home Assistant blijft de geadverteerde gebruiken tot een export een andere inzet voor de drukknop noemt. Nog niet op echte apparaten geverifieerd."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "not_loaded": "Het JUNG HOME-item waar dit probleem bij hoort, draait op dit moment niet. Probeer het opnieuw zodra het is ingesteld.",
+          "inserts_agree": "Alle drukknoppen adverteren nu de inzet die de export noemt: niets te wijzigen."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME-apparaten met een verkeerde klok",

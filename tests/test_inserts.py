@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import uuid
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -16,12 +17,14 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.junghome_ble import coordinator, model_update
+from custom_components.junghome_ble import coordinator, model_update, repairs
+from custom_components.junghome_ble.config_flow import adopted_insert_choices
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_UNICAST,
     DOMAIN,
     ISSUE_INSERT_MISMATCH,
+    OPTION_INSERT_OVERRIDES,
 )
 from custom_components.junghome_ble.diagnostics import async_get_device_diagnostics
 from custom_components.junghome_ble.inserts import (
@@ -307,12 +310,15 @@ async def test_a_swapped_insert_raises_the_repair_until_the_advert_agrees(
     assert issue is not None
     assert issue.severity is ir.IssueSeverity.WARNING
     assert issue.translation_key == ISSUE_INSERT_MISMATCH
+    assert issue.is_fixable
+    assert issue.data == {"entry_id": mock_config_entry.entry_id}
     assert issue.translation_placeholders == {
         "title": "JUNG HOME mesh test",
         "devices": "Push-button 1-gang 0148 (Switch insert → Blinds insert)",
     }
     text = json.loads(STRINGS_JSON.read_text())["issues"][ISSUE_INSERT_MISMATCH]
-    assert set(re.findall(r"\{(\w+)\}", text["title"] + text["description"])) == set(
+    description = text["fix_flow"]["step"]["confirm"]["description"]
+    assert set(re.findall(r"\{(\w+)\}", text["title"] + description)) == set(
         issue.translation_placeholders
     )
     # the export's insert decides the devices and the model; the advert only reports
@@ -347,6 +353,116 @@ async def test_a_swapped_insert_raises_the_repair_until_the_advert_agrees(
         BluetoothChange.ADVERTISEMENT,
     )
     assert find_issue(hass, ISSUE_INSERT_MISMATCH) is None
+
+
+async def fix_flow(hass: HomeAssistant, issue: ir.IssueEntry) -> Any:
+    """The issue's fix flow, bound as Home Assistant's repairs flow manager binds it."""
+    flow = await repairs.async_create_fix_flow(hass, issue.issue_id, issue.data)
+    flow.hass, flow.issue_id, flow.flow_id = hass, issue.issue_id, uuid.uuid4().hex
+    return flow
+
+
+async def test_the_repair_adopts_the_advertised_insert(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    network_id: bytes,
+) -> None:
+    """Review-5 F5-3: a new export need not name the swapped insert (the app reads it only when it adds a device),
+    so the repair's fix uses the advertised one: a per-node override in the entry's options, and the entry set up
+    again builds the node's devices from it — an extension insert, as on air (sweep A5): no load, so no phantom light —
+    and the repair clears. Taken off in the options, the export's insert is back."""
+    mock_bluetooth_env["infos"] = [
+        make_service_info(
+            network_id, manufacturer_data=jung_record(1, 6, 0, MAC_LIGHT_SWITCH)
+        )
+    ]
+    hub = await set_up(hass, mock_config_entry)
+    issue = find_issue(hass, ISSUE_INSERT_MISMATCH)
+    assert issue is not None
+    flow = await fix_flow(hass, issue)
+    assert isinstance(flow, repairs.AdoptInsertFlow)
+    form = await flow.async_step_init()
+    assert form["step_id"] == "confirm"
+    assert form["description_placeholders"] == issue.translation_placeholders
+
+    result = await flow.async_step_confirm({})
+    assert result["type"] == "create_entry"
+    await hass.async_block_till_done()
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    assert mock_config_entry.options[OPTION_INSERT_OVERRIDES] == {
+        "0148": {"export": 0, "insert": 6}
+    }
+    assert mock_config_entry.runtime_data is not hub  # set up again
+    hub = mock_config_entry.runtime_data
+    assert LIGHT_SWITCH not in hub.devices.by_address
+    assert (
+        model_of(hass, mock_config_entry, NODE_0148)
+        == "Push-button 1-gang (Extension insert)"
+    )
+    assert find_issue(hass, ISSUE_INSERT_MISMATCH) is None
+
+    # a flow left open meanwhile: nothing to adopt any more
+    result = await flow.async_step_confirm({})
+    assert result["reason"] == "inserts_agree"
+
+    # the options list the adopted push-button by name; taking it off goes back to the export's insert
+    assert adopted_insert_choices(mock_config_entry, mock_config_entry.options) == [
+        {"value": "0148", "label": "Push-button 1-gang 0148"}
+    ]
+    options = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
+    assert options["data_schema"]({})[OPTION_INSERT_OVERRIDES] == ["0148"]
+    await hass.config_entries.options.async_configure(
+        options["flow_id"], {OPTION_INSERT_OVERRIDES: []}
+    )
+    await hass.async_block_till_done()
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    assert mock_config_entry.options[OPTION_INSERT_OVERRIDES] == {}
+    assert isinstance(
+        mock_config_entry.runtime_data.devices.by_address.get(LIGHT_SWITCH), Light
+    )
+    assert find_issue(hass, ISSUE_INSERT_MISMATCH) is not None
+
+
+async def test_the_insert_repair_needs_a_running_entry(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    issue = SimpleNamespace(
+        issue_id=f"{ISSUE_INSERT_MISMATCH}_{init_integration.entry_id}",
+        data={"entry_id": init_integration.entry_id},
+    )
+    flow = await fix_flow(hass, issue)  # type: ignore[arg-type]
+    assert (await flow.async_step_init())["description_placeholders"] == {}
+    await hass.config_entries.async_unload(init_integration.entry_id)
+    assert (await flow.async_step_confirm({}))["reason"] == "not_loaded"
+    assert adopted_insert_choices(
+        init_integration, {OPTION_INSERT_OVERRIDES: {"0148": {}}}
+    ) == [{"value": "0148", "label": "0148"}]  # no running hub: the address alone
+    flow.issue_data = {"entry_id": "gone"}
+    assert (await flow.async_step_confirm({}))["reason"] == "entry_gone"
+
+
+def test_an_adopted_insert_stands_only_while_the_export_names_the_one_it_replaced(
+    cdb: CDB,
+) -> None:
+    """The override replaces the export's InsertId it was made for; an export naming another one since wins."""
+    node = next(n for n in cdb.nodes if n.unicast == LIGHT_SWITCH)
+    devices = build_devices(cdb)
+    adopted = {"0148": {"export": 0, "insert": 5}, "0232": "not an override"}
+    node.insert_function = 6  # the export names another insert since
+    assert apply_reported(cdb, devices, {}, lambda _u: {}, adopted) is devices
+    assert node.insert_function == 6
+    node.insert_function = 0
+    rebuilt = apply_reported(cdb, devices, {}, lambda _u: {}, adopted)
+    assert node.insert_function == 5
+    assert isinstance(devices.by_address.get(LIGHT_SWITCH), Light)
+    assert (
+        LIGHT_SWITCH not in rebuilt.by_address
+    )  # a blinds insert on a 1-gang: no light
 
 
 async def test_the_reads_are_a_connect_step(

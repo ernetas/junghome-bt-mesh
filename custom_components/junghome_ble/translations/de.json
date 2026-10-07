@@ -223,7 +223,9 @@
         "data": {
           "click_delay": "Klicks erst melden, wenn ein Doppelklick ausgeschlossen ist",
           "double_click_keys": "Tasten, die auf einen Doppelklick warten",
+          "insert_overrides": "Taster, die den gemeldeten Einsatz verwenden",
           "heartbeats": "Heartbeats der Knoten (ein stummes Gerät als nicht verfügbar markieren)",
+          "transitions": "Helligkeitsänderungen überblenden (experimentell)",
           "allow_provisioning": "Home Assistant darf Geräte hinzufügen und entfernen (experimentell)",
           "provisioner_identity": "Home Assistant als Provisioner in die Datei des Netzwerks eintragen (experimentell, mit der App nicht überprüft)",
           "follow_app": "Änderungen aus der JUNG HOME App übernehmen",
@@ -233,7 +235,9 @@
         "data_description": {
           "click_delay": "Ein `click`-Ereignis wird eine halbe Sekunde zurückgehalten und verworfen, wenn ein zweiter Klick folgt, sodass ein Doppeldruck nur `double_click` auslöst. Aus: Jeder Druck löst sofort `click` aus, und der zweite Druck eines Doppeldrucks löst zusätzlich `double_click` aus. Das gilt für jede Taste; um nur bei einigen Tasten zu warten, lass es aus und wähle sie unter *Tasten, die auf einen Doppelklick warten*, das angezeigt wird, solange dies aus ist und die Integration läuft.",
           "double_click_keys": "Nur diese Tasten halten ihr `click` eine halbe Sekunde zurück und verwerfen es, wenn ein zweiter Klick folgt, sodass ein Doppeldruck nur `double_click` auslöst; jede andere Taste löst `click` sofort aus. Wähle die Tasten, die eine Doppelklick-Automation haben. Aufgeführt sind nur Tasten, die klicken können. Auf echten Geräten noch nicht überprüft.",
+          "insert_overrides": "Die Taster, deren gemeldeten Einsatz du in der Reparatur *JUNG HOME Taster mit einem anderen Einsatz als im Export* übernommen hast: Home Assistant legt ihre Geräte nach diesem Einsatz statt nach dem des Exports an. Entferne einen aus der Liste, um zum Einsatz zurückzukehren, den der Export nennt. Wird nur angezeigt, solange es welche gibt.",
           "heartbeats": "Jedes netzbetriebene Gerät wird gebeten, alle 64 Sekunden einen Heartbeat an Home Assistant zu senden (eine Standard-Einstellung von Bluetooth Mesh, die die JUNG App ausgeschaltet lässt). Bei einem Gerät, das etwa dreieinhalb Minuten lang nichts sendet, werden die Entitäten als nicht verfügbar markiert, bis es wieder zu hören ist. Beim Ausschalten werden die Geräte angewiesen aufzuhören (bei der nächsten Verbindung erneut, falls nicht alle auf einmal erreicht wurden); schalte es aus, bevor du die Integration entfernst, denn danach kann sie es ihnen nicht mehr sagen.",
+          "transitions": "Eine Helligkeitsänderung eines eingeschalteten Dimm- oder DALI-Lichts wird über die `transition` übergeblendet, die eine Aktion oder ein Lichtprofil verlangt, ebenso eine Szene, deren Geräte alle Dimm- oder DALI-Lichter sind. Ein- oder Ausschalten, eine Änderung der Farbtemperatur und die Gruppen aller Lichter werden nie übergeblendet (die Geräte würden sofort oder erst später schalten). Nichts, was die JUNG HOME App oder das Gateway sendet, nutzt das, und noch niemand hat eine Überblendung aus Home Assistant beobachtet; ausgeschaltet wird eine `transition` ignoriert. Auf echten Geräten noch nicht überprüft.",
           "allow_provisioning": "Erlaubt der Aktion `junghome_ble.add_device`, ein neues JUNG Gerät in Betrieb zu nehmen und es wie die App nach dem Vorbild eines Geräts desselben Produkts im Netzwerk zu konfigurieren, und `junghome_ble.remove_device`, ein Gerät zurückzusetzen und aus dem Netzwerk zu nehmen. Auf echten Geräten noch nicht ausprobiert: Probiere es zuerst mit einem Ersatzgerät. Beim Hinzufügen bekommt das Gerät die Keys des Netzwerks; Entfernen lässt sich nicht rückgängig machen.",
           "provisioner_identity": "Jede Datei, die Home Assistant schreibt oder an das Gateway übergibt, bekommt einen Provisioner-Eintrag für Home Assistant, mit eigenen Adressbereichen abseits derer der App und mit der Adresse von Home Assistant darin, und die Geräte, die Home Assistant hinzugefügt hat und die in der Datei der App fehlen, werden wieder eingetragen. Räume, Szenen und Geräte, die Home Assistant anlegt, nehmen ihre Adressen dann aus den eigenen Adressbereichen. Noch keine JUNG App hat eine solche Datei importiert: Probiere es mit einer Ersatz-Installation der App (importiere die Datei aus `junghome_ble.export_network`), bevor deine eigene App oder dein Gateway sie sieht. Aus: Die Dateien werden genau so geschrieben wie ohne diese Option.",
           "follow_app": "Wenn das Smartphone mit der JUNG HOME App im Mesh zu hören ist, ruft ein vom Gateway eingerichteter Eintrag einige Minuten nachdem das Smartphone verstummt ist den Export des Gateways ab (höchstens alle 15 Minuten) und übernimmt ihn, wenn er sich geändert hat: In der App geänderte Geräte, Räume, Szenen und Tastenverknüpfungen erreichen Home Assistant ohne „Neu konfigurieren“. Ein aus einer Datei eingerichteter Eintrag zeigt stattdessen eine Reparatur-Meldung, sobald die App beim Ändern der Konfiguration eines Geräts beobachtet wurde. Dafür wird nichts im Mesh gesendet. Auf echten Geräten noch nicht überprüft.",
@@ -1873,7 +1877,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME Taster mit einem anderen Einsatz als im Export",
-      "description": "{devices}: Diese Taster des JUNG HOME Mesh {title} melden einen anderen Einsatz als den im Export, den Home Assistant geladen hat (Export → Gerät). Der Einsatz wurde nach diesem Export getauscht, daher zeigen Home Assistant und die App für sie möglicherweise die falsche Art von Last. Prüfe die Geräte in der JUNG HOME App, exportiere das Netzwerk erneut und aktualisiere diese Integration (Einstellungen → Geräte & Dienste → JUNG HOME Bluetooth Mesh → Neu konfigurieren); die Reparatur verschwindet, sobald der Export die Einsätze nennt, die die Geräte melden. Auf echten Geräten noch nicht überprüft."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Den Einsatz verwenden, den die Taster melden",
+            "description": "{devices}: Diese Taster des JUNG HOME Mesh {title} melden einen anderen Einsatz als den im Export, den Home Assistant geladen hat (Export → Gerät). Der Einsatz wurde wahrscheinlich ausgetauscht, nachdem das Gerät hinzugefügt wurde, und ein neuer Export hilft nicht unbedingt: Die App liest den Einsatz eines Tasters nur, wenn sie das Gerät hinzufügt. Bis dahin legt Home Assistant für sie die falsche Art von Last an (ein Schalt-, Dimm- oder DALI-Einsatz ist ein Licht, ein Jalousieeinsatz ein Rollladen, ein Nebenstelleneinsatz keine). Bestätige, um den Einsatz zu verwenden, den jeder Taster meldet: Home Assistant richtet den Eintrag neu ein und legt ihre Geräte danach an. Export und App behalten den alten Einsatz; Home Assistant verwendet den gemeldeten, bis ein Export für den Taster einen anderen Einsatz nennt. Auf echten Geräten noch nicht überprüft."
+          }
+        },
+        "abort": {
+          "entry_gone": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, ist nicht mehr eingerichtet.",
+          "not_loaded": "Der JUNG HOME Eintrag, zu dem diese Reparatur gehört, läuft gerade nicht. Versuche es erneut, sobald er eingerichtet ist.",
+          "inserts_agree": "Alle Taster melden jetzt den Einsatz, den der Export nennt: nichts zu ändern."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME Geräte mit falscher Uhrzeit",

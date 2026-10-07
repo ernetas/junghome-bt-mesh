@@ -1267,10 +1267,10 @@
    "tests": [
     "tests/jhmesh/test_messages.py::test_generic_onoff_builders",
     "tests/jhmesh/test_messages.py::test_describe_set_messages",
-    "tests/test_light.py::test_a_fading_light_sends_the_transition_and_reads_the_state_after_it",
+    "tests/test_light.py::test_what_never_fades",
     "tests/test_cli.py::test_the_transition_option_of_the_sets"
    ],
-   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
+   "note": "Never with a transition time from Home Assistant (decision M19, from docs/on-air-sweep.md B8: a switch insert waits a transition out before it switches off, the DALI insert switches on at once): custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff sends transition 0. The CLI's set --transition is the probe."
   },
   {
    "id": "msg:op:8203",
@@ -1695,22 +1695,23 @@
     "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
     "tests/test_cli.py::test_the_transition_option_of_the_sets"
    ],
-   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only once custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS is set from the probe of docs/hidden-features.md section 11 (review 4 brief 31); the CLI's scene --transition is the probe."
+   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only when every member of the scene is a dimmer or DALI light and the option Fade brightness changes is on (custom_components/junghome_ble/scene.py::JungHomeScene._fades, decision M19); the CLI's scene --transition is the probe (docs/on-air-sweep.md B8)."
   },
   {
    "id": "msg:op:8243",
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/messages.py::scene_recall",
-    "custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene"
+    "custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene",
+    "custom_components/junghome_ble/scene.py::JungHomeScene._fades"
    ],
    "tests": [
     "tests/jhmesh/test_messages.py::test_scene_builders",
     "tests/test_scene.py::test_activate",
     "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
-    "tests/test_scene.py::test_activate_with_a_transition"
+    "tests/test_scene.py::test_a_scene_fades_only_when_every_member_does"
    ],
-   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only once custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS is set from the probe of docs/hidden-features.md section 11 (review 4 brief 31); the CLI's scene --transition is the probe."
+   "note": "Unverified on air with a transition time: the scene entity passes HA's transition only when every member of the scene is a dimmer or DALI light and the option Fade brightness changes is on (custom_components/junghome_ble/scene.py::JungHomeScene._fades, decision M19); the CLI's scene --transition is the probe (docs/on-air-sweep.md B8)."
   },
   {
    "id": "msg:op:8244",
@@ -1808,10 +1809,10 @@
     "tests/jhmesh/test_messages.py::test_light_lightness_builders",
     "tests/jhmesh/test_messages.py::test_describe_set_messages",
     "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
-    "tests/test_light.py::test_a_fading_light_sends_the_transition_and_reads_the_state_after_it",
+    "tests/test_light.py::test_a_brightness_change_fades_and_the_state_is_read_after_it",
     "tests/test_cli.py::test_the_transition_option_of_the_sets"
    ],
-   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
+   "note": "Unverified on air with a transition time from Home Assistant: the one Set that carries HA's transition (decision M19), for a brightness change of a dimmer or DALI light that is on (custom_components/junghome_ble/const.py::TRANSITION_KINDS), only with the option Fade brightness changes on (custom_components/junghome_ble/const.py::OPTION_TRANSITIONS, off by default); the DALI insert answered one from the CLI with its target and remaining time and faded (docs/on-air-sweep.md B8). Without one the Set keeps its bytes."
   },
   {
    "id": "msg:op:824d",
@@ -1935,10 +1936,10 @@
     "tests/jhmesh/test_messages.py::test_light_ctl_builders",
     "tests/test_light.py::test_tunable_white",
     "tests/jhmesh/test_messages.py::test_lightness_and_scene_builders_carry_a_transition",
-    "tests/test_light.py::test_a_tunable_white_light_fades_its_colour_temperature",
+    "tests/test_light.py::test_what_never_fades",
     "tests/test_cli.py::test_the_transition_option_of_the_sets"
    ],
-   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
+   "note": "Never with a transition time from Home Assistant (decision M19, from docs/on-air-sweep.md B8: the DALI insert answers a CTL Set at once and reports no fade); the CLI's ctl --transition is the probe."
   },
   {
    "id": "msg:op:825f",
@@ -2009,9 +2010,9 @@
    "tests": [
     "tests/jhmesh/test_messages.py::test_light_ctl_temperature_builders",
     "tests/test_light.py::test_tunable_white_temperature_alone",
-    "tests/test_light.py::test_a_tunable_white_light_fades_its_colour_temperature"
+    "tests/test_light.py::test_what_never_fades"
    ],
-   "note": "Unverified on air with a transition time: HA's transition goes into the Set only for a light kind in custom_components/junghome_ble/light.py::TRANSITION_KINDS, empty until the probe of docs/hidden-features.md section 11 shows which JUNG loads fade (review 4 brief 31); without one the Set keeps its bytes."
+   "note": "Always the gateway's 7-byte form with transition 0 and delay 0: a colour temperature never fades from Home Assistant (decision M19)."
   },
   {
    "id": "msg:op:8266",

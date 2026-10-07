@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Relatar cliques somente quando um clique duplo estiver descartado",
           "double_click_keys": "Botões que aguardam um clique duplo",
+          "insert_overrides": "Pulsadores que usam o módulo que anunciam",
           "heartbeats": "Heartbeats dos nós (marcar um dispositivo silencioso como indisponível)",
+          "transitions": "Mudanças de brilho suaves (experimental)",
           "allow_provisioning": "Permitir que o Home Assistant adicione e remova dispositivos (experimental)",
           "provisioner_identity": "Registrar o Home Assistant no arquivo da rede como provisionador (experimental, não verificado com o aplicativo)",
           "follow_app": "Acompanhar as alterações feitas no aplicativo JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Um evento `click` é retido por meio segundo e descartado quando um segundo clique vem em seguida, para que um pressionamento duplo dispare somente `double_click`. Desligado: cada pressionamento dispara `click` imediatamente, e o segundo pressionamento de um pressionamento duplo também dispara `double_click`. Isso vale para todos os botões; para aguardar só em alguns, deixe desligado e escolha-os em *Botões que aguardam um clique duplo*, exibido enquanto isto está desligado e a integração está em execução.",
           "double_click_keys": "Somente estes botões retêm o seu `click` por meio segundo e o descartam quando um segundo clique vem em seguida, para que um pressionamento duplo dispare somente `double_click`; qualquer outro botão dispara `click` imediatamente. Escolha os botões que têm uma automação de clique duplo. Somente os botões que podem clicar são listados. Ainda não verificado em dispositivos reais.",
+          "insert_overrides": "Os pulsadores cujo módulo anunciado você adotou no reparo *Pulsadores JUNG HOME com um módulo diferente do da exportação*: o Home Assistant cria os dispositivos deles a partir desse módulo em vez do da exportação. Remova um da lista para voltar ao módulo que a exportação indica. Mostrado apenas enquanto houver algum.",
           "heartbeats": "Cada dispositivo alimentado pela rede elétrica é solicitado a enviar um heartbeat ao Home Assistant a cada 64 segundos (uma configuração padrão do Bluetooth Mesh que o aplicativo JUNG deixa desligada). Um dispositivo que não envia nada por cerca de três minutos e meio tem suas entidades marcadas como indisponíveis até ser ouvido novamente. Desligar esta opção avisa os dispositivos para pararem (de novo na próxima conexão, se não foi possível avisar todos de uma vez); desligue-a antes de remover a integração, que depois não consegue mais avisá-los.",
+          "transitions": "Uma mudança de brilho de uma luz dimerizável ou DALI acesa acontece de forma gradual durante a `transition` que uma ação ou um perfil de luz pede, e o mesmo vale para uma cena cujos dispositivos são todos luzes dimerizáveis ou DALI. Ligar ou desligar, uma mudança de temperatura de cor e os grupos de todas as luzes nunca são graduais (os dispositivos mudariam na hora, ou só mais tarde). Nada do que o app ou o gateway JUNG HOME envia usa isso, e ninguém observou ainda uma transição a partir do Home Assistant; desativado, uma `transition` é ignorada. Ainda não verificado em dispositivos reais.",
           "allow_provisioning": "Permite que a ação `junghome_ble.add_device` provisione um novo dispositivo JUNG e o configure como o aplicativo faria, a partir de um dispositivo do mesmo produto já presente na rede, e que `junghome_ble.remove_device` redefina um dispositivo e o retire da rede. Ainda não testado em dispositivos reais: experimente primeiro com um dispositivo reserva. Adicionar entrega ao dispositivo as chaves da rede; remover não pode ser desfeito.",
           "provisioner_identity": "Todo arquivo que o Home Assistant grava ou entrega ao gateway recebe uma entrada de provisionador para o Home Assistant, com faixas de endereço próprias, separadas das do aplicativo e contendo o endereço do Home Assistant, e os dispositivos que o Home Assistant adicionou e que faltam no arquivo do aplicativo são recolocados. Cômodos, cenas e dispositivos criados pelo Home Assistant passam então a tirar seus endereços dessas faixas próprias. Nenhum aplicativo JUNG importou um arquivo assim até agora: experimente em uma instalação reserva do aplicativo (importe o arquivo de `junghome_ble.export_network`) antes que o seu próprio aplicativo ou gateway o veja. Desligado: os arquivos são gravados exatamente como sem esta opção.",
           "follow_app": "Quando o celular com o aplicativo JUNG HOME é ouvido na mesh, uma entrada configurada a partir do gateway busca a exportação do gateway alguns minutos depois que o celular silenciou (no máximo a cada 15 minutos) e a assume quando ela mudou: dispositivos, cômodos, cenas e vínculos de botões alterados no aplicativo chegam ao Home Assistant sem Reconfigurar. Uma entrada configurada a partir de um arquivo mostra um aviso de reparo em vez disso, depois que o aplicativo foi visto alterando a configuração de um dispositivo. Nada é enviado na mesh para isso. Ainda não verificado em dispositivos reais.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Pulsadores JUNG HOME com um módulo diferente do da exportação",
-      "description": "{devices}: estes pulsadores da mesh JUNG HOME {title} anunciam um módulo diferente do que está na exportação que o Home Assistant carregou (exportação → dispositivo). O módulo foi trocado depois que essa exportação foi feita, então o Home Assistant e o aplicativo podem mostrar o tipo errado de carga para eles. Verifique os dispositivos no aplicativo JUNG HOME, exporte a rede novamente e atualize esta integração (Configurações → Dispositivos e serviços → JUNG HOME Bluetooth Mesh → Reconfigurar); o problema desaparece assim que a exportação indicar os módulos que os dispositivos anunciam. Ainda não verificado em dispositivos reais."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Usar o módulo que os pulsadores anunciam",
+            "description": "{devices}: estes pulsadores da rede mesh JUNG HOME {title} anunciam um módulo diferente do da exportação que o Home Assistant carregou (exportação → dispositivo). O módulo provavelmente foi trocado depois que o dispositivo foi adicionado, e uma nova exportação não ajuda necessariamente: o app só lê o módulo de um pulsador quando adiciona o dispositivo. Até lá, o Home Assistant cria para eles o tipo errado de carga (um módulo de interruptor, dimmer ou DALI é uma luz, um módulo de persianas uma cobertura, um módulo de extensão nenhuma). Confirme para usar o módulo que cada pulsador anuncia: o Home Assistant configura a entrada de novo e cria os dispositivos deles a partir dele. A exportação e o app mantêm o módulo antigo; o Home Assistant continua usando o anunciado até que uma exportação indique outro módulo para o pulsador. Ainda não verificado em dispositivos reais."
+          }
+        },
+        "abort": {
+          "entry_gone": "A entrada JUNG HOME à qual este problema pertence não está mais configurada.",
+          "not_loaded": "A entrada JUNG HOME à qual este problema pertence não está em execução no momento. Tente novamente quando ela estiver configurada.",
+          "inserts_agree": "Todos os pulsadores agora anunciam o módulo que a exportação indica: nada a mudar."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Dispositivos JUNG HOME com relógio errado",

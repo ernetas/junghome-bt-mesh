@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Report clicks only once a double click is ruled out",
           "double_click_keys": "Keys that wait for a double click",
+          "insert_overrides": "Push-buttons using the insert they advertise",
           "heartbeats": "Node heartbeats (mark a silent device unavailable)",
+          "transitions": "Fade brightness changes (experimental)",
           "allow_provisioning": "Allow Home Assistant to add and remove devices (experimental)",
           "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)",
           "follow_app": "Follow changes made in the JUNG HOME app",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well. This applies to every key; to wait on some keys only, leave it off and pick them under *Keys that wait for a double click*, listed while this is off and the integration runs.",
           "double_click_keys": "Only these keys hold their `click` back for half a second and drop it when a second click follows, so a double press fires only `double_click`; every other key fires `click` at once. Pick the keys that have a double-click automation. Only keys that can click are listed. Unverified on air.",
+          "insert_overrides": "The push-buttons whose advertised insert you adopted in the repair *JUNG HOME push-buttons with another insert than in the export*: Home Assistant builds their devices from that insert instead of the export's. Take one off the list to go back to the insert the export names. Shown only while there are some.",
           "heartbeats": "Every mains-powered device is asked to send a heartbeat to Home Assistant every 64 seconds (a standard Bluetooth Mesh setting the JUNG app leaves off). A device that sends nothing for about three and a half minutes has its entities marked unavailable until it is heard again. Switching this off tells the devices to stop (again on the next connection if they could not all be told at once); switch it off before removing the integration, which cannot tell them afterwards.",
+          "transitions": "A brightness change of a dimmer or DALI light that is on fades over the `transition` an action or a light profile asks for, and so does a scene whose devices are all dimmer or DALI lights. Switching on or off, a colour temperature change and the All lights groups never fade (the devices would switch at once, or only later). Nothing the JUNG HOME app or gateway sends uses it, and nobody has watched a fade from Home Assistant yet; off, a `transition` is ignored. Unverified on air.",
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
           "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it.",
           "follow_app": "When the phone running the JUNG HOME app is heard on the mesh, an entry set up from the gateway fetches the gateway's export a few minutes after the phone went quiet (at most every 15 minutes) and takes it over when it changed: devices, rooms, scenes and key connections changed in the app reach Home Assistant without Reconfigure. An entry set up from a file shows a repair notice instead, once the app was seen changing a device's configuration. Nothing is sent on the mesh for it. Unverified on air.",
@@ -1881,7 +1885,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME push-buttons with another insert than in the export",
-      "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was replaced after that export was made, so Home Assistant and the app may show the wrong kind of load for them. Check the devices in the JUNG HOME app, export the network again and update this integration (Settings → Devices & services → JUNG HOME Bluetooth Mesh → Reconfigure); the issue clears once the export names the inserts the devices advertise. Unverified on air."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Use the insert the push-buttons advertise",
+            "description": "{devices}: these push-buttons of the JUNG HOME mesh {title} advertise another insert than the one in the export Home Assistant loaded (export → device). The insert was most likely replaced after the device was added, and a new export need not help: the app reads a push-button's insert only when it adds the device. Until then Home Assistant builds the wrong kind of load for them (a switch, dimmer or DALI insert is a light, a blinds insert a cover, an extension insert none). Confirm to use the insert each push-button advertises: Home Assistant sets the entry up again and builds their devices from it. The export and the app keep the old insert; Home Assistant keeps using the advertised one until an export names another insert for the push-button. Unverified on air."
+          }
+        },
+        "abort": {
+          "entry_gone": "The JUNG HOME entry this issue belongs to is no longer set up.",
+          "not_loaded": "The JUNG HOME entry this issue belongs to is not running right now. Try again once it is set up.",
+          "inserts_agree": "Every push-button now advertises the insert the export names: nothing to change."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME devices with a wrong clock",

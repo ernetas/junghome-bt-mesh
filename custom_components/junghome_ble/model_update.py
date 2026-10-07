@@ -54,6 +54,7 @@ from .const import (
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
+    OPTION_INSERT_OVERRIDES,
     OPTION_SYNC_AREAS,
     learn_more_url,
 )
@@ -173,7 +174,13 @@ async def _async_follow(
         raise ApplyRefused("the export is of another mesh")
     # what the push-buttons advertised or answered of their inserts, as the setup takes it (`inserts.async_setup`):
     # without it a node whose export has no InsertId would come back with another load class and force a reload
-    devices = apply_reported(cdb, devices, hub.inserts.adverts, hub.node_info)
+    devices = apply_reported(
+        cdb,
+        devices,
+        hub.inserts.adverts,
+        hub.node_info,
+        entry.options.get(OPTION_INSERT_OVERRIDES),
+    )
     if await hub.vault.async_recover(cdb, unicast):
         raise ApplyRefused(
             "Home Assistant's provisioner identity was taken back from it"

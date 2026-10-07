@@ -41,7 +41,10 @@
     "custom_components/junghome_ble/hub/refresh.py::Refresh.after_connect",
     "custom_components/junghome_ble/inserts.py::NodeInserts.node_model",
     "custom_components/junghome_ble/device_info.py::node_device_info",
-    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS"
+    "custom_components/junghome_ble/diagnostics.py::NODE_INFO_SPECS",
+    "custom_components/junghome_ble/inserts.py::NodeInserts.overrides",
+    "custom_components/junghome_ble/repairs.py::AdoptInsertFlow",
+    "custom_components/junghome_ble/config_flow.py::adopted_insert_choices"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_insert_id_codec_field_order_from_the_air",
@@ -50,9 +53,11 @@
     "tests/test_inserts.py::test_a_node_nothing_told_about_is_asked_and_its_answer_kept",
     "tests/test_inserts.py::test_the_reads_are_a_connect_step",
     "tests/jhmesh/test_devices.py::test_the_insert_comes_from_the_export_then_from_what_the_node_reported",
-    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys"
+    "tests/test_inserts.py::test_the_advert_names_the_insert_and_the_keys",
+    "tests/test_inserts.py::test_the_repair_adopts_the_advertised_insert",
+    "tests/test_inserts.py::test_an_adopted_insert_stands_only_while_the_export_names_the_one_it_replaced"
    ],
-   "note": "Unverified on air: the InsertId Get (LBC User 0x0002, inserts.py::NodeInserts.read_unknown) is asked only of a push-button whose export and advertisement told nothing, after the export's value and the JUNG advertisement (the app's own order differs: it reads the InsertId at provisioning, where onboard.py::async_add_device takes the advertised function instead; commission.py::NOT_COVERED still lists that read). The node device's model names the insert (inserts.py::NodeInserts.node_model), the device diagnostics decode the answer. On air (`sweep-ha`, docs/on-air-sweep.md A5) no InsertId or ButtonLayout Get went out: every push-button has an export InsertId; one advertising another insert than the export's raised insert_mismatch."
+   "note": "Unverified on air: the InsertId Get (LBC User 0x0002, inserts.py::NodeInserts.read_unknown) is asked only of a push-button whose export and advertisement told nothing, after the export's value and the JUNG advertisement (the app's own order differs: it reads the InsertId at provisioning, where onboard.py::async_add_device takes the advertised function instead; commission.py::NOT_COVERED still lists that read). The node device's model names the insert (inserts.py::NodeInserts.node_model), the device diagnostics decode the answer. On air (`sweep-ha`, docs/on-air-sweep.md A5) no InsertId or ButtonLayout Get went out: every push-button has an export InsertId; one advertising another insert than the export's raised insert_mismatch. The repair's fix (review-5 F5-3) adopts the advertised insert as a per-node override in the entry's options, since the app reads the InsertId only when it adds a device and a new export may keep the old one; unverified on air (docs/on-air-sweep.md A5)."
   },
   {
    "id": "prop:0x0003",

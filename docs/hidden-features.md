@@ -388,8 +388,8 @@ Neither the app nor the gateway ever sends a transition time: the gateway's OnOf
 transition 0, every other Set none, and the nodes' Default Transition Time is 0 (§3; the DALI insert ignores a DTT
 Set, §7.3). Whether a JUNG load fades a Set that carries one (Mesh Model §3.1.3: bits 7-6 the step of 100 ms, 1 s,
 10 s or 10 min, bits 5-0 the steps 0..62), ignores the transition, or ignores the whole Set is **not known yet**
-(review-4 F4-1). Home Assistant is ready for it and sends none until this probe says which kinds fade
-(`light.TRANSITION_KINDS`, `scene.SCENE_TRANSITIONS`, both empty / off).
+(review-4 F4-1). What Home Assistant does with the results below is decision M19 (review 5): the option *Fade
+brightness changes*, off until a person watched a fade.
 
 The probe, with someone watching the light and `tools/mesh_poc.py listen` (or the sniffer) running alongside, on the
 DALI tunable-white insert, a dimmer insert and a switch insert:
@@ -403,8 +403,8 @@ DALI tunable-white insert, a dimmer insert and a switch insert:
 
 For each: does the light fade, does the Status answering the Set carry the target and a remaining time (the CLI
 prints `target=… remaining=…`), and does a final Status follow at the end of the fade? A Set that gets no answer at
-all means the load ignores a Set with a transition: that kind must stay out of `TRANSITION_KINDS`. The results go
-here, and into `TRANSITION_KINDS` / `SCENE_TRANSITIONS`.
+all means the load ignores a Set with a transition: that kind must stay out of `const.TRANSITION_KINDS`. The
+results go here.
 
 **What the statuses showed** (on-air sweep B8, CLI only, 3 s each; nobody watched the lights, the dimmer insert and
 the scene were not run — there is no dimmer here, and a recall to all nodes is not harmless):
@@ -420,8 +420,13 @@ the scene were not run — there is no dimmer here, and a recall to all nodes is
 
 So every kind answers a Set with a transition; the DALI insert's Lightness Set reports a fade the way the Mesh
 Model specification describes, the CTL Set and the switching on do not, and a switch insert delays its switching
-off by the transition. Whether anything visibly fades needs a person, so `TRANSITION_KINDS` stays empty and
-`SCENE_TRANSITIONS` off (review-4 brief 31 decides them).
+off by the transition. **Decided (review 5, M19):** a transition only on a brightness change of a dimmer or DALI
+light that is on, as a Lightness Set (`const.TRANSITION_KINDS`, `JungHomeHub.set_lightness`); never on a switch
+insert, a CTL or CTL Temperature Set, an on or an off, or the *All lights* groups (whose Lightness Set also switches
+the members that are off on); a scene recall only when every member of the scene is a dimmer or DALI light (a
+switch insert or socket in it would only switch off late). Built behind the option *Fade brightness changes*, off
+by default: whether anything visibly fades still needs a person (sweep B8's remaining step), and the dimmer insert
+and a scene were not run.
 
 A key in scene mode carries a transition of its own (KeyModeSceneConfig `0x5002`, `[scene u16][transition u32 ms]`;
 the app writes 0, `mesh_config.py` too): writing one from `assign_key` waits for this probe to show that a recalled

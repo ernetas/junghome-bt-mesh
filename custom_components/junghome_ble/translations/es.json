@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Informar de los clics solo cuando se descarte un doble clic",
           "double_click_keys": "Teclas que esperan un doble clic",
+          "insert_overrides": "Pulsadores que usan el mecanismo que anuncian",
           "heartbeats": "Heartbeats de los nodos (marcar como no disponible un dispositivo silencioso)",
+          "transitions": "Transiciones suaves en los cambios de brillo (experimental)",
           "allow_provisioning": "Permitir que Home Assistant añada y quite dispositivos (experimental)",
           "provisioner_identity": "Escribir Home Assistant en el archivo de la red como aprovisionador (experimental, no verificado con la aplicación)",
           "follow_app": "Seguir los cambios hechos en la aplicación JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Un evento `click` se retiene medio segundo y se descarta si le sigue un segundo clic, de modo que una doble pulsación solo dispara `double_click`. Desactivado: cada pulsación dispara `click` de inmediato y la segunda pulsación de una doble pulsación dispara además `double_click`. Se aplica a todas las teclas; para esperar solo en algunas, déjalo desactivado y elígelas en *Teclas que esperan un doble clic*, que se muestra mientras esto está desactivado y la integración está en marcha.",
           "double_click_keys": "Solo estas teclas retienen su `click` medio segundo y lo descartan si le sigue un segundo clic, de modo que una doble pulsación solo dispara `double_click`; cualquier otra tecla dispara `click` de inmediato. Elige las teclas que tienen una automatización de doble clic. Solo se muestran las teclas que pueden hacer clic. No verificado en dispositivos reales.",
+          "insert_overrides": "Los pulsadores cuyo mecanismo anunciado adoptaste en la reparación *Pulsadores JUNG HOME con un mecanismo distinto del de la exportación*: Home Assistant crea sus dispositivos a partir de ese mecanismo en lugar del de la exportación. Quita uno de la lista para volver al mecanismo que indica la exportación. Solo se muestra mientras haya alguno.",
           "heartbeats": "Se pide a cada dispositivo alimentado por red que envíe un heartbeat a Home Assistant cada 64 segundos (un ajuste estándar de Bluetooth Mesh que la aplicación JUNG deja desactivado). Las entidades de un dispositivo que no envía nada durante unos tres minutos y medio se marcan como no disponibles hasta que se vuelve a oír. Al desactivar esta opción se indica a los dispositivos que dejen de hacerlo (de nuevo en la siguiente conexión si no se pudo avisar a todos a la vez); desactívala antes de eliminar la integración, que después ya no puede avisarles.",
+          "transitions": "Un cambio de brillo de una luz regulable o DALI encendida se hace de forma gradual durante la `transition` que pide una acción o un perfil de luz, y también una escena cuyos dispositivos son todos luces regulables o DALI. Encender o apagar, un cambio de temperatura de color y los grupos de todas las luces nunca se hacen de forma gradual (los dispositivos cambiarían de golpe, o solo más tarde). Nada de lo que envían la aplicación o la pasarela JUNG HOME lo usa, y nadie ha observado todavía una transición desde Home Assistant; desactivado, se ignora una `transition`. No verificado en dispositivos reales.",
           "allow_provisioning": "Permite que la acción `junghome_ble.add_device` ponga en funcionamiento un dispositivo JUNG nuevo y lo configure como lo haría la aplicación, siguiendo el modelo de un dispositivo del mismo producto que ya esté en la red, y que `junghome_ble.remove_device` restablezca un dispositivo y lo saque de la red. Todavía no se ha probado en dispositivos reales: pruébalo primero con un dispositivo de repuesto. Al añadir se entregan al dispositivo las claves de la red; quitar no se puede deshacer.",
           "provisioner_identity": "Cada archivo que Home Assistant escribe o entrega a la pasarela recibe una entrada de aprovisionador para Home Assistant, con rangos de direcciones propios separados de los de la aplicación y con la dirección de Home Assistant dentro de ellos, y se vuelven a añadir los dispositivos que Home Assistant añadió y que faltan en el archivo de la aplicación. Las estancias, escenas y dispositivos que crea Home Assistant toman entonces sus direcciones de sus propios rangos. Ninguna aplicación JUNG ha importado todavía un archivo así: pruébalo en una instalación de la aplicación de repuesto (importa el archivo de `junghome_ble.export_network`) antes de que lo vean tu propia aplicación o tu pasarela. Desactivado: los archivos se escriben exactamente igual que sin esta opción.",
           "follow_app": "Cuando se oye en el mesh el teléfono con la aplicación JUNG HOME, una entrada configurada desde la pasarela obtiene la exportación de la pasarela unos minutos después de que el teléfono quede en silencio (como mucho cada 15 minutos) y la adopta si ha cambiado: los dispositivos, estancias, escenas y vinculaciones de teclas cambiados en la aplicación llegan a Home Assistant sin Reconfigurar. Una entrada configurada desde un archivo muestra en su lugar un aviso de reparación cuando se ha visto a la aplicación cambiar la configuración de un dispositivo. No se envía nada al mesh para ello. No verificado en dispositivos reales.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Pulsadores JUNG HOME con un mecanismo distinto del de la exportación",
-      "description": "{devices}: estos pulsadores del mesh JUNG HOME {title} anuncian un mecanismo distinto del que figura en la exportación que cargó Home Assistant (exportación → dispositivo). El mecanismo se sustituyó después de hacer esa exportación, así que Home Assistant y la aplicación pueden mostrar un tipo de carga equivocado para ellos. Comprueba los dispositivos en la aplicación JUNG HOME, vuelve a exportar la red y actualiza esta integración (Ajustes → Dispositivos y servicios → JUNG HOME Bluetooth Mesh → Reconfigurar); el problema desaparece cuando la exportación indique los mecanismos que anuncian los dispositivos. No verificado en dispositivos reales."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Usar el mecanismo que anuncian los pulsadores",
+            "description": "{devices}: estos pulsadores de la red mesh JUNG HOME {title} anuncian un mecanismo distinto del de la exportación que cargó Home Assistant (exportación → dispositivo). Lo más probable es que el mecanismo se cambiara después de añadir el dispositivo, y una exportación nueva no tiene por qué ayudar: la aplicación solo lee el mecanismo de un pulsador cuando añade el dispositivo. Mientras tanto, Home Assistant crea para ellos un tipo de carga equivocado (un mecanismo de interruptor, regulador o DALI es una luz, uno de persianas una cubierta, uno de extensión ninguna). Confirma para usar el mecanismo que anuncia cada pulsador: Home Assistant vuelve a configurar la entrada y crea sus dispositivos a partir de él. La exportación y la aplicación conservan el mecanismo antiguo; Home Assistant sigue usando el anunciado hasta que una exportación indique otro mecanismo para el pulsador. No verificado en dispositivos reales."
+          }
+        },
+        "abort": {
+          "entry_gone": "La entrada JUNG HOME a la que pertenece este problema ya no está configurada.",
+          "not_loaded": "La entrada JUNG HOME a la que pertenece este problema no se está ejecutando en este momento. Inténtalo de nuevo cuando esté configurada.",
+          "inserts_agree": "Ahora todos los pulsadores anuncian el mecanismo que indica la exportación: no hay nada que cambiar."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Dispositivos JUNG HOME con el reloj incorrecto",

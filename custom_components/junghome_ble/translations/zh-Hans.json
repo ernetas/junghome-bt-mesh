@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "排除双击后才上报点击",
           "double_click_keys": "等待双击的按钮",
+          "insert_overrides": "使用其广播嵌件的按钮面板",
           "heartbeats": "节点心跳（将无响应的设备标记为不可用）",
+          "transitions": "亮度变化渐变（实验性）",
           "allow_provisioning": "允许 Home Assistant 添加和移除设备（实验性）",
           "provisioner_identity": "将 Home Assistant 作为配网者写入网络文件（实验性，尚未与应用一起验证）",
           "follow_app": "跟随 JUNG HOME 应用中的更改",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。此设置适用于所有按钮；若只想让部分按钮等待，请保持关闭，并在“等待双击的按钮”中选择这些按钮；该列表在此选项关闭且集成运行时显示。",
           "double_click_keys": "只有这些按钮会将其 `click` 延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`；其他按钮会立即触发 `click`。请选择设有双击自动化的按钮。仅列出能够点击的按钮。尚未在真实设备上验证。",
+          "insert_overrides": "在修复“嵌件与导出文件不一致的 JUNG HOME 按钮面板”中采用了其广播嵌件的按钮面板：Home Assistant 根据该嵌件而不是导出文件中的嵌件创建它们的设备。将其从列表中移除即可恢复为导出文件中列出的嵌件。仅在存在此类按钮面板时显示。",
           "heartbeats": "会要求每个市电供电的设备每 64 秒向 Home Assistant 发送一次心跳（这是 JUNG 应用未开启的一项标准 Bluetooth Mesh 设置）。若某设备约三分半钟没有发送任何内容，其实体会被标记为不可用，直到再次收到它的消息。关闭此选项会通知设备停止发送（如果无法一次性通知所有设备，会在下次连接时再次通知）；请在移除集成之前将其关闭，因为移除之后就无法再通知设备。",
+          "transitions": "已开启的调光灯或 DALI 灯的亮度变化会在操作或灯光配置文件要求的 `transition` 时间内渐变，所有设备均为调光灯或 DALI 灯的场景也是如此。开灯或关灯、色温变化以及所有灯光组从不渐变（设备会立即切换，或稍后才切换）。JUNG HOME 应用或网关发送的内容都不使用此功能，也还没有人观察过从 Home Assistant 发起的渐变；关闭时会忽略 `transition`。尚未在真实设备上验证。",
           "allow_provisioning": "允许 `junghome_ble.add_device` 动作对新的 JUNG 设备进行配网，并参照网络中已有的同款产品设备，像应用那样对其进行配置；也允许 `junghome_ble.remove_device` 重置设备并将其移出网络。尚未在真实设备上测试：请先用一台备用设备试用。添加会将网络密钥交给该设备；移除无法撤销。",
           "provisioner_identity": "Home Assistant 写入或交给网关的每个文件都会获得一个 Home Assistant 的配网者条目，其中包含与应用的地址范围互不重叠的独立地址范围，Home Assistant 的地址也位于其中；并且 Home Assistant 添加而应用文件中缺少的设备会被补回。之后 Home Assistant 创建的房间、场景和设备都会从其自己的范围中获取地址。目前还没有任何 JUNG 应用导入过这样的文件：在您自己的应用或网关看到它之前，请先在备用的应用安装上试用（导入由 `junghome_ble.export_network` 生成的文件）。关闭：文件的写入方式与未开启此选项时完全相同。",
           "follow_app": "当在 Mesh 上检测到运行 JUNG HOME 应用的手机时，从网关设置的条目会在手机静默几分钟后获取网关的导出文件（最多每 15 分钟一次），并在其发生变化时接管：在应用中更改的设备、房间、场景和按钮关联无需“重新配置”即可同步到 Home Assistant。从文件设置的条目则会在发现应用更改了某个设备的配置后显示一条修复通知。此功能不会在 Mesh 上发送任何内容。尚未在真实设备上验证。",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "嵌件与导出文件不一致的 JUNG HOME 按钮面板",
-      "description": "{devices}：JUNG HOME Mesh {title} 中的这些按钮面板广播的嵌件与 Home Assistant 已加载的导出文件中的不同（导出文件 → 设备）。嵌件是在该导出文件生成之后更换的，因此 Home Assistant 和应用可能会为其显示错误的负载类型。请在 JUNG HOME 应用中检查这些设备，重新导出网络并更新此集成（设置 → 设备与服务 → JUNG HOME Bluetooth Mesh → 重新配置）；导出文件中列出的嵌件与设备广播的一致后，此问题即会清除。尚未在真实设备上验证。"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "使用按钮面板广播的嵌件",
+            "description": "{devices}：JUNG HOME 网状网络 {title} 中的这些按钮面板广播的嵌件与 Home Assistant 加载的导出文件中的不同（导出 → 设备）。嵌件很可能是在添加设备之后更换的，重新导出也未必有用：应用只在添加设备时读取按钮面板的嵌件。在此之前，Home Assistant 会为它们创建错误类型的负载（开关、调光或 DALI 嵌件为灯光，百叶窗嵌件为遮盖物，扩展嵌件则没有）。确认后将使用每个按钮面板广播的嵌件：Home Assistant 会重新设置该条目并据此创建它们的设备。导出文件和应用保留旧嵌件；在某个导出文件为该按钮面板列出其他嵌件之前，Home Assistant 会一直使用广播的嵌件。尚未在真实设备上验证。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "not_loaded": "此问题所属的 JUNG HOME 条目当前未运行。请在其设置完成后重试。",
+          "inserts_agree": "现在所有按钮面板广播的都是导出文件中列出的嵌件：无需更改。"
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "时钟错误的 JUNG HOME 设备",

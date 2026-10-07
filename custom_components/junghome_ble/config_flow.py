@@ -117,6 +117,7 @@ from .const import (
     DEFAULT_HEARTBEATS,
     DEFAULT_PROVISIONER_IDENTITY,
     DEFAULT_SYNC_AREAS,
+    DEFAULT_TRANSITIONS,
     DEFAULT_UNICAST,
     DOMAIN,
     GATEWAY_DOMAIN,
@@ -131,8 +132,10 @@ from .const import (
     OPTION_FOLLOW_APP,
     OPTION_GATEWAY_CHECK,
     OPTION_HEARTBEATS,
+    OPTION_INSERT_OVERRIDES,
     OPTION_PROVISIONER_IDENTITY,
     OPTION_SYNC_AREAS,
+    OPTION_TRANSITIONS,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -395,12 +398,38 @@ def _offered_keys(choices: list[SelectOptionDict], selected: Any) -> list[str]:
     return [key for key in selected or () if key in offered]
 
 
-def _options_schema(
-    options: dict[str, Any], keys: list[SelectOptionDict] | None = None
-) -> vol.Schema:
-    """Return the options form; the keys that wait for a double click only with something to choose (`keys`).
+def adopted_insert_choices(
+    entry: ConfigEntry, options: Mapping[str, Any]
+) -> list[SelectOptionDict]:
+    """Return the push-buttons using the insert they advertise (`OPTION_INSERT_OVERRIDES`, the `insert_mismatch` fix).
 
-    Not while `click_delay` is on either: every key waits then, and a list of some would read as if it counted.
+    Labelled with the node's name and address while the entry runs, else with the address alone.
+    """
+    adopted = options.get(OPTION_INSERT_OVERRIDES) or {}
+    names = (
+        {f"{n.unicast:04X}": n.name for n in entry.runtime_data.cdb.nodes}
+        if entry.state is ConfigEntryState.LOADED
+        else {}
+    )
+    return [
+        SelectOptionDict(
+            value=address,
+            label=f"{names[address]} {address}" if address in names else address,
+        )
+        for address in sorted(adopted)
+    ]
+
+
+def _options_schema(
+    options: dict[str, Any],
+    keys: list[SelectOptionDict] | None = None,
+    adopted: list[SelectOptionDict] | None = None,
+) -> vol.Schema:
+    """Return the options form.
+
+    The keys that wait for a double click only with something to choose (`keys`), and not while `click_delay` is on:
+    every key waits then, and a list of some would read as if it counted. The push-buttons using their advertised
+    insert only when there are some (`adopted`).
     """
     wait: dict[Any, Any] = {}
     if keys and not options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY):
@@ -410,6 +439,13 @@ def _options_schema(
                 default=_offered_keys(keys, options.get(OPTION_DOUBLE_CLICK_KEYS)),
             )
         ] = SelectSelector(SelectSelectorConfig(options=keys, multiple=True))
+    if adopted:
+        wait[
+            vol.Optional(
+                OPTION_INSERT_OVERRIDES,
+                default=[choice["value"] for choice in adopted],
+            )
+        ] = SelectSelector(SelectSelectorConfig(options=adopted, multiple=True))
     return vol.Schema(
         {
             vol.Required(
@@ -420,6 +456,10 @@ def _options_schema(
             vol.Required(
                 OPTION_HEARTBEATS,
                 default=options.get(OPTION_HEARTBEATS, DEFAULT_HEARTBEATS),
+            ): BooleanSelector(),
+            vol.Required(
+                OPTION_TRANSITIONS,
+                default=options.get(OPTION_TRANSITIONS, DEFAULT_TRANSITIONS),
             ): BooleanSelector(),
             vol.Required(
                 OPTION_ALLOW_PROVISIONING,
@@ -1975,17 +2015,27 @@ class JungHomeOptionsFlow(OptionsFlow):
         """Show the one options form; saving stores it into the entry's options (the `areas` step's stay).
 
         The keys that wait for a double click are offered while the entry runs (`double_click_choices`); saving
-        then keeps only keys it offers. Otherwise the stored ones stay as they are.
+        then keeps only keys it offers. Otherwise the stored ones stay as they are. The push-buttons using the
+        insert they advertise (`adopted_insert_choices`) are listed while there are some: one taken off the list
+        goes back to the export's insert.
         """
         options = dict(self.config_entry.options)
         keys = double_click_choices(self.hass, self.config_entry)
+        adopted = adopted_insert_choices(self.config_entry, options)
         if user_input is not None:
             data = {**options, **user_input}
             if keys is not None and OPTION_DOUBLE_CLICK_KEYS in data:
                 data[OPTION_DOUBLE_CLICK_KEYS] = _offered_keys(
                     keys, data[OPTION_DOUBLE_CLICK_KEYS]
                 )
+            if adopted:
+                kept = set(user_input.get(OPTION_INSERT_OVERRIDES) or ())
+                data[OPTION_INSERT_OVERRIDES] = {
+                    address: insert
+                    for address, insert in options[OPTION_INSERT_OVERRIDES].items()
+                    if address in kept
+                }
             return self.async_create_entry(data=data)
         return self.async_show_form(
-            step_id="init", data_schema=_options_schema(options, keys)
+            step_id="init", data_schema=_options_schema(options, keys, adopted)
         )

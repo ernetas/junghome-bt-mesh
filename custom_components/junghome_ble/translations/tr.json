@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Tıklamaları yalnızca çift tıklama olasılığı ortadan kalktığında bildir",
           "double_click_keys": "Çift tıklamayı bekleyen düğmeler",
+          "insert_overrides": "Bildirdikleri mekanizmayı kullanan butonlar",
           "heartbeats": "Düğüm heartbeat'leri (sessiz bir cihazı kullanılamaz olarak işaretle)",
+          "transitions": "Parlaklık değişikliklerini yumuşak geçişle yap (deneysel)",
           "allow_provisioning": "Home Assistant'ın cihaz eklemesine ve kaldırmasına izin ver (deneysel)",
           "provisioner_identity": "Home Assistant'ı ağın dosyasına provisioner olarak yaz (deneysel, uygulamayla doğrulanmadı)",
           "follow_app": "JUNG HOME uygulamasında yapılan değişiklikleri takip et",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler. Bu, her düğme için geçerlidir; yalnızca bazı düğmelerde beklemek için kapalı bırakın ve onları *Çift tıklamayı bekleyen düğmeler* altında seçin; bu liste, bu seçenek kapalıyken ve entegrasyon çalışırken gösterilir.",
           "double_click_keys": "Yalnızca bu düğmeler `click` olaylarını yarım saniye bekletir ve ardından ikinci bir tıklama gelirse atar; böylece çift basış yalnızca `double_click` tetikler. Diğer tüm düğmeler `click` olayını hemen tetikler. Çift tıklama otomasyonu olan düğmeleri seçin. Yalnızca tıklayabilen düğmeler listelenir. Gerçek cihazlarda henüz doğrulanmadı.",
+          "insert_overrides": "Bildirilen mekanizmasını *Dışa aktarımdakinden farklı mekanizmalı JUNG HOME butonları* onarımında benimsediğiniz butonlar: Home Assistant cihazlarını dışa aktarımın mekanizması yerine bu mekanizmaya göre oluşturur. Dışa aktarımın belirttiği mekanizmaya dönmek için listeden birini çıkarın. Yalnızca böyle butonlar varken gösterilir.",
           "heartbeats": "Şebekeden beslenen her cihazdan Home Assistant'a 64 saniyede bir heartbeat göndermesi istenir (JUNG uygulamasının kapalı bıraktığı standart bir Bluetooth Mesh ayarı). Yaklaşık üç buçuk dakika boyunca hiçbir şey göndermeyen bir cihazın varlıkları, yeniden duyulana kadar kullanılamaz olarak işaretlenir. Bunu kapatmak cihazlara durmalarını söyler (hepsine bir kerede söylenemediyse bir sonraki bağlantıda yeniden); entegrasyonu kaldırmadan önce kapatın, çünkü entegrasyon bunu sonradan onlara söyleyemez.",
+          "transitions": "Açık olan dim edilebilir veya DALI bir ışığın parlaklık değişikliği, bir eylemin veya ışık profilinin istediği `transition` süresince yumuşak geçişle olur; tüm cihazları dim edilebilir veya DALI ışık olan bir sahne de öyle. Açma veya kapatma, renk sıcaklığı değişikliği ve tüm ışıklar grupları hiçbir zaman yumuşak geçişle olmaz (cihazlar hemen ya da ancak daha sonra geçiş yapardı). JUNG HOME uygulamasının veya ağ geçidinin gönderdiği hiçbir şey bunu kullanmaz ve Home Assistant'tan bir geçişi henüz kimse izlemedi; kapalıyken `transition` yok sayılır. Gerçek cihazlarda henüz doğrulanmadı.",
           "allow_provisioning": "`junghome_ble.add_device` eyleminin yeni bir JUNG cihazını ağa katmasına (provisioning) ve ağda zaten bulunan aynı ürünün bir cihazını örnek alarak uygulamanın yapacağı gibi yapılandırmasına, `junghome_ble.remove_device` eyleminin ise bir cihazı sıfırlayıp ağdan çıkarmasına izin verir. Henüz gerçek cihazlarda denenmedi: önce yedek bir cihazla deneyin. Ekleme, cihaza ağın anahtarlarını verir; kaldırma geri alınamaz.",
           "provisioner_identity": "Home Assistant'ın yazdığı veya ağ geçidine ilettiği her dosya, Home Assistant için uygulamanınkilerden ayrı kendi adres aralıklarına sahip ve Home Assistant'ın adresini bu aralıkların içinde barındıran bir provisioner kaydı alır; Home Assistant'ın eklediği ve uygulamanın dosyasında eksik olan cihazlar da geri eklenir. Home Assistant'ın oluşturduğu odalar, sahneler ve cihazlar adreslerini bundan sonra onun kendi aralıklarından alır. Hiçbir JUNG uygulaması henüz böyle bir dosyayı içe aktarmadı: kendi uygulamanız veya ağ geçidiniz görmeden önce bunu yedek bir uygulama kurulumunda deneyin (dosyayı `junghome_ble.export_network` ile alıp içe aktarın). Kapalı: dosyalar bu seçenek olmadan nasıl yazılıyorsa tam öyle yazılır.",
           "follow_app": "JUNG HOME uygulamasını çalıştıran telefon mesh ağında duyulduğunda, ağ geçidinden kurulan bir giriş, telefon sessizleştikten birkaç dakika sonra (en fazla 15 dakikada bir) ağ geçidinin dışa aktarımını alır ve değişmişse devralır: uygulamada değiştirilen cihazlar, odalar, sahneler ve düğme bağlantıları Yeniden yapılandır olmadan Home Assistant'a ulaşır. Bir dosyadan kurulan giriş ise, uygulamanın bir cihazın yapılandırmasını değiştirdiği görüldüğünde bunun yerine bir onarım bildirimi gösterir. Bunun için mesh ağında hiçbir şey gönderilmez. Gerçek cihazlarda henüz doğrulanmadı.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Dışa aktarımdakinden farklı mekanizmalı JUNG HOME butonları",
-      "description": "{devices}: {title} adlı JUNG HOME mesh ağındaki bu butonlar, yayın paketlerinde Home Assistant'ın yüklediği dışa aktarımdakinden farklı bir mekanizma bildiriyor (dışa aktarım → cihaz). Mekanizma o dışa aktarım yapıldıktan sonra değiştirildi, bu yüzden Home Assistant ve uygulama bunlar için yanlış türde bir yük gösterebilir. Cihazları JUNG HOME uygulamasında kontrol edin, ağı yeniden dışa aktarın ve bu entegrasyonu güncelleyin (Ayarlar → Cihazlar ve hizmetler → JUNG HOME Bluetooth Mesh → Yeniden yapılandır); dışa aktarım, cihazların bildirdiği mekanizmaları içerdiğinde sorun kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Butonların bildirdiği mekanizmayı kullan",
+            "description": "{devices}: {title} JUNG HOME mesh ağındaki bu butonlar, Home Assistant'ın yüklediği dışa aktarımdakinden farklı bir mekanizma bildiriyor (dışa aktarım → cihaz). Mekanizma büyük olasılıkla cihaz eklendikten sonra değiştirildi ve yeni bir dışa aktarım işe yaramayabilir: uygulama bir butonun mekanizmasını yalnızca cihazı eklerken okur. O zamana kadar Home Assistant onlar için yanlış türde yük oluşturur (anahtar, dimmer veya DALI mekanizması bir ışık, panjur mekanizması bir perde, uzatma mekanizması hiçbir şeydir). Her butonun bildirdiği mekanizmanın kullanılması için onaylayın: Home Assistant girdiyi yeniden kurar ve cihazlarını buna göre oluşturur. Dışa aktarım ve uygulama eski mekanizmayı korur; Home Assistant, bir dışa aktarım buton için başka bir mekanizma belirtene kadar bildirileni kullanmaya devam eder. Gerçek cihazlarda henüz doğrulanmadı."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "not_loaded": "Bu sorunun ait olduğu JUNG HOME girişi şu anda çalışmıyor. Giriş kurulduktan sonra tekrar deneyin.",
+          "inserts_agree": "Artık tüm butonlar dışa aktarımın belirttiği mekanizmayı bildiriyor: değiştirilecek bir şey yok."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Saati yanlış olan JUNG HOME cihazları",

@@ -760,6 +760,7 @@ async def test_the_name_repair_aborts(
         (ISSUE_EXPORT_STALE, repairs.NewExportFlow),
         (ISSUE_KEY_REFRESH, repairs.NewExportFlow),
         (ISSUE_DEVICE_NAME, repairs.DeviceNameFlow),
+        (const.ISSUE_INSERT_MISMATCH, repairs.AdoptInsertFlow),
         (const.ISSUE_PDUS_DROPPED, repairs.SkipAheadFlow),
         (const.ISSUE_NODE_CLOCK_WRONG, repairs.SendTimeFlow),
         (const.ISSUE_SEQUENCE_SPACE_LOW, repairs.StartIVUpdateFlow),

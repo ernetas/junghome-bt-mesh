@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Klike sporoči šele, ko je dvojni klik izključen",
           "double_click_keys": "Gumbi, ki čakajo na dvojni klik",
+          "insert_overrides": "Tipkala, ki uporabljajo vložek, ki ga oglašujejo",
           "heartbeats": "Srčni utripi vozlišč (tiho napravo označi kot nedosegljivo)",
+          "transitions": "Postopne spremembe svetlosti (preizkusno)",
           "allow_provisioning": "Home Assistantu dovoli dodajanje in odstranjevanje naprav (preizkusno)",
           "provisioner_identity": "Home Assistant zapiši v datoteko omrežja kot provisionerja (preizkusno, z aplikacijo ni preverjeno)",
           "follow_app": "Sledi spremembam v aplikaciji JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`. To velja za vse gumbe; če želite čakati le pri nekaterih, pustite izklopljeno in jih izberite v polju *Gumbi, ki čakajo na dvojni klik*, ki je prikazano, dokler je to izklopljeno in integracija deluje.",
           "double_click_keys": "Samo ti gumbi zadržijo svoj `click` za pol sekunde in ga zavržejo, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`; vsak drug gumb sproži `click` takoj. Izberite gumbe, ki imajo avtomatizacijo za dvojni klik. Prikazani so le gumbi, ki lahko klikajo. Še ni preverjeno na resničnih napravah.",
+          "insert_overrides": "Tipkala, katerih oglaševani vložek ste prevzeli v popravilu *Tipkala JUNG HOME z drugim vložkom kot v izvozu*: Home Assistant ustvari njihove naprave iz tega vložka namesto iz vložka v izvozu. Odstranite tipkalo s seznama, da se vrne k vložku, ki ga navaja izvoz. Prikazano le, dokler takšna obstajajo.",
           "heartbeats": "Vsaka naprava z omrežnim napajanjem je pozvana, naj Home Assistantu vsakih 64 sekund pošlje srčni utrip (standardna nastavitev Bluetooth Mesh, ki jo aplikacija JUNG pusti izklopljeno). Napravi, ki približno tri minute in pol ne pošlje ničesar, se entitete označijo kot nedosegljive, dokler je spet ne zaznamo. Izklop te možnosti napravam sporoči, naj prenehajo (ob naslednji povezavi znova, če jim tega ni bilo mogoče sporočiti vsem naenkrat); izklopite jo pred odstranitvijo integracije, ki jim tega pozneje ne more več sporočiti.",
+          "transitions": "Sprememba svetlosti prižgane zatemnljive ali DALI luči poteka postopno v času `transition`, ki ga zahteva dejanje ali profil luči, enako pa tudi scena, katere naprave so vse zatemnljive ali DALI luči. Vklop ali izklop, sprememba barvne temperature in skupine vseh luči nikoli ne potekajo postopno (naprave bi preklopile takoj ali šele pozneje). Nič od tega, kar pošiljata aplikacija ali prehod JUNG HOME, tega ne uporablja, in nihče še ni opazoval postopnega prehoda iz Home Assistanta; izklopljeno se `transition` prezre. Še ni preverjeno na resničnih napravah.",
           "allow_provisioning": "Dejanju `junghome_ble.add_device` dovoli, da novo napravo JUNG pripravi (provisioning) in jo konfigurira, kot bi to storila aplikacija, po vzoru naprave istega izdelka, ki je že v omrežju, dejanju `junghome_ble.remove_device` pa, da napravo ponastavi in jo odstrani iz omrežja. Na resničnih napravah še ni preizkušeno: najprej poskusite z rezervno napravo. Dodajanje napravi preda ključe omrežja; odstranitve ni mogoče razveljaviti.",
           "provisioner_identity": "Vsaka datoteka, ki jo Home Assistant zapiše ali preda prehodu, dobi vnos provisionerja za Home Assistant z lastnimi obsegi naslovov zunaj obsegov aplikacije in z naslovom Home Assistanta znotraj njih, naprave, ki jih je dodal Home Assistant in jih datoteka aplikacije nima, pa se vrnejo vanjo. Prostori, scene in naprave, ki jih ustvari Home Assistant, nato dobijo naslove iz njegovih lastnih obsegov. Nobena aplikacija JUNG še ni uvozila take datoteke: preizkusite jo na rezervni namestitvi aplikacije (uvozite datoteko iz `junghome_ble.export_network`), preden jo vidi vaša lastna aplikacija ali prehod. Izklopljeno: datoteke se zapišejo natanko tako kot brez tega.",
           "follow_app": "Ko je telefon z aplikacijo JUNG HOME zaznan v omrežju mesh, vnos, nastavljen s prehoda, nekaj minut po tem, ko se telefon umiri, pridobi izvoz prehoda (največ vsakih 15 minut) in ga prevzame, če se je spremenil: naprave, prostori, scene in vezave gumbov, spremenjeni v aplikaciji, dosežejo Home Assistant brez ponovne konfiguracije. Vnos, nastavljen iz datoteke, namesto tega prikaže obvestilo v popravilih, ko je bilo zaznano, da je aplikacija spremenila konfiguracijo naprave. Za to se v omrežju mesh nič ne pošlje. Še ni preverjeno na resničnih napravah.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Tipkala JUNG HOME z drugim vložkom kot v izvozu",
-      "description": "{devices}: ta tipkala omrežja mesh JUNG HOME {title} oglašujejo drug vložek od tistega v izvozu, ki ga je naložil Home Assistant (izvoz → naprava). Vložek je bil zamenjan po nastanku tega izvoza, zato lahko Home Assistant in aplikacija zanje prikazujeta napačno vrsto porabnika. Preverite naprave v aplikaciji JUNG HOME, znova izvozite omrežje in posodobite to integracijo (Nastavitve → Naprave in storitve → JUNG HOME Bluetooth Mesh → Znova konfiguriraj); težava izgine, ko izvoz navaja vložke, ki jih naprave oglašujejo. Še ni preverjeno na resničnih napravah."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Uporabi vložek, ki ga tipkala oglašujejo",
+            "description": "{devices}: ta tipkala omrežja mesh JUNG HOME {title} oglašujejo drug vložek kot tisti v izvozu, ki ga je naložil Home Assistant (izvoz → naprava). Vložek je bil najverjetneje zamenjan po dodajanju naprave, nov izvoz pa ne pomaga nujno: aplikacija prebere vložek tipkala samo, ko napravo doda. Do takrat Home Assistant zanje ustvari napačno vrsto bremena (stikalni, zatemnilni ali DALI vložek je luč, vložek za žaluzije senčilo, razširitveni vložek nič). Potrdite, da se uporabi vložek, ki ga oglašuje vsako tipkalo: Home Assistant znova nastavi vnos in iz njega ustvari njihove naprave. Izvoz in aplikacija obdržita stari vložek; Home Assistant uporablja oglaševanega, dokler kakšen izvoz za tipkalo ne navede drugega vložka. Še ni preverjeno na resničnih napravah."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "not_loaded": "Vnos JUNG HOME, ki mu pripada ta težava, trenutno ne teče. Poskusite znova, ko bo nastavljen.",
+          "inserts_agree": "Vsa tipkala zdaj oglašujejo vložek, ki ga navaja izvoz: ničesar ni treba spremeniti."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Naprave JUNG HOME z napačno uro",

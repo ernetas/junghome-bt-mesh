@@ -243,10 +243,14 @@ says connected and the state refresh is through (a few minutes), then do the lin
   export InsertId and without an advert, each once.
 - **Pass:** the models name the inserts and layouts the app shows; positions match the keys; the repair appears only
   for a push-button whose advert really differs from the export (then the export or the device is out of date).
+  For that push-button, **Submit** in the repair (review-5 F5-3): the entry is set up again, the node device's model
+  names the advertised insert, a light that switched nothing is gone, and the repair is cleared; then take it off
+  *Push-buttons using the insert they advertise* in the options: the export's insert, its light and the repair are
+  back (the entity's history and automations on it come back with the same id).
 - **Markers:** `custom_components/junghome_ble/inserts.py::<module>`,
   `custom_components/junghome_ble/jhmesh/devices.py::key_position`,
-  `custom_components/junghome_ble/strings.json::issues.insert_mismatch.description`,
-  `custom_components/junghome_ble/translations/en.json::issues.insert_mismatch.description`,
+  `custom_components/junghome_ble/strings.json::issues.insert_mismatch.fix_flow.step.confirm.description`,
+  `custom_components/junghome_ble/repairs.py::AdoptInsertFlow`,
   `net:uc:observecontrolswitchkeyassignment`, `prod:insert-type:generic-insert`, `prod:insert-type:no-insert`,
   `prod:insert-type:not-supported`, `prod:insert-type:unknown`, `prop:0x0002`.
 
@@ -565,28 +569,35 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 ### B8 · Transitions probe (F4-1)
 
 - **Checks:** review-4 F4-1 — which JUNG loads fade when a Set carries a transition time (neither the app nor the
-  gateway ever sends one). Home Assistant's transition support is built but switched off until this runs:
-  `light.TRANSITION_KINDS` is empty and `scene.SCENE_TRANSITIONS` is off (`docs/hidden-features.md` §11).
-- **Needs:** the DALI tunable-white light, a dimmer insert, a switch insert, a harmless scene; a person watching the
-  light. **Safety:** the loads change; set them back.
-- **Do:** with `tools/mesh_poc.py listen` running, on each of the three loads:
+  gateway ever sends one). The statuses are in (Results, B8); decision M19 (review 5) built transitions from them:
+  only a brightness change of a dimmer or DALI light that is on (a Lightness Set), and a scene whose members are all
+  dimmer or DALI lights, behind the option *Fade brightness changes*, off by default until a person watched a fade.
+- **Needs:** the DALI tunable-white light (a dimmer insert, if one is added), a harmless scene of dimmer / DALI lights
+  only; a person watching the light. **Safety:** the loads change, and the option is switched on for the check; set
+  both back.
+- **Do:** the CLI part as before, with `tools/mesh_poc.py listen` running, on each load:
   `tools/mesh_poc.py lightness <element> 6553 --transition 3`, then `... lightness <element> 65535 --transition 3`;
   `tools/mesh_poc.py ctl <element> 65535 2700 --transition 3` (DALI only); `tools/mesh_poc.py set <element> off
   --transition 3`, then `... on --transition 3`; `tools/mesh_poc.py scene FFFF <scene> --transition 3`. Only if a
-  Lightness transition is ignored: `tools/mesh_poc.py delta <element> -16384 --transition 3`.
+  Lightness transition is ignored: `tools/mesh_poc.py delta <element> -16384 --transition 3`. Then from Home
+  Assistant: switch *Fade brightness changes* on in the integration's options, and with the DALI light on call
+  `light.turn_on` with `brightness_pct: 10, transition: 3`, then `brightness_pct: 100, transition: 3`; activate the
+  dimmer / DALI-only scene with `transition: 3`; switch the option off again.
 - **Capture:** each status: does it carry `target=… remaining=…`, does a final status follow at the end, or is the
-  Set unanswered (a timeout means that kind stays out).
-- **Pass:** per kind, the light fades over about 3 s and the statuses show the target and remaining time. Write the
-  results into `docs/hidden-features.md` §11, then list the kinds that fade in `TRANSITION_KINDS` (and turn
-  `SCENE_TRANSITIONS` on if the scene faded). Key-scene transitions (`0x5002`) stay a separate decision.
-- **Markers:** `custom_components/junghome_ble/light.py::TRANSITION_KINDS`,
-  `custom_components/junghome_ble/scene.py::SCENE_TRANSITIONS`,
+  Set unanswered (a timeout means that kind stays out); from Home Assistant, the Lightness Set's transition byte
+  (`1E`) and the Get a second after the fade.
+- **Pass:** the light visibly fades over about 3 s, from the CLI and from Home Assistant, and the statuses show the
+  target and remaining time; the scene fades too. Then the option may default to on, or its markers go; write the
+  outcome into `docs/hidden-features.md` §11. Key-scene transitions (`0x5002`) stay a separate decision.
+- **Markers:** `custom_components/junghome_ble/const.py::TRANSITION_KINDS`,
+  `custom_components/junghome_ble/const.py::OPTION_TRANSITIONS`,
+  `custom_components/junghome_ble/light.py::<module>`,
+  `custom_components/junghome_ble/scene.py::<module>`,
+  `custom_components/junghome_ble/strings.json::options.step.init.data_description.transitions`,
   `custom_components/junghome_ble/coordinator.py::JungHomeHub._reread_after_transition`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub.set_onoff`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub.central_command`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl_temperature`,
-  `custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene`, `msg:op:8202`, `msg:op:824c`,
-  `msg:op:825e`, `msg:op:8264`, `msg:op:8242`, `msg:op:8243`.
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.set_lightness`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.recall_scene`, `msg:op:824c`, `msg:op:8242`,
+  `msg:op:8243`.
 
 ### B9 · `homeassistant.update_entity` reads the device
 

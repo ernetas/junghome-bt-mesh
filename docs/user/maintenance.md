@@ -92,8 +92,11 @@ export by itself instead. **Unverified on air.**
 
 #### JUNG HOME push-buttons with another insert than in the export
 
-A push-button's insert was replaced (a dimmer instead of a switch, say). Check it in the app, export again and
-*Reconfigure*. Seen raised for a real difference; that it clears is **unverified on air.** [Details](../ha-integration.md#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export)
+A push-button's insert was replaced (a dimmer instead of a switch, say). A new export need not help: the app reads the
+insert only when it adds a device. **Submit** uses the insert the push-button advertises instead, and the entry is set
+up again with it; the export and the app keep theirs. To go back, take the push-button off *Push-buttons using the
+insert they advertise* in the integration's options. Seen raised for a real difference; the fix is **unverified on
+air.** [Details](../ha-integration.md#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export)
 
 #### Device name not passed on to the JUNG HOME app
 

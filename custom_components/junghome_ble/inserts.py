@@ -16,8 +16,11 @@ ButtonLayout (`0x5001`: which keys and rockers its key elements are). Here, in t
 What the node reported decides a push-button's load class where the export has no InsertId
 (`devices.insert_function`, `apply_reported` before the device model is used); one learnt after the setup shows on
 the device at once and builds the devices at the next reload. A push-button advertising another insert than the
-export's (an insert was swapped after the export was made) raises the `insert_mismatch` repair: only a new export
-tells the app's devices of the new insert. The node device's model names the insert, the buttons device's the
+export's (an insert was swapped after the export was made) raises the `insert_mismatch` repair. A new export need
+not fix it: the app reads the InsertId only when it adds a device. So the repair's fix adopts the advertised insert:
+a per-node override in the entry's options (`OPTION_INSERT_OVERRIDES`, `NodeInserts.overrides`), which stands in for
+the export's InsertId (`apply_reported`) while the export still names the one it replaced, and the entry is set up
+again. The export and the app are left as they are. The node device's model names the insert, the buttons device's the
 layout, and each key's event entity where the key sits (`position`), in the user's language (`selector.insert`,
 `selector.button_layout` in `strings.json`). On air the repair was raised for the one push-button whose advert
 differs from the export, and nothing was asked of push-buttons the export names. Unverified on air: the Gets, and
@@ -27,7 +30,7 @@ the key positions of the mixed layouts.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components import bluetooth
 from homeassistant.helpers import issue_registry as ir
@@ -39,6 +42,7 @@ from .const import (
     DOMAIN,
     ISSUE_INSERT_MISMATCH,
     NODE_INFO_INSERT,
+    OPTION_INSERT_OVERRIDES,
     SIGNAL_UPDATE,
     learn_more_url,
 )
@@ -63,7 +67,7 @@ from .jhmesh.devices import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from homeassistant.core import HomeAssistant
 
@@ -110,17 +114,23 @@ def apply_reported(
     devices: Devices,
     adverts: dict[int, JungAdvertisement],
     node_info: Callable[[int], dict[str, bytes]],
+    overrides: Mapping[str, Any] | None = None,
 ) -> Devices:
     """Give each push-button what it reported of its insert; return the device model, rebuilt when that changed it.
 
     The advertisement first, else the answer to an earlier InsertId Get (`node_info` by unicast, `NODE_INFO_INSERT`).
-    It decides only where the export cached no InsertId (`devices.insert_function`).
+    It decides only where the export cached no InsertId (`devices.insert_function`). An adopted insert
+    (`overrides`, the entry's `OPTION_INSERT_OVERRIDES`) replaces the export's InsertId while the export still names
+    the one it replaced: an export that names another one since (a new insert, or the app read it again) wins.
     """
     changed = False
     for node in cdb.nodes:
         if node.pid not in PUSH_BUTTON_PIDS:
             continue
         before = insert_function(node)
+        adopted = (overrides or {}).get(f"{node.unicast:04X}")
+        if isinstance(adopted, dict) and adopted.get("export") == node.insert_function:
+            node.insert_function = adopted.get("insert")
         advert = adverts.get(node.unicast)
         node.reported_function = (
             advert.actuator_function_id
@@ -165,7 +175,13 @@ class NodeInserts:
         """Take what the nodes reported (cached adverts, earlier answers) before the devices are registered."""
         hub = self.hub
         self.adverts.update(node_adverts(hub.hass, hub.cdb))
-        hub.devices = apply_reported(hub.cdb, hub.devices, self.adverts, hub.node_info)
+        hub.devices = apply_reported(
+            hub.cdb,
+            hub.devices,
+            self.adverts,
+            hub.node_info,
+            hub.entry.options.get(OPTION_INSERT_OVERRIDES),
+        )
         self.labels = await async_load_labels(hub.hass)
 
     # ------------------------------------------------------------------ what is known
@@ -252,9 +268,9 @@ class NodeInserts:
             )
         self.report_mismatch()
 
-    def report_mismatch(self) -> None:
-        """Raise (or update, or clear) the `insert_mismatch` repair: push-buttons advertising another insert than the export's."""
-        swapped = [
+    def swapped(self) -> list[tuple[Node, int]]:
+        """Return the push-buttons advertising another insert than the export's, each with the advertised one."""
+        return [
             (node, advert.actuator_function_id)
             for node in self.hub.cdb.nodes
             if (advert := self.adverts.get(node.unicast)) is not None
@@ -262,6 +278,24 @@ class NodeInserts:
                 node.pid, node.insert_function, advert.actuator_function_id
             )
         ]
+
+    def overrides(self) -> dict[str, dict[str, int | None]]:
+        """Return the entry's adopted inserts (`OPTION_INSERT_OVERRIDES`) with every push-button now in `swapped`'s."""
+        kept = dict(self.hub.entry.options.get(OPTION_INSERT_OVERRIDES) or {})
+        return kept | {
+            f"{node.unicast:04X}": {
+                "export": node.insert_function,
+                "insert": advertised,
+            }
+            for node, advertised in self.swapped()
+        }
+
+    def report_mismatch(self) -> None:
+        """Raise (or update, or clear) the `insert_mismatch` repair: push-buttons advertising another insert than the export's.
+
+        Fixable: its fix adopts the advertised inserts (`repairs.AdoptInsertFlow`, `overrides`).
+        """
+        swapped = self.swapped()
         if not swapped:
             ir.async_delete_issue(self.hub.hass, DOMAIN, self.issue)
             return
@@ -273,7 +307,8 @@ class NodeInserts:
             self.hub.hass,
             DOMAIN,
             self.issue,
-            is_fixable=False,
+            is_fixable=True,  # its repair adopts the advertised inserts (`repairs.AdoptInsertFlow`)
+            data={"entry_id": self.hub.entry.entry_id},
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_INSERT_MISMATCH,
             learn_more_url=learn_more_url(ISSUE_INSERT_MISMATCH),

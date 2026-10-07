@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Ilmoita napsautukset vasta, kun kaksoisnapsautus on suljettu pois",
           "double_click_keys": "Painikkeet, jotka odottavat kaksoisnapsautusta",
+          "insert_overrides": "Painikkeet, jotka käyttävät mainostamaansa yksikköä",
           "heartbeats": "Solmujen heartbeat-viestit (hiljainen laite merkitään ei käytettävissä olevaksi)",
+          "transitions": "Kirkkauden muutokset liukuen (kokeellinen)",
           "allow_provisioning": "Salli Home Assistantin lisätä ja poistaa laitteita (kokeellinen)",
           "provisioner_identity": "Kirjaa Home Assistant verkon tiedostoon provisioijaksi (kokeellinen, ei varmistettu sovelluksella)",
           "follow_app": "Seuraa JUNG HOME -sovelluksessa tehtyjä muutoksia",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "`click`-tapahtumaa pidätetään puoli sekuntia, ja se hylätään, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman. Pois päältä: jokainen painallus laukaisee `click`-tapahtuman heti, ja kaksoispainalluksen toinen painallus laukaisee lisäksi `double_click`-tapahtuman. Tämä koskee kaikkia painikkeita; jos haluat odottaa vain joillakin, jätä tämä pois päältä ja valitse ne kohdassa *Painikkeet, jotka odottavat kaksoisnapsautusta*, joka näkyy, kun tämä on pois päältä ja integraatio on käynnissä.",
           "double_click_keys": "Vain nämä painikkeet pidättävät `click`-tapahtumaansa puoli sekuntia ja hylkäävät sen, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman; muut painikkeet laukaisevat `click`-tapahtuman heti. Valitse painikkeet, joilla on kaksoisnapsautuksen automaatio. Vain napsauttaa osaavat painikkeet näytetään. Ei vielä varmistettu oikeilla laitteilla.",
+          "insert_overrides": "Painikkeet, joiden mainostaman yksikön otit käyttöön korjauksessa *JUNG HOME -painikkeissa eri yksikkö kuin viennissä*: Home Assistant luo niiden laitteet tämän yksikön mukaan viennin yksikön sijaan. Poista painike luettelosta palataksesi viennin nimeämään yksikköön. Näytetään vain, kun niitä on.",
           "heartbeats": "Jokaista verkkovirtakäyttöistä laitetta pyydetään lähettämään Home Assistantille heartbeat-viesti 64 sekunnin välein (Bluetooth Mesh -standardin asetus, jonka JUNG-sovellus jättää pois päältä). Jos laite ei lähetä mitään noin kolmeen ja puoleen minuuttiin, sen entiteetit merkitään ei käytettävissä oleviksi, kunnes se kuuluu taas. Kun tämä kytketään pois, laitteita pyydetään lopettamaan (uudelleen seuraavalla yhteydellä, jos kaikille ei voitu kertoa kerralla); kytke tämä pois ennen integraation poistamista, koska sen jälkeen laitteille ei voi enää kertoa.",
+          "transitions": "Päällä olevan himmennettävän tai DALI-valon kirkkauden muutos tapahtuu liukuen toiminnon tai valoprofiilin pyytämän `transition`-ajan kuluessa, samoin kohtaus, jonka kaikki laitteet ovat himmennettäviä tai DALI-valoja. Päälle tai pois kytkeminen, värilämpötilan muutos ja kaikkien valojen ryhmät eivät koskaan liu'u (laitteet vaihtaisivat heti tai vasta myöhemmin). Mikään JUNG HOME -sovelluksen tai -yhdyskäytävän lähettämä ei käytä tätä, eikä kukaan ole vielä nähnyt liukumaa Home Assistantista; pois päältä `transition` ohitetaan. Ei vielä varmistettu oikeilla laitteilla.",
           "allow_provisioning": "Sallii toiminnon `junghome_ble.add_device` ottaa uuden JUNG-laitteen käyttöön verkossa ja määrittää sen kuten sovellus, verkossa jo olevan saman tuotteen laitteen mukaan, sekä toiminnon `junghome_ble.remove_device` palauttaa laitteen tehdasasetuksiin ja poistaa sen verkosta. Ei vielä kokeiltu oikeilla laitteilla: kokeile ensin varalaitteella. Lisääminen antaa laitteelle verkon avaimet; poistoa ei voi perua.",
           "provisioner_identity": "Jokaiseen tiedostoon, jonka Home Assistant kirjoittaa tai luovuttaa yhdyskäytävälle, lisätään Home Assistantin provisioijamerkintä, jolla on omat, sovelluksen alueista erilliset osoitealueet ja niiden sisällä Home Assistantin osoite, ja Home Assistantin lisäämät laitteet, jotka sovelluksen tiedostosta puuttuvat, palautetaan siihen. Home Assistantin luomat huoneet, tilanteet ja laitteet saavat silloin osoitteensa sen omilta alueilta. Mikään JUNG-sovellus ei ole vielä tuonut tällaista tiedostoa: kokeile sitä ensin ylimääräisessä sovellusasennuksessa (tuo toiminnon `junghome_ble.export_network` antama tiedosto), ennen kuin oma sovelluksesi tai yhdyskäytäväsi näkee sen. Pois päältä: tiedostot kirjoitetaan täsmälleen kuten ilman tätä asetusta.",
           "follow_app": "Kun JUNG HOME -sovellusta käyttävä puhelin kuuluu mesh-verkossa, yhdyskäytävästä määritetty merkintä hakee yhdyskäytävän viennin muutama minuutti sen jälkeen, kun puhelin on hiljentynyt (enintään 15 minuutin välein), ja ottaa sen käyttöön, jos se on muuttunut: sovelluksessa muutetut laitteet, huoneet, tilanteet ja painikkeiden kytkennät välittyvät Home Assistantiin ilman Määritä uudelleen -toimintoa. Tiedostosta määritetty merkintä näyttää sen sijaan korjausilmoituksen, kun sovelluksen on havaittu muuttavan laitteen määritystä. Tätä varten mesh-verkkoon ei lähetetä mitään. Ei vielä varmistettu oikeilla laitteilla.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "JUNG HOME -painikkeissa eri yksikkö kuin viennissä",
-      "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} painikkeet mainostavat eri yksikköä kuin Home Assistantin lataamassa viennissä on (vienti → laite). Yksikkö vaihdettiin viennin tekemisen jälkeen, joten Home Assistant ja sovellus saattavat näyttää niille väärän kuormatyypin. Tarkista laitteet JUNG HOME -sovelluksessa, vie verkko uudelleen ja päivitä tämä integraatio (Asetukset → Laitteet ja palvelut → JUNG HOME Bluetooth Mesh → Määritä uudelleen); ongelma poistuu, kun vienti nimeää laitteiden mainostamat yksiköt. Ei vielä varmistettu oikeilla laitteilla."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Käytä painikkeiden mainostamaa yksikköä",
+            "description": "{devices}: nämä JUNG HOME -mesh-verkon {title} painikkeet mainostavat eri yksikköä kuin Home Assistantin lataamassa viennissä (vienti → laite). Yksikkö vaihdettiin todennäköisesti laitteen lisäämisen jälkeen, eikä uusi vienti välttämättä auta: sovellus lukee painikkeen yksikön vain lisätessään laitteen. Siihen asti Home Assistant luo niille väärän kuormatyypin (kytkin-, himmennin- tai DALI-yksikkö on valo, kaihdinyksikkö verho, laajennusyksikkö ei mitään). Vahvista, niin kunkin painikkeen mainostamaa yksikköä käytetään: Home Assistant määrittää merkinnän uudelleen ja luo niiden laitteet sen mukaan. Vienti ja sovellus säilyttävät vanhan yksikön; Home Assistant käyttää mainostettua, kunnes jokin vienti nimeää painikkeelle toisen yksikön. Ei vielä varmistettu oikeilla laitteilla."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "not_loaded": "JUNG HOME -merkintä, johon tämä ongelma kuuluu, ei ole juuri nyt käynnissä. Yritä uudelleen, kun se on määritetty.",
+          "inserts_agree": "Kaikki painikkeet mainostavat nyt viennin nimeämää yksikköä: ei muutettavaa."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "JUNG HOME -laitteiden kello on väärässä",

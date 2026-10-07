@@ -222,7 +222,9 @@
         "data": {
           "click_delay": "Raportează clicurile doar după ce un dublu clic este exclus",
           "double_click_keys": "Taste care așteaptă un dublu clic",
+          "insert_overrides": "Butoane care folosesc mecanismul pe care îl anunță",
           "heartbeats": "Semnale heartbeat ale nodurilor (marchează ca indisponibil un dispozitiv care tace)",
+          "transitions": "Schimbări de luminozitate treptate (experimental)",
           "allow_provisioning": "Permite Home Assistant să adauge și să elimine dispozitive (experimental)",
           "provisioner_identity": "Înscrie Home Assistant ca provizioner în fișierul rețelei (experimental, neverificat cu aplicația)",
           "follow_app": "Urmărește modificările făcute în aplicația JUNG HOME",
@@ -232,7 +234,9 @@
         "data_description": {
           "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`. Se aplică tuturor tastelor; pentru a aștepta doar la unele, lasă-l dezactivat și alege-le la *Taste care așteaptă un dublu clic*, afișat cât timp aceasta este dezactivată și integrarea rulează.",
           "double_click_keys": "Doar aceste taste își rețin `click` o jumătate de secundă și îl elimină dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`; orice altă tastă declanșează imediat `click`. Alege tastele care au o automatizare pentru dublu clic. Sunt afișate doar tastele care pot da clic. Neverificat încă pe dispozitive reale.",
+          "insert_overrides": "Butoanele al căror mecanism anunțat l-ai adoptat în reparația *Butoane JUNG HOME cu alt mecanism decât în export*: Home Assistant le creează dispozitivele pe baza acestui mecanism în loc de cel din export. Scoate unul din listă pentru a reveni la mecanismul indicat de export. Afișat doar cât timp există.",
           "heartbeats": "Fiecărui dispozitiv alimentat de la rețeaua electrică i se cere să trimită un semnal heartbeat către Home Assistant la fiecare 64 de secunde (o setare standard Bluetooth Mesh pe care aplicația JUNG o lasă dezactivată). Entitățile unui dispozitiv care nu trimite nimic timp de aproximativ trei minute și jumătate sunt marcate ca indisponibile până când acesta este auzit din nou. Dezactivarea opțiunii le cere dispozitivelor să se oprească (din nou la următoarea conexiune, dacă nu au putut fi anunțate toate deodată); dezactiveaz-o înainte de a elimina integrarea, care ulterior nu le mai poate anunța.",
+          "transitions": "O schimbare de luminozitate a unei lumini cu variator sau DALI aprinse se face treptat pe durata `transition` cerute de o acțiune sau de un profil de lumină, la fel și o scenă ale cărei dispozitive sunt toate lumini cu variator sau DALI. Aprinderea sau stingerea, o schimbare a temperaturii de culoare și grupurile tuturor luminilor nu sunt niciodată treptate (dispozitivele ar comuta imediat sau abia mai târziu). Nimic din ce trimit aplicația sau gateway-ul JUNG HOME nu folosește asta, și nimeni nu a urmărit încă o tranziție din Home Assistant; dezactivat, o `transition` este ignorată. Neverificat încă pe dispozitive reale.",
           "allow_provisioning": "Permite acțiunii `junghome_ble.add_device` să provizioneze un dispozitiv JUNG nou și să-l configureze așa cum ar face aplicația, după modelul unui dispozitiv de același tip aflat deja în rețea, iar acțiunii `junghome_ble.remove_device` să reseteze un dispozitiv și să-l scoată din rețea. Încă neîncercat pe dispozitive reale: încearcă mai întâi cu un dispozitiv de rezervă. Adăugarea îi transmite dispozitivului cheile rețelei; eliminarea nu poate fi anulată.",
           "provisioner_identity": "Fiecare fișier pe care Home Assistant îl scrie sau îl transmite gateway-ului primește o intrare de provizioner pentru Home Assistant, cu intervale de adrese proprii, separate de cele ale aplicației și care cuprind adresa lui Home Assistant, iar dispozitivele adăugate de Home Assistant care lipsesc din fișierul aplicației sunt incluse din nou. Camerele, scenele și dispozitivele create de Home Assistant își iau apoi adresele din intervalele lui proprii. Nicio aplicație JUNG nu a importat încă un astfel de fișier: încearcă-l pe o instalare de rezervă a aplicației (importă fișierul obținut cu `junghome_ble.export_network`) înainte ca aplicația ta sau gateway-ul tău să-l vadă. Dezactivat: fișierele sunt scrise exact ca fără această opțiune.",
           "follow_app": "Când telefonul pe care rulează aplicația JUNG HOME este auzit în rețeaua mesh, o intrare configurată de la gateway preia exportul gateway-ului la câteva minute după ce telefonul a tăcut (cel mult o dată la 15 minute) și îl adoptă dacă s-a schimbat: dispozitivele, camerele, scenele și legăturile tastelor modificate în aplicație ajung în Home Assistant fără „Reconfigurează”. O intrare configurată dintr-un fișier afișează în schimb o notificare în Reparații, după ce aplicația a fost observată modificând configurația unui dispozitiv. Pentru aceasta nu se trimite nimic în rețeaua mesh. Neverificat încă pe dispozitive reale.",
@@ -1872,7 +1876,19 @@
     },
     "insert_mismatch": {
       "title": "Butoane JUNG HOME cu alt mecanism decât în export",
-      "description": "{devices}: aceste butoane din rețeaua mesh JUNG HOME {title} anunță alt mecanism decât cel din exportul încărcat de Home Assistant (export → dispozitiv). Mecanismul a fost înlocuit după realizarea acelui export, așa că Home Assistant și aplicația pot afișa un tip greșit de consumator pentru ele. Verifică dispozitivele în aplicația JUNG HOME, exportă din nou rețeaua și actualizează această integrare (Setări → Dispozitive și servicii → JUNG HOME Bluetooth Mesh → Reconfigurează); problema dispare după ce exportul indică mecanismele pe care le anunță dispozitivele. Neverificat încă pe dispozitive reale."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Folosește mecanismul anunțat de butoane",
+            "description": "{devices}: aceste butoane din rețeaua mesh JUNG HOME {title} anunță alt mecanism decât cel din exportul încărcat de Home Assistant (export → dispozitiv). Cel mai probabil mecanismul a fost înlocuit după adăugarea dispozitivului, iar un export nou nu ajută neapărat: aplicația citește mecanismul unui buton doar când adaugă dispozitivul. Până atunci, Home Assistant creează pentru ele un tip greșit de sarcină (un mecanism de comutator, variator sau DALI este o lumină, unul de jaluzele o acoperire, unul de extensie niciuna). Confirmă pentru a folosi mecanismul pe care îl anunță fiecare buton: Home Assistant configurează din nou intrarea și le creează dispozitivele pe baza lui. Exportul și aplicația păstrează vechiul mecanism; Home Assistant folosește în continuare mecanismul anunțat până când un export indică alt mecanism pentru buton. Neverificat încă pe dispozitive reale."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "not_loaded": "Intrarea JUNG HOME căreia îi aparține această problemă nu rulează în acest moment. Încearcă din nou după ce este configurată.",
+          "inserts_agree": "Acum toate butoanele anunță mecanismul indicat de export: nimic de schimbat."
+        }
+      }
     },
     "node_clock_wrong": {
       "title": "Dispozitive JUNG HOME cu ceasul greșit",
