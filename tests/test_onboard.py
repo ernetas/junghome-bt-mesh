@@ -24,6 +24,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import mesh_config, onboard
 from custom_components.junghome_ble.actions import common
+from custom_components.junghome_ble.actions.common import CONFIGURATORS
 from custom_components.junghome_ble.configurator import nodes as nodes_mod
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -67,7 +68,6 @@ from custom_components.junghome_ble.jhmesh.provisioning import (
     ProvisioningData,
 )
 from custom_components.junghome_ble.jhmesh.vault import RefreshProgress, Vault
-from custom_components.junghome_ble.services import CONFIGURATORS
 
 from .conftest import (
     CDB_PATH,

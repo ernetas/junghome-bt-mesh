@@ -43,12 +43,12 @@ from typing import TYPE_CHECKING
 
 from . import seq_store
 from .const import DOMAIN
-from .coordinator import SEQ_BACKUP_AT, SEQ_BACKUP_TOKEN, SEQ_OWNERS
+from .seq_store import SEQ_BACKUP_AT, SEQ_BACKUP_TOKEN, SEQ_OWNERS
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
-    from .coordinator import HAState
+    from .seq_store import HAState
 
 _LOGGER = logging.getLogger(__name__)
 

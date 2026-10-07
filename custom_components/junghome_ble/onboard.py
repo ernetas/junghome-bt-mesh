@@ -65,9 +65,9 @@ from .const import (
     DOMAIN,
     ISSUE_PENDING_DEVICE,
     ISSUE_VAULT_UNWRITABLE,
+    issue_id,
     learn_more_url,
 )
-from .coordinator import issue_id
 from .jhmesh import commission
 from .jhmesh import config_messages as C
 from .jhmesh.advert import parse_manufacturer_data

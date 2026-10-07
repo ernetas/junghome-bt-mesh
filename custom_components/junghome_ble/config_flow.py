@@ -139,17 +139,16 @@ from .const import (
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
+    issue_id,
 )
 from .coordinator import (
     KNOWN_MESHES,
     KnownMesh,
     abort_discovery_flows,
-    async_apply_followed_key_refresh,
     async_known_mesh,
     async_release_network_id,
     forget_known_mesh,
     hub_data,
-    issue_id,
     node_macs,
 )
 from .device_trigger import key_subtypes
@@ -180,6 +179,7 @@ from .migration import (
     build_import_plan,
 )
 from .model_update import remember_device_rooms
+from .seq_store import async_apply_followed_key_refresh
 from .tls import (
     CONF_GATEWAY_FINGERPRINT,
     async_learn_fingerprint,

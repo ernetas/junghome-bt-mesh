@@ -24,10 +24,10 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from custom_components.junghome_ble.coordinator import HAState
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import LocalState, ProxyClient
 from custom_components.junghome_ble.jhmesh.devices import build_devices
+from custom_components.junghome_ble.seq_store import HAState
 
 FIXTURE = Path(__file__).resolve().parent.parent / "tests/fixtures/MeshNetwork.json"
 TEMPLATE = "0172"  # the fixture's metering socket: two elements, one of them a meter

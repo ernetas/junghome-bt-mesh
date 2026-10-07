@@ -72,6 +72,7 @@ from custom_components.junghome_ble.gateway_api import (
     GatewayError,
     JungHomeGatewayApi,
 )
+from custom_components.junghome_ble.hub import export_watch
 from custom_components.junghome_ble.jhmesh import client as client_mod
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -1888,7 +1889,7 @@ async def test_the_fetch_button_follows_the_app_on_demand(
             patch.object(
                 JungHomeHub,
                 "async_gateway_distrust",
-                AsyncMock(return_value=coordinator.GATEWAY_UNVERIFIED),
+                AsyncMock(return_value=export_watch.GATEWAY_UNVERIFIED),
             ),
             pytest.raises(HomeAssistantError) as err,
         ):
@@ -1896,7 +1897,7 @@ async def test_the_fetch_button_follows_the_app_on_demand(
         assert err.value.translation_key == "gateway_fetch_refused"
         assert err.value.translation_placeholders == {
             "host": "junghome.local",
-            "error": coordinator.GATEWAY_UNVERIFIED,
+            "error": export_watch.GATEWAY_UNVERIFIED,
         }
 
         ir.async_create_issue(

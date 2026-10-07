@@ -56,11 +56,7 @@ from custom_components.junghome_ble.const import (
     DOMAIN,
     KEEP_AWAKE_INTERVAL,
 )
-from custom_components.junghome_ble.coordinator import (
-    NODE_VERSION_STORES,
-    NODE_VERSIONS,
-    ElementState,
-)
+from custom_components.junghome_ble.element_state import ElementState
 from custom_components.junghome_ble.entity import (
     node_identifier,
     update_node_device,
@@ -68,6 +64,7 @@ from custom_components.junghome_ble.entity import (
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
+from custom_components.junghome_ble.node_info import NODE_VERSION_STORES, NODE_VERSIONS
 from custom_components.junghome_ble.sensor import (
     BATTERY_READ_INTERVAL,
     DETECTOR_BRIGHTNESS_POLL,

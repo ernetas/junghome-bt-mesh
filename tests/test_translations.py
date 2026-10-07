@@ -47,6 +47,9 @@ from custom_components.junghome_ble import (
     schedules,
     services,
 )
+from custom_components.junghome_ble.actions.audit import EXPORT_FLAVOURS
+from custom_components.junghome_ble.actions.common import SCHEDULE_ACTIONS, STATE_FIELDS
+from custom_components.junghome_ble.actions.keys import KEY_LETTERS
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_IV_INDEX_AHEAD,
@@ -65,6 +68,7 @@ from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.properties import BLIND_MODE
 from custom_components.junghome_ble.select import UNKNOWN_OPTION
+from custom_components.junghome_ble.thresholds import THRESHOLD_PROPERTIES
 from custom_components.junghome_ble.topology_svg import TEXTS as TOPOLOGY_TEXTS
 from tools import translation_sources
 
@@ -591,7 +595,7 @@ def test_services_yaml_has_the_sections(services_yaml: dict[str, Any]) -> None:
         fields = services_yaml[name]["fields"]
         assert {"when", "what"} <= set(fields)
         assert "trigger" in fields["when"]["fields"]
-        assert set(fields["what"]["fields"]) == set(services.STATE_FIELDS)
+        assert set(fields["what"]["fields"]) == set(STATE_FIELDS)
 
 
 def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
@@ -682,14 +686,14 @@ def test_service_select_options_match_the_code(
     selectors = _select_selectors(services_yaml)
     assert selectors, "no select selectors found in services.yaml"
     expected = {
-        "key": set(services.KEY_LETTERS),
+        "key": set(KEY_LETTERS),
         "mode": set(mesh_config.MODES),
         "target_element": set(mesh_config.TARGET_ELEMENTS),
         "trigger": set(schedules.TRIGGERS),
         "weekdays": set(V.DAYS),
-        "action": set(services.SCHEDULE_ACTIONS),
-        "threshold": set(services.THRESHOLD_PROPERTIES),
-        "flavour": set(services.EXPORT_FLAVOURS),
+        "action": set(SCHEDULE_ACTIONS),
+        "threshold": set(THRESHOLD_PROPERTIES),
+        "flavour": set(EXPORT_FLAVOURS),
         "direction": set(light.DIM_DIRECTIONS),
     }
     for origin, select in selectors:

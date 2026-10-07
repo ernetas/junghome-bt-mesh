@@ -92,7 +92,6 @@ from custom_components.junghome_ble.coordinator import (
     KNOWN_MESHES,
     KnownMesh,
     remember_known_mesh,
-    seq_store_for_uuid,
 )
 from custom_components.junghome_ble.jhmesh.advert import JUNG_COMPANY_ID
 from custom_components.junghome_ble.jhmesh.cdb import CDB
@@ -103,6 +102,7 @@ from custom_components.junghome_ble.mesh_config import (
     export_digest,
     gateway_sync,
 )
+from custom_components.junghome_ble.seq_store import seq_store_for_uuid
 from custom_components.junghome_ble.tls import CONF_GATEWAY_FINGERPRINT
 
 from .conftest import (

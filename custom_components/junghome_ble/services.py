@@ -21,7 +21,7 @@ for administrators only. The rewiring actions answer what their plans applied, o
 what they would send and change (`actions.common._execute`, `MeshConfigurator.dry_run`); every call that ran a plan is
 logged in the logbook and the diagnostics (`actions.common._report_plan`); what cannot be undone needs `confirm`.
 
-Calls for one entry are serialised (`coordinator.entry_lock`, kept across reloads, taken by the unknown-node
+Calls for one entry are serialised (`data.entry_lock`, kept across reloads, taken by the unknown-node
 refresh too) so a call never runs against a model being swapped, or a hub being torn down by a reload (an options
 change, a call that could not follow in place); a call that goes on air then waits (`SERVICE_LINK_WAIT`) for the
 reloaded hub's link, which connects in the background.
@@ -52,7 +52,6 @@ from homeassistant.helpers.service import (
 from .actions.audit import (
     APPROVE_GATEWAY_CLIENT_SCHEMA,
     AUDIT_NETWORK_SCHEMA,
-    EXPORT_FLAVOURS,
     EXPORT_NETWORK_SCHEMA,
     SYNC_GATEWAY_SCHEMA,
     _approve_gateway_client,
@@ -61,17 +60,7 @@ from .actions.audit import (
     _sync_gateway,
 )
 from .actions.common import (
-    CONFIGURATORS,
-    SCHEDULE_ACTIONS,
-    STATE_FIELDS,
     _bound,
-    _configurator,
-    _lock,
-    _run,
-    _validation,
-    async_configure,
-    async_register_configurator,
-    async_unregister_configurator,
 )
 from .actions.devices import (
     ADD_DEVICE_SCHEMA,
@@ -104,11 +93,9 @@ from .actions.iv_update import (
 from .actions.keys import (
     ASSIGN_KEY_SCHEMA,
     CLEAR_KEY_SCHEMA,
-    KEY_LETTERS,
     _assign_key,
     _clear_key,
 )
-from .actions.resolve import _entry_for_hub_services
 from .actions.rooms import (
     ADD_TO_ROOM_SCHEMA,
     CREATE_ROOM_SCHEMA,
@@ -129,9 +116,7 @@ from .actions.scenes import (
     DELETE_UNUSED_SCENES_SCHEMA,
     REMOVE_FROM_SCENE_SCHEMA,
     RENAME_SCENE_SCHEMA,
-    SCENE_STATE_ERRORS,
     STORE_SCENE_SCHEMA,
-    _apply_state,
     _create_scene,
     _delete_scene,
     _delete_unused_scenes,
@@ -162,30 +147,9 @@ from .actions.thresholds import (
 from .const import (
     DOMAIN,
 )
-from .thresholds import THRESHOLD_PROPERTIES
 
 DIM_DEFAULT_SPEED: Final = 20  # % of the range per second: from off to full in 5 s
 
-
-# what other modules (and the tests) import from here, now defined in `actions/`
-__all__ = [
-    "CONFIGURATORS",
-    "EXPORT_FLAVOURS",
-    "KEY_LETTERS",
-    "SCENE_STATE_ERRORS",
-    "SCHEDULE_ACTIONS",
-    "STATE_FIELDS",
-    "THRESHOLD_PROPERTIES",
-    "_apply_state",
-    "_configurator",
-    "_entry_for_hub_services",
-    "_lock",
-    "_run",
-    "_validation",
-    "async_configure",
-    "async_register_configurator",
-    "async_unregister_configurator",
-]
 
 SERVICE_SET_ROOM = "set_room"
 SERVICE_ADD_TO_ROOM = "add_to_room"

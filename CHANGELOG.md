@@ -279,7 +279,8 @@
 - Internal: behaviour-identical moves (review-5 A5-1): where an address's sequence numbers start — the store, its
   `.backup`, the floor, the `seq_store_lost` issue, the restore skip, the skip-ahead of an address used before, one
   hub per mesh — is `seq_store.async_load_state`, which `JungHomeHub.async_create` calls and the nonce state machine
-  test calls directly, with no hub.
+  test calls directly, with no hub. The re-exports `coordinator.py` and `services.py` kept after their splits are
+  gone (A5-3): every module imports a name from the module that defines it, and `tests/test_layers.py` keeps it so.
 
 ## 1.4.1 (unreleased)
 

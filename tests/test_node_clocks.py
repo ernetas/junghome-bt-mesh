@@ -10,8 +10,8 @@ from homeassistant.const import STATE_UNKNOWN
 from homeassistant.util import dt as dt_util
 
 from custom_components.junghome_ble import const, repairs
-from custom_components.junghome_ble.const import ISSUE_NODE_CLOCK_WRONG
-from custom_components.junghome_ble.coordinator import JungHomeHub, issue_id
+from custom_components.junghome_ble.const import ISSUE_NODE_CLOCK_WRONG, issue_id
+from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES, encode_opcode
 from custom_components.junghome_ble.node_clocks import zone_sent

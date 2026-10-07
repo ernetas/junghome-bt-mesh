@@ -1,6 +1,6 @@
 """What every action shares: the entry's configurator and hub, the fields several actions take, running an operation.
 
-`_run` / `_execute` run a configurator operation under the entry's lock (`coordinator.entry_lock`), on a live
+`_run` / `_execute` run a configurator operation under the entry's lock (`data.entry_lock`), on a live
 link (`_wait_for_link`), have the hub follow the export (`_follow`) and report the call's plan (`_report_plan`);
 `async_configure` runs an entity's operation the same way.
 """

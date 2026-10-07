@@ -2,7 +2,7 @@
 
 `seq_store_lost` (setup refused: an address with history has no usable sequence-number record) and
 `pdus_dropped` (the nodes drop our messages as replays) are both fixed the same way: the counter continues past
-every number the mesh may have seen (`coordinator.SEQ_SKIP_AHEAD`), then the entry is set up again or the link
+every number the mesh may have seen (`const.SEQ_SKIP_AHEAD`), then the entry is set up again or the link
 is renewed. `iv_index_mismatch`, when Home Assistant's IV index is ahead of the mesh's and it can go back, takes it
 back to the mesh's index (`JungHomeHub.async_rewind_iv_index`) and sets the entry up again. `address_shared` (another
 client sends from Home Assistant's address) continues past the numbers it was seen with
@@ -47,6 +47,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 
+from .actions.common import async_configure
 from .actions.iv_update import async_start_iv_update
 from .config_flow import (
     LOAD_ERRORS,
@@ -90,7 +91,7 @@ from .const import (
     ISSUE_UNKNOWN_NODES,
     OPTION_INSERT_OVERRIDES,
 )
-from .coordinator import async_skip_seq_store_ahead, forget_known_mesh
+from .coordinator import forget_known_mesh
 from .gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -99,7 +100,7 @@ from .gateway_api import (
 )
 from .jhmesh.cdb import CDB
 from .jhmesh.export import RENAME_MAX_LENGTH, InvalidName, check_name
-from .services import async_configure
+from .seq_store import async_skip_seq_store_ahead
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry

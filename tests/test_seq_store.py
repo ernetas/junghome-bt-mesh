@@ -21,7 +21,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.junghome_ble import coordinator, repairs
+from custom_components.junghome_ble import repairs
 from custom_components.junghome_ble import seq_store as seq_store_module
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -37,19 +37,8 @@ from custom_components.junghome_ble.const import (
     ISSUE_SEQ_STORE_UNWRITABLE,
     SEQ_SKIP_AHEAD,
 )
-from custom_components.junghome_ble.coordinator import (
-    SEQ_FLOOR_EVERY,
-    SEQ_RESTART_MARGIN,
-    SEQ_SAVE_EVERY,
-    SEQ_STALL_RETRY,
-    SEQ_STORAGE_MINOR_VERSION,
-    STORAGE_VERSION,
-    HAState,
-    JungHomeHub,
-    SeqStore,
-    merge_legacy_seq_store,
-    seq_store,
-)
+from custom_components.junghome_ble.coordinator import JungHomeHub, seq_store
+from custom_components.junghome_ble.hub.issues import SEQ_STALL_ISSUE_AFTER
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.client import (
     IV_RECOVERY_MIN_INTERVAL,
@@ -64,7 +53,16 @@ from custom_components.junghome_ble.jhmesh.export import ProjectFile
 from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
 from custom_components.junghome_ble.jhmesh.vault import Vault
 from custom_components.junghome_ble.seq_store import (
+    SEQ_FLOOR_EVERY,
+    SEQ_RESTART_MARGIN,
+    SEQ_SAVE_EVERY,
     SEQ_SKIP_UNKNOWN,
+    SEQ_STALL_RETRY,
+    SEQ_STORAGE_MINOR_VERSION,
+    STORAGE_VERSION,
+    HAState,
+    SeqStore,
+    merge_legacy_seq_store,
 )
 
 from .conftest import (
@@ -807,7 +805,7 @@ async def test_the_lost_store_repair_keeps_its_issue_when_the_floor_is_not_writt
     for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup"):
         hass_storage[key]["data"]["addresses"]["0D00"]["seq"] = None
     assert not await hass.config_entries.async_setup(init_integration.entry_id)
-    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    floor = seq_store_module.seq_floor_store_for_uuid(hass, MESH_UUID)
     save = floor.async_save
     monkeypatch.setattr(floor, "async_save", AsyncMock())  # the write never lands
     result = await run_fix_flow(hass, ISSUE_SEQ_STORE_LOST)
@@ -856,7 +854,7 @@ async def test_the_floor_keeps_up_with_the_counter(
     await hass.async_block_till_done()
     assert entry() == {"iv_index": 1, "seq": 0}
     # a floor that cannot be written: sends stop SEQ_SKIP_UNKNOWN past the last entry that landed
-    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    floor = seq_store_module.seq_floor_store_for_uuid(hass, MESH_UUID)
     save = floor.async_save
     monkeypatch.setattr(floor, "async_save", AsyncMock())
     state.skip_ahead(SEQ_SKIP_UNKNOWN - 1)
@@ -1403,7 +1401,7 @@ async def test_a_store_that_cannot_be_written_raises_its_own_repair(
         await settle(hass)
         assert hub.connected
         assert hub.proxy.filter_writes == 0
-        freezer.tick(coordinator.SEQ_STALL_ISSUE_AFTER)
+        freezer.tick(SEQ_STALL_ISSUE_AFTER)
         async_fire_time_changed(hass)
         await settle(hass)
         issue = find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE)
@@ -1419,7 +1417,7 @@ async def test_a_store_that_cannot_be_written_raises_its_own_repair(
         assert "has not been written for 60 s" in caplog.text
         stalled_for = state.stalled_for
         assert stalled_for is not None
-        assert stalled_for >= coordinator.SEQ_STALL_ISSUE_AFTER
+        assert stalled_for >= SEQ_STALL_ISSUE_AFTER
         assert state.durable_headroom == 0
 
     # writable again: the next refusal's forced save lands, and the number after it clears the repair
@@ -1434,12 +1432,12 @@ async def test_a_store_that_cannot_be_written_raises_its_own_repair(
     assert "Sequence-number store written again after" in caplog.text
     # the stall is counted in, and so is the share of it the link that came up during it saw (review-4 R I-9)
     held_back = state.held_back_total
-    assert held_back >= coordinator.SEQ_STALL_ISSUE_AFTER + SEQ_STALL_RETRY
+    assert held_back >= SEQ_STALL_ISSUE_AFTER + SEQ_STALL_RETRY
     freezer.tick(1)
     assert state.held_back_total == held_back  # over: no longer growing
     fake_link.drop_link()
     await settle(hass)
-    assert hub.link_history[-1].held_back >= coordinator.SEQ_STALL_ISSUE_AFTER
+    assert hub.link_history[-1].held_back >= SEQ_STALL_ISSUE_AFTER
 
 
 async def test_a_short_stall_raises_no_repair(
@@ -1473,7 +1471,7 @@ async def test_a_short_stall_raises_no_repair(
     state.persist()
     await hass.async_block_till_done()
     for _ in range(2):  # the first stall's minute, then the second's
-        freezer.tick(coordinator.SEQ_STALL_ISSUE_AFTER - SEQ_STALL_RETRY)
+        freezer.tick(SEQ_STALL_ISSUE_AFTER - SEQ_STALL_RETRY)
         async_fire_time_changed(hass)
         await hass.async_block_till_done()
         assert find_issue(hass, ISSUE_SEQ_STORE_UNWRITABLE) is None
@@ -1869,7 +1867,7 @@ async def test_the_rewind_aborts_when_its_floor_is_not_written(
 ) -> None:
     hub = hub_of(init_integration)
     await push_ahead(hass, hub, fake_link)
-    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    floor = seq_store_module.seq_floor_store_for_uuid(hass, MESH_UUID)
     monkeypatch.setattr(floor, "async_save", AsyncMock())  # the write never lands
     result = await run_fix_flow(hass, ISSUE_IV_INDEX_MISMATCH)
     assert (result["type"], result["reason"]) == ("abort", "seq_store_not_written")
@@ -1885,7 +1883,7 @@ async def test_the_rewind_aborts_when_the_state_moves_while_its_floor_is_written
 ) -> None:
     hub = hub_of(init_integration)
     await push_ahead(hass, hub, fake_link)
-    floor = coordinator.seq_floor_store_for_uuid(hass, MESH_UUID)
+    floor = seq_store_module.seq_floor_store_for_uuid(hass, MESH_UUID)
     save = floor.async_save
 
     async def save_and_move(data: dict[str, Any]) -> None:

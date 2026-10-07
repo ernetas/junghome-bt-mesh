@@ -39,6 +39,7 @@ from homeassistant.helpers.event import async_call_later, async_track_time_inter
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from . import const
+from .actions.common import async_configure
 from .config_entities import (
     LED_SYNC_PAIRS,
     PROPERTY_LOCK,
@@ -95,7 +96,6 @@ from .jhmesh.devices import (
     time_keeper_candidates,
 )
 from .mesh_config import SENSOR_SERVER, sensor_elements, sensor_publication
-from .services import async_configure
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

@@ -49,9 +49,9 @@ from custom_components.junghome_ble.const import (
     KEEP_AWAKE_INTERVAL,
     OPTION_PROVISIONER_IDENTITY,
     SIGNAL_GATEWAY_SYNCED,
+    issue_id,
     learn_more_url,
 )
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.data import jung_data, store_lock
 from custom_components.junghome_ble.device_info import address_label
 from custom_components.junghome_ble.gateway_api import (

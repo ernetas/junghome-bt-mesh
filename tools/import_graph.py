@@ -122,6 +122,26 @@ def edges(root: Path = ROOT) -> list[Edge]:
     return out
 
 
+def imported_names(root: Path = ROOT) -> list[tuple[str, str, str, str]]:
+    """Return (source, module, name, kind) for every name a `from` import of the integration takes from one of its
+    modules (a name that is itself a module is no such name)."""
+    known = modules(root)
+    out: list[tuple[str, str, str, str]] = []
+    for name, path in known.items():
+        package = name if path.name == "__init__.py" else name.rpartition(".")[0]
+        for node, kind in imports(
+            ast.parse(path.read_text(encoding="utf-8"), str(path))
+        ):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            for alias, target in zip(
+                node.names, _targets(node, package, known), strict=True
+            ):
+                if target in known and not target.endswith(f".{alias.name}"):
+                    out.append((name, target, alias.name, kind))
+    return out
+
+
 def graph_of(all_edges: list[Edge], kinds: tuple[str, ...]) -> dict[str, set[str]]:
     """Return the adjacency of the edges of the given kinds."""
     graph: dict[str, set[str]] = defaultdict(set)

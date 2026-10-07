@@ -19,10 +19,10 @@ from custom_components.junghome_ble.const import (
     DEFAULT_UNUSED_SCENES_DRY_RUN,
     DOMAIN,
     ISSUE_SCENE_HELD,
+    issue_id,
     learn_more_url,
 )
 from custom_components.junghome_ble.conversions import level_to_temperature
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.devices import load_kind

@@ -23,12 +23,10 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
 )
-from custom_components.junghome_ble.coordinator import (
-    PROPERTY_PRECISE_TOTAL_ENERGY,
-    ElementState,
-    lacks_precise_energy,
-)
+from custom_components.junghome_ble.coordinator import PROPERTY_PRECISE_TOTAL_ENERGY
 from custom_components.junghome_ble.diagnostics import _device_summary
+from custom_components.junghome_ble.element_state import ElementState
+from custom_components.junghome_ble.hub.energy import lacks_precise_energy
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.devices import Light

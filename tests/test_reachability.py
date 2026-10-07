@@ -33,7 +33,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from custom_components.junghome_ble import config_entities, const
-from custom_components.junghome_ble import services as S
+from custom_components.junghome_ble.actions import scenes as action_scenes
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_BLUETOOTH_UNAVAILABLE,
@@ -652,7 +652,9 @@ async def test_a_scene_state_the_load_does_not_answer_is_reported(
     hub.set_onoff = AsyncMock(side_effect=TimeoutError("no response from 0172"))
     device = MagicMock(address=SOCKET, unique_id="not-registered", kind="switch")
     with pytest.raises(HomeAssistantError) as exc:
-        await S._apply_state(hass, hub, device, V.Action(V.ACTION_SWITCH, on=True))
+        await action_scenes._apply_state(
+            hass, hub, device, V.Action(V.ACTION_SWITCH, on=True)
+        )
     assert exc.value.translation_key == "device_not_reachable"
     assert exc.value.translation_placeholders == {"entity": "0172"}
 

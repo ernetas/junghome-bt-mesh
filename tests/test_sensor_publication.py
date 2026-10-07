@@ -16,8 +16,8 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.junghome_ble import mesh_config
-from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import switch as SW
+from custom_components.junghome_ble.actions import common as action_common
 from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
 from custom_components.junghome_ble.const import DOMAIN
 from custom_components.junghome_ble.entity import node_identifier
@@ -99,12 +99,12 @@ def test_sensor_publication_state() -> None:
 async def test_set_sensor_publication(hass: HomeAssistant, env: Env) -> None:
     """Off: Publication Set 0x0000; on: to the element's group, the model bound first when the export shows it
     unbound; nothing to do: no message, no reload."""
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert publication(env) == METER_GROUP
     assert await configurator.set_sensor_publication(SOCKET, True) is False
     assert env.config_calls == []
 
-    await svc.async_configure(
+    await action_common.async_configure(
         hass, env.entry.entry_id, lambda c: c.set_sensor_publication(SOCKET, False)
     )
     await settled(hass, env)
@@ -117,7 +117,7 @@ async def test_set_sensor_publication(hass: HomeAssistant, env: Env) -> None:
     raw_model(pf.cdb.element(SOCKET_SENSOR), "1100")["bind"] = []
     pf.save(env.path, force=True)
     env.config_calls.clear()
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert await configurator.set_sensor_publication(SOCKET, True) is True
     assert [p for _n, p in env.config_calls] == [
         C.model_app_bind(SOCKET_SENSOR, "1100", 0),
@@ -135,11 +135,11 @@ async def test_set_sensor_publication_plans_against_the_node(
     pf = env.reload()
     pf.set_publication(SOCKET, pf.cdb.element(SOCKET_SENSOR), "1100", None)
     pf.save(env.path, force=True)
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert await configurator.set_sensor_publication(SOCKET, False) is False
     assert await configurator.set_sensor_publication(SOCKET, False, live=False) is False
     assert env.config_calls == []
-    await svc.async_configure(
+    await action_common.async_configure(
         hass,
         env.entry.entry_id,
         lambda c: c.set_sensor_publication(SOCKET, False, live=True),
@@ -152,7 +152,7 @@ async def test_set_sensor_publication_plans_against_the_node(
 
 
 async def test_set_sensor_publication_refusals(hass: HomeAssistant, env: Env) -> None:
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     with pytest.raises(ServiceValidationError) as exc:
         await configurator.set_sensor_publication(0x7FFF, True)
     assert exc.value.translation_key == "service_unknown_element"

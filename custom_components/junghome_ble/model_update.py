@@ -56,15 +56,10 @@ from .const import (
     ISSUE_ADDRESS_RESERVED,
     OPTION_INSERT_OVERRIDES,
     OPTION_SYNC_AREAS,
+    issue_id,
     learn_more_url,
 )
-from .coordinator import (
-    async_apply_followed_key_refresh,
-    async_known_mesh,
-    issue_id,
-    load_network,
-    remember_known_mesh,
-)
+from .coordinator import async_known_mesh, load_network, remember_known_mesh
 from .data import jung_data
 from .entity import (
     JungHomeEntity,
@@ -77,6 +72,7 @@ from .entity import (
 )
 from .inserts import apply_reported
 from .onboard import async_update_pending_issue
+from .seq_store import async_apply_followed_key_refresh
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry

@@ -22,9 +22,9 @@ from homeassistant.helpers import issue_registry as ir
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_PLAN_INTERRUPTED,
+    issue_id,
     learn_more_url,
 )
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V

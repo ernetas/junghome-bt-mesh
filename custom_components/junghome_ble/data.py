@@ -1,7 +1,7 @@
 """What the integration keeps in `hass.data` beside its entries' hubs, in one typed place.
 
 `jung_data(hass)` returns the run's `JungHomeData` (under `DATA`), made on first use. Each registry keeps its
-accessor where it is used — `coordinator.entry_lock`, `store_lock`, `configurator.store.plan_journal` and `plan_history`,
+accessor where it is used — `entry_lock` and `store_lock` here, `configurator.store.plan_journal` and `plan_history`,
 `configurator.store.held_scenes`, `model_update.remember_device_rooms`, `schedules.scheduler` — and none of them is
 dropped with a hub: a lock, a journal or a store outlives the entry's reloads.
 

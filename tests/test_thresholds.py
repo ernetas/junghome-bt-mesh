@@ -16,9 +16,9 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 
 from custom_components.junghome_ble import mesh_config
-from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import thresholds as T
 from custom_components.junghome_ble.actions import common
+from custom_components.junghome_ble.actions import common as action_common
 from custom_components.junghome_ble.actions import thresholds as threshold_actions
 from custom_components.junghome_ble.config_entities import PropertyReader
 from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
@@ -314,7 +314,7 @@ async def test_set_threshold_devices_edge_cases(hass: HomeAssistant, env: Env) -
     """No devices: the loads leave, the client keeps its wiring (no reset: that is the disable's and delete's);
     a load without a JUNG User Property Server gets its OnOff server subscribed alone; without an element group
     nothing listens, so an empty list is already so; nothing wired, nothing to unwire."""
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert not await configurator.unwire_threshold(
         SOCKET
     )  # the export's meter: no wiring, no publication
@@ -860,7 +860,7 @@ async def test_threshold_targets_are_checked(hass: HomeAssistant, env: Env) -> N
 
 async def test_set_threshold_devices_refusals(hass: HomeAssistant, env: Env) -> None:
     """The configurator's own checks: a client, an element group, OnOff servers only."""
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     with pytest.raises(ServiceValidationError) as err:
         await configurator.set_threshold_devices(SOCKET, [0x0149])  # a key
     assert err.value.translation_key == "service_not_a_load"

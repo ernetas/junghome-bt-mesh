@@ -16,6 +16,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 
+from .actions.common import async_register_configurator, async_unregister_configurator
 from .app_follow import AppFollower
 from .config_entities import device_lock_targets, retired_unique_ids
 from .config_flow import (
@@ -39,20 +40,16 @@ from .const import (
     ISSUE_LEARN_MORE,
     PLATFORMS,
     STORAGE_DIR,
-)
-from .coordinator import (
-    STORAGE_VERSION,
-    JungHomeHub,
-    async_apply_followed_key_refresh,
-    async_known_mesh,
-    async_migrate_legacy_seq_store,
-    async_remove_node_versions,
-    forget_known_mesh,
     issue_id,
+)
+from .coordinator import JungHomeConfigEntry as JungHomeConfigEntry
+from .coordinator import (
+    JungHomeHub,
+    async_known_mesh,
+    forget_known_mesh,
     load_network,
     remember_known_mesh,
 )
-from .coordinator import JungHomeConfigEntry as JungHomeConfigEntry
 from .device_names import async_track_device_names
 from .entity import current_device_identifiers, register_parent_devices
 from .export_view import ExportDownloadView
@@ -79,12 +76,14 @@ from .model_update import (
     check_our_address,
     remove_stale_devices,
 )
+from .node_info import async_remove_node_versions
 from .onboard import async_clear_vault_issue, async_update_pending_issue
-from .services import (
-    async_register_configurator,
-    async_setup_services,
-    async_unregister_configurator,
+from .seq_store import (
+    STORAGE_VERSION,
+    async_apply_followed_key_refresh,
+    async_migrate_legacy_seq_store,
 )
+from .services import async_setup_services
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

@@ -50,8 +50,8 @@ from custom_components.junghome_ble.const import (
     ISSUE_GATEWAY_TOKEN,
     PIN_FROM_MESH,
     PIN_FROM_USER,
+    issue_id,
 )
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayBusy,

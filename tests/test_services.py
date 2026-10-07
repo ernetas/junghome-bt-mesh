@@ -45,6 +45,9 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.junghome_ble import mesh_config, repairs
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble.actions import common
+from custom_components.junghome_ble.actions import common as action_common
+from custom_components.junghome_ble.actions import resolve as action_resolve
+from custom_components.junghome_ble.actions import scenes as action_scenes
 from custom_components.junghome_ble.areas import AreaRoom
 from custom_components.junghome_ble.climate import temperature_to_level
 from custom_components.junghome_ble.configurator import executor as executor_mod
@@ -64,8 +67,9 @@ from custom_components.junghome_ble.const import (
     ISSUE_DEVICE_NAME,
     ISSUE_GATEWAY_SYNC,
     PIN_FROM_MESH,
+    issue_id,
 )
-from custom_components.junghome_ble.coordinator import JungHomeHub, issue_id
+from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.cover import closedness_to_level
 from custom_components.junghome_ble.gateway_api import (
     GatewayError,
@@ -463,14 +467,17 @@ async def test_services_are_registered_once_and_survive_entry_unload(
     other = MockConfigEntry(domain=DOMAIN, unique_id="other", data={})
     other.add_to_hass(hass)
     other.runtime_data = env.hub
-    svc.async_register_configurator(hass, other)
-    assert set(hass.data[svc.CONFIGURATORS]) == {env.entry.entry_id, other.entry_id}
-    svc.async_unregister_configurator(hass, other)
+    action_common.async_register_configurator(hass, other)
+    assert set(hass.data[action_common.CONFIGURATORS]) == {
+        env.entry.entry_id,
+        other.entry_id,
+    }
+    action_common.async_unregister_configurator(hass, other)
     assert await hass.config_entries.async_unload(env.entry.entry_id)
     await hass.async_block_till_done()
     # still registered, and a call now fails with the translated "not loaded" error
     assert names <= set(hass.services.async_services_for_domain(DOMAIN))
-    assert hass.data[svc.CONFIGURATORS] == {}
+    assert hass.data[action_common.CONFIGURATORS] == {}
     with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(
             DOMAIN, "create_room", {"name": "Attic"}, blocking=True
@@ -1467,7 +1474,7 @@ async def test_store_scene_state_is_checked_first(
     assert str(exc.value) == (
         f"The state does not fit {socket}: brightness_pct does not apply to it"
     )
-    assert set(svc.SCENE_STATE_ERRORS.values()) <= set(
+    assert set(action_scenes.SCENE_STATE_ERRORS.values()) <= set(
         json.loads(
             (Path(svc.__file__).parent / "strings.json").read_text(encoding="utf-8")
         )["exceptions"]
@@ -1586,7 +1593,7 @@ async def test_room_services_need_a_loaded_entry(hass: HomeAssistant, env: Env) 
     assert exc.value.translation_key == "service_entry_ambiguous"
     stale.mock_state(hass, ConfigEntryState.NOT_LOADED)
     # a loaded entry without a configurator (torn down under our feet)
-    hass.data[svc.CONFIGURATORS].pop(env.entry.entry_id)
+    hass.data[action_common.CONFIGURATORS].pop(env.entry.entry_id)
     with pytest.raises(ServiceValidationError) as exc:
         await call(
             hass, "create_room", {"name": "X", "config_entry_id": env.entry.entry_id}
@@ -1615,7 +1622,7 @@ async def test_calls_for_one_entry_are_serialised(
     pf = env.reload()
     assert WC in subs(pf, LIGHT_CTL, "1000")
     assert 0xC011 in subs(pf, LIGHT_SWITCH, "1000")
-    assert svc._lock(hass, env.entry.entry_id).locked() is False
+    assert action_common._lock(hass, env.entry.entry_id).locked() is False
     assert env.entry.state is ConfigEntryState.LOADED
 
 
@@ -1949,7 +1956,7 @@ async def test_a_wait_that_catches_the_entry_mid_reload_looks_again(
     def configurator(hass_: HomeAssistant, entry_id: str) -> Any:
         lookups[0] += 1
         if lookups[0] == 2:  # the first look after the first wait step
-            raise svc._validation("service_entry_not_loaded")
+            raise action_common._validation("service_entry_not_loaded")
         return real(hass_, entry_id)
 
     with patch.object(common, "_configurator", configurator):
@@ -1976,7 +1983,7 @@ async def test_a_wait_gives_up_when_the_entry_stays_unloaded(
     def configurator(hass_: HomeAssistant, entry_id: str) -> Any:
         lookups[0] += 1
         if lookups[0] > 1:  # gone for good after the call started
-            raise svc._validation("service_entry_not_loaded")
+            raise action_common._validation("service_entry_not_loaded")
         return real(hass_, entry_id)
 
     with (
@@ -2064,7 +2071,7 @@ async def test_room_services_without_any_loaded_entry(
     assert await hass.config_entries.async_unload(env.entry.entry_id)
     await hass.async_block_till_done()
     with pytest.raises(ServiceValidationError) as exc:
-        svc._entry_for_hub_services(hass, {})
+        action_resolve._entry_for_hub_services(hass, {})
     assert exc.value.translation_key == "service_entry_not_loaded"
 
 
@@ -2516,13 +2523,13 @@ async def test_a_failed_upload_is_retried_across_the_reload_of_its_change(
     ):
         await call(hass, "create_room", {"name": "Attic"})
         assert len(uploads) == 1
-        before = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+        before = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
         failures.append(GatewayError("POST config: HTTP 500 (boom)"))
         with patch.object(JungHomeHub, "model_refusal", return_value="a test"):
             await call(hass, "rename_room", {"room": "Attic", "new_name": "Loft"})
         await settled(hass, env)
         assert (
-            hass.data[svc.CONFIGURATORS][env.entry.entry_id] is not before
+            hass.data[action_common.CONFIGURATORS][env.entry.entry_id] is not before
         )  # reloaded
         await wait_until(hass, lambda: len(uploads) == 2, what="the retried upload")
         assert "Loft" in json.dumps(uploads[1]["meta"], ensure_ascii=False)
@@ -3096,7 +3103,9 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
 
     with patch.object(common, "async_follow_export", slow_follow):
         task = asyncio.ensure_future(
-            svc._run(hass, env.entry.entry_id, recorded_then_waits, needs_link=False)
+            action_common._run(
+                hass, env.entry.entry_id, recorded_then_waits, needs_link=False
+            )
         )
         await reached.wait()
         task.cancel()
@@ -3108,7 +3117,7 @@ async def test_a_cancelled_call_that_recorded_reloads_and_stays_cancelled(
         with pytest.raises(asyncio.CancelledError):
             await task
     assert reloads == [env.entry.entry_id]
-    assert not svc._lock(hass, env.entry.entry_id).locked()
+    assert not action_common._lock(hass, env.entry.entry_id).locked()
     # the logbook says how far it got (review-4 W I7)
     assert plans[-1].data["outcome"] == "cancelled"
     assert describers(hass)[EVENT_PLAN](plans[-1])["message"] == (
@@ -3128,7 +3137,7 @@ async def test_a_cancelled_call_that_recorded_nothing_does_not_reload(
         ) as follow,
         pytest.raises(asyncio.CancelledError),
     ):
-        await svc._run(hass, env.entry.entry_id, cancelled, needs_link=False)
+        await action_common._run(hass, env.entry.entry_id, cancelled, needs_link=False)
     follow.assert_not_awaited()
 
 
@@ -3148,7 +3157,7 @@ async def test_no_reload_while_home_assistant_stops(
         ) as reload,
         pytest.raises(asyncio.CancelledError),
     ):
-        await svc._run(hass, env.entry.entry_id, recorded, needs_link=False)
+        await action_common._run(hass, env.entry.entry_id, recorded, needs_link=False)
     reload.assert_not_awaited()
 
 

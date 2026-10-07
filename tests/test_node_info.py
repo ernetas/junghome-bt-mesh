@@ -20,10 +20,6 @@ from custom_components.junghome_ble.config_entities import PropertyReader
 from custom_components.junghome_ble.const import (
     NODE_INFO_TIME_ROLE,
 )
-from custom_components.junghome_ble.coordinator import (
-    NODE_VERSIONS_STORAGE_VERSION,
-    NodeInfoStore,
-)
 from custom_components.junghome_ble.entity import node_identifier, update_node_device
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.cdb import Element, Node
@@ -32,6 +28,10 @@ from custom_components.junghome_ble.jhmesh.properties import (
     SIG_HARDWARE_REVISION,
     SIG_MANUFACTURER_NAME,
     SIG_SOFTWARE_VERSION,
+)
+from custom_components.junghome_ble.node_info import (
+    NODE_VERSIONS_STORAGE_VERSION,
+    NodeInfoStore,
 )
 
 from . import property_helpers as ph

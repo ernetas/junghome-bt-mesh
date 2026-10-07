@@ -14,8 +14,8 @@ from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_TOKEN,
+    issue_id,
 )
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayBusy,

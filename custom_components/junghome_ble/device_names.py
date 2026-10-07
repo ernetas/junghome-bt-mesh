@@ -30,10 +30,9 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 
-from .const import DOMAIN, ISSUE_DEVICE_NAME, learn_more_url
-from .coordinator import issue_id
+from .actions.common import async_configure
+from .const import DOMAIN, ISSUE_DEVICE_NAME, issue_id, learn_more_url
 from .entity import button_gang, buttons_device_id, node_identifier
-from .services import async_configure
 
 if TYPE_CHECKING:
     from .coordinator import JungHomeConfigEntry, JungHomeHub

@@ -14,17 +14,16 @@ from custom_components.junghome_ble.const import (
     ISSUE_ADDRESS_SHARED_AGAIN,
     ISSUE_PDUS_DROPPED,
 )
-from custom_components.junghome_ble.coordinator import (
-    SEQ_RESTART_MARGIN,
-    AddressShared,
-    JungHomeHub,
-)
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.client import (
     SEQ_GUARD_FIRST_BEACON,
     SEQ_MAX,
 )
-from custom_components.junghome_ble.seq_store import _stored_address_shared
+from custom_components.junghome_ble.seq_store import (
+    SEQ_RESTART_MARGIN,
+    AddressShared,
+    _stored_address_shared,
+)
 
 from .conftest import FakeProxyLink, settle, wait_for_link, wait_until
 from .helpers import OUR_ADDRESS, SEQ_STORE_KEY, find_issue
@@ -33,6 +32,8 @@ from .test_seq_store import run_fix_flow
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    from custom_components.junghome_ble.coordinator import JungHomeHub
 
 LIGHT = 0x0232
 

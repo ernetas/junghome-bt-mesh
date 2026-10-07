@@ -15,8 +15,8 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 
-from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble import switch as SW
+from custom_components.junghome_ble.actions import common as action_common
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_TIME_KEEPER_MISSING,
@@ -55,10 +55,10 @@ def issue(hass: HomeAssistant, env: Env) -> ir.IssueEntry | None:
 async def test_set_time_keeper(hass: HomeAssistant, env: Env) -> None:
     """On: the Time Server publishes to FEFF, the CDB gets the app's `#time_keeper_group#`; off: Publication Set
     0x0000. Bound first where the export shows the Time Server unbound."""
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     pf = env.reload()
     assert KEEPER_GROUP not in pf.cdb.groups
-    await svc.async_configure(
+    await action_common.async_configure(
         hass, env.entry.entry_id, lambda c: c.set_time_keeper(SOCKET, True)
     )
     await settled(hass, env)
@@ -69,7 +69,7 @@ async def test_set_time_keeper(hass: HomeAssistant, env: Env) -> None:
         C.model_publication_set(SOCKET, KEEPER_GROUP, "1200")
     ]
     env.config_calls.clear()
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert await configurator.set_time_keeper(SOCKET, False) is True
     assert [p for _n, p in env.config_calls] == [
         C.model_publication_set(SOCKET, 0, "1200")
@@ -81,7 +81,7 @@ async def test_set_time_keeper(hass: HomeAssistant, env: Env) -> None:
     model["bind"] = []
     pf.save(env.path, force=True)
     env.config_calls.clear()
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     assert await configurator.set_time_keeper(SOCKET, True) is True
     assert [p for _n, p in env.config_calls] == [
         C.model_app_bind(SOCKET, "1200", 0),
@@ -91,7 +91,7 @@ async def test_set_time_keeper(hass: HomeAssistant, env: Env) -> None:
 
 
 async def test_set_time_keeper_refusals(hass: HomeAssistant, env: Env) -> None:
-    configurator = hass.data[svc.CONFIGURATORS][env.entry.entry_id]
+    configurator = hass.data[action_common.CONFIGURATORS][env.entry.entry_id]
     for unicast in (0x7FFF, 0x0001):  # no such node; a phone without a Time Server
         with pytest.raises(ServiceValidationError) as exc:
             await configurator.set_time_keeper(unicast, True)

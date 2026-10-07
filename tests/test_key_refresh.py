@@ -20,16 +20,16 @@ from custom_components.junghome_ble.const import (
     ISSUE_KEY_REFRESH,
     ISSUE_VAULT_KEY_REFRESH,
 )
-from custom_components.junghome_ble.coordinator import (
-    async_apply_followed_key_refresh,
-    seq_store_for_uuid,
-)
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
 from custom_components.junghome_ble.jhmesh.onboarding import node_for
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
 from custom_components.junghome_ble.jhmesh.vault import RefreshProgress, VaultNode
+from custom_components.junghome_ble.seq_store import (
+    async_apply_followed_key_refresh,
+    seq_store_for_uuid,
+)
 
 from .conftest import (
     CDB_PATH,

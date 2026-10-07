@@ -64,26 +64,20 @@ from .const import (
     TIME_SET_INTERVAL,
     issue_id,
 )
-from .data import entry_lock
 from .device_info import update_node_device
 from .element_state import ElementState
-from .hub.clock import Clock, next_utc_offset_change
+from .hub.clock import Clock
 from .hub.energy import (
     COUNTER_FIELDS,
     PROPERTY_PRECISE_TOTAL_ENERGY,
     SENSOR_FIELDS,
-    CounterNotReset,
     Energy,
-    lacks_precise_energy,
 )
 from .hub.export_watch import (
-    GATEWAY_CERTIFICATE_CHANGED,
-    GATEWAY_UNVERIFIED,
     ExportWatch,
-    is_gateway_host,
 )
 from .hub.gestures import ButtonGestures, EventListener
-from .hub.issues import SEQ_STALL_ISSUE_AFTER, Issues
+from .hub.issues import Issues
 from .hub.lifecycle import Lifecycle, async_cancel_task
 from .hub.link import LINK_HISTORY, LinkEnd, LinkManager, LinkRecord
 from .hub.liveness import Liveness
@@ -99,8 +93,6 @@ from .jhmesh.cdb import CDB, Node
 from .jhmesh.client import (
     MESH_PROXY_SERVICE,
     NET_KEY_INDEX,
-    SEQ_GUARD_FIRST_BEACON,
-    SEQ_TX_LIMIT,
     AccessMessage,
     Heartbeat,
     ProxyClient,
@@ -127,41 +119,19 @@ from .jhmesh.properties import (
 from .keep_awake import KeepAwake
 from .node_clocks import NodeClocks
 from .node_info import (
-    NODE_VERSION_STORES,
     NODE_VERSIONS,
     NODE_VERSIONS_SAVE_DELAY,
-    NODE_VERSIONS_STORAGE_VERSION,
-    NodeInfoStore,
     async_load_node_versions,
-    async_remove_node_versions,
     node_versions_store,
 )
 from .seq_store import (
-    SEQ_BACKUP_AT,
-    SEQ_BACKUP_STORES,
-    SEQ_BACKUP_TOKEN,
-    SEQ_FLOOR_EVERY,
-    SEQ_FLOOR_STORES,
-    SEQ_OWNERS,
-    SEQ_RESTART_MARGIN,
-    SEQ_SAVE_EVERY,
     SEQ_STALL_RETRY,
-    SEQ_STORAGE_MINOR_VERSION,
-    SEQ_STORES,
-    STORAGE_VERSION,
     AddressShared,
     HAState,
-    SeqStore,
     _stored_key_refresh,
-    async_apply_followed_key_refresh,
     async_load_state,
     async_migrate_legacy_seq_store,
-    async_skip_seq_store_ahead,
-    merge_legacy_seq_store,
-    seq_backup_store,
-    seq_floor_store_for_uuid,
     seq_store,
-    seq_store_for_uuid,
 )
 from .vault_refresh import VaultKeyRefresh
 
@@ -202,55 +172,6 @@ SEQUENCE_CHECK_INTERVAL: Final = 600.0
 RESTART_BLOCK: Final = 0x10000
 RESTART_SLACK: Final = 0x0400
 
-
-# Moved out of this module (the persistence into `seq_store.py` and `node_info.py`, `issue_id` into
-# `const.py`, the hub's components into `hub/`, `ElementState` into `element_state.py`, `entry_lock`
-# into `data.py`); re-exported for the modules and tests that import them from here.
-__all__ = [
-    "GATEWAY_CERTIFICATE_CHANGED",
-    "GATEWAY_UNVERIFIED",
-    "LINK_HISTORY",
-    "NODE_VERSIONS",
-    "NODE_VERSIONS_SAVE_DELAY",
-    "NODE_VERSIONS_STORAGE_VERSION",
-    "NODE_VERSION_STORES",
-    "SEQ_BACKUP_AT",
-    "SEQ_BACKUP_STORES",
-    "SEQ_BACKUP_TOKEN",
-    "SEQ_FLOOR_EVERY",
-    "SEQ_FLOOR_STORES",
-    "SEQ_GUARD_FIRST_BEACON",
-    "SEQ_OWNERS",
-    "SEQ_RESTART_MARGIN",
-    "SEQ_SAVE_EVERY",
-    "SEQ_STALL_ISSUE_AFTER",
-    "SEQ_STALL_RETRY",
-    "SEQ_STORAGE_MINOR_VERSION",
-    "SEQ_STORES",
-    "SEQ_TX_LIMIT",
-    "STORAGE_VERSION",
-    "AddressShared",
-    "CounterNotReset",
-    "ElementState",
-    "HAState",
-    "LinkEnd",
-    "NodeInfoStore",
-    "SeqStore",
-    "async_apply_followed_key_refresh",
-    "async_migrate_legacy_seq_store",
-    "async_remove_node_versions",
-    "async_skip_seq_store_ahead",
-    "entry_lock",
-    "is_gateway_host",
-    "issue_id",
-    "lacks_precise_energy",
-    "merge_legacy_seq_store",
-    "next_utc_offset_change",
-    "seq_backup_store",
-    "seq_floor_store_for_uuid",
-    "seq_store",
-    "seq_store_for_uuid",
-]
 
 # `async_wait_settled`: state Gets while a load ramps to a new state, the pause between them (JUNG dimmers fade
 # with their own ramps, a few seconds at most), and how long it asks at most, however many Gets go unanswered
@@ -541,7 +462,7 @@ class JungHomeHub:
         self.liveness = Liveness(self)
         # the proxy link: its loop, watchdog and grace (`hub/link.py`)
         self.link = LinkManager(self)
-        self.proxy = ProxyClient(
+        self.proxy: ProxyClient = ProxyClient(
             cdb,
             state,
             on_message=self._on_message,
@@ -605,13 +526,15 @@ class JungHomeHub:
         # the unknown nodes, the export refresh and the gateway's trust (`hub/export_watch.py`)
         self.export_watch = ExportWatch(self)
         # the battery nodes a Config plan or a property change keeps awake (`keep_awake.py`)
-        self.keep_awake = KeepAwake(self)
+        self.keep_awake: KeepAwake = KeepAwake(self)
         # the devices Home Assistant added, carried through the app's key refresh (`vault_refresh.py`)
         self.vault_refresh = VaultKeyRefresh(
             self, issue_id(entry, ISSUE_VAULT_KEY_REFRESH)
         )
         # each node's insert and key layout: export, advert, a Get (`inserts.py`)
-        self.inserts = NodeInserts(self, issue_id(entry, ISSUE_INSERT_MISMATCH))
+        self.inserts: NodeInserts = NodeInserts(
+            self, issue_id(entry, ISSUE_INSERT_MISMATCH)
+        )
         # each node's clock, zone offset and stored location as it answers them (`node_clocks.py`)
         self.clocks = NodeClocks(self, issue_id(entry, ISSUE_NODE_CLOCK_WRONG))
         # the last LINK_HISTORY links, oldest first (`LinkManager._link_ended`)

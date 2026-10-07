@@ -44,8 +44,9 @@ from .const import (
     NODE_INFO_UNSUPPORTED,
     NODE_INFO_VENDOR,
     OPTION_DOUBLE_CLICK_KEYS,
+    issue_id,
 )
-from .coordinator import issue_id, load_network
+from .coordinator import load_network
 from .entity import (
     button_gang,
     buttons_device_id,
@@ -66,7 +67,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.device_registry import DeviceEntry
 
     from . import JungHomeConfigEntry
-    from .coordinator import ElementState, JungHomeHub
+    from .coordinator import JungHomeHub
+    from .element_state import ElementState
     from .jhmesh.cdb import CDB, Node
     from .jhmesh.devices import Blind, Light, Socket
 

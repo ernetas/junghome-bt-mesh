@@ -20,7 +20,6 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.junghome_ble import coordinator
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
@@ -37,10 +36,8 @@ from custom_components.junghome_ble.const import (
     PIN_FROM_MESH,
     PIN_FROM_USER,
 )
-from custom_components.junghome_ble.coordinator import (
-    JungHomeHub,
-    entry_lock,
-)
+from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.data import entry_lock
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
@@ -893,11 +890,11 @@ async def test_an_address_that_is_no_host_is_not_followed(
 
 
 def test_gateway_hosts() -> None:
-    assert coordinator.is_gateway_host("192.0.2.20")
-    assert coordinator.is_gateway_host("junghome.local")
-    assert coordinator.is_gateway_host("JungHome-2")
-    assert not coordinator.is_gateway_host("192.0.2")
-    assert not coordinator.is_gateway_host("a..b")
+    assert export_watch.is_gateway_host("192.0.2.20")
+    assert export_watch.is_gateway_host("junghome.local")
+    assert export_watch.is_gateway_host("JungHome-2")
+    assert not export_watch.is_gateway_host("192.0.2")
+    assert not export_watch.is_gateway_host("a..b")
 
 
 async def test_gateway_follow_without_news(
@@ -1046,7 +1043,7 @@ async def test_a_pin_the_gateway_node_contradicts_is_not_used(
     assert "export was not fetched for the unknown node(s)" in caplog.text
     assert (
         await hub_of(entry).async_gateway_distrust()
-        == coordinator.GATEWAY_CERTIFICATE_CHANGED
+        == export_watch.GATEWAY_CERTIFICATE_CHANGED
     )
 
 
@@ -1089,7 +1086,7 @@ async def test_an_unconfirmed_pin_is_not_used_and_asked_again(
     with patch.object(
         JungHomeHub, "connected", new_callable=PropertyMock, return_value=False
     ):
-        assert await hub.async_gateway_distrust() == coordinator.GATEWAY_UNVERIFIED
+        assert await hub.async_gateway_distrust() == export_watch.GATEWAY_UNVERIFIED
 
 
 async def _check_done(hass: HomeAssistant, entry: MockConfigEntry) -> None:

@@ -81,7 +81,8 @@ if TYPE_CHECKING:
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import JungHomeConfigEntry
-    from .coordinator import ElementState, JungHomeHub
+    from .coordinator import JungHomeHub
+    from .element_state import ElementState
     from .entity import UpdateRead
     from .jhmesh.devices import Device
 

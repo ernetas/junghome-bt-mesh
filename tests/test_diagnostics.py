@@ -36,7 +36,6 @@ from custom_components.junghome_ble.const import (
     OPTION_DOUBLE_CLICK_KEYS,
     OPTION_HEARTBEATS,
 )
-from custom_components.junghome_ble.coordinator import SEQ_RESTART_MARGIN
 from custom_components.junghome_ble.diagnostics import redact_paths
 from custom_components.junghome_ble.hub.issues import Issues
 from custom_components.junghome_ble.jhmesh import messages as M
@@ -49,7 +48,10 @@ from custom_components.junghome_ble.jhmesh.pdu import (
     encode_opcode,
 )
 from custom_components.junghome_ble.jhmesh.stats import LinkStats
-from custom_components.junghome_ble.seq_store import SEQ_RATE_UNMEASURED
+from custom_components.junghome_ble.seq_store import (
+    SEQ_RATE_UNMEASURED,
+    SEQ_RESTART_MARGIN,
+)
 
 from . import key_scan
 from .conftest import (

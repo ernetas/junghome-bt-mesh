@@ -29,7 +29,6 @@ from homeassistant.exceptions import HomeAssistantError
 
 from .config_entities import PropertyEntity, config_targets
 from .const import DOMAIN
-from .coordinator import CounterNotReset
 from .entity import (
     JungHomeEntity,
     async_setup_platform,
@@ -40,6 +39,7 @@ from .entity import (
 )
 from .errors import mesh_errors
 from .gateway_status import gateway_polls
+from .hub.energy import CounterNotReset
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant

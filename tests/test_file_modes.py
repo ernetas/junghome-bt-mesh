@@ -30,11 +30,6 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     DOMAIN,
 )
-from custom_components.junghome_ble.coordinator import (
-    async_skip_seq_store_ahead,
-    seq_floor_store_for_uuid,
-    seq_store_for_uuid,
-)
 from custom_components.junghome_ble.identity import async_vault_keeper
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh.export import (
@@ -45,6 +40,11 @@ from custom_components.junghome_ble.mesh_config import (
     MeshConfigurator,
     app_copy_path,
     pre_adopt_path,
+)
+from custom_components.junghome_ble.seq_store import (
+    async_skip_seq_store_ahead,
+    seq_floor_store_for_uuid,
+    seq_store_for_uuid,
 )
 
 from .conftest import (

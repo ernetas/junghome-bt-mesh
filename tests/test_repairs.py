@@ -27,6 +27,7 @@ from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble import const, repairs
+from custom_components.junghome_ble.actions.common import _configurator
 from custom_components.junghome_ble.config_flow import CONF_MESH_UUID, export_path
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -48,15 +49,14 @@ from custom_components.junghome_ble.const import (
     LEARN_MORE_PAGE,
     PIN_FROM_USER,
     STORAGE_DIR,
+    issue_id,
     learn_more_url,
 )
-from custom_components.junghome_ble.coordinator import issue_id
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.mesh_config import (
     MeshConfigurator,
     export_digest,
 )
-from custom_components.junghome_ble.services import _configurator
 from custom_components.junghome_ble.tls import CONF_GATEWAY_FINGERPRINT
 
 from .conftest import (

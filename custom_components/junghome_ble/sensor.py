@@ -157,7 +157,7 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .config_entities import ValueTarget
-    from .coordinator import ElementState
+    from .element_state import ElementState
     from .entity import UpdateRead
     from .jhmesh.cdb import Node
     from .jhmesh.client import AccessMessage
