@@ -1290,6 +1290,24 @@ def no_link_loss_grace(request: pytest.FixtureRequest) -> Generator[None]:
         yield
 
 
+@pytest.fixture(autouse=True)
+def reads_beside_the_refresh(request: pytest.FixtureRequest) -> Generator[None]:
+    """Let the property reads start without waiting for the link's state refresh; `refresh_first` tests keep the wait.
+
+    The fake mesh leaves most of the refresh's state Gets unanswered, so a refresh ends only on timeouts that no test
+    advances: the reads waiting for it (`PropertyReader._wait_for_refresh`) would wait for good. The wait has tests
+    of its own (`tests/test_config_entities.py`).
+    """
+    if "refresh_first" in request.keywords:
+        yield
+        return
+    with patch(
+        "custom_components.junghome_ble.properties.reader.PROPERTY_READ_REFRESH_WAIT",
+        0.0,
+    ):
+        yield
+
+
 @pytest.fixture
 def no_connect_beacon(
     fake_link: FakeProxyLink, monkeypatch: pytest.MonkeyPatch

@@ -188,7 +188,12 @@ class ButtonGestures:
         hub.async_on_link_loss(self._end_holds_on_link_loss)
 
     def cancel_all(self) -> None:
-        """Drop the clicks held back and end every hold (`HOLD_END_STOPPED`): the hub stops (`JungHomeHub.async_stop`)."""
+        """Drop the clicks held back and end every hold (`HOLD_END_STOPPED`): the hub stops (`JungHomeHub.async_stop`).
+
+        The hub is `stopping` by then, and a key event still arriving while it waits for its tasks and the detach is
+        not taken (`button_event`, `dim_hold`): a hold started then had its `hold_end` (`reason: timeout`)
+        published DIM_HOLD_MAX after the unload, by a timer nothing cancelled.
+        """
         for addr in list(self._delayed_clicks):
             self._cancel_delayed_click(addr)
         self._end_holds(HOLD_END_STOPPED)
@@ -204,8 +209,11 @@ class ButtonGestures:
         continue it, and it ends `DIM_HOLD_QUIET` seconds after the last — or at a Delta Set 0. A new start while a
         hold runs (its stop was lost) ends that hold first. A Level Set moves to a level: no hold. Whatever its kind,
         a hold ends `DIM_HOLD_MAX` seconds after it started, with `reason: timeout` (a lost Move 0
-        used to leave it open for good); a Move 0 that still comes then ends nothing.
+        used to leave it open for good); a Move 0 that still comes then ends nothing. A stopping hub derives
+        nothing (`cancel_all`).
         """
+        if self.hub.stopping:
+            return
         if m.opcode in (M.GEN_MOVE_SET, M.GEN_MOVE_SET_UNACK) and len(p) >= 3:
             kind, delta, tid = (
                 "move",
@@ -243,9 +251,7 @@ class ButtonGestures:
         hold.limit = async_call_later(
             self.hub.hass, DIM_HOLD_MAX, partial(self._dim_hold_limit, addr)
         )
-        self.fire_button(
-            addr, "hold_start", {"target": hold.target, "direction": direction}
-        )
+        self._fire(addr, "hold_start", {"target": hold.target, "direction": direction})
 
     def _quiet_dim_hold(self, addr: int, hold: DimHold) -> None:
         """(Re)arm the end of a Delta transaction's hold, `DIM_HOLD_QUIET` seconds from now."""
@@ -271,7 +277,7 @@ class ButtonGestures:
         attrs: dict[str, Any] = {"target": hold.target, "direction": hold.direction}
         if reason is not None:
             attrs[ATTR_REASON] = reason
-        self.fire_button(addr, "hold_end", attrs)
+        self._fire(addr, "hold_end", attrs)
 
     def _end_key_hold(self, addr: int, reason: str) -> None:
         """End the gateway-mode hold of `addr` without its release: `hold_end` with its side and `reason`.
@@ -284,7 +290,7 @@ class ButtonGestures:
         attrs: dict[str, Any] = {ATTR_REASON: reason}
         if hold.side is not None:
             attrs["side"] = hold.side
-        self.fire_button(addr, "hold_end", attrs)
+        self._fire(addr, "hold_end", attrs)
 
     @callback
     def _key_hold_limit(self, addr: int, _now: datetime) -> None:
@@ -324,6 +330,12 @@ class ButtonGestures:
 
     @callback
     def fire_button(self, addr: int, event: str, attrs: dict[str, Any]) -> None:
+        """Deliver a gesture the hub's handlers derived (`_fire`); none once the hub stops (`cancel_all`)."""
+        if not self.hub.stopping:
+            self._fire(addr, event, attrs)
+
+    @callback
+    def _fire(self, addr: int, event: str, attrs: dict[str, Any]) -> None:
         """Deliver a button event of the element at `addr` to its listeners, then publish it on the bus.
 
         The bus event (`event.publish_button_event`, through `JungHomeHub.publish_button_event`: this module imports no
@@ -367,10 +379,13 @@ class ButtonGestures:
 
         A rocker half's codes (0-3) carry the side as the `side` attribute; a release (4) ends the hold that
         started on the same element and reports that hold's side, so `hold_start` / `hold_end` pair up. A double
-        click is two clicks of the same key, hence of the same side, within DOUBLE_CLICK_WINDOW. A code the
+        click is two clicks of the same key, hence of the same side, within DOUBLE_CLICK_WINDOW; the click that
+        completes one starts nothing (three presses are a double click and a click, four two double clicks). A code the
         firmware table does not know is still delivered (as `code_xx`: the key is awake, which the battery sensor
         cares about) and logged once per key and code.
         """
+        if self.hub.stopping:
+            return  # `cancel_all` ended what was pending: nothing may arm a timer after it
         now = time.monotonic()
         # every event is published twice by the firmware, 1-2 s apart; on a double press the copies interleave with
         # the second press (16 05, 17 05, 16 05, 17 05), so the last counter alone is not enough to spot them
@@ -406,17 +421,18 @@ class ButtonGestures:
                     return  # its hold_end went out already (DIM_HOLD_MAX, the link)
                 side = hold.side
         if name == "click":
-            last = self._button_last_click.get(addr)
-            self._button_last_click[addr] = (now, side)
+            last = self._button_last_click.pop(addr, None)
             if (
                 last is not None
                 and last[1] == side
                 and now - last[0] <= DOUBLE_CLICK_WINDOW
             ):
-                # a click held back is the first half of this double click: never reported on its own
+                # a click held back is the first half of this double click: never reported on its own; and this
+                # click is no longer the last one, or a third press within the window made a second double click
                 self._cancel_delayed_click(addr)
-                self.fire_button(addr, "double_click", self._event_attrs(counter, side))
+                self._fire(addr, "double_click", self._event_attrs(counter, side))
                 return
+            self._button_last_click[addr] = (now, side)
             # a click of the other half of the rocker is no double click: a click held back is reported first
             self._flush_delayed_click(addr)
             if self.waits_for_double_click(addr):
@@ -431,7 +447,7 @@ class ButtonGestures:
         else:
             # any other gesture ends the wait: the click is reported first, then the gesture, in order
             self._flush_delayed_click(addr)
-        self.fire_button(addr, name, self._event_attrs(counter, side))
+        self._fire(addr, name, self._event_attrs(counter, side))
 
     def waits_for_double_click(self, addr: int) -> bool:
         """Whether the clicks of the key at `addr` are held back until a double click is ruled out (module docstring).
@@ -456,7 +472,7 @@ class ButtonGestures:
                 attrs: dict[str, Any] = {}
                 if running.side is not None:
                     attrs["side"] = running.side
-                self.fire_button(addr, "hold_end", attrs)
+                self._fire(addr, "hold_end", attrs)
         self._key_holds[addr] = KeyHold(
             side,
             async_call_later(
@@ -469,7 +485,7 @@ class ButtonGestures:
         self, addr: int, counter: int, side: str | None, _now: datetime
     ) -> None:
         self._delayed_clicks.pop(addr, None)
-        self.fire_button(addr, "click", self._event_attrs(counter, side))
+        self._fire(addr, "click", self._event_attrs(counter, side))
 
     def _cancel_delayed_click(self, addr: int) -> tuple[int, str | None] | None:
         """Drop the click held back for `addr`, if any; returns its counter and side."""
@@ -481,4 +497,4 @@ class ButtonGestures:
     def _flush_delayed_click(self, addr: int) -> None:
         """Report the click held back for `addr` now, if any."""
         if (held := self._cancel_delayed_click(addr)) is not None:
-            self.fire_button(addr, "click", self._event_attrs(*held))
+            self._fire(addr, "click", self._event_attrs(*held))

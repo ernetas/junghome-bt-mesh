@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Hopp: {hops}",
     "topology_band_more": "Hopp: {hops} eller fler",
     "topology_band_unknown": "Hopp: okänt",
+    "topology_band_unknown_off": "Hopp: okänt (alternativet Heartbeats från noder är av)",
     "topology_legend": "Teckenförklaring",
     "topology_legend_reachable": "nåbar: svarar",
     "topology_legend_unreachable": "kan inte nås: svarade inte",

@@ -63,6 +63,7 @@ class ExportWatchHub(HubPort, Protocol):
     """What the export watch asks of the hub besides `HubPort`: the link, the configurator, the nodes by MAC."""
 
     node_by_mac: dict[str, Node]
+    link_count: int
 
     @property
     def link(self) -> LinkView:
@@ -133,6 +134,10 @@ class ExportWatch:
         # one mesh read of the gateway's certificate at a time, and a pin the gateway node contradicted (not used)
         self._gateway_check = asyncio.Lock()
         self._distrusted_pin: str | None = None
+        # the link (`link_count`) the pin was last checked on (`check_pin`), and whether "not confirmed" was a WARNING
+        # already: on a flapping link, or with a node that never answers, it used to be one per link
+        self._pin_checked_link: int | None = None
+        self._unconfirmed_logged = False
 
     def check_unknown_node(self, info: bluetooth.BluetoothServiceInfoBleak) -> None:
         """Notice a node of *our* network advertising from a MAC the export does not know: the export is behind.
@@ -300,7 +305,8 @@ class ExportWatch:
         reports over the mesh (`0xC003`, where the app takes its pin from): equal, it counts as vouched for from
         then on (`PIN_FROM_MESH` in the entry); different, the gateway is not used and the
         `gateway_certificate_changed` repair points to Reconfigure; unanswered, nothing is exchanged with the
-        gateway yet (logged) and the next use asks again. The mesh changes nothing else: devices work as ever.
+        gateway yet (a WARNING the first time per hub, DEBUG after) and the next use asks again. The mesh changes
+        nothing else: devices work as ever.
         """
         pin = normalize_fingerprint(self.hub.entry.data.get(CONF_GATEWAY_FINGERPRINT))
         async with self._gateway_check:
@@ -318,11 +324,13 @@ class ExportWatch:
             )
             host = self.hub.entry.data.get(CONF_GATEWAY_HOST)
             if reported is None:
-                _LOGGER.warning(
+                _LOGGER.log(
+                    logging.DEBUG if self._unconfirmed_logged else logging.WARNING,
                     "The gateway node has not confirmed the certificate pinned for the gateway %s over the mesh "
                     "yet: nothing is fetched from or handed to the gateway until it does",
                     host,
                 )
+                self._unconfirmed_logged = True
                 return GATEWAY_UNVERIFIED
             if reported != pin:
                 self._gateway_contradicted(pin)
@@ -342,7 +350,7 @@ class ExportWatch:
         """Whether the gateway node vouched for the entry's pin and nothing contradicted it since.
 
         `async_gateway_distrust` without its mesh read: a poll of the gateway's status uses the gateway only when
-        this holds, and leaves the vouching to the check every link runs (`check_pin`).
+        this holds, and leaves the vouching to the check each link runs after its refresh (`check_pin`).
         """
         pin = normalize_fingerprint(self.hub.entry.data.get(CONF_GATEWAY_FINGERPRINT))
         return self.hub.entry.data.get(CONF_GATEWAY_PIN_SOURCE) == PIN_FROM_MESH and (
@@ -350,12 +358,18 @@ class ExportWatch:
         )
 
     def check_pin(self) -> None:
-        """On every link while the pin is not vouched for: compare it with the gateway node's report, in the background."""
+        """While the pin is not vouched for: compare it with the gateway node's report, in the background.
+
+        Once per link at most, once its state refresh is through (`Refresh.after_connect`): the `0xC003` Get used to
+        go out at every link-up, beside the Time Set and the refresh.
+        """
         if (
             self._gateway_for_refresh() is not None
             and self.hub.entry.data.get(CONF_GATEWAY_PIN_SOURCE) != PIN_FROM_MESH
             and self._distrusted_pin is None
+            and self._pin_checked_link != self.hub.link_count
         ):
+            self._pin_checked_link = self.hub.link_count
             self.hub.entry.async_create_background_task(
                 self.hub.hass,
                 self.async_gateway_distrust(),
@@ -392,7 +406,11 @@ class ExportWatch:
         return next((n for n in self.hub.cdb.nodes if n.pid == GATEWAY_PID), None)
 
     async def _gateway_text(self, unicast: int, pid: int) -> str | None:
-        """Return one of the gateway node's text properties (LBC Manufacturer Get); None when it does not say."""
+        """Return one of the gateway node's text properties (LBC Manufacturer Get); None when it does not say.
+
+        An answer whose value does not decode says nothing either (logged): it used to raise out of the background
+        check (`check_pin`).
+        """
         key = pid.to_bytes(2, "little")
         try:
             reply = await self.hub.proxy.request(
@@ -406,7 +424,17 @@ class ExportWatch:
         except (TimeoutError, ConnectionError):
             _LOGGER.debug("The gateway node %04X did not say %04X", unicast, pid)
             return None
-        return PROPERTIES[pid].codec.decode(reply.params[3:]) or None
+        try:
+            text = PROPERTIES[pid].codec.decode(reply.params[3:])
+        except ValueError as err:
+            _LOGGER.debug(
+                "The gateway node %04X answered %04X with a value that does not decode: %s",
+                unicast,
+                pid,
+                err,
+            )
+            return None
+        return text or None
 
     async def _refresh_export_from_gateway(self) -> None:
         """Adopt the gateway's export when it knows the unknown nodes, then reload the entry with it.

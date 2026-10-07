@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Šuoliai: {hops}",
     "topology_band_more": "Šuoliai: {hops} ar daugiau",
     "topology_band_unknown": "Šuoliai: nežinoma",
+    "topology_band_unknown_off": "Šuoliai: nežinoma (parinktis Mazgų gyvybingumo signalai išjungta)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "pasiekiamas: atsako",
     "topology_legend_unreachable": "nepasiekiamas: neatsakė",

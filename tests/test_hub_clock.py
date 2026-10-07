@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, PropertyMock, patch
 
 from homeassistant.util import dt as dt_util
@@ -14,6 +14,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.junghome_ble.const import TIME_SET_INTERVAL
 from custom_components.junghome_ble.coordinator import JungHomeHub
+from custom_components.junghome_ble.jhmesh.client import SequenceStalled
 from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES
 
 from .conftest import (
@@ -125,3 +126,36 @@ async def test_time_set_goes_out_before_the_refresh(
     fake_link.write_error = ConnectionError("proxy disconnected")
     await hub.refresh.after_connect()
     assert not fake_link.sent
+
+
+async def test_a_time_set_held_back_by_the_store_carries_the_time_it_goes_out(
+    hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """Review-5 R5-2: the Time Set the hub retries while the sequence-number store holds sends back is built anew for
+    each attempt. Built once before the wait, the stall's whole length (up to two minutes at a link-up whose beacon
+    moved the IV index) was the error of every node's clock until the next day's Time Set."""
+    hub = hub_of(init_answered)
+    start = dt_util.now()
+    times = iter(start + timedelta(minutes=minutes) for minutes in range(3))
+    send = hub.proxy.send_access
+    attempts: list[bytes] = []
+
+    async def held_back_twice(dst: int, pdu: bytes, *args: Any, **kwargs: Any) -> Any:
+        attempts.append(pdu)
+        if len(attempts) < 3:
+            raise SequenceStalled("the store's last save has not landed")
+        return await send(dst, pdu, *args, **kwargs)
+
+    fake_link.sent.clear()
+    with (
+        patch.object(hub.proxy, "send_access", held_back_twice),
+        patch(
+            "custom_components.junghome_ble.coordinator.dt_util.now",
+            side_effect=lambda: next(times),
+        ),
+    ):
+        await hub.clock.send_time()
+    assert len(attempts) == 3
+    assert len(set(attempts)) == 3  # each attempt its own time
+    assert len(fake_link.sent) == 1
+    assert_time_set(fake_link.sent[0], start + timedelta(minutes=2))

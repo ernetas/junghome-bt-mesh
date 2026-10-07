@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
+from unittest.mock import patch
 
 from homeassistant.components.image import async_get_image
 from homeassistant.helpers import area_registry as ar
@@ -27,12 +28,14 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
+from custom_components.junghome_ble.hub.link import LinkManager
 from custom_components.junghome_ble.mesh_topology import (
     topology_snapshot,
     topology_texts,
 )
 from custom_components.junghome_ble.topology_svg import TEXTS, render_svg
 
+from .conftest import settle
 from .helpers import (
     LIGHT_DIMMER,
     LIGHT_SWITCH,
@@ -173,9 +176,10 @@ async def test_a_look_waiting_ends_with_the_entry(
     init_integration: MockConfigEntry,
 ) -> None:
     hub = hub_of(init_integration)
-    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     image: JungHomeMeshTopology = hub.platforms["image"].entities[UID]  # type: ignore[assignment]
-    image.async_model_rebound()  # within the minute: held back
+    unreachable(
+        hass, init_integration, SOCKET
+    )  # within the minute of the setup's picture: held back
     assert image._pending is not None
     assert await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
@@ -286,3 +290,41 @@ async def test_the_picture_speaks_the_server_language(
     await async_get_translations(hass, "fi", "common", {DOMAIN})
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     assert "<title>Mesh-verkon topologia</title>" in await picture(hass)
+
+
+async def test_a_link_change_is_drawn_at_once(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 A5-2: the picture held a link change back behind its minute, as *Mesh overview* did before wave 12:
+    after the link dropped the overview said 0 at once while the picture still showed the old proxy. A link change
+    is drawn at once, with whatever look was waiting."""
+    hub = hub_of(init_integration)
+    image: JungHomeMeshTopology = hub.platforms["image"].entities[UID]  # type: ignore[assignment]
+    assert image._shown is not None
+    assert image._shown.connected
+    unreachable(
+        hass, init_integration, SOCKET
+    )  # within the minute of the setup's picture: held back
+    assert image._pending is not None
+    before = state(hass)
+    with patch.object(LinkManager, "visible_proxies", return_value=[]):
+        fake_link.drop_link()
+        await settle(hass)
+        assert not image._shown.connected
+        assert state(hass) != before
+        assert "no link" in await picture(hass)
+
+
+async def test_the_band_without_hops_says_the_heartbeats_are_off(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review 5: the hops come from heartbeats, off by default, so on most installations every node sat in a band
+    headed *Hops: not known* with nothing saying why. Its heading says the option is off."""
+    hub = hub_of(init_integration)
+    assert not hub.heartbeats_enabled
+    snapshot = topology_snapshot(hub)
+    assert snapshot.heartbeats is False
+    assert TEXTS["band_unknown_off"] in render_svg(snapshot)
+    assert TEXTS["band_unknown_off"] in await picture(hass)

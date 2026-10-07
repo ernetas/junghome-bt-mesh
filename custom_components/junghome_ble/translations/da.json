@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Hop: {hops}",
     "topology_band_more": "Hop: {hops} eller flere",
     "topology_band_unknown": "Hop: ukendt",
+    "topology_band_unknown_off": "Hop: ukendt (indstillingen Node-heartbeats er slået fra)",
     "topology_legend": "Signaturforklaring",
     "topology_legend_reachable": "tilgængelig: svarer",
     "topology_legend_unreachable": "utilgængelig: svarede ikke",

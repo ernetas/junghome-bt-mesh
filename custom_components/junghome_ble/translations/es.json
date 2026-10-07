@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Saltos: {hops}",
     "topology_band_more": "Saltos: {hops} o más",
     "topology_band_unknown": "Saltos: desconocidos",
+    "topology_band_unknown_off": "Saltos: desconocidos (la opción Heartbeats de los nodos está desactivada)",
     "topology_legend": "Leyenda",
     "topology_legend_reachable": "alcanzable: responde",
     "topology_legend_unreachable": "inalcanzable: no respondió",

@@ -192,6 +192,9 @@ class LinkManager:
         # for the current link: how long its state refresh took (None until it is through, `Refresh.after_connect`)
         # and the store's `held_back_total` when it came up (`JungHomeHub.link_history`)
         self.link_refresh: float | None = None
+        self._refreshed = (
+            asyncio.Event()
+        )  # set with `link_refresh`, cleared with every new link and every end
         self._held_back_at_link = 0.0
         self.probe_link = (
             asyncio.Event()
@@ -222,8 +225,18 @@ class LinkManager:
             and time.monotonic() - self._lost_at < LINK_LOSS_GRACE
         )
 
+    @property
+    def link_up(self) -> bool:
+        """Whether a link is up for sending: `_connect_to` took it, and the client's `attach()` is through (`ready`).
+
+        Not `connected`, which the client reports from the start of `attach()`: before the proxy's beacon
+        (`CONNECT_BEACON_WAIT`) and the filter write, a message goes out under the stored IV index and its group
+        status is dropped by the proxy's default filter. Unverified on air.
+        """
+        return self._link_end is None and self.hub.proxy.ready
+
     async def async_wait_connected(self, timeout: float) -> bool:
-        """Wait up to `timeout` seconds for a proxy link; whether one is up.
+        """Wait up to `timeout` seconds for a proxy link (`link_up`); whether one is up.
 
         The event is re-cleared before each wait rather than trusted: the proxy client drops `connected` in its
         disconnect callback a moment before `_set_available(False)` clears the event, so a still-set event
@@ -231,12 +244,31 @@ class LinkManager:
         """
         try:
             async with asyncio.timeout(timeout):
-                while not self.hub.connected:
+                while not self.link_up:
                     self._link_up.clear()
                     await self._link_up.wait()
         except TimeoutError:
             return False
         return True
+
+    def refresh_through(self) -> None:
+        """Note that the current link's state refresh is through (`Refresh.after_connect`): how long it took; wake the waiters."""
+        self.link_refresh = time.monotonic() - self.link_since
+        self._refreshed.set()
+
+    async def async_wait_refreshed(self, timeout: float) -> bool:
+        """Wait up to `timeout` seconds for the current link's state refresh to be through; whether it is.
+
+        What else goes out at link-up waits for it (`PropertyReader`): the refresh alone is the app's whole in-flight
+        budget, and a node that misses one answer under the app's rule counts as unreachable at once. False without a
+        link, or when the link ended meanwhile.
+        """
+        try:
+            async with asyncio.timeout(timeout):
+                await self._refreshed.wait()
+        except TimeoutError:
+            return False
+        return self.link_up and self._refreshed.is_set()
 
     def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
         """Proxy nodes of *this* network currently advertising, strongest first.
@@ -601,6 +633,7 @@ class LinkManager:
         self._link_end = None
         self._link_since = time.monotonic()
         self.link_refresh = None
+        self._refreshed.clear()
         self._held_back_at_link = self.hub.state.held_back_total
         self._connect_failure_logged = False
         self.hub.proxy_address = info.address
@@ -638,7 +671,6 @@ class LinkManager:
                 self.hub.hass, self.hub.refresh.after_connect(), f"{DOMAIN} refresh"
             ),
         )
-        self.hub.export_watch.check_pin()
         self.hub.export_watch.request_refresh()  # unknown nodes seen before this link (or during setup) are asked about now
         self.hub.vault_refresh.schedule()  # a device Home Assistant added that missed a key refresh step: again now
 
@@ -734,7 +766,11 @@ class LinkManager:
         recorded — and the grace started — before the detach: `detach` clears `connected` at once and then waits
         for the transport, and a command arriving in that wait must find the grace and wait for the next link
         (`wait_for_link`) rather than fail. The detach is bounded like the one of `async_stop`. Unverified on air.
+
+        The watchdog is woken only while the link this dropped is the current one (`link_count`): when the loop
+        took a new link during the detach, waking it would end that one, a healthy link, as closed by the transport.
         """
+        link = self.hub.link_count
         self._link_ended(reason, penalise)
         try:
             await asyncio.wait_for(self.hub.proxy.detach(), STOP_TIMEOUT)
@@ -745,7 +781,8 @@ class LinkManager:
             )
         except Exception:  # pragma: no cover - detach logs and swallows its own errors
             _LOGGER.debug("detach failed", exc_info=True)
-        self._link_lost.set()  # the watchdog, when another task dropped the link
+        if self.hub.link_count == link:
+            self._link_lost.set()  # the watchdog, when another task dropped the link
 
     def _link_ended(self, reason: str, penalise: bool | None) -> None:
         """Handle the end of a link, whoever ended it: record why (`link_history`), start the grace, tell the listeners.
@@ -769,6 +806,7 @@ class LinkManager:
             )
         )
         self.cancel_refresh()
+        self._refreshed.clear()
         self._start_grace()
         self.set_link_state(LINK_DISCONNECTED)
         _LOGGER.info(
@@ -790,9 +828,15 @@ class LinkManager:
         self._lifecycle.cancel_timer("grace")
 
     def _start_grace(self) -> None:
-        """Keep the entities available for LINK_LOSS_GRACE after a link loss; tell them when it ends."""
+        """Keep the entities available for LINK_LOSS_GRACE after a link loss; tell them when it ends.
+
+        Not for a stopping hub: it has no grace (`link_available`), and its timers were cancelled already
+        (`JungHomeHub.async_stop`), so a timer armed now would outlive the unload.
+        """
         self._lost_at = time.monotonic()
         self._cancel_grace()
+        if self.hub.stopping:
+            return
 
         @callback
         def ended(_now: datetime) -> None:
@@ -827,11 +871,7 @@ class LinkManager:
 
     async def wait_for_link(self) -> None:
         """During the link-loss grace, wait for the new link: a command then goes out on it instead of failing."""
-        if (
-            not self.hub.connected
-            and self._lost_at is not None
-            and not self.hub.stopping
-        ):
+        if not self.link_up and self._lost_at is not None and not self.hub.stopping:
             remaining = LINK_LOSS_GRACE - (time.monotonic() - self._lost_at)
             if remaining > 0:
                 await self.async_wait_connected(remaining)

@@ -3099,6 +3099,7 @@
     "topology_band_hops": "Hops: {hops}",
     "topology_band_more": "Hops: {hops} oder mehr",
     "topology_band_unknown": "Hops: unbekannt",
+    "topology_band_unknown_off": "Hops: unbekannt (Option Heartbeats der Knoten ist aus)",
     "topology_legend": "Legende",
     "topology_legend_reachable": "erreichbar: antwortet",
     "topology_legend_unreachable": "nicht erreichbar: hat nicht geantwortet",

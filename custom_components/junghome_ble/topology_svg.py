@@ -118,6 +118,7 @@ TEXTS: Final[Mapping[str, str]] = {
     "band_hops": "Hops: {hops}",
     "band_more": "Hops: {hops} or more",
     "band_unknown": "Hops: not known",
+    "band_unknown_off": "Hops: not known (option Node heartbeats is off)",
     "legend": "Legend",
     "legend_reachable": "reachable: answers",
     "legend_unreachable": "unreachable: did not answer",
@@ -178,12 +179,17 @@ class TopologyNode:
 
 @dataclass(frozen=True, kw_only=True)
 class Topology:
-    """What the picture shows: Home Assistant (`address`), whether it has a link, through which node, every node."""
+    """What the picture shows: Home Assistant (`address`), whether it has a link, through which node, every node.
+
+    `heartbeats`: whether the option that brings the hops (*Node heartbeats*) is on; off, the band of the nodes whose
+    hops are not known says why in its heading (it is off by default, so on most installations every node is there).
+    """
 
     address: int
     connected: bool
     proxy: int | None
     nodes: tuple[TopologyNode, ...]
+    heartbeats: bool = True
 
     def as_dict(self) -> dict[str, Any]:
         """Return the snapshot as the diagnostics show it, its nodes in the picture's order."""
@@ -209,9 +215,9 @@ def _say(texts: Mapping[str, str], key: str, **values: object) -> str:
         return TEXTS[key].format_map(values)
 
 
-def _band_title(texts: Mapping[str, str], hops: int | None) -> str:
+def _band_title(texts: Mapping[str, str], hops: int | None, heartbeats: bool) -> str:
     if hops is None:
-        return _say(texts, "band_unknown")
+        return _say(texts, "band_unknown" if heartbeats else "band_unknown_off")
     if hops >= HOP_BANDS:
         return _say(texts, "band_more", hops=HOP_BANDS)
     return _say(texts, "band_hops", hops=hops)
@@ -505,7 +511,7 @@ def render_svg(topology: Topology, texts: Mapping[str, str] | None = None) -> st
                 f'stroke-dasharray="4 4" {_paint(stroke="edge")}/>'
             )
             y += 6
-        head = clean(_band_title(texts, band), HEAD_CHARS)
+        head = clean(_band_title(texts, band, topology.heartbeats), HEAD_CHARS)
         body.append(_text(MARGIN, y + 16, head, size=12, colour="muted", bold=True))
         y += BAND_HEAD
         for i, node in enumerate(members):

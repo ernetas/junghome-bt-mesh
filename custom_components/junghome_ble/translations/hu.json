@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Ugrások: {hops}",
     "topology_band_more": "Ugrások: {hops} vagy több",
     "topology_band_unknown": "Ugrások: ismeretlen",
+    "topology_band_unknown_off": "Ugrások: ismeretlen (a Csomópontok életjele beállítás ki van kapcsolva)",
     "topology_legend": "Jelmagyarázat",
     "topology_legend_reachable": "elérhető: válaszol",
     "topology_legend_unreachable": "elérhetetlen: nem válaszolt",

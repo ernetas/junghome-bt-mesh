@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
     from .clock import Clock
     from .energy import Energy
+    from .export_watch import ExportWatch
     from .issues import Issues
     from .liveness import Liveness
 
@@ -51,6 +52,10 @@ class RefreshHub(HubPort, Protocol):
     @property
     def energy(self) -> Energy:
         """The metered loads' readings and polls."""
+
+    @property
+    def export_watch(self) -> ExportWatch:
+        """The unknown nodes, the export refresh and the gateway's trust."""
 
     @property
     def inserts(self) -> NodeInserts:
@@ -121,15 +126,19 @@ class Refresh:
         link that dropped before the refresh ended — a flapping link left the nodes' clocks unset. The scene and
         fault reads are not repeated soon after a round on a link that held (`connect_step`); the heartbeat
         configuration has a longer interval of its own (`Liveness.configure_heartbeats`). The order was seen on air on a
-        first link (`docs/on-air-sweep.md` A2).
+        first link (`docs/on-air-sweep.md` A2). Once the refresh is through, the property reads queued meanwhile go
+        (`LinkManager.refresh_through`, `PropertyReader`) and a gateway pin not vouched for yet is checked
+        (`ExportWatch.check_pin`).
         """
         await self.hub.clock.send_time()
         await self.hub.clock.send_location()
         if not await self._refresh_all():
             return
         # a link lost meanwhile cancelled this task (`LinkManager.cancel_refresh`): the link is still the one refreshed
-        self.hub.link.link_refresh = time.monotonic() - self.hub.link.link_since
+        self.hub.link.refresh_through()
         self.hub.link.set_link_state(LINK_CONNECTED)
+        # behind the refresh, not beside it: the gateway node's certificate, while its pin is not vouched for
+        self.hub.export_watch.check_pin()
         await self.hub.energy.poll()
         await self.hub.energy.backfill_history()
         await self.hub.liveness.configure_heartbeats()

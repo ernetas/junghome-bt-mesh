@@ -1692,7 +1692,10 @@ async def test_a_call_waits_again_when_the_hub_was_replaced_meanwhile(
     replaced: list[Any] = []
 
     async def wait_and_replace(self: Any, timeout: float) -> bool:
-        waited.append(self)
+        if (
+            timeout <= common.LINK_WAIT_SLICE
+        ):  # the call's waits, not the property reader's (`LINK_WAIT_STEP`)
+            waited.append(self)
         if self is old:
             await hass.config_entries.async_reload(env.entry.entry_id)
             replaced.append(env.hub)
@@ -1727,6 +1730,9 @@ async def test_a_call_gives_up_when_the_replaced_hub_does_not_connect_in_time(
         if self is old:
             await hass.config_entries.async_reload(env.entry.entry_id)
             return True
+        await asyncio.sleep(
+            0
+        )  # a wait waits: the property reader loops on it until a link is up
         return False  # the new hub's link never comes up in the time left
 
     with (

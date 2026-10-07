@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Salti: {hops}",
     "topology_band_more": "Salti: {hops} o più",
     "topology_band_unknown": "Salti: ignoti",
+    "topology_band_unknown_off": "Salti: ignoti (l'opzione Heartbeat dei nodi è disattivata)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "raggiungibile: risponde",
     "topology_legend_unreachable": "non raggiungibile: non ha risposto",

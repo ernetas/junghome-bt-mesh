@@ -373,6 +373,7 @@ class ProxyClient:
         on_key_refresh: Callable[[int, NetKeyMaterial], None] | None = None,
         on_foreign_own_source: Callable[[int, int], None] | None = None,
         on_iv_update_abandoned: Callable[[], None] | None = None,
+        on_control: Callable[[int, int], None] | None = None,
     ) -> None:
         """Set up for the first NetKey/AppKey of `cdb`; nothing is connected until `attach()`.
 
@@ -386,7 +387,9 @@ class ProxyClient:
         only one now), `on_foreign_own_source(iv_index, seq)` when a PDU from our own address carries a number we
         never handed out — another client uses the address (`_on_own_source`; at most once per
         `FOREIGN_SOURCE_REPORT_INTERVAL` per link, with the highest number seen so far), `on_iv_update_abandoned` when
-        an IV Update this client started is given up because the mesh did not take it (`_run_iv_update`).
+        an IV Update this client started is given up because the mesh did not take it (`_run_iv_update`),
+        `on_control(src, opcode)` for every control PDU our keys authenticated that is no replay (a Segment Ack, a
+        Heartbeat, a Friend message: traffic a link watchdog may count, before `on_heartbeat`).
         """
         self.cdb = cdb
         self.state = state
@@ -400,6 +403,7 @@ class ProxyClient:
         self.on_key_refresh = on_key_refresh
         self.on_foreign_own_source = on_foreign_own_source
         self.on_iv_update_abandoned = on_iv_update_abandoned
+        self.on_control = on_control
         # the NetKeys derived so far (`_net_key`), pruned to those we accept whenever the key refresh moves
         self._net_keys: dict[bytes, NetKeyMaterial] = {}
         self._kr = self._resume_key_refresh(cdb, state)
@@ -1930,6 +1934,11 @@ class ProxyClient:
                 trace.debug("replay from %04X seq %06X ignored (control)", n.src, n.seq)
                 return
             op, p = kind[1], kind[2]
+            if self.on_control:
+                try:
+                    self.on_control(n.src, op)
+                except Exception:
+                    log.exception("on_control handler failed")
             if op == 0x00 and len(p) >= 6:
                 self.state.note_received(n.src, iv, n.seq)
                 hdr = int.from_bytes(p[:2], "big")

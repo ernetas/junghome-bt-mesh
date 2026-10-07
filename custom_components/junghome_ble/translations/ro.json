@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Salturi: {hops}",
     "topology_band_more": "Salturi: {hops} sau mai multe",
     "topology_band_unknown": "Salturi: necunoscute",
+    "topology_band_unknown_off": "Salturi: necunoscute (opțiunea Semnale heartbeat ale nodurilor este dezactivată)",
     "topology_legend": "Legendă",
     "topology_legend_reachable": "accesibil: răspunde",
     "topology_legend_unreachable": "inaccesibil: nu a răspuns",

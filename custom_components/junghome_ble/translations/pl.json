@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Przeskoki: {hops}",
     "topology_band_more": "Przeskoki: {hops} lub więcej",
     "topology_band_unknown": "Przeskoki: nieznane",
+    "topology_band_unknown_off": "Przeskoki: nieznane (opcja Heartbeaty węzłów jest wyłączona)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "osiągalny: odpowiada",
     "topology_legend_unreachable": "nieosiągalny: nie odpowiedział",

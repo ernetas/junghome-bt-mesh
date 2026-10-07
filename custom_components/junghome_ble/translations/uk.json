@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Переходи: {hops}",
     "topology_band_more": "Переходи: {hops} і більше",
     "topology_band_unknown": "Переходи: невідомо",
+    "topology_band_unknown_off": "Переходи: невідомо (параметр Heartbeat-повідомлення вузлів вимкнено)",
     "topology_legend": "Позначення",
     "topology_legend_reachable": "доступний: відповідає",
     "topology_legend_unreachable": "недоступний: не відповів",

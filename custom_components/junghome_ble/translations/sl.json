@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Skoki: {hops}",
     "topology_band_more": "Skoki: {hops} ali več",
     "topology_band_unknown": "Skoki: neznano",
+    "topology_band_unknown_off": "Skoki: neznano (možnost Srčni utripi vozlišč je izklopljena)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "dosegljiva: odgovarja",
     "topology_legend_unreachable": "nedosegljiva: ni odgovorila",

@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Sauts : {hops}",
     "topology_band_more": "Sauts : {hops} ou plus",
     "topology_band_unknown": "Sauts : inconnus",
+    "topology_band_unknown_off": "Sauts : inconnus (l'option Heartbeats des nœuds est désactivée)",
     "topology_legend": "Légende",
     "topology_legend_reachable": "joignable : répond",
     "topology_legend_unreachable": "injoignable : n'a pas répondu",

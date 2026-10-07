@@ -577,6 +577,7 @@ class JungHomeHub:
             on_key_refresh=self._on_key_refresh,
             on_foreign_own_source=self.issues.on_foreign_own_source,
             on_iv_update_abandoned=self.issues.check_iv_update,
+            on_control=self._on_control,
         )
         self.states: dict[int, ElementState] = {}
         for unicast, info in (
@@ -868,6 +869,10 @@ class JungHomeHub:
         timers per node (a Node Identity advert stops by itself within 60 s), the gestures pending, then the tasks
         and the key refresh's. Not a pending retry of a failed upload: it is the entry's and outlives the reload
         most changes end with (`MeshConfigurator._upload_or_retry`); removing the entry cancels it.
+
+        `stopping` comes first: the link is detached last, and what it still delivers while the stop waits for the
+        tasks arms no new timer — the gestures take no key event (`ButtonGestures.cancel_all`), a link that ends
+        starts no grace (`LinkManager._start_grace`).
         """
         self.stopping = True
         self.lifecycle.cancel_timers()
@@ -908,9 +913,18 @@ class JungHomeHub:
         """Whether the entities count as reachable: a link, or its grace (`LinkManager.link_available`)."""
         return self.link.link_available
 
+    @property
+    def link_up(self) -> bool:
+        """Whether a link is up for sending: attached all the way, not only connected (`LinkManager.link_up`)."""
+        return self.link.link_up
+
     async def async_wait_connected(self, timeout: float) -> bool:
         """Wait up to `timeout` seconds for a proxy link; whether one is up (`LinkManager.async_wait_connected`)."""
         return await self.link.async_wait_connected(timeout)
+
+    async def async_wait_refreshed(self, timeout: float) -> bool:
+        """Wait up to `timeout` seconds for the link's state refresh; whether it is through (`LinkManager.async_wait_refreshed`)."""
+        return await self.link.async_wait_refreshed(timeout)
 
     def visible_proxies(self) -> list[bluetooth.BluetoothServiceInfoBleak]:
         """Proxy nodes of this network currently advertising, strongest first (`LinkManager.visible_proxies`)."""
@@ -939,8 +953,11 @@ class JungHomeHub:
         heartbeat option went off, the nodes are told to stop first; the per-link refresh is cancelled before, and
         so is the rest of the heartbeat work (the check timer, a renewal or reprobe round in flight), so none of
         their configure Sets can interleave with the disable round and switch a node that confirmed it back on.
+
+        Never for a stopped hub: Home Assistant's stop ends it (`async_stop`) while its entry stays loaded, and an
+        options change after that found the heartbeat timer gone (the next start takes the options anyway).
         """
-        if self._rebuilding:
+        if self._rebuilding or self.stopping:
             return False
         self._rebuilding = True
         if self.heartbeats_enabled and not self.entry.options.get(
@@ -1888,7 +1905,7 @@ class JungHomeHub:
     def publish_button_event(
         self, addr: int, event: str, attrs: dict[str, Any]
     ) -> None:
-        """Publish a button event on the bus (`event.publish_button_event`), for `ButtonGestures.fire_button`."""
+        """Publish a button event on the bus (`event.publish_button_event`), for `ButtonGestures._fire`."""
         publish_button_event(self.hass, self, addr, event, attrs)
 
     # ------------------------------------------------------------------ repairs (`hub/issues.py`)
@@ -1903,6 +1920,14 @@ class JungHomeHub:
     async def async_skip_past_shared(self) -> None:
         """Continue past the other client's numbers and send again (`Issues.async_skip_past_shared`)."""
         await self.issues.async_skip_past_shared()
+
+    def _on_control(self, _src: int, _opcode: int) -> None:
+        """Count an authenticated control PDU (a Heartbeat, a Segment Ack) as traffic for the link watchdog.
+
+        A quiet mesh whose nodes only beat paid a keep-alive Get every LINK_IDLE_TIMEOUT: a Heartbeat the proxy
+        forwarded proves the link as well as any status. Unverified on air.
+        """
+        self.link.last_rx = time.monotonic()
 
     def _on_beacon(self, beacon: SecureNetworkBeacon) -> None:
         """Account for a beacon of the proxy; one flagging a key refresh that our key cannot open raises an issue.

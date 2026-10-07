@@ -67,8 +67,9 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
 
     The snapshot is taken when the link or a node's reachability changes and once every NODE_DIAGNOSTICS_INTERVAL
     (heartbeat hops and a sleeping node's last message arrive in between); `image_last_updated` moves only when it
-    differs from the one shown, and at most once per interval — a change within it is shown when it is over. A
-    heartbeat that changes nothing changes nothing. Always available: without a link the picture says so. Diagnostic,
+    differs from the one shown, and at most once per interval — a change within it is shown when it is over — but a
+    change of the link at once (`_link_changed`): the picture said "connected" through a proxy already gone for up
+    to a whole interval. A heartbeat that changes nothing changes nothing. Always available: without a link the picture says so. Diagnostic,
     on by default (decision M9 hides configuration entities only). Unverified on air.
 
     Its words follow the server's language: a new one is loaded and drawn at once when it is chosen, and any look
@@ -107,12 +108,20 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     async def async_added_to_hass(self) -> None:
         """Draw the picture, then follow the link and the nodes' reachability, and look again once per interval."""
         self._draw(topology_snapshot(self.hub))
-        for signal in (SIGNAL_CONNECTION, SIGNAL_REACHABILITY):
-            self.async_on_remove(
-                async_dispatcher_connect(
-                    self.hass, signal.format(self.hub.entry.entry_id), self._look
-                )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_CONNECTION.format(self.hub.entry.entry_id),
+                self._link_changed,
             )
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_REACHABILITY.format(self.hub.entry.entry_id),
+                self._look,
+            )
+        )
         self.async_on_remove(
             async_track_time_interval(
                 self.hass, self._tick, timedelta(seconds=NODE_DIAGNOSTICS_INTERVAL)
@@ -135,6 +144,12 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     @callback
     def _tick(self, _now: datetime) -> None:
         self._look()
+
+    @callback
+    def _link_changed(self) -> None:
+        """Redraw now, with whatever was held back: a link change is shown at once, as *Mesh overview* shows it."""
+        self._cancel_pending()
+        self._draw_if_changed()
 
     @callback
     def _look(self) -> None:

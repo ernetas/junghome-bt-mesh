@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Переходы: {hops}",
     "topology_band_more": "Переходы: {hops} и более",
     "topology_band_unknown": "Переходы: неизвестно",
+    "topology_band_unknown_off": "Переходы: неизвестно (параметр Heartbeat-сообщения узлов выключен)",
     "topology_legend": "Обозначения",
     "topology_legend_reachable": "доступно: отвечает",
     "topology_legend_unreachable": "недоступно: не ответило",

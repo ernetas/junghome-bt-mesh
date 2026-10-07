@@ -108,7 +108,8 @@ makes the device's LED blink for ten seconds — handy to tell which mini actuat
 ## Fresh values on demand
 
 Home Assistant hears every change the devices announce. Settings changed in the app are the exception: the device
-tells only the app, and Home Assistant reads settings again only when it reconnects, at most every three hours. To
+tells only the app, and Home Assistant reads settings again three hours after it last read them (on a reconnect, or
+within the hour on a connection that holds). To
 see such a change at once, run the action *Update entity* (`homeassistant.update_entity`) on the entity.
 
 ## Firmware
@@ -136,7 +137,7 @@ Four entities on the mesh network device tell how the installation is doing (**u
 - **Mesh topology** (a diagnostic image) draws the mesh: Home Assistant at the top with the device it is connected
   through (the *link proxy*, thick border), and every other device in a band by how many hops its last sign of life
   took (*Hops: 1*, *Hops: 2*, …; with the *Node heartbeats* option on — without it, and for battery devices, under
-  *Hops: not known*). Each device shows its name, area and address; whether it answers as a shape, a colour and a
+  *Hops: not known*, whose heading says so when the option is off). A change of the connection is drawn at once. Each device shows its name, area and address; whether it answers as a shape, a colour and a
   word (a dot *reachable*, a cross *unreachable* with when it was last heard, a square *asleep* for a battery
   device); and its roles as letters and words (**R** relay, **P** proxy, **F** friend, **L** low power). The legend
   under the picture explains them; its words are in your Home Assistant's language (the one under *Settings →

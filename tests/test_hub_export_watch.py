@@ -6,6 +6,7 @@ import asyncio
 import base64
 import copy
 import json
+import logging
 import re
 import shutil
 import time
@@ -52,6 +53,7 @@ from custom_components.junghome_ble.gateway_api import (
 from custom_components.junghome_ble.hub import export_watch
 from custom_components.junghome_ble.hub.export_watch import ExportWatch
 from custom_components.junghome_ble.jhmesh.advert import JUNG_COMPANY_ID
+from custom_components.junghome_ble.jhmesh.properties import Text
 from custom_components.junghome_ble.mesh_config import export_digest, gateway_sync
 
 from .conftest import (
@@ -1088,3 +1090,82 @@ async def test_an_unconfirmed_pin_is_not_used_and_asked_again(
         JungHomeHub, "connected", new_callable=PropertyMock, return_value=False
     ):
         assert await hub.async_gateway_distrust() == coordinator.GATEWAY_UNVERIFIED
+
+
+async def _check_done(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    await settle(hass)
+    await wait_until(
+        hass,
+        lambda: (
+            not any(
+                t.get_name().endswith("gateway certificate check")
+                for t in entry._background_tasks
+            )
+        ),
+        what="the certificate check",
+    )
+
+
+async def test_an_unconfirmed_pin_is_asked_once_per_link_after_its_refresh(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    answering_link: FakeProxyLink,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-5 R5-6: a gateway node that never answers `0xC003` was asked at every link-up, beside the Time Set
+    and the refresh, and each miss was a WARNING — one per link, for good, on a flapping link. It is asked once per
+    link, after the link's state refresh; the WARNING comes once per hub, the misses after it are DEBUG."""
+    refreshed: list[float | None] = []
+
+    async def silent(self: ExportWatch, unicast: int, pid: int) -> str | None:
+        refreshed.append(self.hub.link.link_refresh)
+        return None
+
+    with patch.object(ExportWatch, "_gateway_text", silent):
+        entry = await unverified_gateway_entry(hass, tmp_path)
+        hub = hub_of(entry)
+        assert len(refreshed) == 1
+        assert refreshed[0] is not None  # the refresh was through first
+        hub.export_watch.check_pin()  # this link asked already
+        await _check_done(hass, entry)
+        assert len(refreshed) == 1
+
+        caplog.set_level(logging.DEBUG, logger=export_watch.__name__)
+        answering_link.drop_link()
+        await wait_for_link(hass, entry, connected=False)
+        await wait_for_link(hass, entry)
+        await _check_done(hass, entry)
+        assert len(refreshed) == 2
+        assert refreshed[1] is not None
+    unconfirmed = [
+        r.levelno
+        for r in caplog.records
+        if "has not confirmed the certificate pinned" in r.getMessage()
+    ]
+    assert unconfirmed == [logging.WARNING, logging.DEBUG]
+    assert entry.data[CONF_GATEWAY_PIN_SOURCE] == PIN_FROM_USER
+
+
+async def test_an_answer_that_does_not_decode_is_no_answer(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_bluetooth_env: dict[str, Any],
+    answering_link: FakeProxyLink,
+    fast_sleep: list[float],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-5 R5-6: a value the codec refuses raised out of the background check, unlogged; it is logged and
+    counts as no answer (the pin stays unconfirmed)."""
+    gateway_node_says(
+        answering_link,
+        GATEWAY_DATA[CONF_GATEWAY_HOST].encode(),
+        GATEWAY_DATA[CONF_GATEWAY_FINGERPRINT].encode(),
+    )
+    caplog.set_level(logging.DEBUG, logger=export_watch.__name__)
+    with patch.object(Text, "decode", side_effect=ValueError("not text")):
+        entry = await unverified_gateway_entry(hass, tmp_path)
+    assert "with a value that does not decode: not text" in caplog.text
+    assert "has not confirmed the certificate pinned" in caplog.text
+    assert entry.data[CONF_GATEWAY_PIN_SOURCE] == PIN_FROM_USER

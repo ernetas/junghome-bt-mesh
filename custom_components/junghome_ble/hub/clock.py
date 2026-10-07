@@ -86,24 +86,31 @@ class Clock:
         Devices with timers or astro schedules have no clock source but this message: the gateway never publishes
         time (its publish interval is configured to 0), so without a phone nearby their schedules drift.
         `destination`: one element instead (a new node's Time Server, `onboard`'s SetTime phase).
+
+        The message is built anew for every attempt `while_seq_stalls` makes: the time it carries is the time it
+        goes out. Built once before the wait, a store that held sends back (up to SEQ_STALL_DEADLINE, at link-up
+        when a beacon moved the IV index) set every node's clock behind by the wait, until the next day's Time Set.
         """
-        now = dt_util.now()
+
+        async def send() -> datetime:
+            now = dt_util.now()
+            try:
+                pdu = M.time_set(now)
+            except (
+                ValueError
+            ):  # a zone offset the message cannot carry: better a UTC clock than none
+                pdu = M.time_set(now, zone_offset=timedelta(0))
+            await self.hub.proxy.send_access(destination, pdu)
+            return now
+
         try:
-            pdu = M.time_set(now)
-        except (
-            ValueError
-        ):  # a zone offset the message cannot carry: better a UTC clock than none
-            pdu = M.time_set(now, zone_offset=timedelta(0))
-        try:
-            await self.hub.while_seq_stalls(
-                partial(self.hub.proxy.send_access, destination, pdu)
-            )
+            sent = await self.hub.while_seq_stalls(send)
         except ConnectionError as err:
             _LOGGER.debug("Time Set not sent: %s", err)
         else:
             _LOGGER.debug(
                 "Sent Time Set %s to %04X",
-                now.isoformat(timespec="seconds"),
+                sent.isoformat(timespec="seconds"),
                 destination,
             )
 

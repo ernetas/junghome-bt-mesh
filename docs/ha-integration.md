@@ -655,10 +655,12 @@ has no such setting — the app keeps the flag itself — so Home Assistant keep
 Every key of a push-button also gets a *Status LED*
 switch, driven the way the JUNG HOME Gateway drives it (it only has an effect on keys linked to the gateway and cannot
 be read back, so its state is assumed; it follows the gateway's own writes of the LED too, which the gateway sends to
-the key the same way). Values are read from the device once when the entity is added or enabled — a
-few seconds after the connection is up, five devices at a time (a battery device's right after one of its keys
-reported, the moment it is awake) — and read again on the first connection three hours or more after that (a
-battery device's at its first key event after three hours): a setting changed in the JUNG HOME app is answered to
+the key the same way). Values are read from the device once when the entity is added or enabled — once the
+connection's state refresh is through, on every connection, five devices at a time (a battery device's right after
+one of its keys reported, the moment it is awake) — and read again three hours or more after that, on a later
+connection or on one that has held that long (looked at hourly; a battery device's at its first key event after
+three hours); the wait for the refresh and the re-read on a connection that holds are **unverified on air**: a
+setting changed in the JUNG HOME app is answered to
 the app only, so Home Assistant hears nothing of it. They are never polled. To see such a change at once, call
 `homeassistant.update_entity` on the entity (not on a battery device: it sleeps; see
 [Data updates](#data-updates)); a change is written as an acknowledged command and confirmed
@@ -1005,7 +1007,8 @@ the logbook lines of key presses, scene recalls and plans, and the words of the 
 > address is looked up on the mesh the way the app does it: the gateway node's own address (`0xC002`) is read and
 > followed when it is an IP address or host name, and the request is retried once; a certificate reported there
 > (`0xC003`) is never adopted — anyone with a node's keys can answer on the mesh — it raises the repair issue
-> instead. The token Home Assistant registered is kept; when the gateway rejects it, Home Assistant asks for access
+> instead. A pin the gateway node has not confirmed yet is asked about once per connection, after the connection's
+> state refresh; that the node has not confirmed it is a warning in the log once, and a debug line after that. The token Home Assistant registered is kept; when the gateway rejects it, Home Assistant asks for access
 > again (its re-authentication, next to the repair issue *JUNG HOME Gateway no longer accepts Home Assistant*): the
 > network-key password or an approval in the app brings a new token, pinned to the same certificate as every request.
 > Exports and the `.bak` copies the room actions keep are stored with mode 0600, and the loader refuses anything
@@ -2835,7 +2838,10 @@ every export taken over.
 If the proxy node stops forwarding traffic (a rebooting node keeps a stale GATT link, a proxy hiccup), the
 integration notices: after 11 minutes without any mesh traffic it sends a keep-alive Get to a load through the proxy,
 and only when that goes unanswered as well is the link dropped and another node preferred for the next connection. A
-quiet mesh (nothing publishing at night, no gateway polling) therefore keeps its link. A
+quiet mesh (nothing publishing at night, no gateway polling) therefore keeps its link. The devices' heartbeats (option
+*Node heartbeats*) and any other control message the integration's keys open count as traffic too, so a mesh that
+only beats needs no keep-alive at all (**unverified on air**). A command sent while a new link is still being set up
+waits until the proxy filter is written (**unverified on air**). A
 mesh whose keys changed after a completed key refresh shows the same pattern, together with the repair issue *JUNG
 HOME mesh keys have changed* — export and reconfigure.
 

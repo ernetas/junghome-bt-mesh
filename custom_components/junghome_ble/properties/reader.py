@@ -23,12 +23,14 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from datetime import timedelta
 from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
@@ -80,7 +82,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Config entities (device parameters read/written as JUNG vendor properties, see config_entities.py).
-PROPERTY_READ_DELAY: Final = 3.0  # seconds after the link is up (or an entity was enabled) before the initial property reads start: the state refresh goes first
+# the initial property reads of a link wait for its state refresh (`PropertyReader._wait_for_refresh`), at most this many
+# seconds: a refresh of 60 nodes takes 12 s and more, plus 9 s for each that does not answer
+PROPERTY_READ_REFRESH_WAIT: Final = 120.0
+# while a link is up, the config entities look this often whether a re-read is due (`PropertyReader.async_on_reread`):
+# a link that holds for days re-reads too, not only a new one
+CONFIG_REREAD_CHECK: Final = 3600.0
 PROPERTY_READ_PAUSE: Final = 0.5  # seconds between two chunks of initial reads
 PROPERTY_REREAD_DELAY: Final = (
     0.5  # seconds before re-reading a property whose Set was not answered
@@ -266,8 +273,8 @@ class _Queued:
 class PropertyReader:
     """The mesh side of the config entities of one hub: rate-limited initial reads, serialised per element.
 
-    `schedule` queues a job (an entity's first read) for an element. The worker starts `PROPERTY_READ_DELAY`
-    after its first job, so the hub's connect-time state refresh goes first, then works the queue
+    `schedule` queues a job (an entity's first read) for an element. The worker waits for each link's connect-time
+    state refresh to be through (`_wait_for_refresh`), so the refresh goes first on every link, then works the queue
     `PROPERTY_READ_CHUNK` jobs at a time (to distinct elements, since exchanges with one element are serialised)
     with a `PROPERTY_READ_PAUSE` between chunks, like that refresh. `read`, `write` and `write_status` talk to
     the element, one exchange per element at a time, so a Status is never taken for the answer to another
@@ -306,6 +313,26 @@ class PropertyReader:
         self.lock_time_limits: dict[int, int] = {}
         # LED element address -> whether LED 1's colours are copied to LED 2 (`switch.JungHomeLedColourSync`)
         self.led_sync: dict[int, bool] = {}
+        # `hub.link_count` of the link whose state refresh the worker last waited for (`_wait_for_refresh`)
+        self._refresh_waited: int | None = None
+        self._reread_listeners: list[Callable[[], None]] = []
+
+    @callback
+    def async_on_reread(self, listener: Callable[[], None]) -> Callable[[], None]:
+        """Call `listener` every CONFIG_REREAD_CHECK while a link is up; returns the unsubscribe."""
+        self._reread_listeners.append(listener)
+        return partial(self._reread_listeners.remove, listener)
+
+    @callback
+    def reread_tick(self, _now: datetime) -> None:
+        """Let the config entities look whether a re-read is due (`ConfigEntity._reread_tick`), while a link is up.
+
+        Values were read again only on a new link once CONFIG_REREAD_INTERVAL had passed, so a link that held for
+        days never showed what the app changed meanwhile. Unverified on air.
+        """
+        if self.hub.link_up:
+            for listener in list(self._reread_listeners):
+                listener()
 
     @callback
     def schedule(self, addr: int, job: Job, *, key: object = None) -> None:
@@ -374,14 +401,30 @@ class PropertyReader:
             unsub()
         return entry.state is ConfigEntryState.LOADED
 
+    async def _wait_for_refresh(self) -> None:
+        """Wait for a link, and once per link for its state refresh (at most PROPERTY_READ_REFRESH_WAIT).
+
+        The refresh alone is the app's whole in-flight budget at link-up, and under the app's rule a node that misses
+        one answer counts as unreachable at once (`Liveness.missed_answer`): reads beside it could mark nodes
+        unavailable that answer seconds later. A fixed delay at the worker's start did not cover a long refresh,
+        and a worker still running when the link dropped went on through the next link's refresh without any.
+        Unverified on air.
+        """
+        while True:
+            # no link: wait for one rather than run the queue into "not connected" (each read lost for nothing)
+            while not self.hub.link_up:
+                await self.hub.async_wait_connected(LINK_WAIT_STEP)
+            link = self.hub.link_count
+            if self._refresh_waited == link:
+                return
+            await self.hub.async_wait_refreshed(PROPERTY_READ_REFRESH_WAIT)
+            self._refresh_waited = link  # a link lost meanwhile: the loop waits for the next one, and its refresh
+
     async def _run(self) -> None:
         if not await self._wait_for_setup():
             return
-        await asyncio.sleep(PROPERTY_READ_DELAY)
         while self._jobs:
-            # no link: wait for one rather than run the queue into "not connected" (each read lost for nothing)
-            while not self.hub.connected:
-                await self.hub.async_wait_connected(LINK_WAIT_STEP)
+            await self._wait_for_refresh()
             for result in await asyncio.gather(
                 *(job() for job in self._take_chunk()), return_exceptions=True
             ):
@@ -776,7 +819,12 @@ def property_reader(hass: HomeAssistant, hub: JungHomeHub) -> PropertyReader:
     readers = hass.data.setdefault(READERS, {})
     entry_id = hub.entry.entry_id
     if entry_id not in readers:
-        readers[entry_id] = PropertyReader(hub)
+        reader = readers[entry_id] = PropertyReader(hub)
+        hub.entry.async_on_unload(
+            async_track_time_interval(
+                hass, reader.reread_tick, timedelta(seconds=CONFIG_REREAD_CHECK)
+            )
+        )
 
         def forget() -> None:
             readers.pop(entry_id, None)

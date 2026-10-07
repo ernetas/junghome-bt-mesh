@@ -60,7 +60,8 @@ automation on `click` also runs on a double press. If a key should do one thing 
 click, pick it under **Keys that wait for a double click** in *Settings → Devices & services → JUNG HOME Bluetooth
 Mesh → Configure*. That key then reports its clicks half a second late, and a double press only the
 `double_click`; every other key keeps reporting its clicks at once. The key's event entity shows it with the
-attribute `waits_for_double_click`. **Unverified on air** per key.
+attribute `waits_for_double_click`. **Unverified on air** per key. The press that completes a double click starts
+nothing new: four quick presses are two double clicks, three a double click and a click.
 
 The trade-off is that half second: a light switched on a `click` of a key that waits comes on half a second later.
 Pick only the keys with a double-click automation. The list shows the keys that can click while the integration is

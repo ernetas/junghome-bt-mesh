@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Άλματα: {hops}",
     "topology_band_more": "Άλματα: {hops} ή περισσότερα",
     "topology_band_unknown": "Άλματα: άγνωστα",
+    "topology_band_unknown_off": "Άλματα: άγνωστα (η επιλογή Heartbeat κόμβων είναι απενεργοποιημένη)",
     "topology_legend": "Υπόμνημα",
     "topology_legend_reachable": "προσβάσιμη: απαντά",
     "topology_legend_unreachable": "μη προσβάσιμη: δεν απάντησε",

@@ -117,6 +117,7 @@ pass removed the markers of the checks that passed.
 | [A10](#a10--gateway-discovery-u4-8) | The gateway's mDNS card, the gateway form prefilled | gateway | nothing | — |
 | [A11](#a11--jung-only-discovery-and-the-mesh-uuid-as-unique-id-m10) | The entry's unique id migrated to the mesh UUID; no discovery card for the configured mesh | any | nothing | — |
 | [A12](#a12--the-mesh-topology-picture-u4-14) | The *Mesh topology* image against the installation | any; *Node heartbeats* for the bands | nothing | — |
+| [A13](#a13--reads-behind-the-refresh-a-link-attached-all-the-way-review-5) | Property reads behind each link's refresh; a link up once attached; heartbeats as link traffic; re-reads on a link that holds | any; *Node heartbeats* for the watchdog | nothing | — |
 | [B1](#b1--ctl-temperature-set-airaccess8264) | CTL Temperature Set (`air:access:8264`) | DALI TW light | light colour | — |
 | [B2](#b2--commands-confirmed-by-their-status-d32-and-hold-to-dim) | D32 status matching, hold-to-dim | dimmer, DALI, socket | load states | — |
 | [B3](#b3--a-colour-temperature-changed-elsewhere) | CTL Temperature Status from elsewhere | DALI TW light, app | light colour | — |
@@ -416,6 +417,29 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Markers:** `custom_components/junghome_ble/image.py::JungHomeMeshTopology`,
   `custom_components/junghome_ble/mesh_topology.py::<module>`.
 
+### A13 · Reads behind the refresh, a link attached all the way (review 5)
+
+- **Checks:** review-5 brief 81 — on every link the config entities' property reads start only once the state
+  refresh is through (R5-3), also on a link that comes while reads are still queued; a send waiting for a link goes
+  out once the proxy filter is written, not while the link is still set up (R5-5); a Heartbeat counts as traffic for
+  the link watchdog, so a mesh that only beats pays no keep-alive Get; a link that holds past three hours reads the
+  config values again without a reconnect.
+- **Needs:** any proxy node; for the watchdog part the *Node heartbeats* option on and a quiet stretch (night, no
+  gateway polling); for the re-read a link that lasts over three hours. **Safety:** read-only.
+- **Do:** as A2: end the link once while property reads are still going out after the first link (within a minute
+  of the start), let it come back; leave the link up overnight.
+- **Capture:** `--src <ha>`: on each link the state Gets (OnOff, Lightness, CTL, Level, the meters' Sensor Gets) and
+  only after the last of them the LBC property Gets (`C2 / C8 / CE 27 05`); overnight, with heartbeats on, no
+  keep-alive OnOff Get from `<ha>` while the nodes beat; about every three hours the property Gets again on the same
+  link.
+- **Pass:** no vendor property Get from `<ha>` before the link's last state Get answered or timed out, on either link;
+  no Get from `<ha>` before its Set Filter Type on a link; the overnight capture as above. **Fail:** note the link's
+  `refresh` seconds from the diagnostics' link history.
+- **Markers:** `custom_components/junghome_ble/properties/reader.py::PropertyReader._wait_for_refresh`,
+  `custom_components/junghome_ble/properties/reader.py::PropertyReader.reread_tick`,
+  `custom_components/junghome_ble/hub/link.py::LinkManager.link_up`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub._on_control`.
+
 ## B · Momentary control
 
 Loads switch or dim and are set back by hand; nothing persists on a device.
@@ -653,11 +677,14 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
   2. Watch the events (*Developer tools → Events*, listen to `junghome_ble_button_action`). Press `<key1>` once,
      then double-press it; the same with `<key2>`.
   3. Double-press both keys at about the same time (one hand each).
-  4. *Configure* again and empty the list (or set back what step 1 found).
+  4. Press `<key2>` four times quickly, then, after a pause, three times (review-5 R5-1).
+  5. *Configure* again and empty the list (or set back what step 1 found).
 - **Capture:** not needed; the key's vendor gesture messages (`0x5012`) if an event is missing.
 - **Pass:** `<key1>`: one `click` about half a second after the single press, `double_click` alone for the double
   press; `<key2>`: `click` at once, then `click` + `double_click` for the double press; step 3 gives `<key1>`
-  `double_click` alone and `<key2>` `click` + `double_click`.
+  `double_click` alone and `<key2>` `click` + `double_click`; step 4 gives `click`, `double_click`, `click`,
+  `double_click` for the four presses and `click`, `double_click`, `click` for the three — never two `double_click`s
+  in a row.
 - **Markers:** `custom_components/junghome_ble/hub/gestures.py::<module>`,
   `custom_components/junghome_ble/strings.json::options.step.init.data_description.double_click_keys`; the docs'
   per-key sentences and the CHANGELOG bullet of U4-19.

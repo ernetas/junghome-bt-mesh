@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Saltos: {hops}",
     "topology_band_more": "Saltos: {hops} ou mais",
     "topology_band_unknown": "Saltos: desconhecidos",
+    "topology_band_unknown_off": "Saltos: desconhecidos (a opção Heartbeats dos nós está desativada)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "acessível: responde",
     "topology_legend_unreachable": "inacessível: não respondeu",

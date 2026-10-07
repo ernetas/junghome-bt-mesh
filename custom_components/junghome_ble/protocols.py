@@ -106,6 +106,10 @@ class HubPort(MeshPort, HubView, Protocol):
     def last_heard(self) -> dict[int, float]:
         """When each node was last heard from, monotonic, by node unicast."""
 
+    @property
+    def link_up(self) -> bool:
+        """Whether a link is up for sending: attached all the way, not only connected."""
+
     def element_state(self, addr: int) -> ElementState:
         """Return the cached state of the element at `addr`, creating an empty one on first contact."""
 
@@ -147,7 +151,7 @@ class HubPort(MeshPort, HubView, Protocol):
         """Ask one load for its state now."""
 
     async def async_wait_connected(self, timeout: float) -> bool:
-        """Wait up to `timeout` seconds for a proxy link; whether one is up."""
+        """Wait up to `timeout` seconds for a proxy link (`link_up`); whether one is up."""
 
     async def async_send_time(self, destination: int = ...) -> None:
         """Broadcast Time Set now."""
@@ -171,6 +175,9 @@ class LinkView(Protocol):
 
     def set_link_state(self, state: str) -> None:
         """Move the link state sensor to `state`."""
+
+    def refresh_through(self) -> None:
+        """Note that the current link's state refresh is through."""
 
     async def drop_link(self, reason: str, *, penalise: bool | None) -> None:
         """End the link."""

@@ -3389,6 +3389,42 @@ async def test_heartbeats_reach_the_callback(
     assert "Heartbeat init_ttl=5 hops=2" in caplog.text
 
 
+async def test_authenticated_control_messages_reach_on_control(
+    attached: ProxyClient,
+    link: FakeBleak,
+    caplog: pytest.LogCaptureFixture,
+):
+    """Every control PDU our keys open that is no replay goes to `on_control(src, opcode)`, a Heartbeat before
+    `on_heartbeat`: traffic a link watchdog may count. A replay does not; a failing handler does not break the link."""
+    seen: list[tuple[int, int]] = []
+    beats: list[Heartbeat] = []
+
+    def heard(beat: Heartbeat) -> None:
+        beats.append(beat)
+        seen.append((-1, -1))  # where the Heartbeat itself came in the order
+
+    attached.on_control = lambda src, op: seen.append((src, op))
+    attached.on_heartbeat = heard
+    seq = link.next_seq()
+    beat = network_encrypt(link.nk, 0, True, 3, seq, PROXY_NODE, OUR_SRC, h("0a050003"))
+    link.deliver(PROXY_NETWORK_PDU, beat)
+    link.deliver(PROXY_NETWORK_PDU, beat)  # a replay
+    link.send_ctl(
+        PROXY_NODE, OUR_SRC, h("7f00")
+    )  # an opcode nothing acts on still proves the link
+    assert seen == [(PROXY_NODE, 0x0A), (-1, -1), (PROXY_NODE, 0x7F)]
+    assert len(beats) == 1
+
+    def boom(_src: int, _op: int) -> None:
+        raise RuntimeError("handler")
+
+    attached.on_control = boom
+    with caplog.at_level(logging.DEBUG, logger="jhmesh"):
+        link.send_ctl(PROXY_NODE, OUR_SRC, h("0a050003"))
+    assert "on_control handler failed" in caplog.text
+    assert len(beats) == 2  # the Heartbeat still went on
+
+
 # ============================================================================= replay list vs. segmented messages (P2-1)
 
 

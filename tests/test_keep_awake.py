@@ -105,14 +105,14 @@ def hub(clock: Clock) -> Any:
         last_heard={},
         hass=None,
         entry=SimpleNamespace(async_create_background_task=_task),
-        connected=True,
+        link_up=True,
         waits=[],
     )
 
     async def async_wait_connected(timeout: float) -> bool:
         stand_in.waits.append(timeout)
         await _real_sleep(0)
-        return bool(stand_in.connected)
+        return bool(stand_in.link_up)
 
     stand_in.async_wait_connected = async_wait_connected
     return stand_in
@@ -188,13 +188,13 @@ async def test_without_a_link_the_keep_alive_waits_for_one(
     (each send taking a sequence number before failing); it waits for the link instead, then keeps its cadence."""
     proxy: Proxy = hub.proxy
     proxy.outcomes = [None]
-    hub.connected = False
+    hub.link_up = False
     keep = ka.KeepAwake(hub)
     async with keep.hold([KEY_1G]):
         await _until(lambda: len(hub.waits) >= 5)
         assert proxy.calls == []
         assert set(hub.waits) == {LINK_WAIT_STEP}
-        hub.connected = True
+        hub.link_up = True  # attached all the way (R5-5): only connected is not enough
         await _until(lambda: len(proxy.calls) == 2)
     assert [t for t, *_ in proxy.calls] == [6, 12]  # quiet since the hold began
 

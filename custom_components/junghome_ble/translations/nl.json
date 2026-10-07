@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Hops: {hops}",
     "topology_band_more": "Hops: {hops} of meer",
     "topology_band_unknown": "Hops: onbekend",
+    "topology_band_unknown_off": "Hops: onbekend (optie Heartbeats van nodes staat uit)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "bereikbaar: antwoordt",
     "topology_legend_unreachable": "onbereikbaar: antwoordde niet",

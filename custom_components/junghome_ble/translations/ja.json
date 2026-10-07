@@ -3098,6 +3098,7 @@
     "topology_band_hops": "ホップ数：{hops}",
     "topology_band_more": "ホップ数：{hops} 以上",
     "topology_band_unknown": "ホップ数：不明",
+    "topology_band_unknown_off": "ホップ数：不明（オプション「ノードのハートビート」がオフ）",
     "topology_legend": "凡例",
     "topology_legend_reachable": "到達可能：応答あり",
     "topology_legend_unreachable": "到達不可：応答なし",

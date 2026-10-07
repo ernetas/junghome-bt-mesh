@@ -312,7 +312,10 @@ def test_device_info_without_parents(cdb: CDB) -> None:
 
 
 async def test_vendor_events(
-    hass: HomeAssistant, init_integration: MockConfigEntry, fake_link: FakeProxyLink
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
 ) -> None:
     eid = entity_id(hass, "event", UID_BUTTON_WC)
 
@@ -338,6 +341,7 @@ async def test_vendor_events(
     assert hass.states.get(eid).attributes[ATTR_EVENT_TYPE] == "hold_end"
     assert hass.states.get(eid).attributes["counter"] == 3
 
+    freezer.tick(1)  # the click of counter 1 is no first half any more
     fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(5, BUTTON_CLICK))
     fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(6, BUTTON_CLICK))
     await hass.async_block_till_done()

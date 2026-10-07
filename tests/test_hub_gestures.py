@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
+    async_capture_events,
     async_fire_time_changed_exact,
 )
 
@@ -15,11 +16,13 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
+    EVENT_BUTTON_ACTION,
     OPTION_CLICK_DELAY,
     OPTION_DOUBLE_CLICK_KEYS,
 )
 from custom_components.junghome_ble.hub.gestures import (
     BUTTON_REPEAT_WINDOW,
+    DIM_HOLD_MAX,
     DOUBLE_CLICK_WINDOW,
     TID_REPEAT_WINDOW,
 )
@@ -682,3 +685,99 @@ async def test_click_delay_waits_on_every_key_whatever_the_list(
     assert gestures.double_click_keys == frozenset()
     assert gestures.waits_for_double_click(BUTTON_WC) is True
     assert gestures.waits_for_double_click(ROCKER_A) is True
+
+
+# ----------------------------------------------------------------------------- review 5
+
+
+async def _presses(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    fake_link: FakeProxyLink,
+    count: int,
+) -> None:
+    """Press BUTTON_WC `count` times 0.3 s apart (each within DOUBLE_CLICK_WINDOW of the last), then let it settle."""
+    for counter in range(1, count + 1):
+        if counter > 1:
+            freezer.tick(0.3)
+        fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(counter, BUTTON_CLICK))
+    await _let_time_pass(hass, freezer, DOUBLE_CLICK_WINDOW + 1)
+
+
+async def test_the_click_that_completes_a_double_click_starts_no_other(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 R5-1: four presses 0.3 s apart made three double clicks (each press paired with the one before),
+    three presses two; an automation toggling on `double_click` undid itself. Four presses are two double clicks,
+    three a click, a double click and a click."""
+    hub = hub_of(init_integration)
+    got = events_of(hub, BUTTON_WC)
+    await _presses(hass, freezer, fake_link, 4)
+    assert got == [
+        ("click", {"counter": 1}),
+        ("double_click", {"counter": 2}),
+        ("click", {"counter": 3}),
+        ("double_click", {"counter": 4}),
+    ]
+    got.clear()
+    await _let_time_pass(
+        hass, freezer, BUTTON_REPEAT_WINDOW
+    )  # the counters may come again
+    await _presses(hass, freezer, fake_link, 3)
+    assert got == [
+        ("click", {"counter": 1}),
+        ("double_click", {"counter": 2}),
+        ("click", {"counter": 3}),
+    ]
+
+
+async def test_a_key_that_waits_reports_two_double_clicks_for_four_presses(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    double_click_key: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 R5-1 on a key that waits for a double click: four presses, two double clicks; three, a double click
+    and the third press's click once its window passed."""
+    hub = hub_of(double_click_key)
+    got = events_of(hub, BUTTON_WC)
+    await _presses(hass, freezer, fake_link, 4)
+    assert got == [("double_click", {"counter": 2}), ("double_click", {"counter": 4})]
+    got.clear()
+    await _let_time_pass(hass, freezer, BUTTON_REPEAT_WINDOW)
+    await _presses(hass, freezer, fake_link, 3)
+    assert got == [("double_click", {"counter": 2}), ("click", {"counter": 3})]
+
+
+async def test_key_events_during_the_stop_arm_nothing(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    delayed_clicks: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 R5-4: the hub stops its gestures before the link is detached, so key events still arrive while
+    the stop waits for its tasks. A hold started then published its `hold_end` (`reason: timeout`) DIM_HOLD_MAX
+    after the unload, by a timer nothing cancelled; so did a held-back click, and a link that ended during the
+    stop armed the grace. A stopping hub takes no key event and starts no grace."""
+    hub = hub_of(delayed_clicks)
+    bus = async_capture_events(hass, EVENT_BUTTON_ACTION)
+    cancel_tasks = hub.lifecycle.async_cancel_tasks
+
+    async def events_meanwhile() -> None:
+        fake_link.inject(BUTTON_WC, 0xC005, vendor_button_event(1, BUTTON_HOLD_START))
+        fake_link.inject(ROCKER_A, 0xC044, vendor_button_event(1, BUTTON_CLICK))
+        move = (
+            encode_opcode(M.GEN_MOVE_SET_UNACK) + (100).to_bytes(2, "little") + b"\x07"
+        )
+        fake_link.inject(BUTTON_DIMMER, GROUP_DIMMER, move)
+        hub.link.on_disconnect()  # the transport went too
+        await cancel_tasks()
+
+    hub.lifecycle.async_cancel_tasks = events_meanwhile  # type: ignore[method-assign]
+    assert await hass.config_entries.async_unload(delayed_clicks.entry_id)
+    assert hub.lifecycle.timer("grace") is None
+    await _let_time_pass(hass, freezer, DIM_HOLD_MAX + 1)
+    assert bus == []

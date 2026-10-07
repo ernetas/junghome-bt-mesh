@@ -59,6 +59,7 @@ from custom_components.junghome_ble.jhmesh.properties import (
     PropertySpec,
 )
 from custom_components.junghome_ble.properties import targets as T
+from custom_components.junghome_ble.properties.reader import CONFIG_REREAD_CHECK
 from custom_components.junghome_ble.sensor import PROPERTY_INSTALLED
 from custom_components.junghome_ble.switch import (
     DETECTOR_WALKING_TEST_DURATION,
@@ -129,10 +130,17 @@ from .test_binary_sensor import (
     make_detectors_entry,
     start_detectors,
 )
+from .test_coordinator import (
+    answering_link as answering_link,  # noqa: PLC0414  # the fixture
+)
+from .test_coordinator import (
+    refresh_gate as refresh_gate,  # noqa: PLC0414  # the fixture
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable
 
+    from freezegun.api import FrozenDateTimeFactory
     from homeassistant.core import HomeAssistant
     from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -1017,8 +1025,8 @@ async def test_initial_reads_are_chunked_delayed_and_deduplicated(
     mesh: PropertyMesh,
     fast_sleep: list[float],
 ) -> None:
-    """After the link is up the enabled entities read their properties: a start delay, then five elements at a time."""
-    assert 3.0 in fast_sleep  # PROPERTY_READ_DELAY
+    """After the link is up the enabled entities read their properties, five elements at a time (behind the link's
+    state refresh: `test_property_reads_wait_for_each_links_state_refresh`)."""
     assert (
         fast_sleep.count(0.5) >= 2
     )  # PROPERTY_READ_PAUSE between chunks (and the hub's own refresh)
@@ -2284,3 +2292,88 @@ async def test_battery_node_update_entity_is_skipped_and_reread_at_a_key_event(
     age(select)
     await key_event(3)
     assert (TRANSMITTER_1G, PID_LED1_ON) in mesh.gets[gets:]
+
+
+@pytest.mark.refresh_first
+async def test_property_reads_wait_for_each_links_state_refresh(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    answering_link: FakeProxyLink,
+    refresh_gate: asyncio.Event,
+) -> None:
+    """Review-5 R5-3: the property reads waited a fixed 3 s after the worker started, and not at all on a later link,
+    while the state refresh of a large mesh takes far longer: both at once were twice the app's in-flight budget,
+    and a node that misses one answer counts as unreachable. The reads now start once the refresh of the link is
+    through, on every link."""
+    mesh = ph.PropertyMesh(answering_link)
+    await setup_entry(hass, mock_config_entry)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    hub: JungHomeHub = mock_config_entry.runtime_data
+    assert hub.link.link_refresh is None  # held between its chunks
+    assert mesh.gets == []  # nothing beside it
+    refresh_gate.set()
+    await settle(hass)
+    assert hub.link.link_refresh is not None
+    assert mesh.gets  # now
+
+    refresh_gate.clear()
+    answering_link.drop_link()
+    await wait_for_link(hass, mock_config_entry, connected=False)
+    await wait_for_link(hass, mock_config_entry)
+    await settle(hass)
+    ran: list[float | None] = []
+
+    async def read() -> None:
+        ran.append(hub.link.link_refresh)
+
+    C.property_reader(hass, hub).schedule(LIGHT_SWITCH, read, key="probe")
+    await settle(hass)
+    assert ran == []  # the new link's refresh goes first too
+    refresh_gate.set()
+    await settle(hass)
+    assert len(ran) == 1
+    assert ran[0] is not None
+
+
+async def test_a_link_that_holds_reads_the_values_again_after_the_interval(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_with_mesh: MockConfigEntry,
+    mesh: ph.PropertyMesh,
+) -> None:
+    """Review 5: values were read again only on a new link once CONFIG_REREAD_INTERVAL had passed, so a link that
+    held for days never showed what the app changed. While a link is up the reader looks every CONFIG_REREAD_CHECK;
+    a value read less than the interval ago is not asked again, nor one the last link left unanswered."""
+    eid = entity_id(hass, "number", UID_RUN_ON)
+    number = hass.data[DATA_INSTANCES]["number"].get_entity(eid)
+    assert isinstance(number, C.PropertyEntity)
+    assert number._read_done
+    gets = mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON))
+    freezer.tick(CONFIG_REREAD_CHECK)
+    async_fire_time_changed(hass)
+    await settle(hass)
+    assert (
+        mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets
+    )  # read within the interval
+
+    changed = (90_000).to_bytes(4, "little")
+    mesh.values[LIGHT_SWITCH, PID_RUN_ON] = changed  # set in the app meanwhile
+    age(number)
+    freezer.tick(CONFIG_REREAD_CHECK)
+    async_fire_time_changed(hass)
+    await settle(hass)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1
+    hub: JungHomeHub = init_with_mesh.runtime_data
+    assert hub.states[LIGHT_SWITCH].properties[PID_RUN_ON] == changed
+
+    # without a link nothing is asked
+    age(number)
+    with patch.object(
+        type(hub), "link_up", new_callable=PropertyMock, return_value=False
+    ):
+        freezer.tick(CONFIG_REREAD_CHECK)
+        async_fire_time_changed(hass)
+        await settle(hass)
+    assert mesh.gets.count((LIGHT_SWITCH, PID_RUN_ON)) == gets + 1

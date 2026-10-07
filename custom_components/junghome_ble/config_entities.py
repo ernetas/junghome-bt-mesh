@@ -234,7 +234,8 @@ class ConfigEntity(JungHomeEntity):
     """A config entity of one element, read through the hub's reader (`_read`) until it answers, then again later.
 
     A value changed in the app is answered to the app's address, so Home Assistant hears nothing of it: once
-    read, the entity is read again on a later link when CONFIG_REREAD_INTERVAL has passed, and
+    read, the entity is read again when CONFIG_REREAD_INTERVAL has passed (on a later link, or on a link that held
+    that long, `_reread_tick`), and
     `homeassistant.update_entity` reads it at once (`_reread`). A battery node's (`BATTERY_PIDS`) sleeps at link-up
     and would not answer: it is read when one of the node's keys reports an event instead (`_on_key_event`). A
     change to it runs under `changing` and a silent node is reported as asleep (`asleep`): the user wakes it with a
@@ -285,6 +286,8 @@ class ConfigEntity(JungHomeEntity):
             self.async_on_remove(
                 self.hub.add_event_listener(address, self._on_key_event)
             )
+        if not self._battery:
+            self.async_on_remove(self.reader.async_on_reread(self._reread_tick))
         self._maybe_read()
 
     @callback
@@ -299,8 +302,8 @@ class ConfigEntity(JungHomeEntity):
         A read that got no answer (or was cut by a lost link) is queued again on the next link, not on the next
         update of this one: the element was asked and stayed silent, asking again through the same link would only
         add to the traffic that may have drowned the first attempt. So is the re-read of values read
-        CONFIG_REREAD_INTERVAL ago: at most once per link and per interval, behind the connect-time traffic like
-        the first read. Never for a battery node (`_on_key_event`). A read still queued from a lost link is queued
+        CONFIG_REREAD_INTERVAL ago: at most once per link and per interval (a link that holds that long reads
+        again, `_reread_tick`), behind the connect-time traffic like the first read. Never for a battery node (`_on_key_event`). A read still queued from a lost link is queued
         again regardless: the reader drops the lost link's copy (`PropertyReader.schedule`) and keeps one.
         """
         if not self.hub.connected or self._battery:
@@ -311,6 +314,17 @@ class ConfigEntity(JungHomeEntity):
         self._read_pending = True
         self._read_link = self.hub.link_count
         self.reader.schedule(self.address, self._initial_read)
+
+    @callback
+    def _reread_tick(self) -> None:
+        """Read again on the current link too once CONFIG_REREAD_INTERVAL has passed (`PropertyReader.reread_tick`).
+
+        A link that holds for days used to never re-read: the re-read waited for a new link. A read that went
+        unanswered still waits for the next link (`_maybe_read`).
+        """
+        if self._read_done and self._read_due():
+            self._read_link = None
+        self._maybe_read()
 
     @callback
     def _on_key_event(self, event: str, attrs: dict[str, Any]) -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from collections import defaultdict
 from collections.abc import Generator
 from datetime import timedelta
@@ -1152,3 +1153,81 @@ async def test_filter_status_watchdog_stops_with_the_hub(
     assert hub.lifecycle.timer("filter_watch") is None
     await tick(hass, freezer, FILTER_STATUS_TIMEOUT + 0.1)
     assert find_issue(hass, ISSUE_PDUS_DROPPED) is None
+
+
+# ----------------------------------------------------------------------------- review 5
+
+
+@pytest.mark.link_loss_grace
+async def test_link_up_means_attached_not_only_connected(
+    hass: HomeAssistant, init_answered: MockConfigEntry
+) -> None:
+    """Review-5 R5-5: `proxy.connected` is True from the start of `attach()`, before the proxy's beacon and the filter
+    write; a command waiting through the grace, or a background sender, went out then — under the stored IV index,
+    its group status dropped by the default filter. The link is up once the attach is through (`ready`)."""
+    hub = hub_of(init_answered)
+    assert hub.link_up
+    hub.proxy._ready.clear()  # as from the start of `attach()` until its filter write
+    assert hub.connected
+    assert not hub.link_up
+    assert await hub.async_wait_connected(0.01) is False
+    hub.link._lost_at = (
+        time.monotonic()
+    )  # a link lost a moment ago: a command waits for the next one
+    waiting = hass.loop.create_task(
+        hub.link.wait_for_link()
+    )  # untracked: settle does not wait for it
+    await settle(hass)
+    assert not waiting.done()
+    hub.proxy._ready.set()
+    hub.link._link_up.set()  # `_connect_to` took the link
+    await settle(hass)
+    assert waiting.done()
+
+
+async def test_dropping_a_link_never_ends_a_newer_one(
+    hass: HomeAssistant, init_answered: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """Review 5: `drop_link` wakes the watchdog after its detach (up to STOP_TIMEOUT); when the loop took a new link
+    meanwhile, that wake ended the new, healthy link as closed by the transport. Only the link it dropped wakes it."""
+    hub = hub_of(init_answered)
+    detach = hub.proxy.detach
+
+    async def detach_while_a_new_link_comes(*args: Any, **kwargs: Any) -> None:
+        await detach(*args, **kwargs)
+        hub.link_count += 1  # the loop connected again meanwhile (`_connect_to`)
+
+    with patch.object(hub.proxy, "detach", detach_while_a_new_link_comes):
+        await hub.link.drop_link("a test", penalise=False)
+    assert not hub.link._link_lost.is_set()
+    await hub.link.drop_link("a test", penalise=False)  # the current link: woken
+    assert hub.link._link_lost.is_set()
+
+
+async def test_heartbeats_are_link_traffic_for_the_watchdog(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_answered: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review 5: only access messages, beacons and the Filter Status fed the watchdog, so a quiet mesh whose nodes only
+    beat still paid a keep-alive Get every LINK_IDLE_TIMEOUT. Any control PDU our keys authenticate counts."""
+    hub = hub_of(init_answered)
+    quiet_mesh(hub)
+    fake_link.sent.clear()
+    await tick(hass, freezer, LINK_IDLE_TIMEOUT - 1)
+    fake_link.inject_heartbeat(LIGHT_DIMMER, OUR_ADDRESS)
+    await tick(hass, freezer, 2)
+    assert keep_alive_gets(fake_link) == []  # the heartbeat a second ago kept the link
+    await tick(hass, freezer, LINK_IDLE_TIMEOUT)
+    assert keep_alive_gets(fake_link) != []  # silence again: asked as before
+
+
+async def test_a_stopped_hub_begins_no_rebuild(
+    hass: HomeAssistant, init_answered: MockConfigEntry
+) -> None:
+    """Review 5: Home Assistant's stop ends the hub while its entry stays loaded; an options change after that
+    asserted on the heartbeat timer the stop had cancelled. A stopped hub begins no rebuild."""
+    hub = hub_of(init_answered)
+    await hub.async_stop()
+    assert await hub.async_begin_rebuild() is False

@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Hypyt: {hops}",
     "topology_band_more": "Hypyt: {hops} tai enemmän",
     "topology_band_unknown": "Hypyt: ei tiedossa",
+    "topology_band_unknown_off": "Hypyt: ei tiedossa (asetus Solmujen heartbeat-viestit on pois päältä)",
     "topology_legend": "Selite",
     "topology_legend_reachable": "tavoitettava: vastaa",
     "topology_legend_unreachable": "tavoittamaton: ei vastannut",

@@ -75,6 +75,7 @@ def topology_snapshot(hub: JungHomeHub) -> Topology:
         connected=link,
         proxy=hub.proxy_node if link else None,
         nodes=tuple(nodes),
+        heartbeats=hub.heartbeats_enabled,
     )
 
 

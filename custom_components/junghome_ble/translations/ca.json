@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Salts: {hops}",
     "topology_band_more": "Salts: {hops} o més",
     "topology_band_unknown": "Salts: desconeguts",
+    "topology_band_unknown_off": "Salts: desconeguts (l'opció Heartbeats dels nodes està desactivada)",
     "topology_legend": "Llegenda",
     "topology_legend_reachable": "accessible: respon",
     "topology_legend_unreachable": "inaccessible: no ha respost",

@@ -3163,6 +3163,7 @@
     "topology_band_hops": "Hops: {hops}",
     "topology_band_more": "Hops: {hops} or more",
     "topology_band_unknown": "Hops: not known",
+    "topology_band_unknown_off": "Hops: not known (option Node heartbeats is off)",
     "topology_legend": "Legend",
     "topology_legend_reachable": "reachable: answers",
     "topology_legend_unreachable": "unreachable: did not answer",

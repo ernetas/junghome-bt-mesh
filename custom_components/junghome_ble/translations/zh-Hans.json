@@ -3098,6 +3098,7 @@
     "topology_band_hops": "跳数：{hops}",
     "topology_band_more": "跳数：{hops} 及以上",
     "topology_band_unknown": "跳数：未知",
+    "topology_band_unknown_off": "跳数：未知（选项“节点心跳”已关闭）",
     "topology_legend": "图例",
     "topology_legend_reachable": "可访问：有应答",
     "topology_legend_unreachable": "无法访问：未应答",

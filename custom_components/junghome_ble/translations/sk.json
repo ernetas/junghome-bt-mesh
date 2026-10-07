@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Skoky: {hops}",
     "topology_band_more": "Skoky: {hops} a viac",
     "topology_band_unknown": "Skoky: neznáme",
+    "topology_band_unknown_off": "Skoky: neznáme (voľba Heartbeat uzlov je vypnutá)",
     "topology_legend": "Legenda",
     "topology_legend_reachable": "dostupné: odpovedá",
     "topology_legend_unreachable": "nedostupné: neodpovedalo",

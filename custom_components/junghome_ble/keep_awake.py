@@ -116,7 +116,7 @@ class KeepAwake:
         """
         quiet_since = time.monotonic()
         while True:
-            if not self.hub.connected:
+            if not self.hub.link_up:
                 await self.hub.async_wait_connected(LINK_WAIT_STEP)
                 continue
             heard = max(quiet_since, self.hub.last_heard.get(unicast, quiet_since))

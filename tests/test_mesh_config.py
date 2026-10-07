@@ -418,6 +418,12 @@ class FakeHub:
     def connected(self) -> bool:
         return bool(self.proxy.connected)
 
+    @property
+    def link_up(self) -> bool:
+        return (
+            self.connected
+        )  # the bench's link is attached all the way when it is there at all
+
     async def async_wait_connected(self, timeout: float) -> bool:
         """The bench's link never comes back by itself: the wait ends at once (`KeepAwake` looks again)."""
         await asyncio.sleep(0)

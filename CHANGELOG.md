@@ -25,6 +25,9 @@
   since when, and the *sequence numbers running low* repair stays open. The answer and the diagnostics add
   `confirmed_at`, `waiting_for_mesh_until`, `abandoned` and `mesh_iv_changed_at`; the refusals *too early* and *index
   not heard yet* name the last change of the mesh's IV state seen in a beacon. Unverified on air.
+- **`jhmesh`: `ProxyClient(on_control=…)`.** Called with the source and opcode of every control message the keys open
+  that is no replay (a Segment Ack, a Heartbeat, a Friend message), before `on_heartbeat`: traffic a link watchdog may
+  count.
 
 ### Changed
 
@@ -41,6 +44,14 @@
   `add_to_room` with `create` — is no longer given an element group of a device Home Assistant provisioned but never
   recorded; the vault's addresses and groups, the held scene numbers and Home Assistant's own address are the same
   reservations for a new device, a room and a scene.
+- **A link that holds reads the settings again too.** The config entities' values were read again only on a new
+  connection three hours after the last read, so a link that held for days never showed what the app changed; while a
+  link is up the integration now looks every hour and reads what is due on the same link. Unverified on air.
+- **Heartbeats keep the link.** The watchdog counted only access messages, beacons and the proxy's Filter Status, so a
+  quiet mesh whose devices only beat still paid a keep-alive Get every 11 minutes; every control message the keys open
+  counts now. Unverified on air.
+- **The topology picture says why the hops are not known.** With *Node heartbeats* off (the default) every device sat
+  under *Hops: not known*; the band's heading now says the option is off (a new text, in all 26 languages).
 
 ### Fixed
 
@@ -102,6 +113,35 @@
 - **A reload during an action no longer records its plan twice** (review-5 W5-7): the export's lock now outlives a
   reload, so the setup's journal replay waits for a plan still running on the hub before (which records itself),
   instead of recording it again with a spurious *A JUNG HOME change was interrupted* repair.
+- **Four quick presses are two double clicks, not three.** The press that completed a double click stayed the "last
+  click", so a further press within half a second made another `double_click` (three presses gave two, four gave
+  three): an automation toggling on `double_click` undid itself. That press now starts nothing; three presses are a
+  double click and a click (on a key that waits for a double click as well).
+- **The Time Set retried while the sequence-number store catches up carries the time it goes out.** It was built once
+  before the wait, so a stall at link-up (up to two minutes) set every device's clock behind by that much until the
+  next day's Time Set; the same for the new device's clock at commissioning and the *node clock* repair's fix.
+- **Settings are read after the state refresh, on every connection.** The property reads started a fixed 3 s after
+  the reader's first job, and not at all late on a later connection, while the refresh of a large mesh takes far
+  longer; both at once could mark devices unavailable that answered seconds later. Unverified on air.
+- **Nothing outlives an unload.** A key event arriving while the hub stopped (it waits for its tasks before closing the
+  link) armed timers nothing cancelled: a hold started then published its `hold_end` (`reason: timeout`) 30 s after
+  the unload, and a link that ended then armed the grace timer. A stopping hub now takes no key event and starts no
+  grace; and an options change after Home Assistant's stop no longer fails on the heartbeat timer the stop cancelled.
+- **"Connected" means the link is set up.** A command waiting for a link, the property reads, a battery device's
+  keep-alive and the actions went out as soon as the Bluetooth connection existed — before the proxy's beacon and the
+  filter write, under the stored IV index and with the answer dropped by the proxy's default filter, costing a retry.
+  They now wait until the link is set up. Unverified on air.
+- **The gateway's certificate is asked about once per connection, after the refresh, and warned about once.** A
+  gateway entry whose pin the gateway node had not confirmed sent the Get at every link-up, beside the Time Set and
+  the refresh, and logged a WARNING each time, for good on a flapping link; it now waits for the refresh, asks once
+  per connection, warns once and logs the rest at DEBUG. An answer that does not decode is logged and taken as no
+  answer instead of failing the check unseen.
+- **The topology picture shows a link change at once.** It held it back behind its once-a-minute limit (a bug the *Mesh
+  overview* sensor had had fixed, copied): after the link dropped, the overview said 0 while the picture still
+  showed the old proxy for up to a minute.
+- **Dropping a link never ends a newer one.** A link dropped by another task woke the watchdog after its detach,
+  whichever link was current by then: one the connection loop had taken meanwhile was ended as closed by the
+  transport and counted as a short link.
 
 ## 1.4.1 (unreleased)
 

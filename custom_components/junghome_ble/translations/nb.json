@@ -3098,6 +3098,7 @@
     "topology_band_hops": "Hopp: {hops}",
     "topology_band_more": "Hopp: {hops} eller flere",
     "topology_band_unknown": "Hopp: ukjent",
+    "topology_band_unknown_off": "Hopp: ukjent (innstillingen Heartbeats fra noder er av)",
     "topology_legend": "Tegnforklaring",
     "topology_legend_reachable": "tilgjengelig: svarer",
     "topology_legend_unreachable": "utilgjengelig: svarte ikke",
