@@ -88,7 +88,7 @@
     "tests/jhmesh/test_devices.py::test_time_keeper_group_is_not_a_room"
    ],
    "class": "dup",
-   "reason": "same behaviour as mgmt:time:keepergroup; same time-keeper group 0xFEFF (PP2 subscriptions copied at commissioning, no keeper publishes there, no '#time_keeper_group#')",
+   "reason": "same behaviour as mgmt:time:keepergroup; the same time-keeper group 0xFEFF: PP2 subscriptions copied at commissioning, and the node whose Time keeper switch is on publishes its Time Server there (prod:param:time-keeper:time-keeper); no '#time_keeper_group#'",
    "dup_of": "mgmt:time:keepergroup"
   },
   {
@@ -2046,13 +2046,15 @@
    "status": "partial",
    "code": [
     "custom_components/junghome_ble/actions/resolve.py::_resolve_loads",
-    "custom_components/junghome_ble/thresholds.py::switched_devices"
+    "custom_components/junghome_ble/thresholds.py::switched_devices",
+    "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates"
    ],
    "tests": [
     "tests/test_services.py::test_set_room_resolution_errors",
-    "tests/test_thresholds.py::test_threshold_targets_are_checked"
+    "tests/test_thresholds.py::test_threshold_targets_are_checked",
+    "tests/test_time_keeper.py::test_the_switch_only_in_a_project_with_pucks"
    ],
-   "missing": "target validation covers loads / keys / gateway / sockets; the filters of missing features have no counterpart: ConnectToRTRDevices (RTR multi-connection), TimeKeeperPrioritizedDevices and MiniActuatorPP (time keeper), AllIoTDevices (global sensor publication)",
+   "missing": "target validation covers loads / keys / gateway / sockets, and MiniActuatorPP's time-keeper candidates are jhmesh/devices.py::time_keeper_candidates; the filters of missing features have no counterpart: ConnectToRTRDevices (RTR multi-connection), AllIoTDevices (global sensor publication), and TimeKeeperPrioritizedDevices, the app's election order (Home Assistant lets the user pick the keeper: mgmt:flow:ensuretimekeeper)",
    "class": "build",
    "verify": "offline"
   },
@@ -4398,15 +4400,17 @@
    "status": "na",
    "code": [
     "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.remove_node",
-    "custom_components/junghome_ble/__init__.py::async_remove_config_entry_device"
+    "custom_components/junghome_ble/__init__.py::async_remove_config_entry_device",
+    "custom_components/junghome_ble/jhmesh/export.py::ProjectFile.exclude_node"
    ],
    "tests": [
     "tests/jhmesh/test_remove_node.py::test_a_removed_node_leaves_no_wiring_behind",
     "tests/jhmesh/test_remove_node.py::test_room_links_to_it_go_and_a_file_without_key_scene_rows_is_fine",
-    "tests/test_init.py::test_remove_config_entry_device"
+    "tests/test_init.py::test_remove_config_entry_device",
+    "tests/jhmesh/test_remove_node.py::test_the_rows_the_app_keeps_of_the_node_go_too"
    ],
    "class": "dup",
-   "reason": "same behaviour as mgmt:flow:removedevice; note from this row: besides schedulerMetaInfo / timer, the removed node's meta.sceneInfo, actuatorExports and buttonLayoutExports rows stay too",
+   "reason": "same behaviour as mgmt:flow:removedevice; the removed node's meta.sceneInfo, schedulerMetaInfo / timer, actuatorExports and buttonLayoutExports rows go too (jhmesh/export.py::ProjectFile.exclude_node, review-4 brief 39)",
    "dup_of": "mgmt:flow:removedevice"
   },
   {
@@ -4657,7 +4661,8 @@
     "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function",
     "custom_components/junghome_ble/configurator/rooms.py::Keys._request_lock",
     "custom_components/junghome_ble/configurator/wiring.py::MODE_LOCK",
-    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values"
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock_values",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key"
    ],
    "tests": [
     "tests/test_mesh_config.py::test_assign_key_to_lock_a_light_sends_the_apps_locking_sequence",

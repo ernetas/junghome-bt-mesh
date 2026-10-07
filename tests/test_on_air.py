@@ -14,7 +14,7 @@ CHECKLIST = ROOT / "docs" / "on-air-sweep.md"
 # the rows review 4 brief 30 names, each carrying its on-air procedure in the ledger (the range rows only the part the
 # sweep's CLI probe could not settle, Home Assistant's own Set)
 BRIEF_ROWS = (
-    "air:access:8264.missing",
+    "air:access:8264.note",
     "msg:op:8241.note",
     "msg:op:826b.note",
     "prod:param:lamp:tunable-white-range.note",

@@ -2291,19 +2291,24 @@
   },
   {
    "id": "mgmt:const:lowertransportlayer.block_ack_timer",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack"
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_complete",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._send_ack",
+    "custom_components/junghome_ble/jhmesh/client.py::SAR_ACK_DELAY_INCREMENT",
+    "custom_components/junghome_ble/jhmesh/client.py::SAR_SEGMENT_INTERVAL"
    ],
    "tests": [
+    "tests/jhmesh/test_sar_receive.py::test_the_defaults_are_the_specs",
+    "tests/jhmesh/test_sar_receive.py::test_the_timer_acknowledges_what_arrived_and_restarts_with_each_new_segment",
+    "tests/jhmesh/test_sar_receive.py::test_a_new_segment_cancels_the_running_timer",
+    "tests/jhmesh/test_sar_receive.py::test_the_last_message_is_acknowledged_again_after_its_reassembly_expired",
     "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
-    "tests/jhmesh/test_client.py::test_receive_segmented_partial_ack_when_last_segment_arrives_first",
     "tests/jhmesh/test_client.py::test_receive_segmented_group_message_is_not_acked"
    ],
-   "missing": "no acknowledgment timer: we ack at once when the message completes or when its last segment arrives with gaps (docs/dev/architecture.md, Behaviour worth knowing, describes this but records no reason to differ); the app (Nordic) arms a 150 + 50*TTL ms block-ack timer on the first segment, so a message whose last segment is lost is acked by the app but not by us until the sender retransmits the last segment. To build: timer in _on_segment, tested with a virtual clock (tests/sim/clock.py).",
-   "class": "build",
-   "verify": "offline"
+   "reason": "Built by review-4 brief 71: a SAR Acknowledgment timer armed by each new segment (jhmesh/client.py::ProxyClient._ack_timer) acknowledges the segments received so far, so a message whose last segment is lost is acknowledged without waiting for its retransmission, as the app's is. Deliberately the spec's interval, not Nordic's 150 + 50*TTL ms: Mesh Protocol 1.1 section 3.5.3.4, min(SegN + 0.5, SAR_ACK_DELAY_INCREMENT) x SAR_SEGMENT_INTERVAL (60 ms), with the defaults of the SAR Configuration server (tests/jhmesh/test_sar_receive.py::test_the_defaults_are_the_specs)."
   },
   {
    "id": "mgmt:const:lowertransportlayer.incomplete_timer_delay",
@@ -6276,14 +6281,15 @@
    "id": "mgmt:nordic:lowertransportlayer.initsegmentedaccessacknowledgementtimer",
    "status": "na",
    "code": [
-    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment"
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._on_segment",
+    "custom_components/junghome_ble/jhmesh/client.py::ProxyClient._ack_timer"
    ],
    "tests": [
-    "tests/jhmesh/test_client.py::test_receive_segmented_message_is_reassembled_and_acked",
-    "tests/jhmesh/test_client.py::test_receive_segmented_group_message_is_not_acked"
+    "tests/jhmesh/test_sar_receive.py::test_the_timer_acknowledges_what_arrived_and_restarts_with_each_new_segment",
+    "tests/jhmesh/test_sar_receive.py::test_group_and_other_nodes_messages_are_never_acknowledged"
    ],
    "class": "dup",
-   "reason": "Same 150 + 50*TTL ms acknowledgment timer (acks only for unicast destinations already match).",
+   "reason": "The same acknowledgment timer armed by a segment, and acks only for unicast destinations, as mgmt:const:lowertransportlayer.block_ack_timer records; its interval is the spec's, not Nordic's 150 + 50*TTL ms (why: that row).",
    "dup_of": "mgmt:const:lowertransportlayer.block_ack_timer"
   },
   {
@@ -9022,7 +9028,7 @@
     "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
    ],
    "class": "dup",
-   "reason": "Part of the time-keeper election (the 0xFEFF subscription copy at commissioning and the Time Set broadcast are done).",
+   "reason": "Part of the time keeper (the 0xFEFF subscription copy at commissioning, the Time Server publication there from the Time keeper switch, the Time Set broadcast); the election is mgmt:flow:ensuretimekeeper.",
    "dup_of": "mgmt:flow:ensuretimekeeper"
   },
   {

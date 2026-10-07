@@ -793,7 +793,8 @@
     "custom_components/junghome_ble/configurator/wiring.py::KEY_MODE_CLIENTS",
     "custom_components/junghome_ble/configurator/wiring.py::KEY_MODES",
     "custom_components/junghome_ble/properties/targets.py::key_mode_targets",
-    "custom_components/junghome_ble/sensor.py::JungHomeKeyMode"
+    "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
+    "custom_components/junghome_ble/jhmesh/properties.py::key_lock"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",

@@ -44,6 +44,11 @@ def test_committed_anchors_json_is_consistent(committed: list[parity.Problem]) -
     assert [str(p) for p in committed if p.area == "anchors"] == []
 
 
+def test_committed_ledger_has_no_stale_rows() -> None:
+    """Review-5 F5-1 / F5-5: no `gap` / `partial` row names code the tree defines without citing it."""
+    assert [str(p) for p in parity.stale_problems(parity.load_parity(ROOT), ROOT)] == []
+
+
 def test_committed_anchor_coverage(committed: list[parity.Problem]) -> None:
     assert [str(p) for p in committed if p.area == "coverage"] == []
     assert parity.read_json(ROOT / parity.PARITY / parity.UNMAPPED) == {}
@@ -310,6 +315,77 @@ def test_symbol_citations_that_resolve(repo: Path) -> None:
     }
     set_rows(repo, [row, GOOD])
     assert problems(repo) == []
+
+
+STALE_PY = """\
+class Hub:
+    def ack_timer(self):
+        pass
+
+
+def time_role_set():
+    pass
+
+
+def create():
+    pass
+"""
+
+
+def stale(root: Path) -> list[str]:
+    return [str(p) for p in parity.stale_problems(parity.load_parity(root), root)]
+
+
+def test_a_row_naming_built_code_is_stale(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review-5 F5-1 / F5-5: a `gap` / `partial` row whose `missing` names what the tree now defines — backticked
+    (`Class.method`, `method`, `module.name`) or as a `path::symbol`, in full or from its package — is flagged
+    unless the row cites it in `code`; `check` warns and still passes."""
+    write(repo / "custom_components" / "pkg" / "hub.py", STALE_PY)
+    full = "custom_components/pkg/hub.py"
+    rows = [
+        {**GOOD, "id": "msg:op:8201", "missing": "To build: `Hub.ack_timer`"},
+        {
+            **GOOD,
+            "status": "partial",
+            "missing": "no `time_role_set`, `hub.time_role_set`, hub.py::Hub.ack_timer or "
+            f"{full}::time_role_set yet",
+        },
+    ]
+    set_rows(repo, rows)
+    where = "[stale] ledger-msg.json msg:op:{}: missing names {}, which the tree defines ({}): built since (flip the row), or cite it in code"
+    assert stale(repo) == [
+        where.format("8201", "`Hub.ack_timer`", f"{full}::Hub.ack_timer"),
+        where.format("8202", "hub.py::Hub.ack_timer", f"{full}::Hub.ack_timer"),
+        where.format("8202", f"{full}::time_role_set", f"{full}::time_role_set"),
+        where.format("8202", "`time_role_set`", f"{full}::time_role_set"),
+        where.format("8202", "`hub.time_role_set`", f"{full}::time_role_set"),
+    ]
+    assert parity.main(["check", "--root", str(repo)]) == 0
+    assert (
+        "\n5 warnings\n  [stale] ledger-msg.json msg:op:8201" in capsys.readouterr().out
+    )
+
+    # cited in code: it existed all along, or is part of what is there; a row that is not gap / partial is not read
+    rows[0]["code"] = [f"{full}:2::Hub.ack_timer"]
+    rows[1] = {**rows[1], "status": "na", "class": "internal", "reason": "r"}
+    set_rows(repo, rows)
+    assert stale(repo) == []
+
+
+def test_what_a_missing_text_may_name_without_being_stale(repo: Path) -> None:
+    """A plain word in backticks (an action field, a value), a name or a path the tree does not define, a file that
+    cannot be cited by symbol, a cite that is no `path::symbol`: nothing to flag."""
+    write(repo / "custom_components" / "pkg" / "hub.py", STALE_PY)
+    missing = (
+        "`create` and `mode: lock`, `Hub.nothing`, `other_name`, `0x5003`, nope.py::Hub.ack_timer, "
+        "src/notes.txt::a, custom_components/pkg/hub.py::Hub.nothing"
+    )
+    set_rows(repo, [{**GOOD, "id": "msg:op:8201", "missing": missing}, GOOD])
+    assert stale(repo) == []
+    tree = parity.TreeSymbols(repo, parity.Citations(repo))
+    assert tree.cite("not a citation") == []
 
 
 SYMBOLS_PY = """\

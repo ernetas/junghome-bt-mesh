@@ -280,6 +280,58 @@ async def test_key_clients_hearing_their_load_are_a_note_not_a_finding(
     assert A.report([result])["findings"] == 2  # the notes are not counted
 
 
+# Mesh Model / Assigned Numbers: every SIG client model id; the servers next to them are no client
+SIG_CLIENT_MODELS = {
+    "1001": "Generic OnOff Client",
+    "1003": "Generic Level Client",
+    "1005": "Generic Default Transition Time Client",
+    "1008": "Generic Power OnOff Client",
+    "100B": "Generic Power Level Client",
+    "100D": "Generic Battery Client",
+    "1010": "Generic Location Client",
+    "1015": "Generic Property Client",
+    "1102": "Sensor Client",
+    "1202": "Time Client",
+    "1205": "Scene Client",
+    "1208": "Scheduler Client",
+    "1302": "Light Lightness Client",
+    "1305": "Light CTL Client",
+    "1309": "Light HSL Client",
+    "130E": "Light xyL Client",
+    "1311": "Light LC Client",
+}
+
+
+def test_every_client_model_is_a_sig_client() -> None:
+    """Review-5 P5-4: `1009` (the Generic Power Level Server) was listed as a client and `1008` (the Generic Power
+    OnOff Client) was not."""
+    assert set(A.CLIENT_MODELS) <= set(SIG_CLIENT_MODELS)
+    assert "1008" in A.CLIENT_MODELS
+    assert "1009" not in A.CLIENT_MODELS
+
+
+@pytest.mark.parametrize(
+    ("model", "kind"),
+    [("1008", "client_subscriptions"), ("1009", "subscriptions_extra")],
+)
+def test_a_power_onoff_client_hearing_its_load_is_a_note_a_power_level_server_a_finding(
+    model: str, kind: str
+) -> None:
+    """The load's element group on the Power OnOff Client is a note; on the Power Level Server it is a finding."""
+    row = A.ModelAudit(
+        0x0149,
+        model,
+        export_publish=0,
+        export_subscribe=(),
+        export_app_keys=(0,),
+        node_publish=0,
+        node_subscribe=(0xC061,),
+        node_app_keys=(0,),
+    )
+    findings, notes = A._model_findings(row, frozenset({0xC061}))
+    assert [f.as_dict()["kind"] for f in findings + notes] == [kind]
+
+
 async def test_a_silent_node_is_not_asked_about_its_models(
     attached: ProxyClient, cdb: CDB, servers: FakeConfigServers, paced: FastAsyncio
 ) -> None:

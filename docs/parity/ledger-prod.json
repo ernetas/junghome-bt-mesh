@@ -1432,7 +1432,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "the only capability without an HA surface is TimeRole, i.e. the time keeper cell"
+   "reason": "every capability has a Home Assistant surface; the last one to get one, TimeRole, is the time keeper cell judged under prod:param:time-keeper:time-keeper (the Time keeper switch)"
   },
   {
    "id": "prod:class:control-switch-device",
@@ -1483,7 +1483,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "missing capabilities are TimeRole (the time keeper cell) and Sensor Cadence / Settings Get/Set, tracked as mgmt:debug:sensorsettingsviewmodel.setcadencesettings / .requestsensorsettings / .setsensorsetting"
+   "reason": "the TimeRole capability is the time keeper cell judged under prod:param:time-keeper:time-keeper (the Time keeper switch); the missing ones are Sensor Cadence / Settings Get/Set, tracked as mgmt:debug:sensorsettingsviewmodel.setcadencesettings / .requestsensorsettings / .setsensorsetting"
   },
   {
    "id": "prod:class:device",
@@ -1689,7 +1689,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "the only capability without an HA surface is TimeRole, i.e. the time keeper cell"
+   "reason": "every capability has a Home Assistant surface; the last one to get one, TimeRole, is the time keeper cell judged under prod:param:time-keeper:time-keeper (the Time keeper switch)"
   },
   {
    "id": "prod:class:presence-detector-device",
@@ -1725,7 +1725,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "every capability but one is implemented (the STM32 version 0x0005 too, prop:0x0005); the missing one is the TimeRole / time keeper, judged under prod:param:time-keeper:time-keeper"
+   "reason": "every capability is implemented (the STM32 version 0x0005 too, prop:0x0005); the last one to get a surface, TimeRole, is the time keeper cell judged under prod:param:time-keeper:time-keeper (the Time keeper switch)"
   },
   {
    "id": "prod:class:socket-device",
@@ -1748,8 +1748,8 @@
     "tests/test_hub_clock.py::test_time_set_repeats_daily_while_connected"
    ],
    "class": "dup",
-   "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "missing capabilities are TimeRole (this row) and RtrOperationMode 0x1014 set by RTR linking (net:uc:setmulticonnection)"
+   "dup_of": "net:uc:setmulticonnection",
+   "reason": "the TimeRole capability is the time keeper cell (prod:param:time-keeper:time-keeper, the Time keeper switch); the one still missing is RtrOperationMode 0x1014, set by RTR linking and judged under net:uc:setmulticonnection"
   },
   {
    "id": "prod:class:switch-lamp-device",
@@ -1768,8 +1768,8 @@
     "tests/test_config_entities.py::test_load_properties_go_to_every_load_and_respect_the_load_kind"
    ],
    "class": "dup",
-   "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "missing capabilities are TimeRole (this row) and RtrOperationMode 0x1014 set by RTR linking (net:uc:setmulticonnection)"
+   "dup_of": "net:uc:setmulticonnection",
+   "reason": "the TimeRole capability is the time keeper cell (prod:param:time-keeper:time-keeper, the Time keeper switch); the one still missing is RtrOperationMode 0x1014, set by RTR linking and judged under net:uc:setmulticonnection"
   },
   {
    "id": "prod:class:switch-measure-socket-device",
@@ -1846,7 +1846,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "the only capability without an HA surface is TimeRole, i.e. the time keeper cell"
+   "reason": "every capability has a Home Assistant surface; the last one to get one, TimeRole, is the time keeper cell judged under prod:param:time-keeper:time-keeper (the Time keeper switch)"
   },
   {
    "id": "prod:class:unknown-device",
@@ -2029,7 +2029,8 @@
     "custom_components/junghome_ble/jhmesh/properties.py::key_lock",
     "custom_components/junghome_ble/sensor.py::JungHomeKeyMode",
     "custom_components/junghome_ble/configurator/rooms.py::Keys._reset_property_mode",
-    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function"
+    "custom_components/junghome_ble/configurator/rooms.py::Keys._write_lock_function",
+    "custom_components/junghome_ble/configurator/rooms.py::Keys.assign_key"
    ],
    "tests": [
     "tests/jhmesh/test_properties.py::test_encode_decode_helpers_and_key_mode_vector",
@@ -3163,16 +3164,26 @@
   },
   {
    "id": "prod:param:time-keeper:time-keeper",
-   "status": "gap",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/jhmesh/messages.py::TIME_ROLE_STATUS"
+    "custom_components/junghome_ble/switch.py::JungHomeTimeKeeper",
+    "custom_components/junghome_ble/switch.py::build_entities",
+    "custom_components/junghome_ble/configurator/nodes.py::Nodes.set_time_keeper",
+    "custom_components/junghome_ble/jhmesh/messages.py::time_role_set",
+    "custom_components/junghome_ble/jhmesh/messages.py::TIME_ROLE_STATUS",
+    "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
+    "custom_components/junghome_ble/hub/issues.py::Issues.report_time_keeper"
    ],
    "tests": [
+    "tests/test_time_keeper.py::test_set_time_keeper",
+    "tests/test_time_keeper.py::test_the_switch_only_in_a_project_with_pucks",
+    "tests/test_time_keeper.py::test_the_switch_sets_the_role_after_the_publication",
+    "tests/test_time_keeper.py::test_the_switch_over_the_fake_mesh",
+    "tests/test_time_keeper.py::test_the_repair_while_no_node_keeps_the_pucks_time",
     "tests/jhmesh/test_commission.py::test_pp2_time_keeper_subscription_and_battery_devices"
    ],
-   "missing": "no 'Use as time keeper' switch: no Time Role Set (2 relay / 3 client) builder and no Time Server publication to 0xFEFF / 0x0000 (TimeKeeperConfiguration); only describe() names Time Role messages and commissioning copies an existing 0xFEFF subscription; the Time Role / Time Server publication can be checked on air on a socket or rocker here, the pucks that consume it are absent",
-   "class": "build",
-   "verify": "on-air"
+   "reason": "Built by review-4 brief 40 (F4-14): the *Time keeper* switch (switch.py::JungHomeTimeKeeper) on: the node's Time Server publishes to 0xFEFF (configurator/nodes.py::Nodes.set_time_keeper), then Time Role Set 2 (relay, messages.py::time_role_set); off: publication 0x0000, then Time Role 3. A deliberate difference: the app shows the cell on every mains device's expert page, Home Assistant offers the switch only in a project with a PP2 puck (switch.py::build_entities), where it is the only thing it does; the app also elects a keeper itself (mgmt:flow:ensuretimekeeper), Home Assistant raises the time_keeper_missing repair instead.",
+   "note": "Unverified on air (no PP2 puck here, docs/on-air-sweep.md section F): the publication to 0xFEFF and Time Role Set 2 / 3, each answered by its status, on a mains node of a project with a puck; and that the puck then keeps its schedules' time."
   },
   {
    "id": "prod:pid:0x0001",
@@ -3536,7 +3547,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "provider rows only aggregate cells: the only cell without an entity is the time keeper"
+   "reason": "provider rows only aggregate cells, each judged in its own row; the time keeper cell, the last to get an entity (the Time keeper switch), is this one"
   },
   {
    "id": "prod:provider:lamp-parameters",
@@ -3586,7 +3597,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "provider rows only aggregate cells: the only cell without an entity is the time keeper"
+   "reason": "provider rows only aggregate cells, each judged in its own row; the time keeper cell, the last to get an entity (the Time keeper switch), is this one"
   },
   {
    "id": "prod:provider:rtr-parameters",
@@ -3603,7 +3614,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "provider rows only aggregate cells: the only cell without an entity is the time keeper"
+   "reason": "provider rows only aggregate cells, each judged in its own row; the time keeper cell, the last to get an entity (the Time keeper switch), is this one"
   },
   {
    "id": "prod:provider:sensor-values-parameter",
@@ -3649,7 +3660,7 @@
    ],
    "class": "dup",
    "dup_of": "prod:param:time-keeper:time-keeper",
-   "reason": "provider rows only aggregate cells: the only cell without an entity is the time keeper"
+   "reason": "provider rows only aggregate cells, each judged in its own row; the time keeper cell, the last to get an entity (the Time keeper switch), is this one"
   },
   {
    "id": "prod:provider:time-keeper-parameter",
@@ -4232,12 +4243,16 @@
   },
   {
    "id": "prod:ui:mini_actuator_pp2_no_connection_dialog_title",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no warning / repair when a project with pucks 0x0010-0x0016 has no time keeper (the app's dialog on the puck's automations screen)",
-   "class": "build",
-   "verify": "offline"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/hub/issues.py::Issues.report_time_keeper",
+    "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
+    "custom_components/junghome_ble/strings.json::issues.time_keeper_missing.description"
+   ],
+   "tests": [
+    "tests/test_time_keeper.py::test_the_repair_while_no_node_keeps_the_pucks_time"
+   ],
+   "note": "Unverified on air (no PP2 puck here, docs/on-air-sweep.md section F): the app's dialog on the puck's automations screen is the time_keeper_missing repair, raised while the project has pucks and every candidate answered a time role that keeps no time."
   },
   {
    "id": "prod:ui:quick_programs_title",
@@ -5146,18 +5161,22 @@
    "status": "gap",
    "code": [],
    "tests": [],
-   "missing": "no post-add step for mini actuators / pucks: add_device does not route a blinds mini (0x000D/0x0013) into the blind setup, and does not raise the puck time-keeper notice (prod:onboard:time-keeper-info); the input/actuator split is only visible in the device registry",
+   "missing": "no post-add step for blind mini actuators: add_device does not route a blinds mini (0x000D/0x0013) into the blind setup (operation mode, running times, reference run); the input/actuator split is only visible in the device registry. The puck time-keeper notice is the time_keeper_missing repair (prod:onboard:time-keeper-info).",
    "class": "build",
    "verify": "offline"
   },
   {
    "id": "prod:onboard:time-keeper-info",
-   "status": "gap",
-   "code": [],
-   "tests": [],
-   "missing": "no notice (repair issue / persistent notification) after adding a puck with an actuator that it needs a time source for its schedules; HA only sends the time itself while connected (coordinator Time Set), which is not the app's in-mesh time keeper",
-   "class": "build",
-   "verify": "offline"
+   "status": "implemented",
+   "code": [
+    "custom_components/junghome_ble/hub/issues.py::Issues.report_time_keeper",
+    "custom_components/junghome_ble/jhmesh/devices.py::time_keeper_candidates",
+    "custom_components/junghome_ble/strings.json::issues.time_keeper_missing.description"
+   ],
+   "tests": [
+    "tests/test_time_keeper.py::test_the_repair_while_no_node_keeps_the_pucks_time"
+   ],
+   "note": "Unverified on air (no PP2 puck here, docs/on-air-sweep.md section F): after a puck is added, the time_keeper_missing repair says it needs a node keeping its time once the connect-time Time Role Gets show none does; the app's notice comes at once after the add."
   }
  ]
 }

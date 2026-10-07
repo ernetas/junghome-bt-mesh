@@ -89,9 +89,10 @@ __all__ = [
 CONFIG_MODELS = frozenset({"0000", "0001"})  # Configuration Server / Client
 SCENE_MODELS = frozenset({"1203", "1204"})  # Scene Server / Scene Setup Server
 # Generic OnOff / Level / Default Transition Time / Power OnOff, Scene, Light Lightness / CTL / HSL clients: one
-# subscribed to a load's element group hears the load's statuses, and that is all (`CLIENT_SUBSCRIPTIONS`)
+# subscribed to a load's element group hears the load's statuses, and that is all (`CLIENT_SUBSCRIPTIONS`). SIG
+# client model ids only: `1009` is the Generic Power Level *Server*, whose extra subscription stays a finding
 CLIENT_MODELS = frozenset(
-    {"1001", "1003", "1005", "1009", "1205", "1302", "1305", "1309"}
+    {"1001", "1003", "1005", "1008", "1205", "1302", "1305", "1309"}
 )
 # a load's state servers: where the export has them publish is the load's element group
 LOAD_SERVERS = frozenset({"1000", "1002", "1300", "1303", "1306"})

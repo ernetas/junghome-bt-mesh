@@ -220,6 +220,20 @@
   the roadmap's *Where we are* table lists what is built and what is still missing; `remove_device`'s reset-first
   order is no longer called the app's (the app unwires first unless forced), and the parity ledger records it as
   declined, with the reason. The README's links are absolute, as HACS shows it inside Home Assistant.
+- **The network audit counts a Generic Power Level Server's extra subscription again** (review-5 P5-4). Its list of
+  client models, whose subscription to their load's element group is a note rather than a finding, held `1009` — the
+  Generic Power Level *Server* — and lacked `1008`, the Generic Power OnOff Client. A Power OnOff Client hearing its
+  load is now the note, and a stray subscription on the Power Level Server a counted finding.
+
+### Internal
+
+- The parity ledger matches the tree again (review-5 F5-1, F5-5): the time keeper (*Time keeper* switch,
+  `time_keeper_missing` repair; unverified on air, no PP2 puck here), the SAR Acknowledgment timer, the CTL
+  Temperature Set and the lock of a load were still listed as work to do although built; their rows are
+  `implemented` now, with what is left to check on air in their notes, and the rows that pointed at them say what
+  they point at. `tools/parity.py check` now warns of a `gap` or `partial` row whose `missing` names code the tree
+  defines without citing it — built since, or to be cited — and `tests/test_parity.py` keeps the ledger free of
+  such warnings.
 
 ## 1.4.1 (unreleased)
 

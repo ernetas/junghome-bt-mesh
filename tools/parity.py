@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Keep the parity ledger (docs/parity/README.md) closed: check it, diff captures against it, re-extract APK anchors.
 
-    tools/parity.py check [--build]                 # the ledger and anchors.json, as tests/test_parity.py does
+    tools/parity.py check [--build]                 # the ledger and anchors.json, as tests/test_parity.py does;
+                                                    # warns of rows whose `missing` names code the tree defines
     tools/parity.py air decoded.ndjson...           # (kind, opcode, property) on air that inventory-air.json lacks
     tools/parity.py apk android/jadx-out [--write]  # APK anchors that anchors.json does not map to an item
 
@@ -361,6 +362,121 @@ def ledger_problems(parity: Parity, root: Path) -> list[Problem]:
     return out
 
 
+# ----------------------------------------------------------------------------- check: stale rows
+
+# where a backticked name in a `missing` text is looked for: the integration (and `jhmesh` in it) and the tools
+STALE_TREE = ("custom_components", "tools")
+# a `path::symbol` in prose, the path written in full or from the package (`inserts.py::NodeInserts.function`)
+PROSE_CITE = re.compile(
+    r"(?<![\w/.-])(?P<cite>(?:[\w-]+/)*[\w-]+\.(?:py|json)(?::\d+)?::[\w.]*\w)"
+)
+# a backticked Python name: dotted (`Class.method`, `module.name`), snake_case or camelCase — a plain word in
+# backticks (`force`, `create`) names an action field or a value far more often than code
+BACKTICKED = re.compile(r"`(?P<name>[A-Za-z_]\w*(?:\.\w+)*)`")
+CODE_LIKE = re.compile(r"[._]|[a-z][A-Z]")
+
+
+class TreeSymbols:
+    """Every symbol the Python files under `STALE_TREE` define, to look up a name a `missing` text gives."""
+
+    def __init__(self, root: Path, cites: Citations) -> None:
+        self.root = root
+        self.cites = cites
+        self.files = sorted(
+            str(p.relative_to(root))
+            for top in STALE_TREE
+            if (root / top).is_dir()
+            for p in (root / top).rglob("*.py")
+        )
+
+    @functools.cached_property
+    def by_last_name(self) -> dict[str, list[str]]:
+        """Last name component → every `path::qualified.name` defining it."""
+        out: dict[str, list[str]] = defaultdict(list)
+        for rel in self.files:
+            for name in self.cites.symbols(rel) or {}:
+                out[name.rsplit(".", 1)[-1]].append(f"{rel}::{name}")
+        return dict(out)
+
+    def name(self, name: str) -> list[str]:
+        """Where the tree defines `name`: a symbol ending in it (`Class.method`, `method`), or `module.symbol`."""
+        parts = name.split(".")
+        out = []
+        for cite in self.by_last_name.get(parts[-1], []):
+            rel, symbol = cite.split("::", 1)
+            if (
+                symbol == name
+                or symbol.endswith(f".{name}")
+                or (Path(rel).stem == parts[0] and symbol == ".".join(parts[1:]))
+            ):
+                out.append(cite)
+        return out
+
+    def cite(self, cite: str) -> list[str]:
+        """Where `path[:line]::symbol` points: the path as written (through a link: `jhmesh/` is the package's), else
+        a tree file whose path ends in it."""
+        m = CODE_CITE.fullmatch(cite)
+        if m is None:
+            return []
+        path, symbol = m["path"], m["symbol"]
+        if (self.root / path).is_file():
+            real = (self.root / path).resolve()
+            paths = [
+                str(real.relative_to(self.root.resolve()))
+                if real.is_relative_to(self.root.resolve())
+                else path
+            ]
+        else:
+            paths = [f for f in self.files if f.endswith(f"/{path}")]
+        return [
+            f"{rel}::{symbol}"
+            for rel in paths
+            if symbol in (self.cites.symbols(rel) or {})
+        ]
+
+
+def stale_problems(parity: Parity, root: Path) -> list[Problem]:
+    """`gap` / `partial` rows whose `missing` names code the tree defines and the row's `code` does not cite.
+
+    A row says what is missing; once that is built, nothing but this check notices that the row is stale, since a
+    `gap` row cites nothing to verify. A `missing` text that names what to build (`ProxyClient._ack_timer`, or a
+    `path::symbol`) is flagged once the tree defines it: flip the row. A name that existed all along belongs in the
+    row's `code` too, which silences the warning.
+    """
+    cites = Citations(root)
+    tree = TreeSymbols(root, cites)
+    out: list[Problem] = []
+    for d in parity.domains.values():
+        for row in d.rows or []:
+            if row.get("status") not in ("gap", "partial"):
+                continue
+            missing = str(row.get("missing") or "")
+            cited = {
+                f"{m['path']}::{m['symbol']}"
+                for c in row.get("code") or []
+                if (m := CODE_CITE.fullmatch(str(c))) is not None
+            }
+            named = [
+                (m["cite"], tree.cite(m["cite"])) for m in PROSE_CITE.finditer(missing)
+            ]
+            named += [
+                (f"`{m['name']}`", tree.name(m["name"]))
+                for m in BACKTICKED.finditer(missing)
+                if CODE_LIKE.search(m["name"])
+            ]
+            for text, where in named:
+                if where and not cited & set(where):
+                    out.append(
+                        Problem(
+                            "stale",
+                            f"ledger-{d.name}.json {row.get('id')}",
+                            f"missing names {text}, which the tree defines ({', '.join(sorted(where))}): "
+                            "built since (flip the row), or cite it in code",
+                        )
+                    )
+    return out
+
+
 # ----------------------------------------------------------------------------- check: anchors.json
 
 
@@ -518,6 +634,11 @@ def cmd_check(args: argparse.Namespace) -> int:
         + "".join(f", {a} {n}" for a, n in sorted(by_area.items()))
     )
     for p in problems:
+        print(f"  {p}")
+    # a warning, not a problem: whether the row is stale or names code that existed all along needs a reader
+    stale = stale_problems(parity, Path(args.root))
+    print(f"\n{len(stale)} warnings")
+    for p in stale:
         print(f"  {p}")
     return 1 if problems else 0
 

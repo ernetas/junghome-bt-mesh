@@ -2126,7 +2126,7 @@
   },
   {
    "id": "air:access:8264",
-   "status": "partial",
+   "status": "implemented",
    "code": [
     "custom_components/junghome_ble/coordinator.py::JungHomeHub.set_ctl_temperature",
     "custom_components/junghome_ble/jhmesh/messages.py::light_ctl_temperature_set",
@@ -2136,9 +2136,7 @@
     "tests/test_light.py::test_tunable_white_temperature_alone",
     "tests/test_light.py::test_tunable_white"
    ],
-   "missing": "on-air check: with the tunable-white DALI light on, change only its colour temperature in HA (e.g. 3000 K -> 4000 K); the sniffer must show HA's 0x8264 to the light's el1 with 7 parameter bytes [temperature LE][delta UV 00 00][tid][transition 00][delay 00] - compare the last two bytes with the gateway's own 0x8264 in mesh-008.json - and the light must change colour at once (no fade), with el1's 0x8266 / el0's 0x8260 reporting the new temperature. Offline done: set_ctl_temperature sends the 7-byte form with transition 0 / delay 0 (pinned byte for byte in the test).",
-   "class": "build",
-   "verify": "on-air"
+   "note": "Unverified on air (docs/on-air-sweep.md B1): with the tunable-white DALI light on, change only its colour temperature in HA (e.g. 3000 K -> 4000 K); the sniffer must show HA's 0x8264 to the light's el1 with 7 parameter bytes [temperature LE][delta UV 00 00][tid][transition 00][delay 00] - compare the last two bytes with the gateway's own 0x8264 in mesh-008.json - and the light must change colour at once (no fade), with el1's 0x8266 / el0's 0x8260 reporting the new temperature. Offline done: set_ctl_temperature sends the 7-byte form with transition 0 / delay 0 (pinned byte for byte in the test)."
   },
   {
    "id": "air:access:8266",

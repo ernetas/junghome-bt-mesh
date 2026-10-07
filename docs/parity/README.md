@@ -73,6 +73,12 @@ with wording. Each inventory's `method` field records how it was enumerated.
 
 - `tools/parity.py check` does what the test does (every id has a row, every row a decision, every `code` symbol is
   defined in its file and every `tests` function exists), and prints the rows that are still `build`.
+- It also warns of a `gap` or `partial` row whose `missing` names code the tree defines — a `path::symbol` (in
+  full, or from its package: `inserts.py::NodeInserts.function`) or a backticked Python name (`Class.method`,
+  `snake_case`, `module.name`) — that the row does not cite in `code`: either it was built since and the row is
+  stale, or it existed all along and belongs in `code`. A `gap` row cites nothing to verify, so name what is to be
+  built that way (*To build: `ProxyClient._ack_timer`*) and the check notices when it is. `tests/test_parity.py`
+  keeps the committed ledger free of these warnings.
 - `tools/parity.py air <decoded.json>...` lists (kind, opcode, property) tuples of decoded captures that are not in
   `inventory-air.json`: run it on the sniffer host after `mesh_sniff.py decode --json`.
 - `tools/parity.py apk <jadx-out>` re-extracts the mechanical anchors (opcode literals, property ids, interactor /
