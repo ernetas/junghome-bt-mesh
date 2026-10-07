@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.1 (unreleased)
+
+### Fixed
+
+- **The *LED night mode* switch writes only the LEDs not in the asked mode.** Turning it on (or off) when it already
+  is wrote every LED mode of the node again, and the node lights its LEDs at every such write: an automation asserting
+  night mode on a schedule made the buttons' LEDs flash each time. Now an LED already in the mode is skipped, and
+  asserting the mode the switch shows writes nothing. The value compared is the one read at every link, updated by
+  every Status heard and by the read-back of each write; `homeassistant.update_entity` reads it again on demand.
+  That a write lights the LEDs is inferred from their timing, unverified on air.
+
 ## 1.4.0
 
 ### Added

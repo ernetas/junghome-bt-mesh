@@ -279,7 +279,10 @@ class JungHomeLedNightMode(PropertyEntity, SwitchEntity):
     """The app's "Night mode": the LEDs light for 5 s after a key press only.
 
     On = every LED mode property of the node has the night-mode byte set (the app shows the AND too); switching
-    rewrites each one with its current colour, so the colours must be known — they are read first when not.
+    rewrites each one with its current colour, so the colours must be known — they are read first when not. An LED
+    already in the asked mode is not written: the node lights its LEDs at every write, so an automation asserting the
+    mode again would make them flash each time. The cache follows the node (read at every link, every Status heard,
+    the read-back of each write); `homeassistant.update_entity` reads it again.
     """
 
     target: NightModeTarget
@@ -301,7 +304,7 @@ class JungHomeLedNightMode(PropertyEntity, SwitchEntity):
         await self._set(night_mode=False)
 
     async def _set(self, *, night_mode: bool) -> None:
-        """Rewrite every LED with its colour and the new mode byte; nothing is written unless every colour is known."""
+        """Rewrite every LED not in the mode with its colour; nothing is written unless every colour is known."""
         # the colour selects rewrite the same values: neither may start from what the other is about to change
         async with self.changing():
             colours: list[tuple[PropertySpec, P.LedMode]] = []
@@ -318,6 +321,8 @@ class JungHomeLedNightMode(PropertyEntity, SwitchEntity):
                     )
                 colours.append((spec, current))
             for spec, current in colours:
+                if current.night_mode == night_mode:
+                    continue
                 await self.async_write_value(
                     P.LedMode(*current.rgb, night_mode=night_mode), spec
                 )

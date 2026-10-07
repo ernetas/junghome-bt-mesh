@@ -393,10 +393,16 @@ async def test_night_mode(
     await hass.services.async_call(
         SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: eid}, blocking=True
     )
-    assert mesh.sets == [
-        (LIGHT_SWITCH, PID_LED1_ON, bytes([100, 0, 0, 5])),
-        (LIGHT_SWITCH, PID_LED1_OFF, bytes([0, 4, 100, 5])),
-    ]
+    # LED 1 on already has it: only the off colour is written
+    assert mesh.sets == [(LIGHT_SWITCH, PID_LED1_OFF, bytes([0, 4, 100, 5]))]
+    assert hass.states.get(eid).state == STATE_ON
+
+    # on again (an automation asserting it): nothing is written, so the node's LEDs do not light up
+    del mesh.sets[:]
+    await hass.services.async_call(
+        SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: eid}, blocking=True
+    )
+    assert mesh.sets == []
     assert hass.states.get(eid).state == STATE_ON
 
     del mesh.sets[:]
