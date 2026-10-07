@@ -2,6 +2,26 @@
 
 ## 1.5.0 (unreleased)
 
+### Added
+
+- **`abort_iv_update`, and an IV Update the mesh does not take ends** (review-5 P5-3, S5-3). An IV Update Home
+  Assistant started (`start_iv_update`) that the mesh never takes — its proxy refuses within 96 hours of its own last
+  one, or takes none from Home Assistant at all — used to stay *in progress* for good: beaconed every 10 s on every
+  link, every new start refused, and the *sequence numbers running low* repair gone although nothing had changed. Now
+  it is given up 144 hours after the start (Mesh Protocol 1.1 §3.11.5's bound) once a beacon of the link shows the
+  mesh still at the old index: Home Assistant goes back to that index and normal operation — nothing was sent under
+  the new one, so no sequence number is used twice — and the repair *JUNG HOME mesh did not take the IV Update* says
+  so. An administrator can give it up earlier with the new action `junghome_ble.abort_iv_update` (`confirm: true`;
+  refused once the mesh took it). While it waits, the *IV index* sensor's attribute `waiting_for_mesh_since` says
+  since when, and the *sequence numbers running low* repair stays open. The answer and the diagnostics add
+  `confirmed_at`, `waiting_for_mesh_until`, `abandoned` and `mesh_iv_changed_at`; the refusals *too early* and *index
+  not heard yet* name the last change of the mesh's IV state seen in a beacon. Unverified on air.
+
+### Changed
+
+- Internal: section numbers say Mesh Protocol 1.1's (§3.11.5, §3.11.6) instead of Mesh Profile's; the heartbeat's
+  `hops` docstring says what 0 and 1 are (the proxy itself, a node the proxy hears directly).
+
 ### Fixed
 
 - **A restored backup skips by how much Home Assistant sends, not a fixed 2^20** (review-5 S5-1). A Home Assistant
@@ -26,6 +46,20 @@
   its `.floor` all gone but the export or the vault saying the address was used, the counter started 2^20
   from 0 — outrun within a year on an installation that stays at one IV index. It starts 2^22 in, as the *sequence
   numbers lost* repair does with nothing left.
+- **Home Assistant's IV Update counts its 96 hours from when the mesh took it** (review-5 P5-1). It returned to normal
+  operation 96 hours after it *started* the update, so a proxy that took it late — after refusing it within its own
+  96 hours — had Home Assistant transmit under the new index at once, before the devices had it. The 96 to 144 hours
+  now count from the proxy's beacon back (`confirmed_at`), in the answer and the diagnostics too.
+- **IV Update beacons follow a key refresh** (review-5 P5-2). A key refresh started during Home Assistant's IV Update
+  had the repeated beacons, and the one of normal operation, go out under the new network key with the Key Refresh
+  flag clear once Home Assistant followed Phase 2 — which tells a device that the refresh is over, so it revokes the
+  old key and cuts off the devices the app had not reached yet. Each beacon now carries the key and flag of the
+  refresh's phase (Mesh Protocol 1.1 §3.10.3).
+- **A restored backup cannot complete an IV Update by the clock** (review-5 S5-2). A sequence-number record restored
+  from a backup taken during Home Assistant's own IV Update could complete it on the next link before the proxy's
+  beacon arrived, and so start its sequence numbers over at 0 under an index it had sent numbers under since. Every
+  change of the IV state now goes through one rule: while a restored record waits for the first beacon, only a beacon
+  may move the transmit index on.
 
 ## 1.4.1 (unreleased)
 

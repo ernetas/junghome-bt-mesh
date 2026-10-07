@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "전송되지 않음: {node}이(가) {message}에 {found}(으)로 응답했지만 메시 내보내기 파일에는 {expected}(으)로 되어 있습니다(기타 차이 {others}건). 메시 내보내기 파일을 만든 후 설치가 변경되었으므로(JUNG HOME 앱에서, 기기 초기화로, 또는 도중에 멈춘 이전 작업으로) 계획이 내보내기 파일에 더 이상 없는 내용을 덮어쓰게 됩니다. 앱에서 프로젝트를 다시 내보내거나 Home Assistant가 게이트웨이의 내보내기 파일을 인계받게 한 다음 작업을 다시 실행하세요. `force`를 사용하면 이 확인 없이 실행됩니다. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant가 연결에 사용하는 기기로부터 아직 메시의 IV index를 수신하지 못했습니다. 잠시 후 다시 시도하세요. Home Assistant가 비콘에서 본 메시 IV 상태의 마지막 변경: {mesh_changed}. 기기는 자신의 마지막 IV Update 후 96시간 이내의 IV Update를 거부합니다."
+    },
+    "start_iv_update_too_early": {
+      "message": "메시에서 IV Update가 시작되거나 끝난 지 96시간이 지나지 않았습니다(IV index는 {iv_index}). 새 IV Update는 {not_before}부터 시작할 수 있습니다. Home Assistant가 비콘에서 본 메시 IV 상태의 마지막 변경: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "IV Update를 중단하면 Home Assistant가 메시의 현재 IV index로 돌아갑니다. 실행하려면 호출에 \"confirm: true\"를 추가하세요."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Home Assistant가 시작한 IV Update 중 메시를 기다리는 것이 없습니다(IV index는 {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "메시가 IV index {iv_index}(으)로의 IV Update를 이미 받아들였으므로 더 이상 중단할 수 없습니다. 메시는 받아들인 후 96~144시간 뒤에 정상 동작으로 돌아갑니다."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant가 연결에 사용하는 기기로부터 아직 메시의 IV index를 수신하지 못해, 메시가 IV Update를 받아들였는지 알 수 없습니다. 잠시 후 다시 시도하세요."
+    },
     "download_export_no_session": {
       "message": "다운로드 링크는 요청한 관리자를 위해 만들어집니다. 자동화가 아니라 Home Assistant 화면(개발자 도구 → 작업)에서 또는 관리자 토큰으로 API를 통해 작업을 실행하세요."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME 메시 시퀀스 번호가 부족해지고 있습니다",
       "description": "메시 {title}에서 {source}이(가) IV index {iv_index}의 시퀀스 번호 중 {percent} %를 사용했습니다. 메시가 다음 IV index로 넘어갈 때(IV Update)까지 송신자는 이 범위의 끝을 넘어설 수 없습니다. Bluetooth Mesh는 번호가 부족해지는 기기가 이 업데이트를 스스로 시작하도록 기대하지만, JUNG HOME 기기가 그렇게 하는지는 아직 알려지지 않았습니다. Home Assistant는 IV Update를 따르며, 관리자는 `junghome_ble.start_iv_update` 작업으로 Home Assistant가 IV Update를 시작하게 할 수 있습니다(되돌릴 수 없으며 실제 환경에서는 아직 검증되지 않았습니다). 기기가 재시작할 때마다(정전, 차단기 트립) 시퀀스 번호가 크게 앞으로 건너뛰므로, 전원이 자주 끊기는 기기가 가장 먼저 번호가 부족해집니다. 업데이트 후 이 문제는 자동으로 해결됩니다."
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME 메시가 IV Update를 받아들이지 않았습니다",
+      "description": "Home Assistant가 {started}에 메시 {title}의 IV index {iv_index}(으)로의 IV Update를 시작했지만, 메시가 144시간 안에 받아들이지 않았습니다. Home Assistant가 연결에 사용하는 기기는 여전히 IV index {mesh}을(를) 알리고 있습니다. Home Assistant는 IV index {mesh}와(과) 정상 동작으로 돌아갔습니다. 새 index로는 아무것도 보내지 않았으므로 잃은 것은 없습니다. 기기는 자신의 마지막 IV Update 후 96시간 이내의 IV Update를 거부하며, JUNG HOME 기기가 Home Assistant로부터 IV Update를 받아들이기는 하는지는 실제 환경에서 아직 검증되지 않았습니다. *JUNG HOME 메시 시퀀스 번호가 부족해지고 있습니다* 수리가 열려 있는 동안에는 `junghome_ble.start_iv_update` 작업으로 나중에 다시 시도할 수 있습니다. 이 문제는 다음 IV Update와 함께 자동으로 해결됩니다."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME 메시가 다른 IV index에 있습니다",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "클라이언트",
           "description": "클라이언트가 액세스를 요청할 때 사용한 이름으로, `waiting` 아래에 표시된 그대로 입력합니다. 비워 두면 아무것도 승인되지 않습니다."
+        },
+        "config_entry_id": {
+          "name": "메시 네트워크",
+          "description": "여러 개가 구성된 경우 사용할 JUNG HOME 네트워크입니다."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV Update 중단",
+      "description": "Home Assistant가 시작했지만 메시가 아직 받아들이지 않은 IV Update를 포기합니다. Home Assistant는 메시의 현재 IV index로 돌아가 새 index 알리기를 멈춥니다. 새 index로는 아무것도 보내지 않았으므로 잃은 것은 없으며, Home Assistant는 이런 업데이트를 시작 후 144시간이 지나면 스스로 포기합니다. 메시가 업데이트를 받아들인 후(그때는 되돌릴 수 없음), 메시에 연결되지 않은 경우, 그리고 그 연결에서 Home Assistant가 메시의 IV index를 수신하기 전에는 거부됩니다. 관리자 전용입니다. 실제 환경에서는 아직 검증되지 않았습니다.",
+      "fields": {
+        "confirm": {
+          "name": "확인",
+          "description": "실행하려면 필요합니다."
         },
         "config_entry_id": {
           "name": "메시 네트워크",

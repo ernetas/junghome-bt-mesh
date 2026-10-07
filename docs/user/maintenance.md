@@ -233,6 +233,16 @@ skips its numbers far ahead, so a device that often loses power runs low first.
 [Details](../ha-integration.md#repair-issue-jung-home-mesh-sequence-numbers-running-low),
 [the action](../ha-integration.md#actions-iv-update)
 
+#### JUNG HOME mesh did not take the IV Update
+
+Home Assistant started an IV Update and the mesh did not follow within 144 hours, so Home Assistant went back to the
+mesh's IV index. Nothing was sent under the new index and nothing is lost. A device refuses an update within 96 hours
+of its own last one; that JUNG HOME devices take one from Home Assistant at all is unverified on air. If the repair
+about sequence numbers running low is still open, try `junghome_ble.start_iv_update` again later. An update still
+waiting can be given up earlier with `junghome_ble.abort_iv_update`.
+[Details](../ha-integration.md#repair-issue-jung-home-mesh-did-not-take-the-iv-update),
+[the actions](../ha-integration.md#actions-iv-update)
+
 #### JUNG HOME mesh is at another IV index
 
 Home Assistant's counters are out of step with the installation (it was away for a very long time, or its store

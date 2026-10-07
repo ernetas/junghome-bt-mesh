@@ -1643,16 +1643,28 @@
       "message": "The mesh's network key is being renewed (a key refresh): start the IV Update once that has finished."
     },
     "start_iv_update_iv_unknown": {
-      "message": "Home Assistant has not yet heard the mesh's IV index from the device it is connected through; try again in a moment."
+      "message": "Home Assistant has not yet heard the mesh's IV index from the device it is connected through; try again in a moment. The last change of the mesh's IV state Home Assistant saw in a beacon: {mesh_changed}. A device refuses an IV Update within 96 hours of its own last one."
     },
     "start_iv_update_too_early": {
-      "message": "An IV Update began or ended in the mesh less than 96 hours ago (the IV index is {iv_index}): a new one can be started from {not_before}."
+      "message": "An IV Update began or ended in the mesh less than 96 hours ago (the IV index is {iv_index}): a new one can be started from {not_before}. The last change of the mesh's IV state Home Assistant saw in a beacon: {mesh_changed}."
     },
     "start_iv_update_iv_max": {
       "message": "The mesh's IV index is at its highest value ({iv_index}): it cannot go further."
     },
     "start_iv_update_not_stored": {
       "message": "Home Assistant could not write the new IV index to its sequence-number store, so it did not start the IV Update; see the log."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Aborting the IV Update takes Home Assistant back to the IV index the mesh is at: add \"confirm: true\" to the call to do it."
+    },
+    "abort_iv_update_not_started": {
+      "message": "No IV Update that Home Assistant started is waiting for the mesh (the IV index is {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "The mesh has taken the IV Update to IV index {iv_index}, so it can no longer be aborted: the mesh returns to normal operation 96 to 144 hours after it took it."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant has not yet heard the mesh's IV index from the device it is connected through, so it cannot tell whether the mesh took the IV Update; try again in a moment."
     },
     "download_export_no_session": {
       "message": "The download link is made for the administrator who asks for it: run the action from Home Assistant's interface (Developer tools → Actions) or through its API with an administrator's token, not from an automation."
@@ -2150,6 +2162,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
       "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update, and an administrator can have it start one with the action `junghome_ble.start_iv_update` (it cannot be undone; unverified on air). Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME mesh did not take the IV Update",
+      "description": "Home Assistant started an IV Update of the mesh {title} to IV index {iv_index} at {started}, and the mesh did not take it within 144 hours: the device Home Assistant is connected through still announces IV index {mesh}. Home Assistant has gone back to IV index {mesh} and normal operation; it sent nothing under the new index, so nothing is lost. A device refuses an IV Update within 96 hours of its own last one, and whether JUNG HOME devices take one from Home Assistant at all is unverified on air. While the repair *JUNG HOME mesh sequence numbers running low* is open, the action `junghome_ble.start_iv_update` can try again later. The issue clears itself with the next IV Update."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh is at another IV index",
@@ -2916,6 +2932,20 @@
         "force": {
           "name": "Even if not needed",
           "description": "Start it although no sender has used three quarters of its sequence numbers yet."
+        },
+        "config_entry_id": {
+          "name": "Mesh network",
+          "description": "Which JUNG HOME network, when more than one is configured."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Abort IV Update",
+      "description": "Gives up an IV Update that Home Assistant started and the mesh has not taken yet: Home Assistant goes back to the IV index the mesh is at and stops announcing the new one. Nothing was sent under the new index, so nothing is lost; Home Assistant gives such an update up by itself 144 hours after its start. Refused once the mesh has taken the update (it cannot be undone then), without a connection to the mesh, and before Home Assistant has heard the mesh's IV index on that connection. Administrators only. Unverified on air.",
+      "fields": {
+        "confirm": {
+          "name": "Confirm",
+          "description": "Needed to carry it out."
         },
         "config_entry_id": {
           "name": "Mesh network",

@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Gönderilmedi: {node}, {message} iletisine {found} yanıtını verdi, ancak mesh dışa aktarımı {expected} diyor ({others} fark daha). Kurulum, mesh dışa aktarımı yapıldıktan sonra değişti (JUNG HOME uygulamasında, bir cihazın sıfırlanmasıyla veya yarıda kalan önceki bir eylemle) ve plan, dışa aktarımın artık tanımlamadığı şeylerin üzerine yazardı. Projeyi uygulamadan yeniden dışa aktarın veya Home Assistant'ın ağ geçidinin dışa aktarımını devralmasına izin verin ve eylemi yeniden çalıştırın; `force` ile bu denetim yapılmadan çalışır. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant, bağlı olduğu cihazdan mesh ağının IV dizinini henüz duymadı; birazdan yeniden deneyin. Home Assistant'ın bir beacon'da gördüğü mesh ağı IV durumunun son değişikliği: {mesh_changed}. Bir cihaz, kendi son IV Update'inden sonraki 96 saat içinde bir IV Update'i reddeder."
+    },
+    "start_iv_update_too_early": {
+      "message": "Mesh ağında bir IV Update 96 saatten kısa bir süre önce başladı veya bitti (IV dizini {iv_index}): yenisi {not_before} itibarıyla başlatılabilir. Home Assistant'ın bir beacon'da gördüğü mesh ağı IV durumunun son değişikliği: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "IV Update'i iptal etmek Home Assistant'ı mesh ağının bulunduğu IV dizinine geri götürür: bunu yapmak için çağrıya \"confirm: true\" ekleyin."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Home Assistant'ın başlattığı hiçbir IV Update mesh ağını beklemiyor (IV dizini {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Mesh ağı IV dizini {iv_index} için IV Update'i kabul etti, bu yüzden artık iptal edilemez: mesh ağı, kabul ettikten 96 ila 144 saat sonra normal çalışmaya döner."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant, bağlı olduğu cihazdan mesh ağının IV dizinini henüz duymadığı için mesh ağının IV Update'i kabul edip etmediğini söyleyemez; birazdan yeniden deneyin."
+    },
     "download_export_no_session": {
       "message": "İndirme bağlantısı onu isteyen yönetici için oluşturulur: eylemi bir otomasyondan değil, Home Assistant arayüzünden (Geliştirici araçları → Eylemler) ya da bir yöneticinin belirteciyle API'si üzerinden çalıştırın."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME mesh ağının sıra numaraları azalıyor",
       "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Bir gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunu aşamaz. Bluetooth Mesh, numaraları azalan bir cihazın bu güncellemeyi kendisinin başlatmasını bekler; JUNG HOME cihazlarının bunu yapıp yapmadığı henüz bilinmiyor. Home Assistant bir IV Update'i takip eder; bir yönetici `junghome_ble.start_iv_update` eylemiyle Home Assistant'ın bir tane başlatmasını sağlayabilir (geri alınamaz; gerçek ağda henüz doğrulanmadı). Bir cihazın her yeniden başlatılması (bir elektrik kesintisi, atan bir sigorta) sıra numaralarını çok ileriye atlatır; bu yüzden elektriği sık sık kesilen bir cihazın numaraları ilk önce azalır. Güncellemeden sonra sorun kendiliğinden kaybolur."
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME mesh ağı IV Update'i kabul etmedi",
+      "description": "Home Assistant, {started} tarihinde {title} mesh ağı için IV dizini {iv_index} hedefli bir IV Update başlattı ve mesh ağı bunu 144 saat içinde kabul etmedi: Home Assistant'ın bağlı olduğu cihaz hâlâ IV dizini {mesh} duyuruyor. Home Assistant IV dizini {mesh} ve normal çalışmaya geri döndü; yeni dizinle hiçbir şey göndermedi, bu yüzden hiçbir şey kaybolmadı. Bir cihaz kendi son IV Update'inden sonraki 96 saat içinde bir IV Update'i reddeder ve JUNG HOME cihazlarının Home Assistant'tan bir IV Update'i kabul edip etmediği gerçek ağda henüz doğrulanmadı. *JUNG HOME mesh ağının sıra numaraları azalıyor* onarımı açık olduğu sürece `junghome_ble.start_iv_update` eylemi daha sonra yeniden deneyebilir. Sorun bir sonraki IV Update ile kendiliğinden kalkar."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME mesh ağı başka bir IV dizininde",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "İstemci",
           "description": "İstemcinin erişim istediği ad; `waiting` altında listelendiği şekliyle. Boş bırakılırsa hiçbir şey onaylanmaz."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV Update'i iptal et",
+      "description": "Home Assistant'ın başlattığı ve mesh ağının henüz kabul etmediği bir IV Update'ten vazgeçer: Home Assistant mesh ağının bulunduğu IV dizinine geri döner ve yenisini duyurmayı bırakır. Yeni dizinle hiçbir şey gönderilmedi, bu yüzden hiçbir şey kaybolmaz; Home Assistant böyle bir güncellemeden başlangıcından 144 saat sonra kendiliğinden vazgeçer. Mesh ağı güncellemeyi kabul ettikten sonra (o zaman geri alınamaz), mesh ağına bağlantı yokken ve Home Assistant bu bağlantıda mesh ağının IV dizinini duymadan önce reddedilir. Yalnızca yöneticiler. Gerçek ağda henüz doğrulanmadı.",
+      "fields": {
+        "confirm": {
+          "name": "Onayla",
+          "description": "Gerçekleştirmek için gereklidir."
         },
         "config_entry_id": {
           "name": "Mesh ağı",

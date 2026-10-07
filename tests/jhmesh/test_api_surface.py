@@ -98,6 +98,8 @@ API: dict[str, list[str]] = {
         "HEARTBEAT_OPCODE",
         "Heartbeat",
         "IVUpdateRefused",
+        "IV_ABANDONED_ABORTED",
+        "IV_ABANDONED_NOT_TAKEN",
         "IV_BEACON_INTERVAL",
         "IV_BEACON_INTERVAL_MAX",
         "IV_INDEX_MAX",
@@ -1129,6 +1131,8 @@ API: dict[str, list[str]] = {
     ],
     "jhmesh.state": [
         "IVUpdateRefused",
+        "IV_ABANDONED_ABORTED",
+        "IV_ABANDONED_NOT_TAKEN",
         "IV_INDEX_MAX",
         "IV_ORIGIN_BEACON",
         "IV_ORIGIN_LOCAL",
@@ -1227,6 +1231,8 @@ API: dict[str, list[str]] = {
 # `LocalState` and what goes with it moved from `client` to `state`; `client` still exports them
 MOVED_TO_STATE = [
     "IVUpdateRefused",
+    "IV_ABANDONED_ABORTED",
+    "IV_ABANDONED_NOT_TAKEN",
     "IV_INDEX_MAX",
     "IV_ORIGIN_BEACON",
     "IV_ORIGIN_LOCAL",

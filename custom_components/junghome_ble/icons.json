@@ -456,6 +456,9 @@
     "start_iv_update": {
       "service": "mdi:counter"
     },
+    "abort_iv_update": {
+      "service": "mdi:cancel"
+    },
     "download_export": {
       "service": "mdi:file-download-outline"
     },

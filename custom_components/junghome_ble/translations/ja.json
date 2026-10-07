@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "送信されませんでした: {node} は {message} に {found} と応答しましたが、メッシュのエクスポートでは {expected} です（その他の相違: {others} 件）。メッシュのエクスポート作成後に設備が変更されたため（JUNG HOME アプリでの変更、デバイスのリセット、または途中で止まった以前のアクション）、プランはエクスポートに記載されていない内容を上書きしてしまいます。アプリからプロジェクトを再度エクスポートするか、Home Assistant にゲートウェイのエクスポートを引き継がせてから、アクションを再実行してください。`force` を指定すると、この確認なしで実行されます。{applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant は、接続に使っているデバイスからメッシュの IV index をまだ受信していません。しばらくしてからもう一度お試しください。Home Assistant がビーコンで確認したメッシュの IV 状態の最後の変化: {mesh_changed}。デバイスは自身の最後の IV Update から 96 時間以内の IV Update を拒否します。"
+    },
+    "start_iv_update_too_early": {
+      "message": "メッシュで IV Update が開始または終了してから 96 時間経っていません（IV index は {iv_index}）。新しい IV Update は {not_before} 以降に開始できます。Home Assistant がビーコンで確認したメッシュの IV 状態の最後の変化: {mesh_changed}。"
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "IV Update を中止すると、Home Assistant はメッシュの現在の IV index に戻ります。実行するには、呼び出しに \"confirm: true\" を追加してください。"
+    },
+    "abort_iv_update_not_started": {
+      "message": "Home Assistant が開始した IV Update で、メッシュを待っているものはありません（IV index は {iv_index}）。"
+    },
+    "abort_iv_update_taken": {
+      "message": "メッシュは IV index {iv_index} への IV Update をすでに受け入れているため、中止できません。メッシュは受け入れてから 96～144 時間後に通常動作に戻ります。"
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant は、接続に使っているデバイスからメッシュの IV index をまだ受信していないため、メッシュが IV Update を受け入れたかどうか判断できません。しばらくしてからもう一度お試しください。"
+    },
     "download_export_no_session": {
       "message": "ダウンロードリンクは要求した管理者のために作成されます。オートメーションからではなく、Home Assistant の画面（開発者ツール → アクション）から、または管理者のトークンを使って API 経由でアクションを実行してください。"
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME のメッシュのシーケンス番号が残り少なくなっています",
       "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、送信元はその範囲の終わりを越えて送信できません。Bluetooth Mesh では、番号が残り少なくなったデバイスが自らこの更新を開始することになっていますが、JUNG HOME デバイスがそうするかどうかはまだわかっていません。Home Assistant は IV Update に追従します。管理者はアクション `junghome_ble.start_iv_update` で Home Assistant に IV Update を開始させることもできます（元に戻せません。実機では未検証です）。デバイスが再起動するたびに（停電、ブレーカーの遮断など）そのシーケンス番号は大きく先へ進むため、電源が頻繁に切れるデバイスほど先に番号が残り少なくなります。更新後、この修復は自動的に解消されます。"
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME のメッシュが IV Update を受け入れませんでした",
+      "description": "Home Assistant は {started} にメッシュ {title} の IV index {iv_index} への IV Update を開始しましたが、メッシュは 144 時間以内にそれを受け入れませんでした。Home Assistant が接続に使っているデバイスは、今も IV index {mesh} を通知しています。Home Assistant は IV index {mesh} と通常動作に戻りました。新しい index では何も送信していないため、失われたものはありません。デバイスは自身の最後の IV Update から 96 時間以内の IV Update を拒否します。また、JUNG HOME デバイスが Home Assistant からの IV Update をそもそも受け入れるかどうかは実機では未検証です。修復「*JUNG HOME のメッシュのシーケンス番号が残り少なくなっています*」が開いている間は、アクション `junghome_ble.start_iv_update` で後から再試行できます。この問題は次の IV Update で自動的に解消されます。"
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME のメッシュが別の IV index になっています",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "クライアント",
           "description": "クライアントがアクセスを要求している名前。`waiting` に表示されているとおりに指定します。空欄の場合、何も承認されません。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV Update を中止",
+      "description": "Home Assistant が開始し、メッシュがまだ受け入れていない IV Update を取りやめます。Home Assistant はメッシュの現在の IV index に戻り、新しい index の通知をやめます。新しい index では何も送信していないため、失われたものはありません。このような更新は、開始から 144 時間後に Home Assistant が自動的に取りやめます。メッシュが更新を受け入れた後（その場合は元に戻せません）、メッシュへの接続がない場合、およびその接続で Home Assistant がメッシュの IV index を受信する前は拒否されます。管理者専用です。実機では未検証です。",
+      "fields": {
+        "confirm": {
+          "name": "確認",
+          "description": "実行に必要です。"
         },
         "config_entry_id": {
           "name": "メッシュネットワーク",

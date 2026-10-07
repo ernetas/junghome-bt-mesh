@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Neodoslané: {node} odpovedal na {message} hodnotou {found}, ale export mesh uvádza {expected} (ďalších rozdielov: {others}). Inštalácia sa po vytvorení exportu mesh zmenila (v aplikácii JUNG HOME, resetom zariadenia alebo skoršou akciou, ktorá sa zastavila v polovici) a plán by prepísal to, čo export už neopisuje. Exportujte projekt z aplikácie znova alebo nechajte Home Assistant prevziať export z brány a spustite akciu znova; s `force` prebehne bez tejto kontroly. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant zatiaľ nepočul IV index siete mesh od zariadenia, cez ktoré je pripojený; skúste to o chvíľu znova. Posledná zmena stavu IV siete mesh, ktorú Home Assistant videl v majáku: {mesh_changed}. Zariadenie odmietne IV Update do 96 hodín od svojej poslednej."
+    },
+    "start_iv_update_too_early": {
+      "message": "IV Update v sieti mesh začala alebo skončila pred menej ako 96 hodinami (IV index je {iv_index}): novú možno spustiť od {not_before}. Posledná zmena stavu IV siete mesh, ktorú Home Assistant videl v majáku: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Zrušenie IV Update vráti Home Assistant na IV index, na ktorom je sieť mesh: pridajte k volaniu \"confirm: true\", ak to chcete vykonať."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Na sieť mesh nečaká žiadna IV Update, ktorú spustil Home Assistant (IV index je {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Sieť mesh prevzala IV Update na IV index {iv_index}, takže ju už nemožno zrušiť: sieť mesh sa vráti do normálnej prevádzky 96 až 144 hodín po jej prevzatí."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant zatiaľ nepočul IV index siete mesh od zariadenia, cez ktoré je pripojený, a preto nevie povedať, či sieť mesh IV Update prevzala; skúste to o chvíľu znova."
+    },
     "download_export_no_session": {
       "message": "Odkaz na stiahnutie sa vytvára pre správcu, ktorý oň žiada: spustite akciu z rozhrania Home Assistant (Nástroje pre vývojárov → Akcie) alebo cez jeho API s tokenom správcu, nie z automatizácie."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Sekvenčné čísla siete JUNG HOME mesh dochádzajú",
       "description": "V sieti mesh {title} spotreboval {source} {percent} % sekvenčných čísel IV indexu {iv_index}. Odosielateľ sa za koniec tohto priestoru nedostane, kým sa sieť mesh neposunie na ďalší IV index (IV Update). Bluetooth Mesh očakáva, že zariadenie, ktorému čísla dochádzajú, spustí túto aktualizáciu samo; či to zariadenia JUNG HOME robia, zatiaľ nie je známe. Home Assistant IV Update sleduje a správca ho môže nechať spustiť akciou `junghome_ble.start_iv_update` (nedá sa vrátiť späť; v prevádzke zatiaľ neoverené). Každý reštart zariadenia (výpadok prúdu, vypnutý istič) posunie jeho sekvenčné čísla ďaleko dopredu, takže zariadeniu, ktoré často stráca napájanie, dôjdu čísla ako prvému. Oprava zmizne sama po aktualizácii."
+    },
+    "iv_update_not_taken": {
+      "title": "Sieť mesh JUNG HOME neprevzala IV Update",
+      "description": "Home Assistant spustil {started} IV Update siete mesh {title} na IV index {iv_index} a sieť mesh ju do 144 hodín neprevzala: zariadenie, cez ktoré je Home Assistant pripojený, stále oznamuje IV index {mesh}. Home Assistant sa vrátil na IV index {mesh} a do normálnej prevádzky; pod novým indexom nič neodoslal, takže sa nič nestratilo. Zariadenie odmietne IV Update do 96 hodín od svojej poslednej a či zariadenia JUNG HOME vôbec nejakú od Home Assistant prevezmú, je v prevádzke zatiaľ neoverené. Kým je otvorená oprava *Sekvenčné čísla siete JUNG HOME mesh dochádzajú*, akcia `junghome_ble.start_iv_update` to môže neskôr skúsiť znova. Problém zmizne sám s ďalšou IV Update."
     },
     "iv_index_mismatch": {
       "title": "Sieť JUNG HOME mesh je na inom IV indexe",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Klient",
           "description": "Názov, pod ktorým klient žiada o prístup, presne ako je uvedený pod `waiting`. Ak zostane prázdne, nič sa neschváli."
+        },
+        "config_entry_id": {
+          "name": "Sieť mesh",
+          "description": "Ktorá sieť JUNG HOME, ak je nakonfigurovaných viac."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Zrušiť IV Update",
+      "description": "Vzdá sa IV Update, ktorú spustil Home Assistant a ktorú sieť mesh zatiaľ neprevzala: Home Assistant sa vráti na IV index, na ktorom je sieť mesh, a prestane oznamovať nový. Pod novým indexom sa nič neodoslalo, takže sa nič nestratí; takej aktualizácie sa Home Assistant sám vzdá 144 hodín po jej spustení. Odmietnuté, keď sieť mesh aktualizáciu už prevzala (vtedy sa nedá vrátiť späť), bez pripojenia k sieti mesh a skôr, než Home Assistant na tomto pripojení počuje IV index siete mesh. Len pre správcov. V prevádzke zatiaľ neoverené.",
+      "fields": {
+        "confirm": {
+          "name": "Potvrdiť",
+          "description": "Potrebné na vykonanie."
         },
         "config_entry_id": {
           "name": "Sieť mesh",

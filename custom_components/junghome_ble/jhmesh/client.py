@@ -60,6 +60,8 @@ from .pdu import (
 # `LocalState`, its exceptions and constants moved to `state`; re-exported below. `_check_range` keeps
 # an explicit alias instead: it is private, so not in `__all__`, and the integration checks its stored records with it.
 from .state import (
+    IV_ABANDONED_ABORTED,
+    IV_ABANDONED_NOT_TAKEN,
     IV_INDEX_MAX,
     IV_ORIGIN_BEACON,
     IV_ORIGIN_LOCAL,
@@ -117,6 +119,8 @@ __all__ = [
 # scripts and tests import them from here. Plain names in `__all__` rather than `X as X` aliases, which ruff's PLC0414
 # rejects; mypy treats both as an explicit re-export.
 __all__ += [
+    "IV_ABANDONED_ABORTED",
+    "IV_ABANDONED_NOT_TAKEN",
     "IV_INDEX_MAX",
     "IV_ORIGIN_BEACON",
     "IV_ORIGIN_LOCAL",
@@ -301,7 +305,11 @@ class Heartbeat:
 
     @property
     def hops(self) -> int:
-        """Relays between the node and our proxy (0 = the proxy heard it directly)."""
+        """Relays on the way to us, the proxy's own forwarding to its client included: InitTTL - TTL.
+
+        A proxy relaying to its GATT client decrements the TTL (§3.4.6.3), so 0 is the proxy node itself and a node
+        the proxy hears directly reads 1. The spec's Hops (InitTTL - RxTTL + 1) is one more.
+        """
         return max(self.init_ttl - self.ttl, 0)
 
 
@@ -364,6 +372,7 @@ class ProxyClient:
         on_heartbeat: Callable[[Heartbeat], None] | None = None,
         on_key_refresh: Callable[[int, NetKeyMaterial], None] | None = None,
         on_foreign_own_source: Callable[[int, int], None] | None = None,
+        on_iv_update_abandoned: Callable[[], None] | None = None,
     ) -> None:
         """Set up for the first NetKey/AppKey of `cdb`; nothing is connected until `attach()`.
 
@@ -376,7 +385,8 @@ class ProxyClient:
         new_key)` when the mesh's key refresh moves (`_follow_key_refresh`; phase 0 = completed, the new key is the
         only one now), `on_foreign_own_source(iv_index, seq)` when a PDU from our own address carries a number we
         never handed out — another client uses the address (`_on_own_source`; at most once per
-        `FOREIGN_SOURCE_REPORT_INTERVAL` per link, with the highest number seen so far).
+        `FOREIGN_SOURCE_REPORT_INTERVAL` per link, with the highest number seen so far), `on_iv_update_abandoned` when
+        an IV Update this client started is given up because the mesh did not take it (`_run_iv_update`).
         """
         self.cdb = cdb
         self.state = state
@@ -389,6 +399,7 @@ class ProxyClient:
         self.on_heartbeat = on_heartbeat
         self.on_key_refresh = on_key_refresh
         self.on_foreign_own_source = on_foreign_own_source
+        self.on_iv_update_abandoned = on_iv_update_abandoned
         # the NetKeys derived so far (`_net_key`), pruned to those we accept whenever the key refresh moves
         self._net_keys: dict[bytes, NetKeyMaterial] = {}
         self._kr = self._resume_key_refresh(cdb, state)
@@ -1617,10 +1628,17 @@ class ProxyClient:
     async def _send_iv_beacon(self) -> bool:
         """Write our Secure Network Beacon of the IV state to the proxy; False when the link could not take it.
 
-        A beacon takes no sequence number.
+        A beacon takes no sequence number. It is that of the key refresh's current phase (§3.10.3): authenticated with
+        the key we transmit with (`nk`: the new one from a proven Phase 2 on) and with the Key Refresh flag set in
+        Phase 2. A key refresh may start during the update's 96 h; a beacon under the new key with the flag clear
+        tells a node in Phase 1 or 2 that the refresh is over (§3.11.4.1), and it revokes the old key — cutting off
+        every node the provisioner had not reached yet (review-5 P5-2).
         """
         payload = secure_network_beacon(
-            self.nk, self.state.iv_index, iv_update=self.state.iv_update_active
+            self.nk,
+            self.state.iv_index,
+            iv_update=self.state.iv_update_active,
+            key_refresh=self.key_refresh_phase == 2,
         )
         try:
             await self._write(PROXY_BEACON, payload)
@@ -1628,11 +1646,25 @@ class ProxyClient:
             log.debug("IV Update beacon not sent: %s", err)
             return False
         trace.info(
-            "beacon sent: iv_index=%d iv_update=%s",
+            "beacon sent: iv_index=%d iv_update=%s key_refresh=%s",
             self.state.iv_index,
             self.state.iv_update_active,
+            self.key_refresh_phase == 2,
         )
         return True
+
+    def abort_iv_update(self) -> int:
+        """Abort the IV Update this client started before the mesh took it; return the IV index it went back to.
+
+        `ConnectionError` without a link; `IVUpdateRefused` by `LocalState.abort_iv_update`'s rules (`iv_unknown`
+        unless a beacon of this link said where the mesh is). The beacons stop (`_run_iv_update` ends with the
+        update; the transmit index never moved, so the proxy filter stands). Unverified on air.
+        """
+        if not self.ready:
+            raise ConnectionError("not connected to a proxy")
+        back = self.state.abort_iv_update(index_confirmed=self.beacon_seen)
+        log.warning("IV Update aborted: back to IV index %d", back)
+        return back
 
     def _start_iv_task(self, sent: bool) -> None:
         """Run `_run_iv_update` while an update this client started is in progress (one per link)."""
@@ -1649,11 +1681,26 @@ class ProxyClient:
         `IV_BEACON_INTERVAL` until the mesh took it (`iv_update_confirmed`), `IV_BEACON_INTERVAL_MAX` after; `sent`:
         the first beacon of this link went already. The return to Normal Operation (§3.11.5) is deferred while a
         segmented message of ours awaits its acknowledgment: its SeqAuth would not survive the sequence restarting
-        at 0. Then the proxy gets our beacon of Normal Operation. Ends when the update ends (a beacon of the mesh can
-        end it first) or the link goes.
+        at 0. Then the proxy gets our beacon of Normal Operation. An update the mesh has not taken 144 h after its
+        start (`LocalState.iv_update_overdue`) is given up once a beacon of this link was seen — still unconfirmed,
+        so the proxy beaconed the old index — back at that index (`LocalState.abandon_iv_update`), and
+        `on_iv_update_abandoned` is told (review-5 P5-3). Ends when the update ends (a beacon of the mesh can end it
+        first) or the link goes.
         """
         state = self.state
         while state.iv_update_active and state.iv_update_origin == IV_ORIGIN_LOCAL:
+            if self.beacon_seen and state.iv_update_overdue():
+                state.abandon_iv_update(IV_ABANDONED_NOT_TAKEN)
+                log.warning(
+                    "IV Update to IV index %d given up: the mesh did not take it within %d h; back to IV index %d "
+                    "(nothing was sent under the new index)",
+                    state.iv_index + 1,
+                    IV_UPDATE_MAX_STATE // 3600,
+                    state.iv_index,
+                )
+                if self.on_iv_update_abandoned:
+                    self.on_iv_update_abandoned()
+                return
             if state.iv_update_due():
                 if not self._ack_waiters and state.complete_iv_update():
                     log.warning("IV Update completed: back to Normal Operation")

@@ -423,7 +423,7 @@ unknown, so it may lag until the next connection); the "unknown" ambient value i
 | Hops | – | – | No (diagnostic) | Every mains node, on the node device: how many relays its last heartbeat crossed on the way to Home Assistant's proxy node; only with the *Node heartbeats* [option](#options) on, `unknown` otherwise |
 | Last restart | `timestamp` | – | Yes (diagnostic) | Every mains node, on the node device: the last time the node started again (its sequence numbers jumped to a fresh block: a power cut, a tripped breaker, a firmware reset), as far as Home Assistant was running to see it |
 | Switching cycles, Power-on cycles | – | – | No (diagnostic) | Lights and sockets of the products whose firmware lists the counters (`0x100F` / `0x1010`, LBC Admin; read on a socket on air, `docs/hidden-features.md` §2), on the light or socket device: how often the output has switched, and how often the device was powered up, over its lifetime; read once per connection |
-| IV index | – | – | Yes (diagnostic) | On the *mesh network* device: the mesh's current IV index (attributes `iv_update_active`, `transmit_iv_index`); known without a link |
+| IV index | – | – | Yes (diagnostic) | On the *mesh network* device: the mesh's current IV index (attributes `iv_update_active`, `transmit_iv_index`, and `waiting_for_mesh_since` while an IV Update Home Assistant started waits for the mesh to take it — [`start_iv_update`](#actions-iv-update)); known without a link |
 | Sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: how much of the sequence-number space of the current IV index Home Assistant's own address has used (attribute `source`, the address) |
 | Mesh sequence numbers used | – | % | Yes (diagnostic) | On the *mesh network* device: the same for the sender furthest along in the mesh (attributes `source`, `source_name`) — every sender stops at the end of the space until the mesh moves to the next IV index (an IV Update), which Bluetooth Mesh expects a node running low to start itself — that JUNG HOME devices do is unverified on air; Home Assistant follows one, and an administrator can have it start one ([`start_iv_update`](#actions-iv-update)); the repair issue *JUNG HOME mesh sequence numbers running low* warns at three quarters |
 
@@ -1482,7 +1482,7 @@ events described under [Event](#event). The integration registers no conditions 
 
 **Who may run them.** Every `junghome_ble` action that rewires, deletes or writes the export or the devices — rooms,
 key connections, scenes (`store_scene` included: it writes every member's scene register and the export, and can
-add members), schedules, thresholds, `sync_gateway`, `export_network`, `download_export`, `start_iv_update` and adding or removing devices — is for
+add members), schedules, thresholds, `sync_gateway`, `export_network`, `download_export`, `start_iv_update`, `abort_iv_update` and adding or removing devices — is for
 administrators only: a call from a user who is no administrator, or with such a user's long-lived token, fails with
 *Unauthorized* (review-4 W4-9). Automations triggered by the system run with no user and are not affected; a
 script or dashboard button a non-administrator starts runs as that user and is refused. Open to every user:
@@ -2053,7 +2053,9 @@ Assistant start it (review-4 P I-11):
 action: junghome_ble.start_iv_update
 data: { confirm: true }
 response_variable: update  # {iv_index: 1, transmit_iv_index: 0, started_by: home_assistant, started_at: …,
-                           #  confirmed: false, in_progress: true, normal_operation_from: …, normal_operation_by: …}
+                           #  confirmed: false, confirmed_at: null, in_progress: true, normal_operation_from: null,
+                           #  normal_operation_by: null, waiting_for_mesh_until: …, abandoned: null,
+                           #  mesh_iv_changed_at: …}
 ```
 
 - **How.** Home Assistant reaches the mesh as a GATT Proxy Client. Mesh Protocol 1.1 §6.7 has a proxy process a Secure
@@ -2062,14 +2064,26 @@ response_variable: update  # {iv_index: 1, transmit_iv_index: 0, started_by: hom
   carry the new index on with beacons of its own. So Home Assistant moves to the next IV index in *IV Update in
   Progress* (it keeps transmitting with the old index, so its sequence numbers carry on), writes that to its
   sequence-number store (nothing is sent when the write does not land) and sends its proxy the authenticated beacon
-  of the new state: every 10 s until the proxy's beacon back confirms it (`confirmed`), every 600 s after, and again on
-  every new link while the update runs.
-- **Back to normal operation** 96 hours later (§3.11.5: after at least 96 and before 144 hours), by Home Assistant
-  itself unless a beacon of the mesh ends the update first: its sequence numbers start over at 0 under the new index,
-  the proxy filter is sent again and the proxy gets the beacon of normal operation. The return waits while a
-  segmented message of Home Assistant's awaits its acknowledgment. An update the mesh never confirmed is not ended
-  by Home Assistant — that would leave it transmitting under an index the devices do not accept; it ends when the
-  mesh's own update reaches the same index.
+  of the new state: every 10 s until the proxy's beacon back confirms it (`confirmed`, `confirmed_at`), every 600 s
+  after, and again on every new link while the update runs. During a key refresh that started meanwhile the beacon is
+  that of the refresh's phase (§3.10.3): under the new network key with the Key Refresh flag once Home Assistant
+  follows Phase 2 — a beacon under the new key without the flag would tell the devices that the refresh is over.
+- **Back to normal operation** 96 hours after the mesh took it (§3.11.5: after at least 96 and before 144 hours in IV
+  Update in Progress, so that every device has the new index before anyone sends under it; a proxy that took it late
+  has had it for less than the time since the start), by Home Assistant itself unless a beacon of the mesh ends the
+  update first: its sequence numbers start over at 0 under the new index, the proxy filter is sent again and the
+  proxy gets the beacon of normal operation. The return waits while a segmented message of Home Assistant's awaits
+  its acknowledgment, and after a backup restore until the first beacon of the mesh (the restored counter's numbers
+  must not start over under an index Home Assistant may have used since).
+- **Not taken: given up after 144 hours.** An update the mesh does not take — its proxy refuses within 96 hours of
+  its own last one, or does not take an update from Home Assistant at all — is given up 144 hours after the start,
+  once a beacon of the link shows the mesh still at the old index: Home Assistant goes back to that index and normal
+  operation (it sent nothing under the new one, so nothing is lost), stops the beacons and raises the repair
+  [*JUNG HOME mesh did not take the IV Update*](#repair-issue-jung-home-mesh-did-not-take-the-iv-update). While it
+  waits, the *IV index* sensor's attribute `waiting_for_mesh_since` says since when, and the repair *JUNG HOME mesh
+  sequence numbers running low* stays open (the mesh's senders still use up the old index).
+  **`junghome_ble.abort_iv_update`** (`confirm: true`, administrators only) gives it up at once; refused once the
+  mesh took it (it cannot be undone then), without a link and before a beacon of the link named the mesh's index.
 - **It cannot be undone**: the IV index only goes up. So the call needs `confirm: true`, and it is refused unless a
   sender has used three quarters of its sequence numbers (the repair *JUNG HOME mesh sequence numbers running low* is
   open) or `force: true` is given.
@@ -2077,9 +2091,12 @@ response_variable: update  # {iv_index: 1, transmit_iv_index: 0, started_by: hom
   is in progress, during a key refresh (phase 1 or 2), before Home Assistant heard the mesh's IV index from a beacon
   of the current link (when it has not seen the IV index change), and within 96 hours of the last change of the IV
   state Home Assistant saw (the message says from when; §3.11.5 has a node spend 96 hours in normal operation
-  first).
+  first). Both of the last two also name the last change of the mesh's IV state Home Assistant saw in a beacon
+  (`mesh_iv_changed_at`): after a fresh setup Home Assistant knows no change of its own, and the proxy refuses within
+  96 hours of its own last one.
 - **Where to see it:** the answer (when asked for), the [diagnostics](#diagnostics) (`local.iv_update`), the *IV
-  index* sensor and the log (`IV Update started …`, `IV Update completed …`).
+  index* sensor and the log (`IV Update started …`, `IV Update completed …`, `IV Update … given up`, `IV Update
+  aborted …`).
 
 Unverified on air: no JUNG device has been seen taking an IV Update from a proxy client. The
 [on-air sweep](on-air-sweep.md) has the check (E6), to run only when an update is wanted anyway.
@@ -2716,6 +2733,18 @@ tripped breaker it continues a whole persisted block (roughly 180 000 to 260 000
 seen on) past where it was (the *Last restart* sensor). So the sender furthest along is usually a mains device that
 often loses power, not the gateway or the app. The issue clears itself after the update.
 
+### Repair issue "JUNG HOME mesh did not take the IV Update"
+
+Home Assistant started an IV Update ([`start_iv_update`](#actions-iv-update)) and the mesh did not take it within the
+144 hours Mesh Protocol 1.1 §3.11.5 gives a node in IV Update in Progress: the proxy Home Assistant is connected
+through still beacons the old IV index. Home Assistant has gone back to that index and normal operation. Throughout
+the wait it kept transmitting with the old index, so nothing went out under the new one but its beacons, and no
+sequence number is used twice. A device refuses an IV Update within 96 hours of its own last one (the refusal
+messages of `start_iv_update` name the last change of the mesh's IV state Home Assistant saw); that JUNG HOME devices
+take an IV Update from a proxy client at all is unverified on air. While the repair *JUNG HOME mesh sequence numbers
+running low* is open, try `start_iv_update` again later. The issue clears itself with the next IV Update or change of
+the IV index; one given up with `abort_iv_update` raises none.
+
 ### Repair issue "JUNG HOME sequence numbers cannot be saved"
 
 Every message Home Assistant sends carries a new sequence number, and it only sends numbers its store
@@ -2935,7 +2964,9 @@ from … (attempt 1/3)"). The [diagnostics](#diagnostics) count what the links c
 Open the entry's menu and select **Download diagnostics**. The file contains the address in use (the configured file
 paths and Bluetooth addresses are redacted), a summary of the network (mesh UUID, network ID, number of nodes, groups, scene numbers), Home Assistant's own sequence
 number and IV index (with the last IV Update under `iv_update` — who started it, Home Assistant or a beacon, when,
-whether the mesh confirmed one Home Assistant started, and when normal operation is due —, how long the
+whether and when the mesh confirmed one Home Assistant started, when normal operation is due, until when one still
+waiting for the mesh is kept, whether one was given up and why, and the last change of the mesh's IV state seen in a
+beacon —, how long the
 sequence-number store has held sends back, its last write error and how many
 numbers may go out before the next hold; the file path in that error is redacted, the error itself kept; and per
 address of the sequence-number store under `send_rates`: the numbers sent a day, and for a backup taken now the age in

@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Ni poslano: {node} je na {message} odgovoril z {found}, izvoz mesh pa navaja {expected} (drugih razlik: {others}). Namestitev se je po izdelavi izvoza mesh spremenila (v aplikaciji JUNG HOME, s ponastavitvijo naprave ali s prejšnjim dejanjem, ki se je ustavilo na pol poti), in načrt bi prepisal tisto, česar izvoz ne opisuje več. Projekt znova izvozite iz aplikacije ali pustite, da Home Assistant prevzame izvoz prehoda, in dejanje znova zaženite; z `force` se izvede brez tega preverjanja. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant še ni slišal indeksa IV omrežja mesh od naprave, prek katere je povezan; poskusite znova čez trenutek. Zadnja sprememba stanja IV omrežja mesh, ki jo je Home Assistant videl v svetilniku: {mesh_changed}. Naprava zavrne IV Update v 96 urah po svoji zadnji."
+    },
+    "start_iv_update_too_early": {
+      "message": "IV Update se je v omrežju mesh začela ali končala pred manj kot 96 urami (indeks IV je {iv_index}): novo je mogoče začeti od {not_before}. Zadnja sprememba stanja IV omrežja mesh, ki jo je Home Assistant videl v svetilniku: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Prekinitev IV Update vrne Home Assistant na indeks IV, na katerem je omrežje mesh: za izvedbo dodajte klicu \"confirm: true\"."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Nobena IV Update, ki jo je začel Home Assistant, ne čaka na omrežje mesh (indeks IV je {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Omrežje mesh je IV Update na indeks IV {iv_index} že prevzelo, zato je ni več mogoče prekiniti: omrežje mesh se vrne v običajno delovanje 96 do 144 ur po prevzemu."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant še ni slišal indeksa IV omrežja mesh od naprave, prek katere je povezan, zato ne more povedati, ali je omrežje mesh IV Update prevzelo; poskusite znova čez trenutek."
+    },
     "download_export_no_session": {
       "message": "Povezava za prenos se ustvari za skrbnika, ki jo zahteva: dejanje zaženite iz vmesnika Home Assistant (Orodja za razvijalce → Dejanja) ali prek njegovega API-ja z žetonom skrbnika, ne iz avtomatizacije."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME pohajajo",
       "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Pošiljatelj ne more čez konec tega prostora, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update). Bluetooth Mesh pričakuje, da naprava, ki ji zmanjkuje številk, to posodobitev sproži sama; ali naprave JUNG HOME to počnejo, še ni znano. Home Assistant IV Update sledi, skrbnik pa ga lahko sproži z dejanjem `junghome_ble.start_iv_update` (tega ni mogoče razveljaviti; v delovanju še ni preverjeno). Vsak ponovni zagon naprave (izpad elektrike, sprožen varovalni odklopnik) prestavi njene zaporedne številke daleč naprej, zato številk najprej zmanjka napravi, ki pogosto ostane brez napajanja. Težava po posodobitvi izgine sama."
+    },
+    "iv_update_not_taken": {
+      "title": "Omrežje mesh JUNG HOME ni prevzelo IV Update",
+      "description": "Home Assistant je {started} začel IV Update omrežja mesh {title} na indeks IV {iv_index}, omrežje mesh pa je ni prevzelo v 144 urah: naprava, prek katere je povezan Home Assistant, še vedno oznanja indeks IV {mesh}. Home Assistant se je vrnil na indeks IV {mesh} in v običajno delovanje; pod novim indeksom ni poslal ničesar, zato se nič ne izgubi. Naprava zavrne IV Update v 96 urah po svoji zadnji, ali naprave JUNG HOME sploh prevzamejo kakšno od Home Assistant, pa v delovanju še ni preverjeno. Dokler je popravilo *Zaporedne številke omrežja mesh JUNG HOME pohajajo* odprto, lahko dejanje `junghome_ble.start_iv_update` pozneje poskusi znova. Težava izgine sama z naslednjo IV Update."
     },
     "iv_index_mismatch": {
       "title": "Omrežje mesh JUNG HOME je na drugem indeksu IV",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Odjemalec",
           "description": "Ime, pod katerim odjemalec prosi za dostop, natanko kot je navedeno pod `waiting`. Če ostane prazno, se nič ne odobri."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Prekini IV Update",
+      "description": "Opusti IV Update, ki jo je začel Home Assistant in je omrežje mesh še ni prevzelo: Home Assistant se vrne na indeks IV, na katerem je omrežje mesh, in preneha oznanjati novega. Pod novim indeksom ni bilo poslano nič, zato se nič ne izgubi; takšno posodobitev Home Assistant sam opusti 144 ur po začetku. Zavrnjeno, ko je omrežje mesh posodobitev že prevzelo (takrat je ni mogoče razveljaviti), brez povezave z omrežjem mesh in preden Home Assistant na tej povezavi sliši indeks IV omrežja mesh. Samo za skrbnike. V delovanju še ni preverjeno.",
+      "fields": {
+        "confirm": {
+          "name": "Potrdi",
+          "description": "Potrebno za izvedbo."
         },
         "config_entry_id": {
           "name": "Omrežje mesh",

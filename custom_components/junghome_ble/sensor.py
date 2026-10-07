@@ -1685,6 +1685,24 @@ def _space_used(seq: int) -> float:
     return round(100 * seq / 0xFFFFFF, 2)
 
 
+def _iv_state(hub: JungHomeHub) -> dict[str, Any]:
+    """Return the *IV index* sensor's attributes: the IV state, and since when an IV Update Home Assistant started waits.
+
+    `waiting_for_mesh_since` (ISO 8601, UTC): set while the mesh has not taken an IV Update Home Assistant started
+    (`LocalState.mesh_iv_index` behind its index), the time it started; None otherwise. Given up 144 hours on
+    (review-5 P5-3).
+    """
+    state = hub.proxy.state
+    started = state.iv_update_started_at
+    return {
+        "iv_update_active": state.iv_update_active,
+        "transmit_iv_index": state.tx_iv_index,
+        "waiting_for_mesh_since": dt_util.utc_from_timestamp(started).isoformat()
+        if started is not None and state.mesh_iv_index != state.iv_index
+        else None,
+    }
+
+
 def _highest_source(hub: JungHomeHub) -> dict[str, Any]:
     highest = hub.highest_seq()
     if highest is None:
@@ -1703,10 +1721,7 @@ MESH_DIAGNOSTICS: tuple[MeshDiagnosticDescription, ...] = (
         translation_key="iv_index",
         entity_category=EntityCategory.DIAGNOSTIC,
         value=lambda hub: hub.proxy.state.iv_index,
-        attributes=lambda hub: {
-            "iv_update_active": hub.proxy.state.iv_update_active,
-            "transmit_iv_index": hub.proxy.state.tx_iv_index,
-        },
+        attributes=_iv_state,
     ),
     MeshDiagnosticDescription(
         key="sequence_used",

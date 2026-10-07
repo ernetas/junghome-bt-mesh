@@ -317,6 +317,8 @@ ISSUE_IV_INDEX_MISMATCH: Final = "iv_index_mismatch"
 ISSUE_IV_INDEX_AHEAD: Final = "iv_index_ahead"
 # a source of the mesh (a node, the app, Home Assistant) used most of the sequence space of the current IV index
 ISSUE_SEQUENCE_SPACE_LOW: Final = "sequence_space_low"
+# an IV Update Home Assistant started was given up: the mesh did not take it within 144 hours (`Issues.check_iv_update`)
+ISSUE_IV_UPDATE_NOT_TAKEN: Final = "iv_update_not_taken"
 ISSUE_SEQ_STORE_LOST: Final = "seq_store_lost"  # our address has history, but neither copy of its sequence-number record is usable
 # a restored backup is so old that what our address may have sent since reaches the end of its sequence space: it
 # sends nothing until an IV Update or another address
@@ -416,6 +418,7 @@ ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
         ISSUE_RESTORE_TOO_OLD: "restored-backup-too-old-for-the-jung-home-mesh-",
         ISSUE_SEQ_STORE_UNWRITABLE: "jung-home-sequence-numbers-cannot-be-saved",
         ISSUE_SEQUENCE_SPACE_LOW: "jung-home-mesh-sequence-numbers-running-low",
+        ISSUE_IV_UPDATE_NOT_TAKEN: "jung-home-mesh-did-not-take-the-iv-update",
         ISSUE_IV_INDEX_MISMATCH: "jung-home-mesh-is-at-another-iv-index",
         ISSUE_IV_INDEX_AHEAD: "jung-home-mesh-is-at-another-iv-index",
         ISSUE_NODE_CLOCK_WRONG: "jung-home-devices-with-a-wrong-clock",

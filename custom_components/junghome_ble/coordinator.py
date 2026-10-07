@@ -576,6 +576,7 @@ class JungHomeHub:
             on_heartbeat=self.liveness.on_heartbeat,
             on_key_refresh=self._on_key_refresh,
             on_foreign_own_source=self.issues.on_foreign_own_source,
+            on_iv_update_abandoned=self.issues.check_iv_update,
         )
         self.states: dict[int, ElementState] = {}
         for unicast, info in (
@@ -802,6 +803,7 @@ class JungHomeHub:
         self.issues.clear()
         self.inserts.report_mismatch()
         self.issues.report_time_keeper()
+        self.issues.report_iv_update_not_taken()
         if self.state.address_shared is not None:
             # stored by an earlier run: sends stay refused until the repair, across the restart too
             self.issues.report_address_shared()
@@ -1453,8 +1455,12 @@ class JungHomeHub:
             self.signal_node(node.unicast, force=True)
 
     def highest_seq(self) -> tuple[int, int] | None:
-        """Return (source, sequence number) of the source furthest into the current IV index's space, us included."""
-        iv = self.proxy.state.iv_index
+        """Return (source, sequence number) of the source furthest into the current IV index's space, us included.
+
+        The mesh's index (`LocalState.mesh_iv_index`): while an IV Update Home Assistant started waits for the mesh,
+        the senders still use up the old one.
+        """
+        iv = self.proxy.state.mesh_iv_index
         sources = [
             (seq, src)
             for src, (entry_iv, seq) in self.proxy.state.rpl.items()
@@ -1905,7 +1911,8 @@ class JungHomeHub:
         keys the export holds shows up as an unauthenticated beacon with the Key Refresh flag — "authenticated and
         flagged" means our keys are the new ones already (the issue used to wait for exactly that,
         which never happens). On a GATT link only the proxy node talks, so it is a strong hint, not proof: the
-        flag itself is not authenticated.
+        flag itself is not authenticated. An authenticated one brings the IV repairs up to date (`check_iv_index`,
+        `check_iv_update`): the client has applied it already.
         """
         self.link.last_rx = time.monotonic()
         if not beacon.authenticated:
@@ -1915,6 +1922,7 @@ class JungHomeHub:
             return
         self.beacon_authenticated = True
         self.issues.check_iv_index(beacon.iv_index)
+        self.issues.check_iv_update()
 
     def _on_undecryptable(self) -> None:
         self.issues.count_undecodable()

@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Inte skickat: {node} svarade {found} på {message}, men mesh-exporten säger {expected} ({others} skillnader till). Installationen har ändrats efter att mesh-exporten gjordes (i JUNG HOME-appen, genom en återställning av en enhet eller av en tidigare åtgärd som stannade halvvägs), och planen skulle skriva över det som exporten inte längre beskriver. Exportera projektet från appen igen, eller låt Home Assistant ta över gatewayens export, och kör åtgärden igen; med `force` körs den utan den här kontrollen. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant har ännu inte hört meshets IV-index från enheten det är anslutet via; försök igen om en stund. Den senaste ändringen av meshets IV-tillstånd som Home Assistant såg i en beacon: {mesh_changed}. En enhet avvisar en IV Update inom 96 timmar efter sin egen senaste."
+    },
+    "start_iv_update_too_early": {
+      "message": "En IV Update började eller slutade i meshet för mindre än 96 timmar sedan (IV-indexet är {iv_index}): en ny kan startas från {not_before}. Den senaste ändringen av meshets IV-tillstånd som Home Assistant såg i en beacon: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Att avbryta IV Update tar Home Assistant tillbaka till det IV-index meshet är på: lägg till \"confirm: true\" i anropet för att göra det."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Ingen IV Update som Home Assistant har startat väntar på meshet (IV-indexet är {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Meshet har tagit IV Update till IV-index {iv_index}, så den kan inte längre avbrytas: meshet återgår till normal drift 96 till 144 timmar efter att det tog den."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant har ännu inte hört meshets IV-index från enheten det är anslutet via, så det kan inte avgöra om meshet tog IV Update; försök igen om en stund."
+    },
     "download_export_no_session": {
       "message": "Nedladdningslänken skapas för administratören som ber om den: kör åtgärden från Home Assistants gränssnitt (Utvecklarverktyg → Åtgärder) eller via dess API med en administratörs token, inte från en automatisering."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnummer börjar ta slut",
       "description": "I meshet {title} har {source} använt {percent} % av sekvensnumren för IV-index {iv_index}. En sändare kan inte gå förbi slutet av det utrymmet förrän meshet går över till nästa IV-index (en IV Update). Bluetooth Mesh förväntar sig att en enhet som håller på att få slut på nummer själv startar den uppdateringen; om JUNG HOME-enheter gör det är ännu inte känt. Home Assistant följer en IV Update, och en administratör kan låta den starta en med åtgärden `junghome_ble.start_iv_update` (kan inte ångras; ännu inte prövat i drift). Varje omstart av en enhet (ett strömavbrott, en utlöst säkring) får dess sekvensnummer att hoppa långt fram, så en enhet som ofta blir strömlös får slut först. Problemet försvinner av sig självt efter uppdateringen."
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME-meshet tog inte IV Update",
+      "description": "Home Assistant startade {started} en IV Update av meshet {title} till IV-index {iv_index}, och meshet tog den inte inom 144 timmar: enheten som Home Assistant är anslutet via annonserar fortfarande IV-index {mesh}. Home Assistant har gått tillbaka till IV-index {mesh} och normal drift; det skickade ingenting under det nya indexet, så ingenting går förlorat. En enhet avvisar en IV Update inom 96 timmar efter sin egen senaste, och om JUNG HOME-enheter över huvud taget tar en från Home Assistant är ännu inte prövat i drift. Så länge reparationen *JUNG HOME-meshets sekvensnummer börjar ta slut* är öppen kan åtgärden `junghome_ble.start_iv_update` försöka igen senare. Problemet försvinner av sig självt med nästa IV Update."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME-meshet har ett annat IV-index",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Klient",
           "description": "Namnet som klienten begär åtkomst som, exakt så som det listas under `waiting`. Om det lämnas tomt godkänns inget."
+        },
+        "config_entry_id": {
+          "name": "Mesh-nätverk",
+          "description": "Vilket JUNG HOME-nätverk, när fler än ett är konfigurerade."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Avbryt IV Update",
+      "description": "Ger upp en IV Update som Home Assistant har startat och som meshet ännu inte har tagit: Home Assistant går tillbaka till det IV-index meshet är på och slutar annonsera det nya. Ingenting skickades under det nya indexet, så ingenting går förlorat; Home Assistant ger själv upp en sådan uppdatering 144 timmar efter starten. Avvisas när meshet har tagit uppdateringen (då kan den inte ångras), utan anslutning till meshet och innan Home Assistant har hört meshets IV-index på den anslutningen. Endast administratörer. Ännu inte prövat i drift.",
+      "fields": {
+        "confirm": {
+          "name": "Bekräfta",
+          "description": "Krävs för att utföra det."
         },
         "config_entry_id": {
           "name": "Mesh-nätverk",

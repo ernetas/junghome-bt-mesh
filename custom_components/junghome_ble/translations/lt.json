@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Neišsiųsta: {node} į {message} atsakė {found}, bet tinklo eksporte nurodyta {expected} (kitų skirtumų: {others}). Po tinklo eksporto sukūrimo instaliacija pasikeitė („JUNG HOME“ programėlėje, atkūrus įrenginį arba dėl ankstesnio veiksmo, kuris sustojo pusiaukelėje), ir planas perrašytų tai, ko eksportas nebeaprašo. Iš naujo eksportuokite projektą programėlėje arba leiskite Home Assistant perimti sietuvo eksportą ir paleiskite veiksmą dar kartą; su `force` jis vykdomas be šio patikrinimo. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant dar negavo tinklo IV indekso iš įrenginio, per kurį yra prisijungęs; netrukus bandykite dar kartą. Paskutinis tinklo IV būsenos pasikeitimas, kurį Home Assistant matė švyturyje: {mesh_changed}. Įrenginys atmeta IV Update per 96 valandas nuo savo paskutinio."
+    },
+    "start_iv_update_too_early": {
+      "message": "IV Update tinkle prasidėjo arba baigėsi mažiau nei prieš 96 valandas (IV indeksas yra {iv_index}): naują galima pradėti nuo {not_before}. Paskutinis tinklo IV būsenos pasikeitimas, kurį Home Assistant matė švyturyje: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Nutraukus IV Update, Home Assistant grįžta prie IV indekso, kuriame yra tinklas: norėdami tai atlikti, prie iškvietimo pridėkite \"confirm: true\"."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Joks Home Assistant pradėtas IV Update nelaukia tinklo (IV indeksas yra {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Tinklas jau priėmė IV Update į IV indeksą {iv_index}, todėl jo nebegalima nutraukti: tinklas grįžta į įprastą veikimą praėjus 96–144 valandoms po priėmimo."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant dar negavo tinklo IV indekso iš įrenginio, per kurį yra prisijungęs, todėl negali pasakyti, ar tinklas priėmė IV Update; netrukus bandykite dar kartą."
+    },
     "download_export_no_session": {
       "message": "Atsisiuntimo nuoroda sukuriama ją prašančiam administratoriui: paleiskite veiksmą iš Home Assistant sąsajos (Kūrėjo įrankiai → Veiksmai) arba per jo API su administratoriaus prieigos raktu, ne iš automatizavimo."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Baigiasi „JUNG HOME“ tinklo sekos numeriai",
       "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Siuntėjas negali peržengti šios srities galo, kol tinklas nepereis prie kito IV indekso (IV Update). Bluetooth Mesh numato, kad įrenginys, kuriam baigiasi numeriai, šį atnaujinimą pradėtų pats; ar „JUNG HOME“ įrenginiai taip daro, kol kas nežinoma. Home Assistant seka IV Update, o administratorius gali jį paleisti veiksmu `junghome_ble.start_iv_update` (to negalima atšaukti; realiame tinkle dar nepatikrinta). Kiekvienas įrenginio paleidimas iš naujo (nutrūkus elektros tiekimui, suveikus automatiniam jungikliui) nustumia jo sekos numerius toli į priekį, todėl įrenginiui, kuris dažnai netenka maitinimo, numeriai baigiasi pirmiausia. Problema išnyks savaime po atnaujinimo."
+    },
+    "iv_update_not_taken": {
+      "title": "„JUNG HOME“ tinklas nepriėmė IV Update",
+      "description": "Home Assistant {started} pradėjo tinklo {title} IV Update į IV indeksą {iv_index}, o tinklas jo nepriėmė per 144 valandas: įrenginys, per kurį prisijungęs Home Assistant, vis dar skelbia IV indeksą {mesh}. Home Assistant grįžo prie IV indekso {mesh} ir įprasto veikimo; nauju indeksu jis nieko neišsiuntė, todėl niekas neprarasta. Įrenginys atmeta IV Update per 96 valandas nuo savo paskutinio, o ar „JUNG HOME“ įrenginiai apskritai priima jį iš Home Assistant, realiame tinkle dar nepatikrinta. Kol taisymas *Baigiasi „JUNG HOME“ tinklo sekos numeriai* atviras, veiksmas `junghome_ble.start_iv_update` gali vėliau bandyti dar kartą. Problema išnyksta savaime kartu su kitu IV Update."
     },
     "iv_index_mismatch": {
       "title": "„JUNG HOME“ tinklo IV indeksas kitas",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Klientas",
           "description": "Pavadinimas, kuriuo klientas prašo prieigos, tiksliai toks, koks nurodytas sąraše `waiting`. Palikus tuščią, nieko netvirtinama."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Nutraukti IV Update",
+      "description": "Atsisako IV Update, kurį pradėjo Home Assistant ir kurio tinklas dar nepriėmė: Home Assistant grįžta prie IV indekso, kuriame yra tinklas, ir nustoja skelbti naująjį. Nauju indeksu nieko neišsiųsta, todėl niekas neprarasta; tokio atnaujinimo Home Assistant pats atsisako praėjus 144 valandoms nuo jo pradžios. Atmetama, kai tinklas jau priėmė atnaujinimą (tada jo atšaukti negalima), nesant ryšio su tinklu ir kol Home Assistant tuo ryšiu dar negavo tinklo IV indekso. Tik administratoriams. Realiame tinkle dar nepatikrinta.",
+      "fields": {
+        "confirm": {
+          "name": "Patvirtinti",
+          "description": "Būtina, kad veiksmas būtų įvykdytas."
         },
         "config_entry_id": {
           "name": "Tinklas",

@@ -292,10 +292,13 @@ def test_apply_beacon_iv_update_procedure(tmp_path: Path):
         "seq_peak": 0,
         "seq_peak_from": 0,
         "iv_changed_at": 10,
-        # who started it, and when: a beacon (`start_iv_update` is the other way)
+        # who started it, and when: a beacon (`start_iv_update` is the other way), taken by the mesh as it started
         "iv_update_origin": "beacon",
         "iv_update_confirmed": True,
         "iv_update_started_at": 10,
+        "iv_update_confirmed_at": 10,
+        # the mesh's last IV change its beacons showed: the step from (0, Normal) to (1, in progress)
+        "mesh_iv_changed_at": 10,
     }
     assert s.apply_beacon(1, True, now=20) is False  # repeated beacon: no change
     s.seq = 1300
@@ -316,6 +319,8 @@ def test_apply_beacon_iv_update_procedure(tmp_path: Path):
         "iv_update_origin": "beacon",  # the last update's, kept
         "iv_update_confirmed": True,
         "iv_update_started_at": 10,
+        "iv_update_confirmed_at": 10,
+        "mesh_iv_changed_at": 10 + IV_UPDATE_MIN_STATE,
     }
     s.seq = 77
     # 3. a lagging node still beaconing "update in progress" for index 1 must not drag us back to index 0

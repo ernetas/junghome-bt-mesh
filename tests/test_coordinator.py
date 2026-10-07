@@ -1221,6 +1221,9 @@ async def test_iv_update_beacon_through_the_hub_persists_the_restart(
         "iv_update_origin": "beacon",
         "iv_update_confirmed": True,
         "iv_update_started_at": clock[0] - client_mod.IV_UPDATE_MIN_STATE,
+        "iv_update_confirmed_at": clock[0] - client_mod.IV_UPDATE_MIN_STATE,
+        # the mesh's last IV change its beacons showed: this one
+        "mesh_iv_changed_at": clock[0],
     }
 
 

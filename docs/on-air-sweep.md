@@ -1346,17 +1346,37 @@ spend.
   numbers used* near 0) and the devices still answer; by 144 hours every node beacons `<n+1>` with the flag clear, the
   *sequence numbers running low* repair is gone and the *Mesh sequence numbers used* sensor starts low. **Fail:**
   `confirmed` stays false (the proxy did not take the beacon: Home Assistant stays in progress and keeps transmitting
-  under `<n>`, which the mesh accepts; the update then waits for the mesh's own) — note the proxy node, its firmware
-  and whether the capture shows the beacon reaching it.
+  under `<n>`, which the mesh accepts, until it gives the update up 144 hours after the start) — note the proxy node,
+  its firmware and whether the capture shows the beacon reaching it.
+- **Not taken (review-5 P5-3):** when `confirmed` stays false, leave it: 144 hours after the start Home Assistant
+  logs *IV Update to IV index `<n+1>` given up*, is back at `<n>` in normal operation (*IV index* sensor, attribute
+  `waiting_for_mesh_since` gone), raises the repair *JUNG HOME mesh did not take the IV Update* and stops its beacons;
+  `local.iv_update.abandoned` is `not_taken`. Or end it earlier with `junghome_ble.abort_iv_update` (`confirm: true`):
+  the same without the repair, `abandoned: aborted`. Either way the devices keep answering Home Assistant throughout
+  (it never sent under `<n+1>`). An abort after `confirmed` turned true is refused (`abort_iv_update_taken`).
+- **Late confirmation (review-5 P5-1):** if the proxy's beacon back came only after the start (a proxy within its own
+  96 hours takes it later), the return to normal operation comes 96 hours after `local.iv_update.confirmed_at`, not
+  after `started_at`.
+- **Key refresh (review-5 P5-2):** not to be provoked; should the app run a key refresh during the update, the trace
+  log's `beacon sent: … key_refresh=True` appears only while Home Assistant follows its Phase 2, and the app's refresh
+  completes as usual.
 - **Markers:** `custom_components/junghome_ble/actions/iv_update.py::<module>`,
   `custom_components/junghome_ble/actions/iv_update.py::_start_iv_update`,
+  `custom_components/junghome_ble/actions/iv_update.py::_abort_iv_update`,
   `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.start_iv_update`,
+  `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.abort_iv_update`,
   `custom_components/junghome_ble/jhmesh/state.py::<module>`,
   `custom_components/junghome_ble/jhmesh/state.py::LocalState.start_iv_update`,
   `custom_components/junghome_ble/jhmesh/state.py::LocalState.complete_iv_update`,
+  `custom_components/junghome_ble/jhmesh/state.py::LocalState.iv_update_overdue`,
+  `custom_components/junghome_ble/jhmesh/state.py::LocalState.abandon_iv_update`,
+  `custom_components/junghome_ble/jhmesh/state.py::LocalState.abort_iv_update`,
+  `custom_components/junghome_ble/hub/issues.py::Issues.report_iv_update_not_taken`,
   `custom_components/junghome_ble/services.py::<module>` (its `start_iv_update` sentence),
   `custom_components/junghome_ble/strings.json::issues.sequence_space_low.description` (and every translation),
+  `custom_components/junghome_ble/strings.json::issues.iv_update_not_taken.description` (and every translation),
   `custom_components/junghome_ble/strings.json::services.start_iv_update.description`,
+  `custom_components/junghome_ble/strings.json::services.abort_iv_update.description`,
   `mgmt:api:meshnetwork.setivindex`.
 
 ### E7 · Download the export and import it into the app (U4-17)

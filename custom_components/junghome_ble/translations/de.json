@@ -1628,6 +1628,24 @@
     "service_preflight_differs": {
       "message": "Nicht gesendet: {node} hat auf {message} mit {found} geantwortet, der Mesh-Export sagt aber {expected} ({others} weitere Abweichungen). Die Installation wurde nach dem Mesh-Export geändert (in der JUNG HOME App, durch das Zurücksetzen eines Geräts oder durch eine frühere Aktion, die mittendrin stehen blieb), und der Plan würde überschreiben, was der Export nicht mehr beschreibt. Exportiere das Projekt erneut aus der App oder lass Home Assistant den Export des Gateways übernehmen und führe die Aktion noch einmal aus; mit `force` läuft sie ohne diese Prüfung. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant hat den IV-Index des Mesh noch nicht von dem Gerät gehört, über das es verbunden ist; versuche es gleich noch einmal. Die letzte Änderung des IV-Zustands des Mesh, die Home Assistant in einem Beacon gesehen hat: {mesh_changed}. Ein Gerät lehnt ein IV-Update innerhalb von 96 Stunden nach seinem eigenen letzten ab."
+    },
+    "start_iv_update_too_early": {
+      "message": "Ein IV-Update hat im Mesh vor weniger als 96 Stunden begonnen oder geendet (der IV-Index ist {iv_index}): Ein neues kann ab {not_before} gestartet werden. Die letzte Änderung des IV-Zustands des Mesh, die Home Assistant in einem Beacon gesehen hat: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Das Abbrechen des IV-Updates bringt Home Assistant zu dem IV-Index zurück, auf dem das Mesh ist: Füge dem Aufruf \"confirm: true\" hinzu, um es auszuführen."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Kein IV-Update, das Home Assistant gestartet hat, wartet auf das Mesh (der IV-Index ist {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Das Mesh hat das IV-Update auf IV-Index {iv_index} übernommen, daher lässt es sich nicht mehr abbrechen: Das Mesh kehrt 96 bis 144 Stunden nach der Übernahme in den Normalbetrieb zurück."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant hat den IV-Index des Mesh noch nicht von dem Gerät gehört, über das es verbunden ist, und kann daher nicht sagen, ob das Mesh das IV-Update übernommen hat; versuche es gleich noch einmal."
+    },
     "download_export_no_session": {
       "message": "Der Download-Link wird für den Administrator erstellt, der ihn anfordert: Führe die Aktion in der Oberfläche von Home Assistant (Entwicklerwerkzeuge → Aktionen) oder über seine API mit dem Token eines Administrators aus, nicht aus einer Automatisierung."
     },
@@ -2120,6 +2138,10 @@
     "sequence_space_low": {
       "title": "Die Sequenznummern des JUNG HOME Mesh werden knapp",
       "description": "Im Mesh {title} hat {source} {percent} % der Sequenznummern des IV-Index {iv_index} verbraucht. Ein Sender kommt nicht über das Ende dieses Nummernvorrats hinaus, bis das Mesh zum nächsten IV-Index wechselt (ein IV-Update). Bluetooth Mesh sieht vor, dass ein Gerät, dem die Nummern knapp werden, dieses Update selbst startet; ob JUNG HOME Geräte das tun, ist noch nicht bekannt. Home Assistant folgt einem IV-Update, und ein Administrator kann es mit der Aktion `junghome_ble.start_iv_update` eines starten lassen (lässt sich nicht rückgängig machen; im Betrieb noch nicht erprobt). Jeder Neustart eines Geräts (ein Stromausfall, ein ausgelöster Sicherungsautomat) lässt seine Sequenznummern weit vorspringen, sodass einem Gerät, das oft vom Strom getrennt wird, die Nummern zuerst knapp werden. Die Reparatur verschwindet nach dem Update von selbst."
+    },
+    "iv_update_not_taken": {
+      "title": "Das JUNG HOME Mesh hat das IV-Update nicht übernommen",
+      "description": "Home Assistant hat am {started} ein IV-Update des Mesh {title} auf IV-Index {iv_index} gestartet, und das Mesh hat es nicht innerhalb von 144 Stunden übernommen: Das Gerät, über das Home Assistant verbunden ist, meldet weiterhin IV-Index {mesh}. Home Assistant ist zu IV-Index {mesh} und zum Normalbetrieb zurückgekehrt; unter dem neuen Index hat es nichts gesendet, es geht also nichts verloren. Ein Gerät lehnt ein IV-Update innerhalb von 96 Stunden nach seinem eigenen letzten ab, und ob JUNG HOME Geräte überhaupt eines von Home Assistant übernehmen, ist im Betrieb noch nicht erprobt. Solange die Reparatur *Die Sequenznummern des JUNG HOME Mesh werden knapp* offen ist, kann die Aktion `junghome_ble.start_iv_update` es später erneut versuchen. Das Problem verschwindet mit dem nächsten IV-Update von selbst."
     },
     "iv_index_mismatch": {
       "title": "Das JUNG HOME Mesh ist auf einem anderen IV-Index",
@@ -2868,6 +2890,20 @@
         "client": {
           "name": "Client",
           "description": "Der Name, unter dem der Client Zugriff anfragt, genau wie unter `waiting` gelistet. Leer gelassen, wird nichts freigegeben."
+        },
+        "config_entry_id": {
+          "name": "Mesh-Netzwerk",
+          "description": "Welches JUNG HOME Netzwerk, wenn mehrere eingerichtet sind."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV-Update abbrechen",
+      "description": "Gibt ein IV-Update auf, das Home Assistant gestartet und das Mesh noch nicht übernommen hat: Home Assistant kehrt zu dem IV-Index zurück, auf dem das Mesh ist, und hört auf, den neuen anzukündigen. Unter dem neuen Index wurde nichts gesendet, es geht also nichts verloren; ein solches Update gibt Home Assistant 144 Stunden nach dem Start von selbst auf. Abgelehnt, sobald das Mesh das Update übernommen hat (dann lässt es sich nicht mehr rückgängig machen), ohne Verbindung zum Mesh und bevor Home Assistant auf dieser Verbindung den IV-Index des Mesh gehört hat. Nur für Administratoren. Im Betrieb noch nicht erprobt.",
+      "fields": {
+        "confirm": {
+          "name": "Bestätigen",
+          "description": "Nötig zum Ausführen."
         },
         "config_entry_id": {
           "name": "Mesh-Netzwerk",

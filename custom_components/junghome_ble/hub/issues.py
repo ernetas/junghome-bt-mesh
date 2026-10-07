@@ -2,7 +2,8 @@
 
 From what the link and the store show: no Bluetooth left (`report_bluetooth_unavailable`), a store that holds
 sends back for SEQ_STALL_ISSUE_AFTER (`seq_stall_started`), a source near the end of its sequence space
-(`check_sequence_space`), an IV index out of reach (`check_iv_index`, fixed by `async_rewind_iv_index`), keys
+(`check_sequence_space`), an IV Update Home Assistant started that the mesh did not take (`check_iv_update`), an IV
+index out of reach (`check_iv_index`, fixed by `async_rewind_iv_index`), keys
 that open nothing (`count_undecodable`, `report_export_stale`), a key refresh (`report_key_refresh`), PDUs the mesh
 discards (`report_pdus_dropped`, fixed by `async_skip_ahead`), another client at our address
 (`on_foreign_own_source`, fixed by `async_skip_past_shared`) and PP2 pucks without a time keeper
@@ -30,6 +31,7 @@ from custom_components.junghome_ble.const import (
     ISSUE_INSERT_MISMATCH,
     ISSUE_IV_INDEX_AHEAD,
     ISSUE_IV_INDEX_MISMATCH,
+    ISSUE_IV_UPDATE_NOT_TAKEN,
     ISSUE_KEY_REFRESH,
     ISSUE_NODE_CLOCK_WRONG,
     ISSUE_PDUS_DROPPED,
@@ -48,9 +50,15 @@ from custom_components.junghome_ble.jhmesh.devices import (
     PP2_PIDS,
     time_keeper_candidates,
 )
-from custom_components.junghome_ble.jhmesh.state import SEQ_TX_LIMIT
+from custom_components.junghome_ble.jhmesh.state import (
+    IV_ABANDONED_NOT_TAKEN,
+    SEQ_TX_LIMIT,
+)
 from custom_components.junghome_ble.protocols import HubPort
-from custom_components.junghome_ble.seq_store import async_rewind_seq_floor
+from custom_components.junghome_ble.seq_store import (
+    async_rewind_seq_floor,
+    local_time,
+)
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.protocols import LinkView
@@ -100,6 +108,7 @@ class Issues:
             ISSUE_SEQ_STORE_UNWRITABLE,
             ISSUE_IV_INDEX_MISMATCH,
             ISSUE_SEQUENCE_SPACE_LOW,
+            ISSUE_IV_UPDATE_NOT_TAKEN,
             ISSUE_KEY_REFRESH,
             ISSUE_PDUS_DROPPED,
             ISSUE_ADDRESS_SHARED,
@@ -180,7 +189,8 @@ class Issues:
         the `start_iv_update` action (`actions/iv_update.py`; unverified on air). Steady traffic uses few numbers; a
         node's restart skips it a whole persisted block ahead, so a mains node that often loses power runs low
         first. The numbers are those the replay protection accepted, so they are what the mesh really used. Cleared
-        once the IV index moves on (an update in progress counts: its index is the new one).
+        once the IV index moves on (an update in progress counts: its index is the new one) — in the mesh: one Home
+        Assistant started counts once the mesh took it (`LocalState.mesh_iv_index`).
 
         `restore_too_old` (raised by the start that skipped a restored record to the end of the space:
         `seq_store._async_skip_restored_record`) goes here too, once our counter is below `SEQ_TX_LIMIT` again.
@@ -210,7 +220,50 @@ class Issues:
                 if node is not None
                 else f"{src:04X}",
                 "percent": f"{100 * seq // 0xFFFFFF}",
-                "iv_index": str(self.hub.proxy.state.iv_index),
+                "iv_index": str(self.hub.proxy.state.mesh_iv_index),
+            },
+        )
+
+    @callback
+    def check_iv_update(self) -> None:
+        """Bring the IV Update repair up to date (`report_iv_update_not_taken`), then the sequence space's.
+
+        Called on every authenticated beacon (the mesh took an update, or moved on), when the client gives one up
+        (`ProxyClient.on_iv_update_abandoned`) and after the IV Update actions: whether the mesh is at the new index
+        decides `sequence_space_low` (`check_sequence_space`), which so follows at once rather than at the next
+        periodic check.
+        """
+        self.report_iv_update_not_taken()
+        self.check_sequence_space()
+
+    @callback
+    def report_iv_update_not_taken(self) -> None:
+        """Raise `iv_update_not_taken` while the last IV Update Home Assistant started was given up untaken; else clear it.
+
+        `ProxyClient._run_iv_update` gives an update up when the mesh has not taken it 144 hours after its start
+        (`LocalState.abandon_iv_update`, review-5 P5-3): Home Assistant is back at the mesh's index, having sent
+        nothing under the new one, and the sender that ran low is as far along as before. Cleared by the next IV
+        Update or IV change (Home Assistant's or the mesh's; `iv_update_abandoned` goes with it); one an
+        administrator aborted raises nothing. Unverified on air.
+        """
+        state = self.hub.proxy.state
+        key = issue_id(self.hub.entry, ISSUE_IV_UPDATE_NOT_TAKEN)
+        if state.iv_update_abandoned != IV_ABANDONED_NOT_TAKEN:
+            ir.async_delete_issue(self.hub.hass, DOMAIN, key)
+            return
+        ir.async_create_issue(
+            self.hub.hass,
+            DOMAIN,
+            key,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_IV_UPDATE_NOT_TAKEN,
+            learn_more_url=learn_more_url(ISSUE_IV_UPDATE_NOT_TAKEN),
+            translation_placeholders={
+                "title": self.hub.entry.title,
+                "iv_index": str(state.iv_index + 1),
+                "mesh": str(state.iv_index),
+                "started": local_time(state.iv_update_started_at, "—"),
             },
         )
 

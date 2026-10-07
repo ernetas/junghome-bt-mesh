@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "未发送：{node} 对 {message} 的应答为 {found}，但 Mesh 导出文件中为 {expected}（另有 {others} 处差异）。Mesh 导出文件生成后，安装已发生更改（在 JUNG HOME 应用中、因设备重置，或因之前中途停止的操作），该计划将覆盖导出文件已不再描述的内容。请从应用重新导出项目，或让 Home Assistant 接管网关的导出文件，然后再次运行该操作；使用 `force` 时将不进行此检查。{applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant 尚未从其连接所经的设备收到 Mesh 的 IV index；请稍后重试。Home Assistant 在信标中看到的 Mesh IV 状态的最近一次变化：{mesh_changed}。设备在其自身上一次 IV Update 后的 96 小时内会拒绝新的 IV Update。"
+    },
+    "start_iv_update_too_early": {
+      "message": "Mesh 中的一次 IV Update 在不到 96 小时前开始或结束（IV index 为 {iv_index}）：从 {not_before} 起可以发起新的。Home Assistant 在信标中看到的 Mesh IV 状态的最近一次变化：{mesh_changed}。"
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "中止 IV Update 会让 Home Assistant 回到 Mesh 当前所在的 IV index：如需执行，请在调用中添加 \"confirm: true\"。"
+    },
+    "abort_iv_update_not_started": {
+      "message": "没有由 Home Assistant 发起、正在等待 Mesh 的 IV Update（IV index 为 {iv_index}）。"
+    },
+    "abort_iv_update_taken": {
+      "message": "Mesh 已接受到 IV index {iv_index} 的 IV Update，因此无法再中止：Mesh 会在接受后 96 到 144 小时恢复正常运行。"
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant 尚未从其连接所经的设备收到 Mesh 的 IV index，因此无法判断 Mesh 是否已接受 IV Update；请稍后重试。"
+    },
     "download_export_no_session": {
       "message": "下载链接是为请求它的管理员生成的：请从 Home Assistant 界面（开发者工具 → 操作）或使用管理员令牌通过其 API 运行此操作，而不要从自动化中运行。"
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME Mesh 序列号即将用尽",
       "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。在 Mesh 切换到下一个 IV index（即 IV Update）之前，发送方无法越过该空间的末尾。Bluetooth Mesh 要求序列号即将用尽的设备自行发起此更新；JUNG HOME 设备是否会这样做目前尚不清楚。Home Assistant 会跟随 IV Update，管理员也可以通过操作 `junghome_ble.start_iv_update` 让 Home Assistant 发起一次（此操作不可撤销；尚未在实际网络中验证）。设备每次重启（停电、断路器跳闸）都会使其序列号大幅向前跳跃，因此经常断电的设备会最先面临序列号不足。更新完成后，此问题即会自动清除。"
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME Mesh 未接受 IV Update",
+      "description": "Home Assistant 于 {started} 发起了 Mesh {title} 到 IV index {iv_index} 的 IV Update，但 Mesh 在 144 小时内未接受：Home Assistant 连接所经的设备仍在通告 IV index {mesh}。Home Assistant 已回到 IV index {mesh} 并恢复正常运行；它未在新 index 下发送任何内容，因此没有任何损失。设备在其自身上一次 IV Update 后的 96 小时内会拒绝新的 IV Update，而 JUNG HOME 设备究竟是否会接受来自 Home Assistant 的 IV Update，尚未在实际网络中验证。只要修复“*JUNG HOME Mesh 序列号即将用尽*”仍未关闭，就可以稍后通过操作 `junghome_ble.start_iv_update` 重试。下一次 IV Update 后，此问题会自动清除。"
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME Mesh 处于另一个 IV index",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "客户端",
           "description": "客户端请求访问时使用的名称，须与 `waiting` 下列出的完全一致。留空时，不会批准任何客户端。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "中止 IV Update",
+      "description": "放弃由 Home Assistant 发起、但 Mesh 尚未接受的 IV Update：Home Assistant 回到 Mesh 当前所在的 IV index，并停止通告新的 index。新 index 下没有发送任何内容，因此没有任何损失；此类更新在发起 144 小时后 Home Assistant 也会自行放弃。在 Mesh 已接受该更新后（此时无法撤销）、未连接到 Mesh 时，以及 Home Assistant 在该连接上收到 Mesh 的 IV index 之前，会被拒绝。仅限管理员。尚未在实际网络中验证。",
+      "fields": {
+        "confirm": {
+          "name": "确认",
+          "description": "执行时必需。"
         },
         "config_entry_id": {
           "name": "Mesh 网络",

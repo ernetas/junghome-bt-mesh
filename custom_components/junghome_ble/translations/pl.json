@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Nie wysłano: {node} odpowiedział na {message} wartością {found}, ale eksport mesh podaje {expected} (pozostałe różnice: {others}). Instalacja zmieniła się po wykonaniu eksportu mesh (w aplikacji JUNG HOME, przez reset urządzenia albo przez wcześniejszą akcję, która zatrzymała się w połowie), a plan nadpisałby to, czego eksport już nie opisuje. Wyeksportuj projekt z aplikacji ponownie albo pozwól Home Assistant przejąć eksport z bramki i uruchom akcję jeszcze raz; z `force` działa bez tego sprawdzenia. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant nie usłyszał jeszcze IV index sieci mesh od urządzenia, przez które jest połączony; spróbuj ponownie za chwilę. Ostatnia zmiana stanu IV sieci mesh, którą Home Assistant zobaczył w beaconie: {mesh_changed}. Urządzenie odrzuca IV Update w ciągu 96 godzin od swojej ostatniej."
+    },
+    "start_iv_update_too_early": {
+      "message": "IV Update w sieci mesh rozpoczęła się lub zakończyła mniej niż 96 godzin temu (IV index wynosi {iv_index}): nową można rozpocząć od {not_before}. Ostatnia zmiana stanu IV sieci mesh, którą Home Assistant zobaczył w beaconie: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Przerwanie IV Update przywraca Home Assistant do IV index, na którym jest sieć mesh: dodaj do wywołania \"confirm: true\", aby to zrobić."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Żadna IV Update rozpoczęta przez Home Assistant nie czeka na sieć mesh (IV index wynosi {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Sieć mesh przyjęła IV Update do IV index {iv_index}, więc nie można jej już przerwać: sieć mesh wraca do normalnej pracy 96–144 godziny po jej przyjęciu."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant nie usłyszał jeszcze IV index sieci mesh od urządzenia, przez które jest połączony, więc nie może stwierdzić, czy sieć mesh przyjęła IV Update; spróbuj ponownie za chwilę."
+    },
     "download_export_no_session": {
       "message": "Link do pobrania jest tworzony dla administratora, który o niego prosi: uruchom akcję z interfejsu Home Assistant (Narzędzia deweloperskie → Akcje) lub przez jego API z tokenem administratora, a nie z automatyzacji."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Kończą się numery sekwencyjne sieci mesh JUNG HOME",
       "description": "W sieci mesh {title} {source} zużył {percent} % numerów sekwencyjnych IV index {iv_index}. Nadawca nie może wyjść poza koniec tej przestrzeni, dopóki sieć mesh nie przejdzie na następny IV index (IV Update). Bluetooth Mesh zakłada, że urządzenie, któremu kończą się numery, samo rozpoczyna tę aktualizację; czy urządzenia JUNG HOME to robią, jeszcze nie wiadomo. Home Assistant podąża za IV Update, a administrator może zlecić mu jego rozpoczęcie akcją `junghome_ble.start_iv_update` (nie można tego cofnąć; jeszcze niesprawdzone w działaniu). Każdy restart urządzenia (zanik zasilania, zadziałanie wyłącznika nadprądowego) przesuwa jego numery sekwencyjne daleko do przodu, więc numery kończą się najpierw urządzeniu, które często traci zasilanie. Problem zniknie sam po aktualizacji."
+    },
+    "iv_update_not_taken": {
+      "title": "Sieć mesh JUNG HOME nie przyjęła IV Update",
+      "description": "Home Assistant rozpoczął {started} IV Update sieci mesh {title} do IV index {iv_index}, a sieć mesh nie przyjęła jej w ciągu 144 godzin: urządzenie, przez które Home Assistant jest połączony, nadal ogłasza IV index {mesh}. Home Assistant wrócił do IV index {mesh} i normalnej pracy; pod nowym indeksem niczego nie wysłał, więc nic nie przepadło. Urządzenie odrzuca IV Update w ciągu 96 godzin od swojej ostatniej, a to, czy urządzenia JUNG HOME w ogóle przyjmują ją od Home Assistant, jest jeszcze niesprawdzone w działaniu. Dopóki naprawa *Kończą się numery sekwencyjne sieci mesh JUNG HOME* jest otwarta, akcja `junghome_ble.start_iv_update` może spróbować ponownie później. Problem znika sam przy następnej IV Update."
     },
     "iv_index_mismatch": {
       "title": "Sieć mesh JUNG HOME ma inny IV index",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Klient",
           "description": "Nazwa, pod którą klient prosi o dostęp, dokładnie tak jak na liście `waiting`. Jeśli puste, nic nie jest zatwierdzane."
+        },
+        "config_entry_id": {
+          "name": "Sieć mesh",
+          "description": "Która sieć JUNG HOME, gdy skonfigurowano więcej niż jedną."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Przerwij IV Update",
+      "description": "Rezygnuje z IV Update, którą rozpoczął Home Assistant, a której sieć mesh jeszcze nie przyjęła: Home Assistant wraca do IV index, na którym jest sieć mesh, i przestaje ogłaszać nowy. Pod nowym indeksem niczego nie wysłano, więc nic nie przepadło; z takiej aktualizacji Home Assistant rezygnuje sam 144 godziny po jej rozpoczęciu. Odrzucane, gdy sieć mesh już przyjęła aktualizację (wtedy nie można jej cofnąć), bez połączenia z siecią mesh i zanim Home Assistant usłyszy IV index sieci mesh na tym połączeniu. Tylko dla administratorów. Jeszcze niesprawdzone w działaniu.",
+      "fields": {
+        "confirm": {
+          "name": "Potwierdź",
+          "description": "Wymagane do wykonania."
         },
         "config_entry_id": {
           "name": "Sieć mesh",

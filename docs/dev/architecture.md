@@ -237,7 +237,7 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
 - IV Update is followed from the Secure Network Beacon (`LocalState.apply_beacon`): during "update in progress" we
   transmit with the old index and reset the sequence number only when the transmit index rises (a same-index "in
   progress" beacon after we completed the update is a lagging node and is ignored). An IV change re-sends the proxy
-  filter. Timing (Mesh Protocol 1.1 §3.10.5–§3.10.6, review-4 D10): once an index is known, a step between Normal
+  filter. Timing (Mesh Protocol 1.1 §3.11.5–§3.11.6, review-4 D10): once an index is known, a step between Normal
   Operation and IV Update in Progress needs 96 h since the last change of the IV state (`IV_UPDATE_MIN_STATE`), an IV
   Index Recovery 192 h since the last one (`IV_RECOVERY_MIN_INTERVAL`), on the wall clock (`wall_now`, stored with
   the counter as `iv_changed_at` / `iv_recovered_at`; absent = no restriction; the fresh state's first beacon stamps
@@ -249,10 +249,19 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   Operation, 96 h since the last change, no key refresh in phase 1 or 2, an index a beacon of this link named when
   no change was seen) moves to index + 1 in progress, `ProxyClient.start_iv_update` has it on disk
   (`persist_durably`; `HAState` checks what the store holds) before it writes the beacon
-  (`pdu.secure_network_beacon`), and `_run_iv_update` repeats it every 10 s until the proxy's beacon back sets
-  `iv_update_confirmed` (600 s after), then completes it 96 h on (`iv_update_due`, `complete_iv_update`; deferred
-  while a segmented send awaits its ack) and beacons Normal Operation. Who moved the state to in progress last and
-  when (`iv_update_origin`, `iv_update_started_at`) is stored with the record and shown in the diagnostics. A beacon that fails authentication with the export's NetKey but carries the Key Refresh flag raises the
+  (`pdu.secure_network_beacon`, of the key refresh's phase: the transmit key, the Key Refresh flag in Phase 2), and
+  `_run_iv_update` repeats it every 10 s until the proxy's beacon back sets `iv_update_confirmed` and
+  `iv_update_confirmed_at` (600 s after), then completes it 96 h after that confirmation (`iv_update_due`,
+  `complete_iv_update`; deferred while a segmented send awaits its ack) and beacons Normal Operation. One the mesh has
+  not taken 144 h after the start (`iv_update_overdue`) is given up once a beacon of the link was seen
+  (`abandon_iv_update`: back to the old index, whose transmit index never moved; `on_iv_update_abandoned` → the
+  `iv_update_not_taken` repair), or on request (`abort_iv_update`, the action). Every move of the IV state goes through
+  `LocalState._set_iv_state`, whose rule (`_may_move_iv`) lets only a beacon move the transmit index forward while
+  `seq_guard` waits for the first beacon (review-5 S5-2: a restored mid-update record completed by the clock reused
+  numbers). Who moved the state to in progress last and when (`iv_update_origin`, `iv_update_started_at`), the
+  confirmation, the outcome (`iv_update_abandoned`) and the mesh's last IV change seen in a beacon
+  (`mesh_iv_changed_at`) are stored with the record and shown in the diagnostics; while one of ours waits,
+  `mesh_iv_index` is the old index, which `sequence_space_low` judges. A beacon that fails authentication with the export's NetKey but carries the Key Refresh flag raises the
   `key_refresh` repair issue (`JungHomeHub._on_beacon`; not fixable; deleted when the coordinator starts or stops):
   Phase 2 beacons are secured with the new key (Mesh Profile §3.10.4), so a flagged beacon *our* key authenticates
   means our keys are the new ones already and raises nothing. The flag is outside anything our key can verify, so it

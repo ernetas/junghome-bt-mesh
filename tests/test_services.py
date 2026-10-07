@@ -2789,6 +2789,7 @@ ADMIN_CALLS: dict[str, dict[str, Any]] = {
     "locate_node": {"device": "any"},
     "approve_gateway_client": {"client": "ioBroker"},
     "start_iv_update": {"confirm": True, "force": True},
+    "abort_iv_update": {"confirm": True},
     "download_export": {},
 }
 

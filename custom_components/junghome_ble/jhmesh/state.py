@@ -20,8 +20,10 @@ returns to Normal Operation and resets its sequence number, and it starts the pr
 a node in Normal Operation that accepts a beacon with the IV Update Flag set should follow as soon as possible.
 (Mesh Profile 1.0.1 numbers the IV Update procedure §3.10.5 and the Secure Network beacon §3.9.3.) So the proxy takes
 the update from our beacon and carries it to the mesh with its own, and its beacon back is the confirmation
-(`iv_update_confirmed`). A node may still refuse a step within 96 hours of its own last one. Unverified on air: no
-JUNG device has been seen taking an IV Update from a proxy client.
+(`iv_update_confirmed`). A node may still refuse a step within 96 hours of its own last one: an update the mesh does
+not take within the 144 hours §3.11.5 allows a node in IV Update in Progress is given up again
+(`abandon_iv_update`), safely, as nothing was transmitted under its index. Unverified on air: no JUNG device has been
+seen taking an IV Update from a proxy client.
 """
 
 from __future__ import annotations
@@ -42,6 +44,8 @@ from .fileio import PRIVATE_MODE, atomic_write
 from .keyrefresh import KeyRefreshRecord
 
 __all__ = [
+    "IV_ABANDONED_ABORTED",
+    "IV_ABANDONED_NOT_TAKEN",
     "IV_INDEX_MAX",
     "IV_ORIGIN_BEACON",
     "IV_ORIGIN_LOCAL",
@@ -61,8 +65,8 @@ __all__ = [
 log = logging.getLogger("jhmesh")
 
 SEQ_MAX = 0xFFFFFF  # sequence numbers are 24 bits (§3.4.4.3)
-IV_INDEX_MAX = 0xFFFFFFFF  # the IV index is 32 bits (§3.10.5)
-# IV Update timing (Mesh Protocol 1.1 §3.10.5, §3.10.6), in wall-clock seconds: at least 96 h in Normal Operation and
+IV_INDEX_MAX = 0xFFFFFFFF  # the IV index is 32 bits (§3.9.4)
+# IV Update timing (Mesh Protocol 1.1 §3.11.5, §3.11.6), in wall-clock seconds: at least 96 h in Normal Operation and
 # in IV Update in Progress before the next step, at most one IV Index Recovery per 192 h (`LocalState.apply_beacon`)
 IV_UPDATE_MIN_STATE = 96 * 3600
 IV_RECOVERY_MIN_INTERVAL = 192 * 3600
@@ -72,6 +76,10 @@ IV_UPDATE_MAX_STATE = 144 * 3600
 # (`start_iv_update`), or a beacon of the mesh (`apply_beacon`)
 IV_ORIGIN_LOCAL = "local"
 IV_ORIGIN_BEACON = "beacon"
+# why an IV Update this client started was given up (`LocalState.iv_update_abandoned`): the mesh did not take it within
+# IV_UPDATE_MAX_STATE (`ProxyClient._run_iv_update`), or it was aborted on request (`LocalState.abort_iv_update`)
+IV_ABANDONED_NOT_TAKEN = "not_taken"
+IV_ABANDONED_ABORTED = "aborted"
 # `LocalState.seq_guard` before the first authenticated beacon has named the index it covers
 SEQ_GUARD_FIRST_BEACON = -1
 SEQ_TX_LIMIT = 0xFFFF00  # we never transmit above this: a wrap would replay SeqAuths and every node would drop us
@@ -94,12 +102,14 @@ class SequenceStalled(SequenceExhausted):
 
 
 class IVUpdateRefused(ValueError):
-    """`LocalState.start_iv_update` will not start an IV Update now; `reason` says why, for a caller to word.
+    """`LocalState.start_iv_update` will not start an IV Update now, or `abort_iv_update` not abort one; `reason` says why.
 
-    `reason` is one of `in_progress` (one is running), `key_refresh` (a key refresh is in phase 1 or 2), `iv_unknown`
-    (the index was never learnt from a beacon, or no beacon of this link named it and the time of the last change is
-    not known), `too_early` (the IV state changed less than 96 h ago; `not_before` is when it may, wall-clock
-    seconds) and `iv_max` (the 32-bit index is at its end).
+    For a caller to word. Starting: `in_progress` (one is running), `key_refresh` (a key refresh is in phase 1 or 2),
+    `iv_unknown` (the index was never learnt from a beacon, or no beacon of this link named it and the time of the
+    last change is not known), `too_early` (the IV state changed less than 96 h ago; `not_before` is when it may,
+    wall-clock seconds) and `iv_max` (the 32-bit index is at its end). Aborting: `not_started` (no update this
+    client started is in progress), `taken` (the mesh took it: it completes on its own) and `iv_unknown` (no beacon of
+    this link said where the mesh is).
     """
 
     def __init__(
@@ -236,6 +246,18 @@ class LocalState:
         self.iv_update_origin: str | None = None
         self.iv_update_started_at: float | None = None
         self.iv_update_confirmed = False
+        # when the mesh took it (wall clock): §3.11.5's 96 h in IV Update in Progress count from here, the time every
+        # node has had the new index (`iv_update_due`); one a beacon started was taken when it started
+        self.iv_update_confirmed_at: float | None = None
+        # an update this client started and gave up again, and why (IV_ABANDONED_NOT_TAKEN, IV_ABANDONED_ABORTED;
+        # `abandon_iv_update`); None once the next one starts
+        self.iv_update_abandoned: str | None = None
+        # the mesh's IV state as authenticated beacons named it — the furthest one, ranked (`_note_mesh_iv`), in memory —
+        # and when one first named a state ahead of it (wall clock, stored): the mesh's last IV change seen,
+        # which this state's own `iv_changed_at` is not when it never followed that change (a fresh state, a beacon
+        # refused as too early) or changed on its own (`start_iv_update`)
+        self._mesh_iv_rank: int | None = None
+        self.mesh_iv_changed_at: float | None = None
         # the IV state before `start_iv_update`, until `revert_iv_update_start` or the next start
         self._iv_before_start: dict[str, Any] | None = None
         if path is not None:
@@ -311,6 +333,7 @@ class LocalState:
         LocalState.parse_seq_guard(d)
         LocalState.parse_iv_times(d)
         LocalState.parse_iv_update(d)
+        LocalState.parse_iv_update_outcome(d)
         LocalState.parse_seq_peak(d)
         return stored_src, seq, iv_index, iv_update_active, iv_known, rpl, key_refresh
 
@@ -351,6 +374,31 @@ class LocalState:
             origin,
             None if started is None else _check_time("IV Update start time", started),
             confirmed,
+        )
+
+    @staticmethod
+    def parse_iv_update_outcome(
+        d: dict[str, Any],
+    ) -> tuple[float | None, str | None, float | None]:
+        """Return the stored record's (`iv_update_confirmed_at`, `iv_update_abandoned`, `mesh_iv_changed_at`).
+
+        Absent, as in every record written before they were kept: None each — the caller takes an update confirmed
+        then as confirmed when it started (`_restore`), which is what that record's version counted from.
+        """
+        confirmed = d.get("iv_update_confirmed_at")
+        abandoned = d.get("iv_update_abandoned")
+        if abandoned is not None and abandoned not in (
+            IV_ABANDONED_NOT_TAKEN,
+            IV_ABANDONED_ABORTED,
+        ):
+            raise ValueError(f"IV Update outcome {abandoned!r} is not one")
+        changed = d.get("mesh_iv_changed_at")
+        return (
+            None
+            if confirmed is None
+            else _check_time("IV Update confirmation time", confirmed),
+            abandoned,
+            None if changed is None else _check_time("mesh IV change time", changed),
         )
 
     @staticmethod
@@ -395,6 +443,13 @@ class LocalState:
         self.iv_update_origin, self.iv_update_started_at, self.iv_update_confirmed = (
             self.parse_iv_update(d)
         )
+        (
+            self.iv_update_confirmed_at,
+            self.iv_update_abandoned,
+            self.mesh_iv_changed_at,
+        ) = self.parse_iv_update_outcome(d)
+        if self.iv_update_confirmed and self.iv_update_confirmed_at is None:
+            self.iv_update_confirmed_at = self.iv_update_started_at
         if stored_src == default_src or not configured_src_wins:
             self.src = stored_src
             self.seq = min(seq + restart_margin, SEQ_MAX)
@@ -551,8 +606,8 @@ class LocalState:
 
         `to_dict()` plus the replay list (`{"0148": [iv_index, seq]}` per entry) and `iv_known` — not in
         `to_dict()`, which diagnostics and many tests compare as a whole — and a key refresh in progress (the new
-        NetKey: never in `to_dict()`), the sequence guard, the IV timing, the last IV Update's start and the sequence
-        peak.
+        NetKey: never in `to_dict()`), the sequence guard, the IV timing, the last IV Update's start, confirmation and
+        outcome, the mesh's last IV change seen and the sequence peak.
         """
         stored: dict[str, Any] = {
             **self.to_dict(),
@@ -574,6 +629,12 @@ class LocalState:
             stored["iv_update_confirmed"] = self.iv_update_confirmed
         if self.iv_update_started_at is not None:
             stored["iv_update_started_at"] = self.iv_update_started_at
+        if self.iv_update_confirmed_at is not None:
+            stored["iv_update_confirmed_at"] = self.iv_update_confirmed_at
+        if self.iv_update_abandoned is not None:
+            stored["iv_update_abandoned"] = self.iv_update_abandoned
+        if self.mesh_iv_changed_at is not None:
+            stored["mesh_iv_changed_at"] = self.mesh_iv_changed_at
         return stored
 
     def persist_now(self) -> None:
@@ -646,6 +707,22 @@ class LocalState:
         """IV index used for transmission: during 'IV Update in Progress' nodes keep sending with the old index."""
         return self.iv_index - 1 if self.iv_update_active else self.iv_index
 
+    @property
+    def mesh_iv_index(self) -> int:
+        """The IV index the mesh is at as far as this state knows: its own, or the old one while it waits.
+
+        While an IV Update this client started waits for the mesh to take it (`iv_update_confirmed`), the mesh is
+        still at the old index, in Normal Operation, and its senders keep using up that index's sequence numbers
+        (review-5 S5-3).
+        """
+        if (
+            self.iv_update_active
+            and self.iv_update_origin == IV_ORIGIN_LOCAL
+            and not self.iv_update_confirmed
+        ):
+            return self.iv_index - 1
+        return self.iv_index
+
     def next_seq(self) -> int:
         """Take the next sequence number and persist; `SequenceExhausted` above `SEQ_TX_LIMIT`."""
         return self.reserve_seq(1)
@@ -668,12 +745,12 @@ class LocalState:
     def apply_beacon(
         self, iv_index: int, iv_update: bool, now: float | None = None
     ) -> bool:
-        """Follow the Secure Network Beacon (Mesh Profile §3.10.5). Returns True if anything changed.
+        """Follow the Secure Network Beacon (Mesh Protocol 1.1 §3.11.5). Returns True if anything changed.
 
         Normal Operation → IV Update in Progress only for index + 1; a beacon with our *current* index and the flag
         set while we are in Normal Operation is a lagging node still on an update we already completed — ignoring it
         is what keeps the transmit index (and so the sequence space) from ever going backwards. An index further
-        ahead (≤ 42) is adopted as it is (IV Index Recovery, §3.10.6) — that bound is for a node that was already
+        ahead (≤ 42) is adopted as it is (IV Index Recovery, §3.11.6) — that bound is for a node that was already
         in the network and missed updates; a fresh state that has never learnt an index (`not self.iv_known`, a
         client being provisioned) adopts the first authenticated beacon unconditionally instead, or it could
         never join a network whose index has already moved past 42.
@@ -700,13 +777,19 @@ class LocalState:
         the first beacon's index the same way, never lowered.
 
         A beacon with our index and the flag set while an update this client started is in progress
-        (`start_iv_update`) is the mesh taking it: `iv_update_confirmed` is set and persisted, though the IV state
-        itself does not change (False is returned). A move to IV Update in Progress records the beacon as its origin.
+        (`start_iv_update`) is the mesh taking it: `iv_update_confirmed` is set, stamped (`iv_update_confirmed_at`, from
+        which its 96 h count) and persisted, though the IV state itself does not change (False is returned). A move to
+        IV Update in Progress, or to another index in it, records the beacon as its origin, taken as it started. Every
+        beacon within reach is noted as the mesh's IV state (`_note_mesh_iv`).
         """
+        now = _wall_now() if now is None else now
         limit = (
             self.iv_index + 42 if self.iv_known else 0xFFFFFFFF
         )  # IV index is 32 bits
-        if iv_index < self.iv_index or iv_index > limit:
+        if iv_index > limit:
+            return False
+        self._note_mesh_iv(iv_index, iv_update, now)
+        if iv_index < self.iv_index:
             return False
         was_known, self.iv_known = self.iv_known, True
         if self.seq_guard is not None and (
@@ -717,9 +800,8 @@ class LocalState:
             self.seq_guard = max(self.seq_guard, min(iv_index + 1, IV_INDEX_MAX))
         if iv_index == self.iv_index:
             if iv_update and self.iv_update_active and not self.iv_update_confirmed:
-                self.iv_update_confirmed = (
-                    True  # the update we started came back from the mesh
-                )
+                # the update we started came back from the mesh: its 96 h start now
+                self.iv_update_confirmed, self.iv_update_confirmed_at = True, now
                 self.persist_now()
             if iv_update or not self.iv_update_active:
                 return False  # same state, or a stale "in progress" for an update we have completed
@@ -731,16 +813,44 @@ class LocalState:
         else:
             # adopt whatever the network is at
             update_active, recovery = iv_update, True
-        now = _wall_now() if now is None else now
         if was_known and self._too_early(iv_index, recovery, now):
             return False
-        if update_active and not self.iv_update_active:
+        if update_active:
+            # the mesh's update — also one a recovery lands in while an update of ours was in progress (a link back
+            # after days, a restored record): ours is over, and its confirmation must not complete this one early
             self.iv_update_origin, self.iv_update_started_at = IV_ORIGIN_BEACON, now
-            self.iv_update_confirmed = True
-        self._set_iv_state(
+            self.iv_update_confirmed, self.iv_update_confirmed_at = True, now
+        self.iv_update_abandoned = None  # the mesh moved on since one was given up
+        # the guard named its index above: the move is never refused
+        return self._set_iv_state(
             iv_index, update_active, now if was_known else None, recovery=recovery
         )
-        return True
+
+    def _note_mesh_iv(self, iv_index: int, iv_update: bool, now: float) -> None:
+        """Note the mesh's IV state an authenticated beacon named; stamp `mesh_iv_changed_at` when it is ahead.
+
+        Ahead of the furthest one noted before: (N, Normal) < (N + 1, in progress) < (N + 1, Normal); a node behind is
+        no change, and the first beacon after a start only sets where the mesh is. Written with the next persist: a
+        beacon alone is no reason to write.
+        """
+        rank, before = 2 * iv_index - int(iv_update), self._mesh_iv_rank
+        if before is not None and rank > before:
+            self.mesh_iv_changed_at = now
+        self._mesh_iv_rank = rank if before is None else max(rank, before)
+
+    def _may_move_iv(self, iv_index: int, update_active: bool) -> bool:
+        """Apply the rule every move of the IV state keeps (`_set_iv_state`): never forward past a pending guard.
+
+        A move that takes the transmit index forward restarts the sequence at 0 there unless `seq_guard` covers it.
+        A guard pending the first beacon (SEQ_GUARD_FIRST_BEACON: a record skipped past lost numbers, or restored
+        from a backup) does not know which indexes those numbers went out under; only an authenticated beacon names
+        that, and `apply_beacon` raises the guard before it moves. Until then no other move may take the transmit
+        index forward: a record restored in the middle of an IV Update this client started completed it by the clock
+        (`complete_iv_update`) and restarted the counter at 0 under an index numbers had been sent under since
+        (review-5 S5-2). A move that keeps or lowers the transmit index is always allowed.
+        """
+        tx = iv_index - 1 if update_active else iv_index
+        return self.seq_guard != SEQ_GUARD_FIRST_BEACON or tx <= self.tx_iv_index
 
     def _set_iv_state(
         self,
@@ -749,11 +859,17 @@ class LocalState:
         now: float | None,
         *,
         recovery: bool = False,
-    ) -> None:
-        """Move to (`iv_index`, `update_active`), stamped at `now` (None: not stamped), and persist both copies.
+        durable: bool = False,
+    ) -> bool:
+        """Move to (`iv_index`, `update_active`) if `_may_move_iv` allows; return whether it moved.
 
-        The sequence restarts at 0 when the transmit index moves on, unless `seq_guard` covers it (`apply_beacon`).
+        The one way the IV state moves: `apply_beacon`, `start_iv_update` (and its revert), `complete_iv_update`,
+        `abandon_iv_update` and `rewind_iv_index` all come here. Stamped at `now` (None: not stamped) and persisted
+        with both copies (`durable`: `persist_now`, for a move a caller sends a beacon of). The sequence restarts at 0
+        when the transmit index moves on, unless `seq_guard` covers it (`apply_beacon`).
         """
+        if not self._may_move_iv(iv_index, update_active):
+            return False
         old_tx = self.tx_iv_index
         self.iv_index, self.iv_update_active = iv_index, update_active
         if now is not None:
@@ -768,10 +884,14 @@ class LocalState:
                 self.seq = 0  # sequence numbers restart with a new transmit IV index — never otherwise
                 self.seq_guard = None
             # else: numbers under this index may have been sent before the record was lost; keep counting on
-        self.persist()
+        if durable:
+            self.persist_now()
+        else:
+            self.persist()
         self._backup(
             force=True
         )  # any IV state change must not leave `.bak` behind on the old index
+        return True
 
     def check_iv_update_start(
         self, now: float | None = None, *, index_confirmed: bool = False
@@ -831,15 +951,15 @@ class LocalState:
             "iv_update_origin": self.iv_update_origin,
             "iv_update_started_at": self.iv_update_started_at,
             "iv_update_confirmed": self.iv_update_confirmed,
+            "iv_update_confirmed_at": self.iv_update_confirmed_at,
+            "iv_update_abandoned": self.iv_update_abandoned,
         }
         self.iv_update_origin, self.iv_update_started_at = IV_ORIGIN_LOCAL, now
-        self.iv_update_confirmed = False
-        self.iv_index, self.iv_update_active = self.iv_index + 1, True
-        self.iv_changed_at = now
-        self._iv_refused.clear()
+        self.iv_update_confirmed, self.iv_update_confirmed_at = False, None
+        self.iv_update_abandoned = None
         try:
-            self.persist_now()
-            self._backup(force=True)
+            # Normal Operation to IV Update in Progress keeps the transmit index: never refused
+            self._set_iv_state(self.iv_index + 1, True, now, durable=True)
         except BaseException:
             self.revert_iv_update_start()
             raise
@@ -858,11 +978,12 @@ class LocalState:
             or self.iv_update_confirmed
         ):
             return
+        iv_index, update_active = before.pop("iv_index"), before.pop("iv_update_active")
         for name, value in before.items():
             setattr(self, name, value)
         try:
-            self.persist_now()
-            self._backup(force=True)
+            # back to the transmit index it has throughout: never refused
+            self._set_iv_state(iv_index, update_active, None, durable=True)
         except Exception as err:
             log.warning(
                 "could not write back the IV state before the IV Update: %s", err
@@ -872,17 +993,21 @@ class LocalState:
         """Whether the IV Update this client started goes back to Normal Operation now (`complete_iv_update`).
 
         §3.11.5: after at least 96 h and before 144 h in IV Update in Progress; here once `IV_UPDATE_MIN_STATE` has
-        passed. Only an update the mesh took (`iv_update_confirmed`): completing one it never took would move our
-        transmit index past the mesh's, and every node would drop us. An update a beacon started is completed by
-        the beacon that ends it, as before.
+        passed since the mesh took it (`iv_update_confirmed_at`) — the 96 h are there so that every node has the new
+        index before anyone transmits under it, and a proxy that took it late (refusing it within its own 96 h first)
+        has had it for less than the time since our start (review-5 P5-1). Only an update the mesh took: completing
+        one it never took would move our transmit index past the mesh's, and every node would drop us. Not while
+        `seq_guard` waits for the first beacon (`_may_move_iv`). An update a beacon started is completed by the beacon
+        that ends it, as before.
         """
         now = _wall_now() if now is None else now
         return (
             self.iv_update_active
             and self.iv_update_origin == IV_ORIGIN_LOCAL
             and self.iv_update_confirmed
-            and self.iv_changed_at is not None
-            and now - self.iv_changed_at >= IV_UPDATE_MIN_STATE
+            and self.iv_update_confirmed_at is not None
+            and now - self.iv_update_confirmed_at >= IV_UPDATE_MIN_STATE
+            and self._may_move_iv(self.iv_index, False)
         )
 
     def complete_iv_update(self, now: float | None = None) -> bool:
@@ -893,8 +1018,71 @@ class LocalState:
         now = _wall_now() if now is None else now
         if not self.iv_update_due(now):
             return False
-        self._set_iv_state(self.iv_index, False, now)
+        return self._set_iv_state(self.iv_index, False, now)
+
+    def iv_update_overdue(self, now: float | None = None) -> bool:
+        """Whether the IV Update this client started has waited for the mesh longer than §3.11.5 allows.
+
+        `IV_UPDATE_MAX_STATE` (144 h) after its start without the mesh taking it: a node returns to Normal Operation
+        before that, so a mesh that has not taken it by then will not — its proxy refused it within its own 96 h, or
+        does not take an update from a proxy client at all (unverified on air). The caller gives it up
+        (`abandon_iv_update`) once a beacon of its link said where the mesh is (review-5 P5-3).
+        """
+        now = _wall_now() if now is None else now
+        return (
+            self.iv_update_active
+            and self.iv_update_origin == IV_ORIGIN_LOCAL
+            and not self.iv_update_confirmed
+            and self.iv_update_started_at is not None
+            and now - self.iv_update_started_at >= IV_UPDATE_MAX_STATE
+        )
+
+    def abandon_iv_update(self, reason: str) -> bool:
+        """Give up the IV Update this client started that the mesh has not taken; return whether there was one.
+
+        Back to the index the mesh is at, in Normal Operation. Safe: throughout IV Update in Progress the transmit
+        index is the old one, so nothing but beacons ever went out under the new index, and the sequence number
+        carries on — no nonce is spent twice. `reason` (IV_ABANDONED_NOT_TAKEN, IV_ABANDONED_ABORTED) is kept in
+        `iv_update_abandoned` until the next update starts. The time of the last IV change is forgotten
+        (`iv_changed_at` None) rather than left at the start, a change the mesh never made: a beacon of the mesh's
+        own update must not be refused as too early because of it, and a new start needs the index from a beacon of
+        the link instead (`check_iv_update_start`). Persisted at once. Unverified on air.
+        """
+        if not (
+            self.iv_update_active
+            and self.iv_update_origin == IV_ORIGIN_LOCAL
+            and not self.iv_update_confirmed
+        ):
+            return False
+        self.iv_update_abandoned, self.iv_changed_at = reason, None
+        self._iv_before_start = None
+        # the transmit index stays the old one: never refused
+        self._set_iv_state(self.iv_index - 1, False, None, durable=True)
         return True
+
+    def abort_iv_update(self, *, index_confirmed: bool) -> int:
+        """Abort the IV Update this client started before the mesh took it; return the index it went back to.
+
+        `IVUpdateRefused` (nothing changes): `not_started` unless one this client started is in progress, `taken`
+        once the mesh took it (it completes 96 h on: §3.11.5 has no way back), `iv_unknown` unless a beacon of the
+        current link named the mesh's state (`index_confirmed`, the caller's word: `ProxyClient.beacon_seen`) — an
+        unconfirmed update and such a beacon mean the proxy is at the old index, as one that had taken it would have
+        confirmed it. Then `abandon_iv_update` (IV_ABANDONED_ABORTED). Unverified on air.
+        """
+        if not (self.iv_update_active and self.iv_update_origin == IV_ORIGIN_LOCAL):
+            raise IVUpdateRefused(
+                "not_started", "no IV Update this client started is in progress"
+            )
+        if self.iv_update_confirmed:
+            raise IVUpdateRefused(
+                "taken", f"the mesh took the IV Update to IV index {self.iv_index}"
+            )
+        if not index_confirmed:
+            raise IVUpdateRefused(
+                "iv_unknown", "no beacon of this link named the mesh's IV index"
+            )
+        self.abandon_iv_update(IV_ABANDONED_ABORTED)
+        return self.iv_index
 
     def _too_early(self, iv_index: int, recovery: bool, now: float) -> bool:
         """Whether a change of the IV state to `iv_index` comes sooner than the spec allows (`apply_beacon`)."""
@@ -962,9 +1150,8 @@ class LocalState:
             )
         self.seq, self.seq_guard = self.rewind_point()
         self.seq_peak = self.seq
-        self.iv_index, self.iv_update_active, self.iv_known = iv_index, False, False
+        self.iv_known = False
         self.rpl = {src: e for src, e in self.rpl.items() if e[0] <= iv_index}
-        self._iv_refused.clear()
-        self.persist()
-        self._backup(force=True)
+        # the transmit index goes back: never refused
+        self._set_iv_state(iv_index, False, None)
         return self.seq

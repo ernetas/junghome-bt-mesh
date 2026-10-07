@@ -127,6 +127,9 @@ class SeqRecord(TypedDict, total=False):
     iv_update_origin: str
     iv_update_started_at: float
     iv_update_confirmed: bool
+    iv_update_confirmed_at: float
+    iv_update_abandoned: str
+    mesh_iv_changed_at: float
     clean: bool
     address_shared: list[int]
     written_at: float
@@ -163,14 +166,30 @@ def _utc(timestamp: float | None) -> str | None:
     )
 
 
-def iv_update_summary(state: LocalState) -> dict[str, Any]:
-    """Describe the last IV Update of `state`, as the `start_iv_update` action answers and the diagnostics show it.
+def local_time(timestamp: float | None, unknown: str = "") -> str:
+    """Return a wall-clock time as a message shows it: local, to the second; `unknown` for None."""
+    if timestamp is None:
+        return unknown
+    return (
+        dt_util.as_local(dt_util.utc_from_timestamp(timestamp))
+        .replace(microsecond=0)
+        .isoformat(sep=" ")
+    )
 
-    Who started it (`home_assistant`, `beacon`; None when none was seen since this was kept), when, whether the
-    mesh took one Home Assistant started (`LocalState.iv_update_confirmed`), whether it is still in progress, and the
-    window Mesh Protocol 1.1 §3.11.5 gives its return to Normal Operation: 96 to 144 hours after the start.
+
+def iv_update_summary(state: LocalState) -> dict[str, Any]:
+    """Describe the last IV Update of `state`, as the IV Update actions answer and the diagnostics show it.
+
+    Who started it (`home_assistant`, `beacon`; None when none was seen since this was kept), when, whether and when
+    the mesh took one Home Assistant started (`LocalState.iv_update_confirmed`, `iv_update_confirmed_at`), whether it
+    is still in progress, and the window Mesh Protocol 1.1 §3.11.5 gives its return to Normal Operation: 96 to 144
+    hours after the mesh took it (review-5 P5-1; unknown until then). While one Home Assistant started waits for the
+    mesh, `waiting_for_mesh_until` says when it is given up (144 hours after the start, review-5 P5-3);
+    `abandoned` says why one was (`not_taken`, `aborted`). `mesh_iv_changed_at`: the last change of the mesh's IV
+    state its beacons showed (`LocalState.mesh_iv_changed_at`).
     """
-    started = state.iv_update_started_at
+    started, taken = state.iv_update_started_at, state.iv_update_confirmed_at
+    waiting = state.mesh_iv_index != state.iv_index  # only while one of ours waits
     return {
         "started_by": {
             IV_ORIGIN_LOCAL: "home_assistant",
@@ -178,13 +197,19 @@ def iv_update_summary(state: LocalState) -> dict[str, Any]:
         }.get(state.iv_update_origin or ""),
         "started_at": _utc(started),
         "confirmed": state.iv_update_confirmed,
+        "confirmed_at": _utc(taken),
         "in_progress": state.iv_update_active,
         "normal_operation_from": _utc(
-            None if started is None else started + IV_UPDATE_MIN_STATE
+            None if taken is None else taken + IV_UPDATE_MIN_STATE
         ),
         "normal_operation_by": _utc(
-            None if started is None else started + IV_UPDATE_MAX_STATE
+            None if taken is None else taken + IV_UPDATE_MAX_STATE
         ),
+        "waiting_for_mesh_until": _utc(
+            started + IV_UPDATE_MAX_STATE if waiting and started is not None else None
+        ),
+        "abandoned": state.iv_update_abandoned,
+        "mesh_iv_changed_at": _utc(state.mesh_iv_changed_at),
     }
 
 

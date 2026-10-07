@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Ei lähetetty: {node} vastasi viestiin {message} arvolla {found}, mutta mesh-verkon viennissä on {expected} (muita eroja: {others}). Asennusta on muutettu mesh-verkon viennin jälkeen (JUNG HOME -sovelluksessa, laitteen nollauksella tai aiemmalla toiminnolla, joka pysähtyi kesken), ja suunnitelma korvaisi sen, mitä vienti ei enää kuvaa. Vie projekti sovelluksesta uudelleen tai anna Home Assistantin ottaa yhdyskäytävän vienti käyttöön ja suorita toiminto uudelleen; asetuksella `force` se suoritetaan ilman tätä tarkistusta. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant ei ole vielä kuullut mesh-verkon IV-indeksiä laitteelta, jonka kautta se on yhdistetty; yritä hetken kuluttua uudelleen. Mesh-verkon IV-tilan viimeisin muutos, jonka Home Assistant näki majakassa: {mesh_changed}. Laite hylkää IV Updaten 96 tunnin kuluessa omasta viimeisimmästään."
+    },
+    "start_iv_update_too_early": {
+      "message": "IV Update alkoi tai päättyi mesh-verkossa alle 96 tuntia sitten (IV-indeksi on {iv_index}): uuden voi aloittaa {not_before} alkaen. Mesh-verkon IV-tilan viimeisin muutos, jonka Home Assistant näki majakassa: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "IV Updaten keskeyttäminen palauttaa Home Assistantin IV-indeksiin, jossa mesh-verkko on: lisää kutsuun \"confirm: true\" tehdäksesi sen."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Mikään Home Assistantin aloittama IV Update ei odota mesh-verkkoa (IV-indeksi on {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Mesh-verkko on ottanut IV Updaten IV-indeksiin {iv_index}, joten sitä ei voi enää keskeyttää: mesh-verkko palaa normaaliin toimintaan 96–144 tuntia sen jälkeen, kun se otti sen."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant ei ole vielä kuullut mesh-verkon IV-indeksiä laitteelta, jonka kautta se on yhdistetty, joten se ei tiedä, ottiko mesh-verkko IV Updaten; yritä hetken kuluttua uudelleen."
+    },
     "download_export_no_session": {
       "message": "Latauslinkki tehdään sitä pyytävälle ylläpitäjälle: suorita toiminto Home Assistantin käyttöliittymästä (Kehittäjätyökalut → Toiminnot) tai sen API:n kautta ylläpitäjän tunnuksella, ei automaatiosta."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "JUNG HOME -mesh-verkon järjestysnumerot vähissä",
       "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Lähettäjä ei pääse tämän alueen lopun yli, ennen kuin mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update). Bluetooth Mesh edellyttää, että laite, jonka numerot käyvät vähiin, aloittaa tämän päivityksen itse; vielä ei tiedetä, tekevätkö JUNG HOME -laitteet niin. Home Assistant seuraa IV Update -päivitystä, ja ylläpitäjä voi antaa sen aloittaa sellaisen toiminnolla `junghome_ble.start_iv_update` (sitä ei voi perua; ei vielä kokeiltu käytössä). Jokainen laitteen uudelleenkäynnistys (sähkökatko, lauennut sulake) siirtää sen järjestysnumerot kauas eteenpäin, joten laite, joka menettää usein virtansa, käyttää numeronsa vähiin ensimmäisenä. Ongelma poistuu itsestään päivityksen jälkeen."
+    },
+    "iv_update_not_taken": {
+      "title": "JUNG HOME -mesh-verkko ei ottanut IV Updatea",
+      "description": "Home Assistant aloitti {started} mesh-verkon {title} IV Updaten IV-indeksiin {iv_index}, eikä mesh-verkko ottanut sitä 144 tunnin kuluessa: laite, jonka kautta Home Assistant on yhdistetty, ilmoittaa yhä IV-indeksin {mesh}. Home Assistant on palannut IV-indeksiin {mesh} ja normaaliin toimintaan; se ei lähettänyt mitään uudella indeksillä, joten mitään ei menetetä. Laite hylkää IV Updaten 96 tunnin kuluessa omasta viimeisimmästään, eikä sitä, ottavatko JUNG HOME -laitteet lainkaan sellaista Home Assistantilta, ole vielä kokeiltu käytössä. Niin kauan kuin korjaus *JUNG HOME -mesh-verkon järjestysnumerot vähissä* on auki, toiminto `junghome_ble.start_iv_update` voi yrittää myöhemmin uudelleen. Ongelma poistuu itsestään seuraavan IV Updaten myötä."
     },
     "iv_index_mismatch": {
       "title": "JUNG HOME -mesh-verkko on eri IV-indeksissä",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Asiakas",
           "description": "Nimi, jolla asiakas pyytää käyttöoikeutta, täsmälleen kuten se näkyy kohdassa `waiting`. Tyhjänä mitään ei hyväksytä."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Keskeytä IV Update",
+      "description": "Luopuu IV Updatesta, jonka Home Assistant aloitti ja jota mesh-verkko ei ole vielä ottanut: Home Assistant palaa IV-indeksiin, jossa mesh-verkko on, ja lakkaa ilmoittamasta uutta. Uudella indeksillä ei lähetetty mitään, joten mitään ei menetetä; Home Assistant luopuu sellaisesta päivityksestä itse 144 tuntia sen alun jälkeen. Hylätään, kun mesh-verkko on ottanut päivityksen (sitä ei silloin voi perua), ilman yhteyttä mesh-verkkoon ja ennen kuin Home Assistant on kuullut mesh-verkon IV-indeksin tällä yhteydellä. Vain ylläpitäjille. Ei vielä kokeiltu käytössä.",
+      "fields": {
+        "confirm": {
+          "name": "Vahvista",
+          "description": "Tarvitaan suorittamiseen."
         },
         "config_entry_id": {
           "name": "Verkko",

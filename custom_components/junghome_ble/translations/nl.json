@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Niet verzonden: {node} antwoordde op {message} met {found}, maar de mesh-export zegt {expected} ({others} andere verschillen). De installatie is gewijzigd nadat de mesh-export is gemaakt (in de JUNG HOME-app, door een reset van een apparaat of door een eerdere actie die halverwege stopte), en het plan zou overschrijven wat de export niet meer beschrijft. Exporteer het project opnieuw vanuit de app, of laat Home Assistant de export van de gateway overnemen, en voer de actie opnieuw uit; met `force` loopt ze zonder deze controle. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant heeft de IV-index van de mesh nog niet gehoord van het apparaat waarmee het verbonden is; probeer het zo opnieuw. De laatste wijziging van de IV-toestand van de mesh die Home Assistant in een beacon zag: {mesh_changed}. Een apparaat weigert een IV Update binnen 96 uur na zijn eigen laatste."
+    },
+    "start_iv_update_too_early": {
+      "message": "Een IV Update is minder dan 96 uur geleden in de mesh begonnen of geëindigd (de IV-index is {iv_index}): een nieuwe kan vanaf {not_before} worden gestart. De laatste wijziging van de IV-toestand van de mesh die Home Assistant in een beacon zag: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Het afbreken van de IV Update brengt Home Assistant terug naar de IV-index waarop de mesh staat: voeg \"confirm: true\" aan de aanroep toe om het te doen."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Geen IV Update die Home Assistant startte, wacht op de mesh (de IV-index is {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "De mesh heeft de IV Update naar IV-index {iv_index} overgenomen, dus die kan niet meer worden afgebroken: de mesh keert 96 tot 144 uur na de overname terug naar normaal bedrijf."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant heeft de IV-index van de mesh nog niet gehoord van het apparaat waarmee het verbonden is, dus kan het niet zeggen of de mesh de IV Update heeft overgenomen; probeer het zo opnieuw."
+    },
     "download_export_no_session": {
       "message": "De downloadlink wordt gemaakt voor de beheerder die erom vraagt: voer de actie uit vanuit de interface van Home Assistant (Ontwikkelhulpmiddelen → Acties) of via de API met het token van een beheerder, niet vanuit een automatisering."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Volgnummers van de JUNG HOME-mesh raken op",
       "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Een zender kan niet voorbij het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update). Bluetooth Mesh verwacht dat een apparaat waarvan de nummers opraken die update zelf start; of JUNG HOME-apparaten dat doen, is nog niet bekend. Home Assistant volgt een IV Update, en een beheerder kan er een laten starten met de actie `junghome_ble.start_iv_update` (kan niet ongedaan worden gemaakt; nog niet in de praktijk getest). Elke herstart van een apparaat (een stroomstoring, een uitgeschakelde automaat) laat zijn volgnummers ver vooruit springen, zodat een apparaat dat vaak zonder stroom valt als eerste zonder nummers raakt. Het probleem verdwijnt vanzelf na de update."
+    },
+    "iv_update_not_taken": {
+      "title": "De JUNG HOME-mesh heeft de IV Update niet overgenomen",
+      "description": "Home Assistant startte op {started} een IV Update van de mesh {title} naar IV-index {iv_index}, en de mesh heeft die niet binnen 144 uur overgenomen: het apparaat waarmee Home Assistant verbonden is, meldt nog steeds IV-index {mesh}. Home Assistant is teruggegaan naar IV-index {mesh} en normaal bedrijf; het heeft niets onder de nieuwe index verzonden, dus er gaat niets verloren. Een apparaat weigert een IV Update binnen 96 uur na zijn eigen laatste, en of JUNG HOME-apparaten er überhaupt een van Home Assistant overnemen, is nog niet in de praktijk getest. Zolang de reparatie *Volgnummers van de JUNG HOME-mesh raken op* openstaat, kan de actie `junghome_ble.start_iv_update` het later opnieuw proberen. Het probleem verdwijnt vanzelf met de volgende IV Update."
     },
     "iv_index_mismatch": {
       "title": "De JUNG HOME-mesh staat op een andere IV-index",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Client",
           "description": "De naam waaronder de client toegang vraagt, precies zoals vermeld onder `waiting`. Leeg gelaten wordt niets goedgekeurd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV Update afbreken",
+      "description": "Geeft een IV Update op die Home Assistant startte en die de mesh nog niet heeft overgenomen: Home Assistant gaat terug naar de IV-index waarop de mesh staat en stopt met het aankondigen van de nieuwe. Onder de nieuwe index is niets verzonden, dus er gaat niets verloren; Home Assistant geeft zo'n update 144 uur na de start zelf op. Geweigerd zodra de mesh de update heeft overgenomen (dan kan die niet ongedaan worden gemaakt), zonder verbinding met de mesh en voordat Home Assistant de IV-index van de mesh op die verbinding heeft gehoord. Alleen voor beheerders. Nog niet in de praktijk getest.",
+      "fields": {
+        "confirm": {
+          "name": "Bevestigen",
+          "description": "Nodig om het uit te voeren."
         },
         "config_entry_id": {
           "name": "Mesh-netwerk",

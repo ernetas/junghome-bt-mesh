@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Netrimis: {node} a răspuns la {message} cu {found}, dar exportul rețelei mesh indică {expected} (alte diferențe: {others}). Instalația s-a schimbat după crearea exportului rețelei mesh (în aplicația JUNG HOME, prin resetarea unui dispozitiv sau printr-o acțiune anterioară oprită la jumătate), iar planul ar suprascrie ce exportul nu mai descrie. Exportă din nou proiectul din aplicație sau lasă Home Assistant să preia exportul gateway-ului și rulează din nou acțiunea; cu `force` rulează fără această verificare. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "Home Assistant nu a auzit încă indexul IV al rețelei mesh de la dispozitivul prin care este conectat; încercați din nou peste un moment. Ultima schimbare a stării IV a rețelei mesh pe care Home Assistant a văzut-o într-un beacon: {mesh_changed}. Un dispozitiv refuză un IV Update în 96 de ore de la ultimul său."
+    },
+    "start_iv_update_too_early": {
+      "message": "Un IV Update a început sau s-a încheiat în rețeaua mesh acum mai puțin de 96 de ore (indexul IV este {iv_index}): unul nou poate fi pornit de la {not_before}. Ultima schimbare a stării IV a rețelei mesh pe care Home Assistant a văzut-o într-un beacon: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Anularea IV Update readuce Home Assistant la indexul IV la care se află rețeaua mesh: adăugați \"confirm: true\" la apel pentru a o face."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Niciun IV Update pornit de Home Assistant nu așteaptă rețeaua mesh (indexul IV este {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "Rețeaua mesh a preluat IV Update la indexul IV {iv_index}, așa că nu mai poate fi anulat: rețeaua mesh revine la funcționarea normală la 96 până la 144 de ore după ce l-a preluat."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "Home Assistant nu a auzit încă indexul IV al rețelei mesh de la dispozitivul prin care este conectat, așa că nu poate spune dacă rețeaua mesh a preluat IV Update; încercați din nou peste un moment."
+    },
     "download_export_no_session": {
       "message": "Linkul de descărcare este creat pentru administratorul care îl cere: rulează acțiunea din interfața Home Assistant (Instrumente pentru dezvoltatori → Acțiuni) sau prin API-ul său cu tokenul unui administrator, nu dintr-o automatizare."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate",
       "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Un expeditor nu poate trece de capătul acestui spațiu până când rețeaua mesh nu trece la următorul index IV (un IV Update). Bluetooth Mesh prevede ca un dispozitiv căruia i se termină numerele să pornească singur această actualizare; nu se știe încă dacă dispozitivele JUNG HOME fac acest lucru. Home Assistant urmează un IV Update, iar un administrator îl poate face să pornească unul cu acțiunea `junghome_ble.start_iv_update` (nu poate fi anulat; neverificat încă în funcționare reală). Fiecare repornire a unui dispozitiv (o pană de curent, o siguranță declanșată) îi mută numerele de secvență mult înainte, așa că un dispozitiv care rămâne des fără curent este primul care rămâne fără numere. Problema dispare de la sine după actualizare."
+    },
+    "iv_update_not_taken": {
+      "title": "Rețeaua mesh JUNG HOME nu a preluat IV Update",
+      "description": "Home Assistant a pornit la {started} un IV Update al rețelei mesh {title} la indexul IV {iv_index}, iar rețeaua mesh nu l-a preluat în 144 de ore: dispozitivul prin care este conectat Home Assistant anunță în continuare indexul IV {mesh}. Home Assistant a revenit la indexul IV {mesh} și la funcționarea normală; nu a trimis nimic cu noul index, deci nu se pierde nimic. Un dispozitiv refuză un IV Update în 96 de ore de la ultimul său, iar dacă dispozitivele JUNG HOME preiau vreunul de la Home Assistant este neverificat încă în funcționare reală. Cât timp reparația *Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate* este deschisă, acțiunea `junghome_ble.start_iv_update` poate încerca din nou mai târziu. Problema dispare de la sine odată cu următorul IV Update."
     },
     "iv_index_mismatch": {
       "title": "Rețeaua mesh JUNG HOME are alt index IV",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Client",
           "description": "Numele sub care clientul cere acces, exact cum este listat sub `waiting`. Lăsat gol, nu se aprobă nimic."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "Anulează IV Update",
+      "description": "Renunță la un IV Update pe care Home Assistant l-a pornit și pe care rețeaua mesh nu l-a preluat încă: Home Assistant revine la indexul IV la care se află rețeaua mesh și nu mai anunță noul index. Nu s-a trimis nimic cu noul index, deci nu se pierde nimic; Home Assistant renunță singur la o astfel de actualizare la 144 de ore după pornire. Refuzat după ce rețeaua mesh a preluat actualizarea (atunci nu mai poate fi anulată), fără conexiune la rețeaua mesh și înainte ca Home Assistant să fi auzit indexul IV al rețelei mesh pe acea conexiune. Doar pentru administratori. Neverificat încă în funcționare reală.",
+      "fields": {
+        "confirm": {
+          "name": "Confirmare",
+          "description": "Necesar pentru a efectua acțiunea."
         },
         "config_entry_id": {
           "name": "Rețea mesh",

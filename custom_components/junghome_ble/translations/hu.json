@@ -1627,6 +1627,24 @@
     "service_preflight_differs": {
       "message": "Nincs elküldve: {node} a(z) {message} üzenetre ezt válaszolta: {found}, de a mesh-export szerint {expected} (további eltérések: {others}). A telepítés a mesh-export elkészülte után megváltozott (a JUNG HOME alkalmazásban, egy eszköz visszaállításával vagy egy korábbi, félúton leállt művelet miatt), és a terv felülírná azt, amit az export már nem ír le. Exportálja újra a projektet az alkalmazásból, vagy hagyja, hogy a Home Assistant átvegye az átjáró exportját, majd futtassa újra a műveletet; a `force` beállítással ellenőrzés nélkül fut. {applied}"
     },
+    "start_iv_update_iv_unknown": {
+      "message": "A Home Assistant még nem hallotta a mesh hálózat IV-indexét attól az eszköztől, amelyen keresztül csatlakozik; próbálja újra egy pillanat múlva. A mesh hálózat IV-állapotának utolsó változása, amelyet a Home Assistant beaconben látott: {mesh_changed}. Egy eszköz a saját utolsó IV Update-je után 96 órán belül elutasít egy újat."
+    },
+    "start_iv_update_too_early": {
+      "message": "Egy IV Update kevesebb mint 96 órája kezdődött vagy ért véget a mesh hálózatban (az IV-index {iv_index}): új indítható ettől: {not_before}. A mesh hálózat IV-állapotának utolsó változása, amelyet a Home Assistant beaconben látott: {mesh_changed}."
+    },
+    "abort_iv_update_needs_confirm": {
+      "message": "Az IV Update megszakítása visszaviszi a Home Assistantot arra az IV-indexre, amelyen a mesh hálózat van: ehhez adja hozzá a hívához a \"confirm: true\" értéket."
+    },
+    "abort_iv_update_not_started": {
+      "message": "Egyetlen, a Home Assistant által indított IV Update sem vár a mesh hálózatra (az IV-index {iv_index})."
+    },
+    "abort_iv_update_taken": {
+      "message": "A mesh hálózat átvette az IV Update-et a(z) {iv_index} IV-indexre, így az már nem szakítható meg: a mesh hálózat az átvétel után 96–144 órával tér vissza a normál működésre."
+    },
+    "abort_iv_update_iv_unknown": {
+      "message": "A Home Assistant még nem hallotta a mesh hálózat IV-indexét attól az eszköztől, amelyen keresztül csatlakozik, ezért nem tudja megmondani, hogy a mesh hálózat átvette-e az IV Update-et; próbálja újra egy pillanat múlva."
+    },
     "download_export_no_session": {
       "message": "A letöltési hivatkozás az azt kérő rendszergazda számára készül: futtasd a műveletet a Home Assistant felületéről (Fejlesztői eszközök → Műveletek) vagy az API-ján keresztül egy rendszergazda tokenjével, ne automatizálásból."
     },
@@ -2119,6 +2137,10 @@
     "sequence_space_low": {
       "title": "Fogynak a JUNG HOME mesh hálózat sorszámai",
       "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Egy küldő nem léphet túl e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update). A Bluetooth Mesh elvárja, hogy az az eszköz, amelynek fogynak a sorszámai, maga indítsa el ezt a frissítést; hogy a JUNG HOME eszközök ezt megteszik-e, egyelőre nem ismert. A Home Assistant követi az IV Update-et, és egy rendszergazda a(z) `junghome_ble.start_iv_update` művelettel el is indíttathat vele egyet (nem vonható vissza; éles üzemben még nem ellenőrzött). Egy eszköz minden újraindítása (áramszünet, leoldott kismegszakító) messze előre ugratja a sorszámait, így elsőként annak az eszköznek fogynak el a sorszámai, amely gyakran veszíti el a tápellátását. A probléma magától megszűnik a frissítés után."
+    },
+    "iv_update_not_taken": {
+      "title": "A JUNG HOME mesh hálózat nem vette át az IV Update-et",
+      "description": "A Home Assistant {started} időpontban IV Update-et indított a(z) {title} mesh hálózatban a(z) {iv_index} IV-indexre, és a mesh hálózat 144 órán belül nem vette át: az eszköz, amelyen keresztül a Home Assistant csatlakozik, továbbra is a(z) {mesh} IV-indexet hirdeti. A Home Assistant visszatért a(z) {mesh} IV-indexre és a normál működésre; az új indexszel semmit sem küldött, így semmi sem veszett el. Egy eszköz a saját utolsó IV Update-je után 96 órán belül elutasít egy újat, és hogy a JUNG HOME eszközök egyáltalán átvesznek-e egyet a Home Assistanttól, éles üzemben még nem ellenőrzött. Amíg a(z) *Fogynak a JUNG HOME mesh hálózat sorszámai* javítás nyitva van, a(z) `junghome_ble.start_iv_update` művelet később újra megpróbálhatja. A probléma a következő IV Update-tel magától megszűnik."
     },
     "iv_index_mismatch": {
       "title": "A JUNG HOME mesh hálózat más IV-indexen áll",
@@ -2867,6 +2889,20 @@
         "client": {
           "name": "Kliens",
           "description": "A név, amelyen a kliens hozzáférést kér, pontosan úgy, ahogyan a `waiting` alatt szerepel. Üresen hagyva semmit nem hagy jóvá."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "abort_iv_update": {
+      "name": "IV Update megszakítása",
+      "description": "Feladja azt az IV Update-et, amelyet a Home Assistant indított, de a mesh hálózat még nem vett át: a Home Assistant visszatér arra az IV-indexre, amelyen a mesh hálózat van, és abbahagyja az új hirdetését. Az új indexszel semmit sem küldött, így semmi sem veszett el; egy ilyen frissítést a Home Assistant az indítás után 144 órával magától is felad. Elutasítva, ha a mesh hálózat már átvette a frissítést (akkor nem vonható vissza), a mesh hálózattal való kapcsolat nélkül, és mielőtt a Home Assistant ezen a kapcsolaton hallotta volna a mesh hálózat IV-indexét. Csak rendszergazdáknak. Éles üzemben még nem ellenőrzött.",
+      "fields": {
+        "confirm": {
+          "name": "Megerősítés",
+          "description": "A végrehajtáshoz szükséges."
         },
         "config_entry_id": {
           "name": "Mesh hálózat",

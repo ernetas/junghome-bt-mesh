@@ -923,6 +923,18 @@ start_iv_update:
         config_entry:
           integration: junghome_ble
 
+abort_iv_update:
+  fields:
+    confirm:
+      required: true
+      default: false
+      selector:
+        boolean:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: junghome_ble
+
 download_export:
   fields:
     device:

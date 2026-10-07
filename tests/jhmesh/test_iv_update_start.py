@@ -305,10 +305,12 @@ def test_the_update_completes_96_hours_later_once_confirmed() -> None:
         now=started + IV_UPDATE_MAX_STATE
     )  # never taken by the mesh: never
     assert not state.complete_iv_update(now=started + IV_UPDATE_MAX_STATE)
+    # the 96 h count from when the mesh took it (review-5 P5-1)
     state.apply_beacon(6, True, now=started + 1)
-    assert not state.iv_update_due(now=started + IV_UPDATE_MIN_STATE - 1)
-    assert state.iv_update_due(now=started + IV_UPDATE_MIN_STATE)
-    assert state.complete_iv_update(now=started + IV_UPDATE_MIN_STATE)
+    assert state.iv_update_confirmed_at == started + 1
+    assert not state.iv_update_due(now=started + IV_UPDATE_MIN_STATE)
+    assert state.iv_update_due(now=started + 1 + IV_UPDATE_MIN_STATE)
+    assert state.complete_iv_update(now=started + 1 + IV_UPDATE_MIN_STATE)
     assert (state.iv_index, state.iv_update_active, state.tx_iv_index, state.seq) == (
         6,
         False,
@@ -316,7 +318,7 @@ def test_the_update_completes_96_hours_later_once_confirmed() -> None:
         0,
     )
     assert state.seq_peak == 0x123456  # what a rewind would have to stay above
-    assert state.iv_changed_at == started + IV_UPDATE_MIN_STATE
+    assert state.iv_changed_at == started + 1 + IV_UPDATE_MIN_STATE
     assert not state.iv_update_due(now=started + IV_UPDATE_MAX_STATE)
     # the record of who started the last update stays for the diagnostics
     assert (state.iv_update_origin, state.iv_update_started_at) == (
@@ -601,3 +603,372 @@ async def test_the_completion_beacon_lost_with_the_link_is_only_logged(
     await settle(5)
     assert not started_state.iv_update_active  # completed all the same
     await proxy.detach()
+
+
+# ----------------------------------------------------------------------------- review 5: the follow-ups
+
+
+def test_a_late_confirmation_waits_96_hours_from_itself() -> None:
+    """Review-5 P5-1: the proxy took it 95 h after the start (refusing it within its own 96 h first): 96 more."""
+    started = T0 + IV_UPDATE_MIN_STATE
+    state = known(5)
+    state.start_iv_update(now=started)
+    state.apply_beacon(6, True, now=started + 95 * HOUR)
+    assert state.iv_update_confirmed_at == started + 95 * HOUR
+    assert not state.iv_update_due(now=started + IV_UPDATE_MIN_STATE)
+    assert not state.complete_iv_update(now=started + 190 * HOUR)
+    assert state.complete_iv_update(now=started + 191 * HOUR)
+    # an update a beacon started was taken when it started
+    beaconed = known(5)
+    beaconed.apply_beacon(6, True, now=started)
+    assert beaconed.iv_update_confirmed_at == started
+
+
+def test_a_record_confirmed_before_the_time_was_kept_counts_from_its_start(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "state.json"
+    record = {
+        "src": f"{OUR_SRC:04X}",
+        "seq": 10,
+        "iv_index": 6,
+        "iv_update_active": True,
+        "iv_known": True,
+        "iv_changed_at": T0,
+        "iv_update_origin": "local",
+        "iv_update_started_at": T0,
+        "iv_update_confirmed": True,
+    }
+    path.write_text(json.dumps(record))
+    state = LocalState(path, OUR_SRC)
+    assert state.iv_update_confirmed_at == T0  # what that version counted from
+    assert state.iv_update_due(now=T0 + IV_UPDATE_MIN_STATE)
+    state.close()
+    # unconfirmed: nothing to count from
+    path.write_text(json.dumps({**record, "iv_update_confirmed": False}))
+    state = LocalState(path, OUR_SRC)
+    assert state.iv_update_confirmed_at is None
+    state.close()
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        {"iv_update_abandoned": "lost"},
+        {"iv_update_confirmed_at": -1},
+        {"mesh_iv_changed_at": "yesterday"},
+    ],
+)
+def test_a_record_with_an_unusable_update_outcome_is_refused(
+    fields: dict[str, Any],
+) -> None:
+    with pytest.raises((ValueError, TypeError)):
+        LocalState.parse_record({"src": "0D00", "seq": 0, **fields})
+
+
+def test_the_outcome_survives_a_restart(tmp_path: Path) -> None:
+    path = tmp_path / "state.json"
+    state = known(5, path=path)
+    state.apply_beacon(5, False, now=T0)
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE)
+    state.apply_beacon(6, True, now=T0 + IV_UPDATE_MIN_STATE + 1)
+    state.persist()
+    state.close()
+    again = LocalState(path, OUR_SRC)
+    assert again.iv_update_confirmed_at == T0 + IV_UPDATE_MIN_STATE + 1
+    assert again.mesh_iv_changed_at == T0 + IV_UPDATE_MIN_STATE + 1
+    again.close()
+
+
+def test_the_meshs_last_iv_change_is_a_beacon_ahead_of_the_last() -> None:
+    """The mesh's last IV change seen in a beacon, which the refusals name (review-5 P5 improvement)."""
+    state = known(5, at=None)
+    state.apply_beacon(5, False, now=T0)  # where the mesh is: no change
+    assert state.mesh_iv_changed_at is None
+    state.apply_beacon(4, False, now=T0 + 1)  # a node behind: no change either
+    state.apply_beacon(5, False, now=T0 + 2)
+    assert state.mesh_iv_changed_at is None
+    # a change this state does not follow (too early after its own start) is the mesh's all the same
+    state.start_iv_update(now=T0 + 3, index_confirmed=True)
+    state.apply_beacon(6, True, now=T0 + 4)
+    assert state.mesh_iv_changed_at == T0 + 4
+    state.apply_beacon(6, True, now=T0 + 5)  # the same again
+    assert state.mesh_iv_changed_at == T0 + 4
+    # out of reach (more than 42 ahead): not noted
+    state.apply_beacon(100, False, now=T0 + 6)
+    assert state.mesh_iv_changed_at == T0 + 4
+
+
+def test_the_mesh_index_is_the_old_one_while_ours_waits() -> None:
+    """Review-5 S5-3: what `sequence_space_low` judges while the mesh has not taken our update."""
+    state = known(5)
+    assert state.mesh_iv_index == 5
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE)
+    assert state.mesh_iv_index == 5
+    state.apply_beacon(6, True, now=T0 + IV_UPDATE_MIN_STATE + 1)
+    assert state.mesh_iv_index == 6
+
+
+def test_an_update_the_mesh_does_not_take_is_overdue_after_144_hours() -> None:
+    """Review-5 P5-3: §3.11.5's bound on IV Update in Progress."""
+    started = T0 + IV_UPDATE_MIN_STATE
+    state = known(5)
+    assert not state.iv_update_overdue(now=started)
+    state.start_iv_update(now=started)
+    assert not state.iv_update_overdue(now=started + IV_UPDATE_MAX_STATE - 1)
+    assert state.iv_update_overdue(now=started + IV_UPDATE_MAX_STATE)
+    state.apply_beacon(6, True, now=started + IV_UPDATE_MAX_STATE)  # taken after all
+    assert not state.iv_update_overdue(now=started + 10 * IV_UPDATE_MAX_STATE)
+
+
+def test_giving_up_goes_back_to_the_old_index_and_keeps_counting(
+    tmp_path: Path,
+) -> None:
+    """Nothing was sent under the new index: the sequence carries on under the old one, no nonce twice."""
+    path = tmp_path / "state.json"
+    started = T0 + IV_UPDATE_MIN_STATE
+    state = known(5, path=path)
+    state.start_iv_update(now=started)
+    sent = {(state.tx_iv_index, state.next_seq()) for _ in range(5)}
+    assert state.abandon_iv_update(state_mod.IV_ABANDONED_NOT_TAKEN)
+    assert (state.iv_index, state.iv_update_active, state.tx_iv_index) == (5, False, 5)
+    assert state.iv_update_abandoned == state_mod.IV_ABANDONED_NOT_TAKEN
+    assert state.iv_changed_at is None  # a change the mesh never made is not kept
+    assert not {(state.tx_iv_index, state.next_seq()) for _ in range(5)} & sent
+    stored = json.loads(path.read_text())
+    assert (stored["iv_index"], stored["iv_update_abandoned"]) == (5, "not_taken")
+    assert "iv_changed_at" not in stored
+    # nothing left to give up
+    assert not state.abandon_iv_update(state_mod.IV_ABANDONED_NOT_TAKEN)
+    # a new start needs the index from a beacon of the link, and clears the outcome
+    with pytest.raises(IVUpdateRefused, match="confirmed by a beacon"):
+        state.start_iv_update(now=started + 1)
+    state.start_iv_update(now=started + 1, index_confirmed=True)
+    assert state.iv_update_abandoned is None
+    state.close()
+
+
+def test_a_beacon_of_the_mesh_clears_the_outcome() -> None:
+    state = known(5)
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE)
+    state.abandon_iv_update(state_mod.IV_ABANDONED_NOT_TAKEN)
+    state.apply_beacon(5, False, now=T0 + IV_UPDATE_MAX_STATE)  # no move: kept
+    assert state.iv_update_abandoned == state_mod.IV_ABANDONED_NOT_TAKEN
+    assert state.apply_beacon(6, True, now=T0 + IV_UPDATE_MAX_STATE)  # the mesh's own
+    assert state.iv_update_abandoned is None
+
+
+def test_one_confirmed_or_started_by_a_beacon_is_not_given_up() -> None:
+    state = known(5)
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE)
+    state.apply_beacon(6, True, now=T0 + IV_UPDATE_MIN_STATE + 1)
+    assert not state.abandon_iv_update(state_mod.IV_ABANDONED_NOT_TAKEN)
+    beaconed = known(5)
+    beaconed.apply_beacon(6, True, now=T0 + IV_UPDATE_MIN_STATE)
+    assert not beaconed.abandon_iv_update(state_mod.IV_ABANDONED_ABORTED)
+    assert beaconed.iv_update_active
+
+
+def test_abort_is_refused_unless_ours_waits_and_a_beacon_said_where_the_mesh_is() -> (
+    None
+):
+    state = known(5)
+    with pytest.raises(IVUpdateRefused) as refused:
+        state.abort_iv_update(index_confirmed=True)
+    assert refused.value.reason == "not_started"
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE)
+    with pytest.raises(IVUpdateRefused) as refused:
+        state.abort_iv_update(index_confirmed=False)
+    assert refused.value.reason == "iv_unknown"
+    assert state.iv_update_active
+    assert state.abort_iv_update(index_confirmed=True) == 5
+    assert state.iv_update_abandoned == state_mod.IV_ABANDONED_ABORTED
+    # taken by the mesh: no way back (§3.11.5)
+    state.start_iv_update(now=T0 + IV_UPDATE_MIN_STATE + 1, index_confirmed=True)
+    state.apply_beacon(6, True, now=T0 + IV_UPDATE_MIN_STATE + 2)
+    with pytest.raises(IVUpdateRefused) as refused:
+        state.abort_iv_update(index_confirmed=True)
+    assert refused.value.reason == "taken"
+    assert "IV index 6" in str(refused.value)
+
+
+def restored_mid_update(path: Path) -> LocalState:
+    """A record restored from a backup taken during our own IV Update 5 → 6 (confirmed), as the integration
+    rewrites one (`seq_store._async_skip_restored_record`): far ahead, the guard pending the first beacon."""
+    path.write_text(
+        json.dumps(
+            {
+                "src": f"{OUR_SRC:04X}",
+                "seq": 1_050_088,
+                "iv_index": 6,
+                "iv_update_active": True,
+                "iv_known": True,
+                "iv_changed_at": T0,
+                "iv_update_origin": "local",
+                "iv_update_started_at": T0,
+                "iv_update_confirmed": True,
+                "iv_update_confirmed_at": T0,
+                "seq_guard": state_mod.SEQ_GUARD_FIRST_BEACON,
+            }
+        )
+    )
+    return LocalState(path, OUR_SRC)
+
+
+def test_a_restored_record_mid_update_does_not_complete_by_the_clock(
+    tmp_path: Path,
+) -> None:
+    """Review-5 S5-2: since the backup, Home Assistant completed the update and sent numbers under 6 from 0 on; the
+    restored record completing it by the clock restarted the counter at 0 there. Only a beacon may move it on."""
+    state = restored_mid_update(tmp_path / "state.json")
+    later = T0 + 30 * 24 * HOUR
+    assert not state.iv_update_due(now=later)
+    assert not state.complete_iv_update(now=later)
+    assert (state.tx_iv_index, state.seq_guard) == (5, state_mod.SEQ_GUARD_FIRST_BEACON)
+    # the rule itself, whatever the caller: no move of the transmit index forward past a pending guard
+    assert not state._set_iv_state(6, False, later)
+    assert state.tx_iv_index == 5
+    # the mesh's beacon names the index: the counter carries on under it
+    seq = state.seq
+    assert state.apply_beacon(6, False, now=later)
+    assert (state.tx_iv_index, state.seq, state.seq_guard) == (6, seq, 7)
+    state.close()
+
+
+def test_a_restored_record_mid_update_completes_after_a_beacon_names_the_index(
+    tmp_path: Path,
+) -> None:
+    """The mesh still in progress at 6: its beacon raises the guard to 7, and the completion then keeps counting."""
+    state = restored_mid_update(tmp_path / "state.json")
+    later = T0 + IV_UPDATE_MIN_STATE
+    assert not state.apply_beacon(
+        6, True, now=later
+    )  # the same state: only the guard moves
+    assert state.seq_guard == 7
+    seq = state.seq
+    assert state.complete_iv_update(now=later)
+    assert (state.tx_iv_index, state.seq) == (6, seq)
+    state.close()
+
+
+async def test_every_beacon_carries_the_key_refresh_phase(
+    linked: tuple[ProxyClient, FakeBleak], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review-5 P5-2: a key refresh that starts during the update; Phase 2 beacons are under the new key with the
+    flag (§3.10.3) — one under the new key without it tells a node in Phase 1 or 2 that the refresh is over."""
+    proxy, link = linked
+    await proxy.start_iv_update()
+    new = NetKeyMaterial.derive(bytes(range(16)))
+    phase = [1]
+    monkeypatch.setattr(ProxyClient, "key_refresh_phase", property(lambda _s: phase[0]))
+    monkeypatch.setattr(
+        ProxyClient,
+        "nk",
+        property(lambda _s: new if phase[0] == 2 else link.nk),
+    )
+    link.outgoing.clear()
+    await proxy._send_iv_beacon()  # Phase 1: the old key, no flag
+    old_key = parse_beacon(link.nk, link.outgoing[-1][1])
+    assert old_key is not None
+    assert (old_key.authenticated, old_key.key_refresh) == (True, False)
+    phase[0] = 2
+    await proxy._send_iv_beacon()  # Phase 2: the new key, the flag
+    new_key = parse_beacon(new, link.outgoing[-1][1])
+    assert new_key is not None
+    assert (new_key.authenticated, new_key.key_refresh, new_key.iv_update) == (
+        True,
+        True,
+        True,
+    )
+    await proxy.detach()
+
+
+async def test_an_update_not_taken_is_given_up_after_144_hours(
+    linked: tuple[ProxyClient, FakeBleak],
+    started_state: LocalState,
+    clock: Clock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Review-5 P5-3: the proxy keeps beaconing the old index; 144 h on the update is given up and the caller told."""
+    proxy, _link = linked
+    told: list[int] = []
+    proxy.on_iv_update_abandoned = lambda: told.append(started_state.iv_index)
+    await proxy.start_iv_update()
+    clock.now += IV_UPDATE_MAX_STATE - 1
+    await settle()
+    assert started_state.iv_update_active  # not yet
+    clock.now += 1
+    with caplog.at_level(logging.WARNING, logger="jhmesh"):
+        await settle()
+    assert "IV Update to IV index 6 given up" in caplog.text
+    assert (started_state.iv_index, started_state.iv_update_active) == (5, False)
+    assert started_state.iv_update_abandoned == state_mod.IV_ABANDONED_NOT_TAKEN
+    assert told == [5]
+    assert proxy._iv_task is not None
+    assert proxy._iv_task.done()
+    await proxy.detach()
+
+
+async def test_an_overdue_update_waits_for_a_beacon_of_the_link(
+    cdb: CDB, tmp_path: Path, fast: FastAsyncio, clock: Clock
+) -> None:
+    """Without a beacon of this link nothing says the mesh is still at the old index: it is not given up; no one
+    is told when nobody asked to be."""
+    state = known(5, path=tmp_path / "state.json")
+    state.start_iv_update(now=clock.now)
+    link = FakeBleak(cdb)
+    link.iv_index = 5
+    proxy = ProxyClient(cdb, state)
+    clock.now += IV_UPDATE_MAX_STATE
+    await proxy.attach(link)
+    await settle()
+    assert state.iv_update_active
+    link.send_beacon(iv_index=5)
+    await settle()
+    assert not state.iv_update_active
+    await proxy.detach()
+    state.close()
+
+
+async def test_abort_needs_a_link(cdb: CDB, started_state: LocalState) -> None:
+    proxy = ProxyClient(cdb, started_state)
+    with pytest.raises(ConnectionError):
+        proxy.abort_iv_update()
+
+
+async def test_abort_goes_back_and_the_beacons_stop(
+    linked: tuple[ProxyClient, FakeBleak],
+    started_state: LocalState,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    proxy, link = linked
+    await proxy.start_iv_update()
+    with caplog.at_level(logging.WARNING, logger="jhmesh"):
+        assert proxy.abort_iv_update() == 5
+    assert "IV Update aborted: back to IV index 5" in caplog.text
+    assert started_state.iv_update_abandoned == state_mod.IV_ABANDONED_ABORTED
+    await settle()
+    assert proxy._iv_task is not None
+    assert proxy._iv_task.done()
+    sent = len(beacons(link))
+    await settle()
+    assert len(beacons(link)) == sent
+    await proxy.detach()
+
+
+def test_a_recovery_into_the_meshs_next_update_is_the_meshs() -> None:
+    """Our update to 6 was taken; the link came back days later with the mesh in its own update to 7. The IV Index
+    Recovery lands in that one: it is the mesh's, and our old confirmation must not complete it at once (found by
+    the initiator state machine)."""
+    started = T0 + IV_UPDATE_MIN_STATE
+    state = known(5)
+    state.start_iv_update(now=started)
+    state.apply_beacon(6, True, now=started)
+    later = started + 200 * HOUR
+    assert state.apply_beacon(7, True, now=later)
+    assert (state.iv_index, state.iv_update_active, state.tx_iv_index) == (7, True, 6)
+    assert (state.iv_update_origin, state.iv_update_confirmed_at) == (
+        IV_ORIGIN_BEACON,
+        later,
+    )
+    assert not state.iv_update_due(now=later + IV_UPDATE_MAX_STATE)
