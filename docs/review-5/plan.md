@@ -131,4 +131,18 @@ files, a half-MAC scanner pattern (85); one node-row snapshot for the overview a
 
 ## Status
 
-Nothing landed yet.
+- **Wave 24 (briefs 78–85): done.** The restore skip follows each address's measured send rate and the backup's age,
+  refused with `restore_too_old` past the limit; allocation avoids every source and group heard on air (78). Home
+  Assistant's IV Update counts its 96 h from the mesh's confirmation, beacons carry the key-refresh phase, an update
+  the mesh never takes is given up at 144 h with a repair and `abort_iv_update`, one guarded rule for every IV-state
+  move (79). One room resolver and one reservation provider, scene channels refused as the app does, `skip_preflight`
+  split from `force` (M17), the smaller configurator fixes (80). Runtime fixes, `link_up`, heartbeats as link traffic
+  (81). Home Assistant fixes, `sequence_space_low` fixable, options without a reload, translations complete and
+  checked (82). Texts and docs: the integration's name, the download link's reach, device names in errors (83).
+  Ledger, a stale-row check, insert adoption, transitions as decided (M19), *Switches off at* from the run-on time
+  (84). Test helpers that fail loudly, `--history` content scan, host names, citations kept out (85).
+- **Wave 25 (brief 86): done.** The start decision in `seq_store`, imports from defining modules, shared Get / Status
+  matching, the `jhmesh` API down from 1161 to 891 names (M18), `jhmesh/sar.py` and `jhmesh/access.py`.
+- **Translations:** every English text changed since 1.4.0 re-translated; `tests/translation_sources.json` and
+  `tools/translation_sources.py` keep them in step from now on.
+- **Open:** decision M16 (rewrite the public history again); every new behaviour is unverified on air.
