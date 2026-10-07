@@ -6,6 +6,7 @@ run through the real proxy client: Get / Set, the Status matched by its header b
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from dataclasses import replace
@@ -1268,3 +1269,70 @@ async def test_listed_slot_found_free(
         )
     assert listed == {light(hass): {"schedules": []}}
     assert ((5, V.SUB_SCHEDULE) in asked) is (code == 3)
+
+
+async def _cancelled_at_the_action(
+    hass: HomeAssistant,
+    fake_link: FakeProxyLink,
+    write: Any,
+) -> None:
+    """Run the scheduler `write` in a task cancelled the moment its action Set reaches the element."""
+    scheduler = fake_link.scheduler
+    handle = scheduler.handle
+    task: asyncio.Task[Any] | None = None
+
+    def cancel_at_the_action(element: int, is_set: bool, p: bytes) -> bytes | None:
+        answer = handle(element, is_set, p)
+        if is_set and p[0] >> 4 == V.SUB_ACTION and task is not None:
+            task.cancel()  # while it waits for the Status, which does not come
+            return None
+        return answer
+
+    with patch.object(scheduler, "handle", cancel_at_the_action):
+        task = asyncio.ensure_future(write)
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+
+async def test_a_cancelled_create_frees_its_slot(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_scheduler: None,
+) -> None:
+    """Review-5 W5-5: an automation restarted (or Home Assistant stopping) in the middle of a new schedule: the
+    slot is freed again before the cancellation goes on, and the cache says so — no inactive slot nobody asked
+    for."""
+    hub = init_integration.runtime_data
+    sched = S.scheduler(hass, hub)
+    data = {"trigger": "time", "time": dt_time(7, 0), "days": ALL_DAYS}
+    on = V.Action(V.ACTION_SWITCH, on=True)
+    await _cancelled_at_the_action(
+        hass, fake_link, sched.create(LIGHT_DIMMER, data, on)
+    )
+    assert (LIGHT_DIMMER, 0) not in fake_link.scheduler.schedules
+    assert all(slot.index != 0 for slot in sched.slots.get(LIGHT_DIMMER, []))
+
+
+async def test_a_cancelled_update_writes_the_old_slot_back(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    fast_scheduler: None,
+) -> None:
+    """Review-5 W5-5: an update cancelled after the inactive schedule went in: the old schedule and action are
+    written back (the user's timer keeps firing), and the cache holds them."""
+    scheduler = fake_link.scheduler
+    scheduler.schedules[LIGHT_DIMMER, 3] = OLD
+    scheduler.actions[LIGHT_DIMMER, 3] = OLD_ACTION
+    hub = init_integration.runtime_data
+    sched = S.scheduler(hass, hub)
+    data = {"trigger": "time", "time": dt_time(22, 0), "days": ALL_DAYS}
+    off = V.Action(V.ACTION_SWITCH, on=False)
+    await _cancelled_at_the_action(
+        hass, fake_link, sched.update(LIGHT_DIMMER, 3, data, off)
+    )
+    assert scheduler.schedules[LIGHT_DIMMER, 3] == OLD
+    assert scheduler.actions[LIGHT_DIMMER, 3] == OLD_ACTION
+    cached = next(s for s in sched.slots[LIGHT_DIMMER] if s.index == 3)
+    assert (cached.schedule, cached.action) == (OLD, OLD_ACTION)

@@ -103,21 +103,26 @@ class PlanExecutor:
         gateway here — the link that vouches for it is not up yet — but left to `sync_gateway` or the next
         change. A record that cannot be written keeps the journal for the next start; an unreadable journal is
         dropped. True when the export was written: the caller sets the entry up again from it.
+
+        Read and recorded under the export's lock, which outlives a reload (`data.store_lock`): a reload that does
+        not wait for the entry lock (an options save, the UI's *Reload*) while an action's plan still runs on the
+        hub before waits here for that plan, which records itself and closes the journal — nothing is recorded
+        twice, nor written by two at once.
         """
-        data = await self.store.journal.async_load()
-        if not data:
-            return False
-        self.store.journaled = True
-        try:
-            plan = [_step_from_json(row) for row in data["steps"]]
-            accepted = plan[: int(data["accepted"])]
-            action = str(data["action"])
-            prepare, happened = data.get("prepare"), data.get("happened")
-        except (KeyError, TypeError, ValueError, IndexError) as err:
-            _LOGGER.warning("Dropping an unreadable plan journal: %s", err)
-            await self.store.journal_close()
-            return False
         async with self.store.lock:
+            data = await self.store.journal.async_load()
+            if not data:
+                return False
+            self.store.journaled = True
+            try:
+                plan = [_step_from_json(row) for row in data["steps"]]
+                accepted = plan[: int(data["accepted"])]
+                action = str(data["action"])
+                prepare, happened = data.get("prepare"), data.get("happened")
+            except (KeyError, TypeError, ValueError, IndexError) as err:
+                _LOGGER.warning("Dropping an unreadable plan journal: %s", err)
+                await self.store.journal_close()
+                return False
             self.store.recorded = False
             try:
                 await self.record(
@@ -232,13 +237,13 @@ class PlanExecutor:
         if self.store.dry:
             if check:
                 await self.preflight(plan, registers=registers)
-            self.store.planned(plan)
+            self.store.planned(plan, nodes=(c.node for c in registers))
         outcome = self.outcome
         outcome.action = action
         outcome.total += len(plan)
         outcome.steps += [f"{hexaddr(s.node)}: {s.what}" for s in plan]
         accepted: list[ConfigStep] = []
-        problem = self._unreachable(plan, sleepy)
+        problem = self._unreachable(s.node for s in plan)
         journal: dict[str, Any] = {
             "action": action,
             "steps": [_step_json(s) for s in plan],
@@ -317,21 +322,23 @@ class PlanExecutor:
             return record_err
         return None
 
-    def _unreachable(
-        self, plan: list[ConfigStep], sleepy: set[int]
-    ) -> tuple[str, dict[str, str]] | None:
-        """Return the error key and placeholders refusing `plan` for its unreachable nodes; None when all are there."""
-        nodes = sorted(
+    def _dead(self, nodes: Iterable[int]) -> list[int]:
+        """Return the mains nodes among `nodes` the hub counts as unreachable (`JungHomeHub.node_alive`), sorted."""
+        return sorted(
             {
-                s.node
-                for s in plan
-                if s.node not in sleepy and not self.hub.node_alive(s.node)
+                n
+                for n in nodes
+                if sleepy_node(self.hub.cdb, n) is None and not self.hub.node_alive(n)
             }
         )
-        if not nodes:
+
+    def _unreachable(self, nodes: Iterable[int]) -> tuple[str, dict[str, str]] | None:
+        """Return the error key and placeholders refusing a plan to `nodes` for the unreachable ones; None when all are there."""
+        dead = self._dead(nodes)
+        if not dead:
             return None
         return "service_nodes_unreachable", {
-            "nodes": ", ".join(self.store.node_name(n) for n in nodes)
+            "nodes": ", ".join(self.store.node_name(n) for n in dead)
         }
 
     async def preflight(
@@ -340,6 +347,7 @@ class PlanExecutor:
         *,
         registers: Iterable[Check] = (),
         applied: Applied = APPLIED_NOTHING,
+        passable: bool = False,
     ) -> None:
         """Before a plan's first write, read from the nodes what it removes or overwrites and compare with the export.
 
@@ -350,20 +358,38 @@ class PlanExecutor:
         plan stopped half-way — stops the plan before its first message (`service_preflight_differs`, naming the
         node, the Get, both values and how many more differ): the plan would overwrite what the export does not
         describe. A node that does not answer stops it as a plan step would (asleep, or no reply), before
-        anything was sent. `applied` is what the error says was done before (`set_threshold` writes the threshold
-        first). An action called with `force` skips all of it (`ExportStore.forced`).
+        anything was sent; nodes the hub already counts as unreachable (`_unreachable`) are refused before the
+        first read, every one named, rather than waited for one by one. `applied` is what the error says was done
+        before. An action called with `skip_preflight` skips all of it (`ExportStore.forced`).
+
+        `passable`: the call passes over the nodes it cannot reach (`delete_scene` with `force`): an unreachable
+        node is not read and a silent one is no error — the plan skips them — but a difference still stops it.
 
         A dry run reads the same and notes what it found in its answer (`ExportStore.preflight_found`) instead of
         raising; without a link it notes every node as unanswered. Plans that only add (a Subscription Add, a
-        Model App Bind, a publication where the export records none) send no Get. Unverified on air.
+        Model App Bind, a publication where the export records none) send no Get. What the comparison came to —
+        the Gets, the differences, or that it was skipped — goes into the call's history (`PlanOutcome.preflight`).
+        Unverified on air.
         """
-        if self.store.forced:
-            return
         base = self.store.base
         assert base is not None  # every plan is made on what `ExportStore.load` read
         checks = [*preflight_checks(plan, base), *registers]
         if not checks:
             return
+        if self.store.forced:
+            self._note_preflight(skipped=len(checks))
+            return
+        if not self.store.dry:
+            if (
+                not passable
+                and (problem := self._unreachable(c.node for c in checks)) is not None
+            ):
+                key, placeholders = problem
+                raise _failure(
+                    key, **placeholders, applied=applied_message(self.hub.hass, applied)
+                )
+            dead = set(self._dead(c.node for c in checks))
+            checks = [c for c in checks if c.node not in dead]
         differences: list[Difference] = []
         silent: list[int] = []
         if self.store.dry and not self.hub.connected:
@@ -375,7 +401,7 @@ class PlanExecutor:
                         continue
                     reply = await self._read(item, applied)
                     if reply is None:
-                        if not self.store.dry:
+                        if not self.store.dry and not passable:
                             raise _failure(
                                 self._silence(item.node),
                                 node=self.store.node_name(item.node),
@@ -385,6 +411,7 @@ class PlanExecutor:
                         silent.append(item.node)
                     elif (found := item.compare(base, reply)) is not None:
                         differences.append(found)
+        self._note_preflight(len(checks), differences, silent)
         if self.store.dry:
             self.store.preflight_found(
                 [
@@ -405,6 +432,32 @@ class PlanExecutor:
                 others=str(len(differences) - 1),
                 applied=applied_message(self.hub.hass, applied),
             )
+
+    def _note_preflight(
+        self,
+        checks: int = 0,
+        differences: Iterable[Difference] = (),
+        silent: Iterable[int] = (),
+        *,
+        skipped: int = 0,
+    ) -> None:
+        """Add what a pre-flight came to to the call's outcome (`PlanOutcome.preflight`), for its history.
+
+        `{"checks", "differences", "unanswered", "skipped"}`: the Gets compared, the differences found (as a dry
+        run answers them), the nodes that stayed silent, the Gets `skip_preflight` skipped. A call can run several
+        pre-flights (`set_threshold` socket by socket): they add up.
+        """
+        noted = self.outcome.preflight or {
+            "checks": 0,
+            "differences": [],
+            "unanswered": [],
+            "skipped": 0,
+        }
+        noted["checks"] += checks
+        noted["differences"] += [d.as_dict() for d in differences]
+        noted["unanswered"] += [hexaddr(n) for n in silent]
+        noted["skipped"] += skipped
+        self.outcome.preflight = noted
 
     async def _read(self, item: Check, applied: Applied) -> AccessMessage | None:
         """Send one pre-flight Get and return its answer; None when the node stays silent (or, dry, out of reach).

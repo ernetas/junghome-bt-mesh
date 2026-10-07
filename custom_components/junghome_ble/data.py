@@ -1,8 +1,8 @@
 """What the integration keeps in `hass.data` beside its entries' hubs, in one typed place.
 
 `jung_data(hass)` returns the run's `JungHomeData` (under `DATA`), made on first use. Each registry keeps its
-accessor where it is used — `coordinator.entry_lock`, `configurator.store.plan_journal` and `plan_history`,
-`configurator.scenes.held_scenes`, `model_update.remember_device_rooms`, `schedules.scheduler` — and none of them is
+accessor where it is used — `coordinator.entry_lock`, `store_lock`, `configurator.store.plan_journal` and `plan_history`,
+`configurator.store.held_scenes`, `model_update.remember_device_rooms`, `schedules.scheduler` — and none of them is
 dropped with a hub: a lock, a journal or a store outlives the entry's reloads.
 
 Still under keys of their own: the registries that hold a class of the module that fills them (`seq_store`'s stores
@@ -38,11 +38,14 @@ class JungHomeData:
     # one lock per entry, kept across reloads, around everything that works on a hub and may replace it: the service
     # calls (`actions.common._run`) and the unknown-node refresh's reload (`ExportWatch._reload_for_export`)
     entry_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
+    # one lock per entry, kept across reloads, around every operation on its export (`configurator.store.ExportStore`):
+    # the configurator a reload makes waits for a plan the one before still runs
+    store_locks: dict[str, asyncio.Lock] = field(default_factory=dict)
     # the plan journal of each entry (`configurator.store.plan_journal`) and its last calls that ran a plan
     # (`configurator.store.plan_history`, memory only)
     plan_journals: dict[str, Store[dict[str, Any]]] = field(default_factory=dict)
     plan_histories: dict[str, deque[dict[str, Any]]] = field(default_factory=dict)
-    # the scene numbers a forced `delete_scene` left in a register (`configurator.scenes.held_scenes`)
+    # the scene numbers a forced `delete_scene` left in a register (`configurator.store.held_scenes`)
     held_scenes: dict[str, Store[dict[str, Any]]] = field(default_factory=dict)
     # each device's room before an export change (`model_update.remember_device_rooms`), until
     # `async_sync_areas` takes it
@@ -64,3 +67,8 @@ def jung_data(hass: HomeAssistant) -> JungHomeData:
 def entry_lock(hass: HomeAssistant, entry_id: str) -> asyncio.Lock:
     """Return the entry's lock (`JungHomeData.entry_locks`), created on first use."""
     return jung_data(hass).entry_locks.setdefault(entry_id, asyncio.Lock())
+
+
+def store_lock(hass: HomeAssistant, entry_id: str) -> asyncio.Lock:
+    """Return the lock of the entry's export (`JungHomeData.store_locks`), created on first use."""
+    return jung_data(hass).store_locks.setdefault(entry_id, asyncio.Lock())

@@ -53,15 +53,21 @@ something else (you changed it in the app after the export was made, a device wa
 half-way), nothing is sent and the action says which device differs and how: export the project from the app again
 (or, set up from the gateway, press **Fetch export from gateway**) and run the action again. A dry run lists the
 differences under `preflight`. A device that does not answer this read stops the action too, before anything is
-changed. If you know the export is right, turn on **Even if the devices differ from the export** (`force: true`) to
-run the action without the check. This is not yet tried on a real installation.
+changed — and a device Home Assistant already knows is not answering is named at once, before any read. If you know
+the export is right, turn on **Even if the devices differ from the export** (`force: true`) to run the action without
+the check. *Remove from room*, *Delete scene* and *Remove device* have a switch of their own for that, **Without
+comparing with the export** (`skip_preflight: true`): there, their *Even if …* switch keeps the check, so taking a
+device out of a room a key drives, or deleting a scene a dead device stored, still compares the other devices. A
+dry run also lists the devices the real run would find out of reach (`reachability`: not answering, or a battery
+device that is probably asleep — press one of its keys first). This is not yet tried on a real installation.
 
 Run for real, the same actions answer how many of their messages the devices took (`applied` of `total`), whether
 the export was written (`recorded`) and which devices changed (`nodes`), and the logbook gets a line such as
 *Key 0234 (…) now drives room Kitchen; 8 messages* — or how far it got when a device stopped it. The last few are in
 the integration's diagnostics too.
 
-Instead of typing a room's name you can pick the **area** named like it (*Room by area*), and instead of a scene's
+Instead of typing a room's name you can pick its **area** (*Room by area*): the room you gave that area in the
+integration's *Rooms and areas* step, else the room named like it. Instead of a scene's
 name its **scene entity** (*Scene entity*).
 
 *Remove device*, and *Delete scene* with *Even if a device does not answer*, cannot be undone: they need

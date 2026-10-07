@@ -72,6 +72,10 @@ remove_from_room:
       default: false
       selector:
         boolean:
+    skip_preflight:
+      default: false
+      selector:
+        boolean:
     dry_run:
       default: false
       selector:
@@ -401,6 +405,10 @@ delete_scene:
           integration: junghome_ble
           domain: scene
     force:
+      default: false
+      selector:
+        boolean:
+    skip_preflight:
       default: false
       selector:
         boolean:
@@ -852,6 +860,10 @@ remove_device:
         device:
           integration: junghome_ble
     force:
+      default: false
+      selector:
+        boolean:
+    skip_preflight:
       default: false
       selector:
         boolean:

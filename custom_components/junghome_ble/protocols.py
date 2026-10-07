@@ -207,6 +207,9 @@ class ConfiguratorView(Protocol):
     async def async_replay_journal(self) -> bool:
         """At setup: record what an interrupted plan left on the mesh."""
 
+    async def async_note_recorded_nodes(self) -> list[str]:
+        """At setup: mark recorded the pending vault nodes the export records."""
+
 
 class AppFollowView(Protocol):
     """What the hub and its button ask of the follower of the JUNG HOME app (`app_follow.AppFollower`)."""

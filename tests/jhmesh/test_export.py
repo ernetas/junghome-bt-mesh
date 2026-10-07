@@ -1983,6 +1983,8 @@ def test_top_allocation_takes_the_highest_free_numbers_and_the_app_its_lowest():
     assert pf.free_scene_number(avoid=range(0x1990, 0x1998)) == 0x198F
     # a number a device still holds (a forced deletion skipped it) is passed on by `add_scene`
     assert pf.add_scene("Late", avoid=[0x1997]) == 0x1996
+    # ... and a group a node holds that the export does not show (one never recorded) by `add_group`
+    assert pf.add_group("Cellar", avoid=[0xC649]) == 0xC648
 
 
 def test_top_allocation_without_provisioner_ranges_stays_below_the_device_type_groups():

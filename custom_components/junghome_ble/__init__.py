@@ -281,7 +281,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     if token_rejected_open(hass, entry):
         entry.async_start_reauth(hass)
     # a device Home Assistant provisioned but never recorded (onboard.py)
-    async_update_pending_issue(hass, entry, hub.vault)
+    await _async_pending_devices(hass, entry, hub)
     # the vault could not be written while a device was added: the next save that lands clears it
     entry.async_on_unload(
         hub.vault.async_add_listener(
@@ -289,6 +289,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
         )
     )
     return True
+
+
+async def _async_pending_devices(
+    hass: HomeAssistant, entry: JungHomeConfigEntry, hub: JungHomeHub
+) -> None:
+    """Raise or clear the `pending_device` repair, once the export's records were noted in the vault.
+
+    A device recorded in the export whose vault write did not land (`vault_unwritable_recorded`) is no pending
+    device: the vault marks it recorded first (`MeshConfigurator.async_note_recorded_nodes`).
+    """
+    assert hub.configurator is not None  # registered before the setup gets here
+    await hub.configurator.async_note_recorded_nodes()
+    async_update_pending_issue(hass, entry, hub.vault)
 
 
 def _reload_once_loaded(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None:

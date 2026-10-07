@@ -1231,13 +1231,18 @@ class ProjectFile:
         address: int | None = None,
         parent: int = 0,
         icon: str = DEFAULT_GROUP_ICON,
+        avoid: Iterable[int] = (),
     ) -> int:
-        """Create a room: CDB `groups[]` + `meta.userGroups[]`; the address from `free_group_address` unless given."""
+        """Create a room: CDB `groups[]` + `meta.userGroups[]`; the address from `free_group_address` unless given.
+
+        `avoid`: addresses `free_group_address` must not pick either — groups nodes hold that the export does not
+        show (a node provisioned but never recorded).
+        """
         check_name(name)
         if any(n.lower() == name.lower() for n in self.user_groups().values()):
             raise ValueError(f"a room named {name!r} already exists")
         if address is None:
-            address = self.free_group_address()
+            address = self.free_group_address(avoid=avoid)
         elif not GROUP_RANGE[0] <= address < DEVICE_TYPE_GROUPS[0]:
             raise ValueError(f"{address:04X} is not a user group address")
         elif address in self.cdb.groups:

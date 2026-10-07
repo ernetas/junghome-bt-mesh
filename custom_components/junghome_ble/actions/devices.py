@@ -20,6 +20,7 @@ from custom_components.junghome_ble.jhmesh import config_messages as C
 from .common import (
     _DRY_RUN_FIELD,
     _ENTRY_FIELD,
+    _SKIP_PREFLIGHT_FIELD,
     ATTR_CONFIRM,
     ATTR_DEVICE,
     ATTR_DRY_RUN,
@@ -51,6 +52,7 @@ REMOVE_DEVICE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_DEVICE): cv.string,
         vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+        **_SKIP_PREFLIGHT_FIELD,
         vol.Optional(ATTR_CONFIRM, default=False): cv.boolean,
         **_DRY_RUN_FIELD,
     }
@@ -212,7 +214,8 @@ async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
 
     Refused unless the entry's *Allow Home Assistant to add devices* option is on, and without `confirm` (it
     cannot be undone; a dry run needs none); `force` records the removal of a node that does not confirm its
-    reset (one that is gone for good).
+    reset (one that is gone for good). `force` keeps the pre-flight comparison of the others' wiring;
+    `skip_preflight` skips it (decision M17).
     """
     if not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:
         raise _validation("remove_device_needs_confirm")

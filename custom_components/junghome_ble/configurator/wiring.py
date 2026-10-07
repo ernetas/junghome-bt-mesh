@@ -436,11 +436,14 @@ def check_room_name(name: str) -> str:
     return wanted
 
 
-def add_room(pf: ProjectFile, name: str) -> int:
-    """Add a room called `name` (`check_room_name`) to `pf` and return its address; refuse one it cannot add."""
+def add_room(pf: ProjectFile, name: str, avoid: Iterable[int] = ()) -> int:
+    """Add a room called `name` (`check_room_name`) to `pf` and return its address; refuse one it cannot add.
+
+    `avoid`: group addresses not to take although the export does not use them (`ExportStore.reservations`).
+    """
     wanted = check_room_name(name)
     try:
-        return pf.add_group(wanted)
+        return pf.add_group(wanted, avoid=avoid)
     except ValueError as err:
         raise PlanError("service_room_exists", room=name) from err
     except AllocationCrowded as err:

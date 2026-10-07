@@ -13,6 +13,7 @@ import contextlib
 import json
 import shutil
 import stat
+import time
 from collections.abc import AsyncGenerator, Callable, Coroutine, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -5655,21 +5656,25 @@ async def test_a_plan_to_an_unreachable_node_is_refused_before_it_is_sent(
 async def test_a_removal_whose_unwiring_meets_an_unreachable_node_records_the_reset(
     bench: Bench,
 ) -> None:
-    """The reset cannot be taken back: refused unwiring still records the node as removed, and says so."""
+    """The reset cannot be taken back: refused unwiring still records the node as removed, and says so.
+
+    The pre-flight refuses unreachable nodes before the reset (review-5); skipping it (`skip_preflight`) leaves the
+    unwiring to meet them after the reset.
+    """
     bench.hub.unreachable.update(
         n.unicast for n in bench.hub.cdb.nodes if n.unicast != DIMMER_NODE
     )
-    with pytest.raises(HomeAssistantError) as exc:
+    with (
+        pytest.raises(HomeAssistantError) as exc,
+        bench.configurator.forcing(True),
+    ):
         await bench.configurator.remove_node(DIMMER_NODE)
     assert exc.value.translation_key == "service_nodes_unreachable"
     assert exc.value.translation_placeholders["applied"].startswith(
         f"Device {DIMMER_NODE:04X} was reset and the mesh export records it as removed"
     )
-    # the unwiring was read before the reset (those nodes answered the pre-flight reads), and not sent after it
-    assert bench.config_pdus() == [
-        (SWITCH_NODE, sub_get(SWITCH_LOAD, "1000")),
-        (DIMMER_NODE, C.node_reset()),
-    ]
+    # nothing read before the reset, and the unwiring not sent after it
+    assert bench.config_pdus() == [(DIMMER_NODE, C.node_reset())]
     pf = bench.reload()
     assert pf.cdb.node_by_addr(DIMMER_NODE) is None
     assert {DIMMER_LOAD, DIMMER_KEY} <= pf.cdb.excluded_addresses
@@ -6499,3 +6504,212 @@ async def test_a_lost_link_at_a_scene_register_read_is_a_send_failure(
         "applied": english(mc.APPLIED_NOTHING),
     }
     assert bench.file_unchanged()
+
+
+# ----------------------------------------------------------------------------- review 5: the configurator's gaps
+
+
+def without_scene_action_setup(tmp_path: Path, unicast: int) -> Path:
+    """A copy of the android export whose node at `unicast` has no Scene Action Setup server (older firmware)."""
+    doc = json.loads(ANDROID_PATH.read_text())
+    raw = doc["network"]
+    net = json.loads(base64.b64decode(raw)) if isinstance(raw, str) else raw
+    for node in net["nodes"]:
+        if int(node["unicastAddress"], 16) == unicast:
+            for element in node["elements"]:
+                element["models"] = [
+                    m for m in element["models"] if m["modelId"] != "05271017"
+                ]
+    doc["network"] = (
+        base64.b64encode(json.dumps(net).encode()).decode()
+        if isinstance(raw, str)
+        else net
+    )
+    source = tmp_path / "source"
+    source.mkdir()
+    path = source / ANDROID_PATH.name
+    path.write_text(json.dumps(doc))
+    return path
+
+
+async def test_a_second_channel_without_its_own_scene_description_is_refused(
+    tmp_path: Path, fast: FastAsyncio
+) -> None:
+    """Review-5 F5-2: on a two-channel node without a Scene Action Setup server, channel 2's Store would go to
+    channel 1's register and record channel 1 as the member: refused as the app refuses it, nothing sent or
+    written. Channel 1 stores as ever."""
+    bench = await make_bench(
+        tmp_path, without_scene_action_setup(tmp_path, ACTUATOR_NODE)
+    )
+    scenes = SceneServer(bench.link)
+    lightness = V.Action(V.ACTION_LIGHTNESS, lightness=100)
+    with pytest.raises(HomeAssistantError) as err:
+        await bench.configurator.store_scene(2, ACTUATOR_OUT2, lightness)
+    assert err.value.translation_key == "service_scene_channel_unsupported"
+    assert err.value.translation_placeholders["address"] == f"{ACTUATOR_OUT2:04X}"
+    assert scenes.seen == []
+    assert bench.file_unchanged()
+    assert await bench.configurator.store_scene(2, ACTUATOR_OUT1, lightness)
+    assert scenes.seen == [(ACTUATOR_OUT1, M.scene_store(2))]
+    assert bench.reload().cdb.scenes[2] == [ACTUATOR_OUT1]
+
+
+PENDING_GROUP_UUID = "00005EFF-FE00-5388-0000-000000000000"
+
+
+async def test_a_new_room_avoids_the_element_groups_of_a_pending_node(
+    bench: Bench,
+) -> None:
+    """Review-5 W5-1: a node provisioned but never recorded holds element groups the export does not show; a room
+    created afterwards — by `create_room` or by `set_room` with `create` — never takes one of them (one
+    reservation provider for every allocator)."""
+    vault = bench.hub.vault.identity()
+    vault.remember_provisioned(
+        PENDING_GROUP_UUID, 0x7E00, 1, bytes(16), [(NEW_ROOM, "element group")]
+    )
+    reserved = await bench.configurator.reservations()
+    assert reserved.groups == {NEW_ROOM}
+    assert {OUR_SRC, 0x7E00} <= reserved.unicasts
+    assert reserved.scenes == frozenset()
+    attic = await bench.configurator.create_room("Attic")
+    assert attic != NEW_ROOM
+    vault.remember_provisioned(
+        "00005EFF-FE00-5389-0000-000000000000",
+        0x7E10,
+        1,
+        bytes(16),
+        [(attic - 1, "element group")],
+    )
+    assert await bench.configurator.set_room(DALI_LOAD, "Loft", create=True)
+    pf = bench.reload()
+    loft = next(a for a, name in pf.user_groups().items() if name == "Loft")
+    assert loft not in {NEW_ROOM, attic, attic - 1}
+    assert bench.configurator.outcome.room == "Loft"
+
+
+async def test_held_scene_numbers_are_reserved(bench: Bench) -> None:
+    """The held scene numbers (a forced deletion's) are among the entry's reservations, which `create_scene`
+    avoids."""
+    bench.held.data = {"held": [[NEW_SCENE, DALI_LOAD]]}
+    assert (await bench.configurator.reservations()).scenes == {NEW_SCENE}
+    assert await bench.configurator.create_scene("Movie night") != NEW_SCENE
+
+
+async def test_a_reload_waits_for_the_plan_still_running_before_its_replay(
+    bench: Bench,
+) -> None:
+    """Review-5 W5-7: the configurator a reload makes shares the export's lock with the one before (kept per
+    entry): its journal replay waits for the plan still running, which records itself and closes the journal —
+    nothing recorded twice, no repair for a plan that ended normally."""
+    after_reload = MeshConfigurator(bench.hub)  # type: ignore[arg-type]
+    assert after_reload.lock is bench.configurator.lock
+    bench.journal.data = {"action": "x", "steps": [], "accepted": 0}
+    async with bench.configurator.lock:  # the plan of an action still running
+        replay = asyncio.ensure_future(after_reload.async_replay_journal())
+        for _ in range(5):
+            await asyncio.sleep(0)
+        assert not replay.done()
+        bench.journal.data = None  # ... which recorded itself and closed the journal
+    assert await replay is False
+    assert after_reload.journaled is False
+
+
+async def test_a_removal_reads_the_others_with_force_and_skips_them_only_when_asked(
+    bench: Bench,
+) -> None:
+    """Review-5 U5-8 (decision M17): `force` on `remove_device` accepts an unconfirmed reset, and no longer skips
+    the comparison of the others' wiring; `skip_preflight` (`forcing`) does."""
+    bench.config.silent.add(C.node_reset())
+    with contextlib.suppress(HomeAssistantError):
+        await bench.configurator.remove_node(DIMMER_NODE, force=True)
+    assert (SWITCH_NODE, sub_get(SWITCH_LOAD, "1000")) in bench.config_pdus()
+    history = bench.configurator.outcome.preflight
+    assert history is not None
+    assert history["checks"] > 0
+    assert history["skipped"] == 0
+
+
+async def test_a_removal_refuses_unreachable_nodes_before_reading_them(
+    bench: Bench,
+) -> None:
+    """Review-5: nodes the hub counts as unreachable are named before the pre-flight reads of a removal — not one
+    read after the other, each waited for — and nothing is reset."""
+    bench.hub.unreachable.add(SWITCH_NODE)
+    with pytest.raises(HomeAssistantError) as err:
+        await bench.configurator.remove_node(DIMMER_NODE)
+    assert err.value.translation_key == "service_nodes_unreachable"
+    assert err.value.translation_placeholders["nodes"].startswith(f"{SWITCH_NODE:04X}")
+    assert bench.config_pdus() == []
+    assert bench.file_unchanged()
+
+
+async def test_a_dry_run_says_which_nodes_are_out_of_reach(
+    battery_bench: Bench,
+) -> None:
+    """Review-5: a dry run answers what the real run would find out of reach — a mains node the hub counts as
+    unreachable (refused at once for real) and a battery node not heard from lately (asleep: press a key first) —
+    and nothing when every node is there."""
+    bench = battery_bench
+    bench.hub.unreachable.add(MOTION_RELAY)
+    dry = await bench.configurator.dry_run(
+        lambda c: c.assign_key(TRANSMITTER_KEY, room="WC")
+    )
+    assert dry["reachability"] == {
+        "unreachable": [bench.configurator.store.node_name(MOTION_RELAY)],
+        "asleep": ["0520 (Wall transmitter 1-gang)"],
+    }
+    bench.hub.unreachable.clear()
+    bench.hub.last_heard[TRANSMITTER] = time.monotonic()
+    dry = await bench.configurator.dry_run(
+        lambda c: c.assign_key(TRANSMITTER_KEY, room="WC")
+    )
+    assert "reachability" not in dry
+
+
+async def test_delete_scene_with_force_passes_over_what_its_preflight_cannot_read(
+    bench: Bench, scenes: SceneServer, issue_calls: dict[str, dict[str, Any]]
+) -> None:
+    """Review-5 (decision M17): `force` alone keeps the comparison, passing over a member that does not answer it
+    (it is skipped as before); a member the hub counts as unreachable is not read at all, and without `force` it
+    is named at once, before any read."""
+    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)
+    assert await bench.configurator.store_scene(2, SOCKET_NODE, None)
+    bench.hub.unreachable.add(SOCKET_NODE)
+    with pytest.raises(HomeAssistantError) as err:
+        await bench.configurator.delete_scene(2)
+    assert err.value.translation_key == "service_nodes_unreachable"
+    bench.hub.unreachable.clear()
+    dali_silent(bench, scenes)
+    reads = len(bench.app_pdus())
+    assert await bench.configurator.delete_scene(2, force=True) == ["0232"]
+    # the register reads went out (the DALI node's unanswered), then the deletion
+    assert (SOCKET_NODE, M.scene_register_get()) in bench.app_pdus()[reads:]
+    assert 2 not in bench.reload().cdb.scenes
+    assert bench.configurator.outcome.preflight == {
+        "checks": 2,
+        "differences": [],
+        "unanswered": [f"{DALI_NODE:04X}"],
+        "skipped": 0,
+    }
+
+
+async def test_delete_scene_with_force_does_not_read_an_unreachable_member(
+    bench: Bench, scenes: SceneServer
+) -> None:
+    """A member the hub counts as unreachable is passed over by `force` without its pre-flight read."""
+    assert await bench.configurator.store_scene(2, DALI_LOAD, ON)
+    bench.hub.unreachable.add(DALI_NODE)
+    reads = len(bench.app_pdus())
+    assert await bench.configurator.delete_scene(2, force=True) == []
+    assert (DALI_LOAD, M.scene_register_get()) not in bench.app_pdus()[reads:]
+
+
+async def test_a_skipped_comparison_is_noted_for_the_history(bench: Bench) -> None:
+    """`skip_preflight` (`forcing`): the plan sends no read, and the call's outcome says how many it skipped."""
+    with bench.configurator.forcing(True):
+        assert await bench.configurator.remove_from_room(SWITCH_LOAD, "WC", force=True)
+    assert not any(is_model_get(pdu) for _n, pdu in bench.config_pdus())
+    noted = bench.configurator.outcome.preflight
+    assert noted is not None
+    assert noted["skipped"] > 0
+    assert noted["checks"] == 0

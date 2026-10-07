@@ -1725,6 +1725,12 @@
     },
     "applied_rerun": {
       "message": "Run the action again with the same target to finish."
+    },
+    "service_room_area_ambiguous": {
+      "message": "More than one room of the mesh export goes to the area {area} ({rooms}): name the room instead."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} is a further channel of a device without its own scene description per channel (older firmware): its scene would be stored on the first channel instead, as the JUNG HOME app says when it refuses it (\"Feature not available\"). Update the device's firmware in the app to store scenes on this channel. {applied}"
     }
   },
   "issues": {
@@ -2103,6 +2109,10 @@
       "title": "JUNG HOME device keys cannot be saved",
       "description": "Home Assistant could not write its vault for the mesh {title} ({path}; last error: {error}) while adding the device at {address}. The vault holds the device keys of the devices Home Assistant adds, which nothing else has until the export records them, so the device was not provisioned: it received nothing and is still new. This usually means the disk is full or its filesystem was remounted read-only, often a failing SD card. Free up space or repair the storage (a filesystem remounted read-only usually needs the host restarted), then add the device again; do not edit, delete or replace the vault's files. Not yet tried on a real device. The issue clears itself as soon as a write of the vault lands."
     },
+    "vault_unwritable_recorded": {
+      "title": "JUNG HOME device keys cannot be saved",
+      "description": "Home Assistant added the device at {address} to the mesh {title} and recorded it in the mesh export, but could not write its vault ({path}; last error: {error}) afterwards. The device works; the vault on disk still lists it as not recorded until a write lands, and the next start of the integration marks it recorded from the export. This usually means the disk is full or its filesystem was remounted read-only, often a failing SD card. Free up space or repair the storage (a filesystem remounted read-only usually needs the host restarted); do not edit, delete or replace the vault's files, and do not reset the device with Reset pending device. Not yet tried on a real device. The issue clears itself as soon as a write of the vault lands."
+    },
     "carry_over_conflict": {
       "title": "The JUNG HOME app overrode a change Home Assistant made on {title}",
       "description": "Home Assistant took over the export the JUNG HOME app last handed to the gateway and carried its own changes onto it, but the app had changed the same entries meanwhile. The app's version is kept for: {paths}. The devices may still hold what Home Assistant had written: {held}. Check those rooms, scenes and connections in the app and in Home Assistant, and set them again from one side. The app does not see what Home Assistant adds until it imports a file. The issue clears with the next takeover of the gateway's export that has no such conflict."
@@ -2207,7 +2217,7 @@
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         },
         "force": {
           "name": "Even if the devices differ from the export",
@@ -2233,7 +2243,7 @@
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         },
         "dry_run": {
           "name": "Dry run",
@@ -2251,11 +2261,15 @@
         },
         "force": {
           "name": "Even if a key drives it",
-          "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it. It also skips the check that compares the devices with the mesh export first."
+          "description": "Take the device out of the room although a key linked to the room switches it; the key stops switching it. The check that compares the devices with the mesh export still runs (see Without comparing with the export)."
+        },
+        "skip_preflight": {
+          "name": "Without comparing with the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         },
         "dry_run": {
           "name": "Dry run",
@@ -2299,7 +2313,7 @@
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         }
       }
     },
@@ -2317,7 +2331,7 @@
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         },
         "force": {
           "name": "Even if the devices differ from the export",
@@ -2375,7 +2389,7 @@
         },
         "room_area": {
           "name": "Room by area",
-          "description": "Instead of typing the room's name: the area named like the room."
+          "description": "Instead of typing the room's name: the area the room goes to — the one the integration's rooms-to-areas step gives it, else the area named or aliased like it."
         },
         "scene_entity": {
           "name": "Scene entity",
@@ -2529,7 +2543,11 @@
         },
         "force": {
           "name": "Even if a device does not answer",
-          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until Delete unused scenes removes it; a repair issue names it, and no new scene gets its number meanwhile. It also skips the check that compares the devices with the mesh export first."
+          "description": "Delete the scene from the mesh export although a device that stored it cannot be reached or refuses (the app's \"Delete anyway\"). That device keeps the scene until Delete unused scenes removes it; a repair issue names it, and no new scene gets its number meanwhile. The check that compares the devices with the mesh export still runs, passing over the devices it cannot reach (see Without comparing with the export)."
+        },
+        "skip_preflight": {
+          "name": "Without comparing with the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
         },
         "config_entry_id": {
           "name": "Mesh network",
@@ -2859,7 +2877,11 @@
         },
         "force": {
           "name": "Even if it does not answer",
-          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it. It also skips the check that compares the devices with the mesh export first."
+          "description": "Remove it from the network's records although it does not confirm the reset (a device that is gone for good), or although Home Assistant is connected through it. The check that compares the other devices with the mesh export still runs (see Without comparing with the export)."
+        },
+        "skip_preflight": {
+          "name": "Without comparing with the export",
+          "description": "Run the plan without first reading from the devices what it removes or replaces and comparing that with the mesh export. Only when the mesh export is known to be right. Unverified on air."
         },
         "confirm": {
           "name": "Confirm",

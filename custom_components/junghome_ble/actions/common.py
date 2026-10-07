@@ -8,7 +8,7 @@ link (`_wait_for_link`), have the hub follow the export (`_follow`) and report t
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Mapping
 from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
@@ -53,9 +53,12 @@ ATTR_ROOM_AREA = "room_area"  # the room named like this area, instead of `room`
 ATTR_SCENE_ENTITY = (
     "scene_entity"  # the scene behind this scene entity, instead of `scene`
 )
-# skips a check: the pre-flight comparison of the nodes with the export (every destructive action), and the
-# action's own refusal where it has one (`remove_from_room`, `delete_scene`, `remove_device`)
+# the action's own override where it has one (`remove_from_room`, `delete_scene`, `remove_device`, and the
+# non-plan actions); on a destructive action without one, the same as `skip_preflight` (decision M17)
 ATTR_FORCE = "force"
+# skips the pre-flight comparison of the nodes with the export, on the actions whose `force` is an override of their
+# own; `force` alone no longer skips it there (decision M17)
+ATTR_SKIP_PREFLIGHT = "skip_preflight"
 ATTR_DRY_RUN = "dry_run"
 # what cannot be undone asks for it explicitly: `remove_device`, `delete_scene` with `force`
 ATTR_CONFIRM = "confirm"
@@ -87,6 +90,10 @@ _DRY_RUN_FIELD: dict[str | vol.Marker, Any] = {
 # the destructive actions without a `force` of their own: it skips the pre-flight comparison only
 _FORCE_FIELD: dict[str | vol.Marker, Any] = {
     vol.Optional(ATTR_FORCE, default=False): cv.boolean
+}
+# the destructive actions whose `force` is an override of their own: the comparison is skipped by this alone
+_SKIP_PREFLIGHT_FIELD: dict[str | vol.Marker, Any] = {
+    vol.Optional(ATTR_SKIP_PREFLIGHT, default=False): cv.boolean
 }
 # a room by name or by the area named like it; a scene by name / number or by its scene entity
 _ROOM_FIELDS: dict[str | vol.Marker, Any] = {
@@ -126,6 +133,17 @@ TARGETS_SCHEMA = vol.All(
     vol.Schema(cv.ENTITY_SERVICE_FIELDS),
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
 )
+
+
+def _skips_preflight(data: Mapping[str, Any]) -> bool:
+    """Whether a call skips the pre-flight comparison: its `skip_preflight` where it has one, else its `force`.
+
+    An action whose `force` is an override of its own declares `skip_preflight` (`_SKIP_PREFLIGHT_FIELD`, with a
+    default, so it is always in the data); every other destructive action's `force` does only this (decision M17).
+    """
+    if ATTR_SKIP_PREFLIGHT in data:
+        return bool(data[ATTR_SKIP_PREFLIGHT])
+    return bool(data.get(ATTR_FORCE))
 
 
 def _validation(key: str, **placeholders: str) -> ServiceValidationError:
@@ -206,7 +224,7 @@ async def _run(
     needs_link: bool = True,
     reload: bool = False,
     scenes: bool = False,
-    force: bool = False,
+    skip_preflight: bool = False,
 ) -> dict[str, Any]:
     """Run `operation` on the entry's configurator, then have the hub follow the export when the device model changed.
 
@@ -218,9 +236,9 @@ async def _run(
     BLE connect takes.
 
     Answers what the call's plans did (`MeshConfigurator.plan_response`); a call that ran one is reported
-    (`_report_plan`: the logbook, the diagnostics, and the error's placeholders when it stopped). `force`: the
-    call's `force` field — its plans skip the pre-flight comparison of the nodes with the export
-    (`PlanExecutor.preflight`).
+    (`_report_plan`: the logbook, the diagnostics, and the error's placeholders when it stopped).
+    `skip_preflight`: the call's plans skip the pre-flight comparison of the nodes with the export
+    (`PlanExecutor.preflight`; `_skips_preflight` reads it from the call).
     """
     async with _lock(hass, entry_id):
         configurator = _configurator(hass, entry_id)
@@ -230,7 +248,7 @@ async def _run(
         configurator.recorded = configurator.adopted = False
         configurator.outcome = PlanOutcome()
         try:
-            with configurator.forcing(force):
+            with configurator.forcing(skip_preflight):
                 changed = await operation(configurator)
         except BaseException as err:
             _report_plan(hass, entry_id, configurator, err)
@@ -260,9 +278,10 @@ async def _execute(
 
     A dry run writes and adopts nothing, and sends nothing but the pre-flight reads of a destructive plan
     (`PlanExecutor.preflight`), so it neither waits for the link nor has anything to follow; without a link it
-    answers those reads as unanswered. The call's `force` skips them, as in a real run.
+    answers those reads as unanswered. A call that skips the comparison (`_skips_preflight`) skips them, as in a
+    real run.
     """
-    force = bool(call.data.get(ATTR_FORCE))
+    skip = _skips_preflight(call.data)
     if not call.data.get(ATTR_DRY_RUN):
         return await _run(
             hass,
@@ -271,29 +290,44 @@ async def _execute(
             needs_link=needs_link,
             reload=reload,
             scenes=scenes,
-            force=force,
+            skip_preflight=skip,
         )
     async with _lock(hass, entry_id):
         configurator = _configurator(hass, entry_id)
-        with configurator.forcing(force):
+        with configurator.forcing(skip):
             return await configurator.dry_run(operation)
 
 
+def _merged(before: Any, value: Any) -> Any:
+    """Add one entry's answer `value` to what the entries before answered under the same key (`_answer`).
+
+    Flags: any; counts and lists: added up and joined; mappings (a dry run's `preflight`, `reachability`): merged
+    key by key the same way; texts (a room, an address): kept when they agree, else listed, each once.
+    """
+    if before is None or value is None:
+        return value if before is None else before
+    if isinstance(value, bool):
+        return before or value
+    if isinstance(value, dict):
+        return {key: _merged(before.get(key), item) for key, item in value.items()} | {
+            key: item for key, item in before.items() if key not in value
+        }
+    if isinstance(value, str):
+        texts = before if isinstance(before, list) else [before]
+        if value in texts:
+            return before
+        return [*texts, value]
+    return before + value
+
+
 def _answer(call: ServiceCall, results: list[dict[str, Any]]) -> ServiceResponse:
-    """Answer for a call that ran per entry: its entries' answers added up (lists joined), when asked for."""
+    """Answer for a call that ran per entry: its entries' answers merged (`_merged`), when asked for."""
     if not call.return_response:
         return None
     out: dict[str, Any] = {}
     for result in results:
         for key, value in result.items():
-            before = out.get(key)
-            out[key] = (
-                value
-                if before is None
-                else (before or value)
-                if isinstance(value, bool)
-                else before + value
-            )
+            out[key] = _merged(out.get(key), value)
     return out
 
 
@@ -309,10 +343,13 @@ def _report_plan(
     A finished call is worded by its summary (`PlanOutcome.summary`, "Key 0151 (…) now drives room Kitchen; 6
     messages"), a stopped one by how far it got and its error, a cancelled one by how far it got. A stopped call's
     error gets `outcome_applied`, `outcome_total`, `outcome_recorded` and `outcome_nodes` (the response's fields, which it never
-    gets to) in its placeholders. A call that sent nothing and has no summary (a rename, a dry run) is not reported.
+    gets to) in its placeholders. A call that sent nothing and has no summary (a rename, a dry run) is not reported,
+    unless its pre-flight comparison ran or was skipped (`PlanOutcome.preflight`): that goes into the diagnostics'
+    history all the same (a difference that stopped a removal before its reset), without a logbook line.
     """
     outcome = configurator.outcome
-    if outcome.total == 0 and (err is not None or outcome.summary is None):
+    logged = not (outcome.total == 0 and (err is not None or outcome.summary is None))
+    if not logged and outcome.preflight is None:
         return
     placeholders = {
         "action": outcome.action or "",
@@ -346,8 +383,11 @@ def _report_plan(
             "total": outcome.total,
             "steps": list(outcome.steps),
             "error": getattr(err, "translation_key", None),
+            "preflight": outcome.preflight,
         }
     )
+    if not logged:
+        return
     entry = hass.config_entries.async_get_entry(entry_id)
     hass.bus.async_fire(
         EVENT_PLAN,

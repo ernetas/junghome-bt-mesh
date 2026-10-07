@@ -14,6 +14,7 @@ import asyncio
 import copy
 import json
 import logging
+import time
 from collections import deque
 from collections.abc import Callable, Coroutine, Iterable, Iterator, Sequence
 from contextlib import contextmanager
@@ -26,11 +27,13 @@ from typing import TYPE_CHECKING, Any, Final, Literal, NoReturn, Protocol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import Store
 from homeassistant.util.hass_dict import HassKey
 
+from custom_components.junghome_ble.areas import AmbiguousArea, AreaRoom, room_in_area
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_LAST_SYNC,
@@ -43,12 +46,13 @@ from custom_components.junghome_ble.const import (
     ISSUE_GATEWAY_CERTIFICATE,
     ISSUE_GATEWAY_SYNC,
     ISSUE_GATEWAY_TOKEN,
+    KEEP_AWAKE_INTERVAL,
     OPTION_PROVISIONER_IDENTITY,
     SIGNAL_GATEWAY_SYNCED,
     learn_more_url,
 )
 from custom_components.junghome_ble.coordinator import issue_id
-from custom_components.junghome_ble.data import jung_data
+from custom_components.junghome_ble.data import jung_data, store_lock
 from custom_components.junghome_ble.gateway_api import (
     GatewayAuthError,
     GatewayCertificateMismatch,
@@ -75,6 +79,7 @@ from custom_components.junghome_ble.jhmesh.merge import (
     diff_documents,
 )
 from custom_components.junghome_ble.jhmesh.vault import RangeError, Ranges
+from custom_components.junghome_ble.keep_awake import sleepy_node
 from custom_components.junghome_ble.texts import cached_text
 
 from .plan import Applied, PlanError
@@ -329,6 +334,13 @@ class PlanOutcome:
     nodes: list[int] = field(default_factory=list)
     steps: list[str] = field(default_factory=list)
     summary: tuple[str, dict[str, str]] | None = None
+    # what the pre-flight comparison of its plans came to (`PlanExecutor.preflight`), for the history: the Gets
+    # compared and the differences found, or that the call skipped them (`skip_preflight`, or `force` where that is
+    # all it does); None while no plan of the call removed or replaced anything
+    preflight: dict[str, Any] | None = None
+    # the export's name of the room a room change put loads into (`Rooms._change_rooms`): the call may name it in
+    # other letters, or by its area, and a device's area follows the export's name (`areas.room_area`)
+    room: str | None = None
 
 
 PLAN_HISTORY_SIZE = 5  # finished or stopped calls the diagnostics show per entry
@@ -337,7 +349,8 @@ PLAN_HISTORY_SIZE = 5  # finished or stopped calls the diagnostics show per entr
 def plan_history(hass: HomeAssistant, entry_id: str) -> deque[dict[str, Any]]:
     """Return the entry's last calls that ran a plan, oldest first (`actions.common._report_plan`; memory only).
 
-    `{"action", "outcome", "applied", "total", "steps", "error"}`: step texts and an error key, no key material.
+    `{"action", "outcome", "applied", "total", "steps", "error", "preflight"}`: step texts, an error key and what the
+    pre-flight comparison came to (`PlanOutcome.preflight`), no key material.
     """
     histories = jung_data(hass).plan_histories
     return histories.setdefault(entry_id, deque(maxlen=PLAN_HISTORY_SIZE))
@@ -353,8 +366,55 @@ class DryRun:
     diff: list[dict[str, str]] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
     # what the pre-flight reads found (`PlanExecutor.preflight`): `{"differences", "unanswered"}`; None when the
-    # plan has nothing to read first, or `force` skips the reads
+    # plan has nothing to read first, or `skip_preflight` skips the reads
     preflight: dict[str, Any] | None = None
+    # the plan's nodes the real run would find out of reach (`ExportStore.planned`): `{"unreachable", "asleep"}`;
+    # None when every one is there
+    reachability: dict[str, list[str]] | None = None
+
+
+HELD_SCENES_VERSION = 1
+
+
+def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
+    """Return the entry's held scene numbers (`.storage/junghome_ble.<entry id>.held_scenes`), one instance per entry.
+
+    `{"held": [[number, element], ...]}`: the scene registers a forced `delete_scene` skipped, which still hold a
+    number the export no longer names. `create_scene` does not hand such a number out again — the
+    skipped device would join every recall of the new scene — and `delete_unused_scenes` lets go of a pair once the
+    register no longer holds it. Numbers and addresses, no key material.
+    """
+    stores = jung_data(hass).held_scenes
+    if entry_id not in stores:
+        stores[entry_id] = Store(
+            hass, HELD_SCENES_VERSION, f"{DOMAIN}.{entry_id}.held_scenes"
+        )
+    return stores[entry_id]
+
+
+async def held_scene_pairs(hass: HomeAssistant, entry_id: str) -> set[tuple[int, int]]:
+    """(scene number, register element) of every register a forced `delete_scene` skipped and that may hold it."""
+    data = await held_scenes(hass, entry_id).async_load()
+    try:
+        return {(int(n), int(e)) for n, e in (data or {}).get("held", [])}
+    except (TypeError, ValueError, AttributeError) as err:
+        _LOGGER.warning("Ignoring an unreadable record of held scene numbers: %s", err)
+        return set()
+
+
+@dataclass(frozen=True)
+class Reservations:
+    """What no allocator of the entry hands out, although the export may not show it (`ExportStore.reservations`).
+
+    `unicasts`: Home Assistant's own address and every element address of every node the vault holds, pending or
+    recorded (a node never recorded is in no file, but sends from its addresses); `groups`: those nodes' element
+    groups (a pending one's as its commissioning plan allocated them: its servers may subscribe and its keys
+    publish there already); `scenes`: the numbers a forced `delete_scene` left in a register (`held_scenes`).
+    """
+
+    unicasts: frozenset[int] = frozenset()
+    groups: frozenset[int] = frozenset()
+    scenes: frozenset[int] = frozenset()
 
 
 class _Planned(Exception):
@@ -364,8 +424,8 @@ class _Planned(Exception):
 # the dry run of the running task, if any: a context variable, so a call of another task on the same configurator
 # (the unknown-node refresh, another entry's action) is never taken for one
 _DRY_RUN: ContextVar[DryRun | None] = ContextVar(f"{DOMAIN}_dry_run", default=None)
-# whether the running task's action was called with `force` (`ExportStore.forcing`): its plans skip the pre-flight
-# comparison of the nodes with the export
+# whether the running task's action asked to skip the pre-flight comparison of the nodes with the export
+# (`ExportStore.forcing`: `skip_preflight`, or `force` on an action whose `force` does nothing else)
 _FORCED: ContextVar[bool] = ContextVar(f"{DOMAIN}_forced", default=False)
 
 
@@ -375,7 +435,9 @@ class ExportStore:
     def __init__(self, hub: JungHomeHub) -> None:
         """Bind to `hub`; nothing is loaded until an operation runs."""
         self.hub = hub
-        self.lock = asyncio.Lock()
+        # the entry's, kept across reloads (`data.store_lock`): a configurator set up while the one before still
+        # runs a plan (an options save reloads without the entry lock) waits for it — its journal replay too
+        self.lock = store_lock(hub.hass, hub.entry.entry_id)
         # whether the running operation wrote the export: `actions.common._run` has the model follow it after a stopped
         # plan that recorded what the mesh accepted, as after a finished one (the device model must follow the file)
         self.recorded = False
@@ -395,13 +457,13 @@ class ExportStore:
 
     @property
     def forced(self) -> bool:
-        """Whether the running task's action was called with `force`: its plans skip the pre-flight comparison."""
+        """Whether the running task's action skips the pre-flight comparison (`skip_preflight`)."""
         return _FORCED.get()
 
     @contextmanager
-    def forcing(self, force: bool) -> Iterator[None]:
-        """Run the block's operations with `force` (`forced`): a context variable, as a dry run is one."""
-        token = _FORCED.set(force)
+    def forcing(self, skip_preflight: bool) -> Iterator[None]:
+        """Run the block's operations with `skip_preflight` (`forced`): a context variable, as a dry run is one."""
+        token = _FORCED.set(skip_preflight)
         try:
             yield
         finally:
@@ -423,7 +485,8 @@ class ExportStore:
 
         A plan that removes or overwrites what the export says a node holds reads it from the nodes first, as the
         real run does (`PlanExecutor.preflight`): those Gets go out, and the answer's `preflight` lists the
-        differences and the nodes that did not answer — the real run would stop there. Unverified on air.
+        differences and the nodes that did not answer — the real run would stop there. The plan's nodes the real
+        run would find out of reach are listed under `reachability` (`planned`). Unverified on air.
         """
         dry = DryRun()
         token = _DRY_RUN.set(dry)
@@ -434,11 +497,15 @@ class ExportStore:
         finally:
             _DRY_RUN.reset(token)
         preflight = {} if dry.preflight is None else {"preflight": dry.preflight}
+        reachability = (
+            {} if dry.reachability is None else {"reachability": dry.reachability}
+        )
         return {
             "dry_run": True,
             "steps": dry.steps,
             "diff": dry.diff,
             **preflight,
+            **reachability,
             **dry.extra,
         }
 
@@ -456,17 +523,22 @@ class ExportStore:
         *,
         first: Iterable[str] = (),
         then: Iterable[str] = (),
+        nodes: Iterable[int] = (),
         **extra: Any,
     ) -> NoReturn:
         """End a dry run where the real run would send or write: note the messages and how the export would change.
 
         `plan` is the Config plan in the order it would go out; `first` / `then` describe what goes out before /
-        after it (a node's reset, a key's vendor writes), `extra` joins the answer (a new room's address).
+        after it (a node's reset, a key's vendor writes) and `nodes` are the nodes those go to; `extra` joins the
+        answer (a new room's address). The nodes of all of it that the real run would find out of reach are noted
+        (`reachability`).
         """
         dry = _DRY_RUN.get()
         assert dry is not None
         assert dry.pf is not None
         assert dry.before is not None
+        plan = list(plan)
+        dry.reachability = self.reachability([*(s.node for s in plan), *nodes])
         dry.steps = [
             *first,
             *(f"{self.node_name(step.node)}: {step.what}" for step in plan),
@@ -500,6 +572,70 @@ class ExportStore:
         dry.pf, dry.before = pf, pf.snapshot()
         self.base = copy.deepcopy(pf)
         return pf
+
+    def reachability(self, nodes: Iterable[int]) -> dict[str, list[str]] | None:
+        """Return which of `nodes` a real run would find out of reach; None when every one is there.
+
+        `unreachable`: the mains nodes the hub counts as not there (`JungHomeHub.node_alive`), which the real run
+        refuses before its first message; `asleep`: the battery nodes not heard from for `KEEP_AWAKE_INTERVAL`,
+        which sleep between key presses — press one of the device's keys right before the real run. Whether a
+        transmitter is awake that long after a key press is unverified on air.
+        """
+        unreachable: list[str] = []
+        asleep: list[str] = []
+        now = time.monotonic()
+        for unicast in dict.fromkeys(nodes):
+            if sleepy_node(self.hub.cdb, unicast) is None:
+                if not self.hub.node_alive(unicast):
+                    unreachable.append(self.node_name(unicast))
+            elif now - self.hub.last_heard.get(unicast, -1e9) > KEEP_AWAKE_INTERVAL:
+                asleep.append(self.node_name(unicast))
+        if not unreachable and not asleep:
+            return None
+        return {"unreachable": unreachable, "asleep": asleep}
+
+    def room_name(self, pf: ProjectFile, room: str | AreaRoom) -> str:
+        """Return the room a call names in `pf`: by name, or by its area (`areas.room_in_area`, the entry's mapping).
+
+        A room named by its area is the one the entry's rooms-to-areas mapping gives that area, else the one named
+        or aliased like it, else the area's name: the same rooms the devices' areas follow.
+        """
+        if isinstance(room, str):
+            return room
+        hass = self.hub.hass
+        area = ar.async_get(hass).async_get_area(room.area_id)
+        if area is None:
+            raise _validation("service_unknown_area", id=room.area_id)
+        try:
+            return room_in_area(
+                hass, self.hub.entry.options, area, pf.user_groups().values()
+            )
+        except AmbiguousArea as err:
+            raise _validation(
+                "service_room_area_ambiguous", area=err.area, rooms=", ".join(err.rooms)
+            ) from err
+
+    async def reservations(self) -> Reservations:
+        """Return what no allocator of the entry may hand out (`Reservations`): the one provider every allocator uses.
+
+        A new node's addresses and element groups (`onboard`), a room (`Rooms`), a scene number (`Scenes`).
+        """
+        vault = self.hub.vault.vault
+        return Reservations(
+            unicasts=frozenset(
+                {
+                    self.hub.proxy.state.src,
+                    *(vault.reserved_unicasts() if vault is not None else ()),
+                }
+            ),
+            groups=frozenset(vault.reserved_groups() if vault is not None else ()),
+            scenes=frozenset(
+                number
+                for number, _ in await held_scene_pairs(
+                    self.hub.hass, self.hub.entry.entry_id
+                )
+            ),
+        )
 
     def node_name(self, unicast: int) -> str:
         """`0232 (Kitchen)`: a node by its address, with the name of the load at that address or the node's own."""

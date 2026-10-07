@@ -66,7 +66,7 @@ from custom_components.junghome_ble.jhmesh.provisioning import (
     MESH_PROVISIONING_SERVICE,
     ProvisioningData,
 )
-from custom_components.junghome_ble.jhmesh.vault import RefreshProgress
+from custom_components.junghome_ble.jhmesh.vault import RefreshProgress, Vault
 from custom_components.junghome_ble.services import CONFIGURATORS
 
 from .conftest import (
@@ -757,7 +757,8 @@ async def test_the_node_carrying_the_link_is_removed_only_with_force(
         await hass.services.async_call(
             DOMAIN,
             "remove_device",
-            {"device": device, "confirm": True, "force": True},
+            # `force` keeps the comparison of the others' wiring (decision M17): skipped here, as before
+            {"device": device, "confirm": True, "force": True, "skip_preflight": True},
             blocking=True,
         )
     assert SERVICE_LINK_WAIT in waits  # before the unwiring
@@ -1580,11 +1581,11 @@ async def test_reset_pending_device_forced_and_refused(
 async def test_without_a_vault_the_groups_heard_are_reserved(
     hass: HomeAssistant, provisioning_entry: MockConfigEntry
 ) -> None:
-    """Review-5 S5-4: a restored backup can take the vault back to none at all; the groups heard still count."""
+    """A restored backup can take the vault back to none at all; the groups heard still count."""
     hub = provisioning_entry.runtime_data
     with patch.object(hub.vault, "vault", None):
         hub.heard_groups.add(0xC0F5)
-        assert onboard._reserved_groups(hub) == {0xC0F5}
+        assert 0xC0F5 in await onboard._reserved_groups(hub, hub.configurator)
 
 
 async def test_an_older_vaults_pending_node_is_warned_about(
@@ -1600,10 +1601,10 @@ async def test_an_older_vaults_pending_node_is_warned_about(
     vault = hub.vault.vault
     assert vault is not None
     vault.nodes[PENDING_UUID].groups_known = False
-    assert onboard._reserved_groups(hub) == {0xC0F0}
-    # and every group heard on air (review-5 S5-4: a device a restored backup took out of the vault holds its own)
+    assert await onboard._reserved_groups(hub, hub.configurator) == {0xC0F0}
+    # and every group heard on air (a device a restored backup took out of the vault holds its own)
     hub.heard_groups.add(0xC0F5)
-    assert onboard._reserved_groups(hub) == {0xC0F0, 0xC0F5}
+    assert await onboard._reserved_groups(hub, hub.configurator) == {0xC0F0, 0xC0F5}
     assert "does not say which element groups it holds" in caplog.text
     assert f"{PENDING:04X}" in caplog.text
 
@@ -2072,3 +2073,88 @@ async def test_a_running_add_device_cancelled_closes_the_link(
     device.disconnect.assert_awaited()
     vault = hub.vault.vault
     assert vault is None or not vault.nodes
+
+
+async def test_a_recorded_device_whose_vault_write_fails_raises_the_repair(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """Review-5 W5-6: the export records the new device, then the vault write fails: the device is added (the
+    call answers), and the `vault_unwritable` repair says the vault on disk still lists it as pending — it used
+    to be silent, and a restart then offered to reset a working device."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    add = hub.proxy.add_node
+
+    def add_to_both(node: Any) -> None:
+        add(node)
+        fake_link.cdb.nodes.append(node)
+
+    hub.proxy.add_node = add_to_both  # type: ignore[method-assign]
+    fake_link.config_reply = FreshNodes(fake_link)
+    write = Store._async_write_data
+    failing: list[bool] = []
+
+    async def refuse_once_recorded(store: Store[Any], data: dict[str, Any]) -> None:
+        if failing and store.key.startswith(f"{DOMAIN}.vault."):
+            raise WriteError("read-only file system")
+        await write(store, data)
+
+    remember = Vault.remember_recorded
+
+    def recorded_then_unwritable(vault: Vault, pf: Any, uuid: str) -> Any:
+        failing.append(True)
+        return remember(vault, pf, uuid)
+
+    with (
+        patch.object(onboard, "establish_connection", AsyncMock(return_value=device)),
+        patch.object(onboard, "NODE_BOOT_DELAY", 0.0),
+        patch.object(Store, "_async_write_data", refuse_once_recorded),
+        patch.object(Vault, "remember_recorded", recorded_then_unwritable),
+    ):
+        result = await hass.services.async_call(
+            DOMAIN,
+            "add_device",
+            {"address": NEW_MAC, "name": "Hall light"},
+            blocking=True,
+            return_response=True,
+        )
+        assert result is not None
+        issue = find_issue(hass, ISSUE_VAULT_UNWRITABLE)
+        assert issue is not None
+        assert issue.translation_key == "vault_unwritable_recorded"
+        assert issue.translation_placeholders["address"] == result["unicast"]
+        assert issue.translation_placeholders["error"] == "read-only file system"
+    await hass.async_block_till_done()
+
+
+async def test_the_setup_marks_recorded_a_pending_node_the_export_records(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 W5-6: a vault on disk that lists as pending a node the export records with the same UUID and device
+    key (its write after the record never landed) is put right at setup: no `pending_device` repair, nothing for
+    `reset_pending_device` to reset. A pending node with another key stays pending."""
+    hub = provisioning_entry.runtime_data
+    recorded = hub.cdb.node_by_addr(TEMPLATE)
+    assert recorded is not None
+    vault = hub.vault.identity()
+    vault.remember_provisioned(
+        recorded.uuid, recorded.unicast, len(recorded.elements), recorded.dev_key
+    )
+    put_pending(hub, fake_link)
+    configurator = hub.configurator
+    assert configurator is not None
+    assert await configurator.async_note_recorded_nodes() == [f"{TEMPLATE:04X}"]
+    assert vault.nodes[recorded.uuid].recorded
+    assert [n.unicast for n in vault.pending] == [PENDING]
+    assert await configurator.async_note_recorded_nodes() == []
+    vault.forget(PENDING_UUID)
+    assert await configurator.async_note_recorded_nodes() == []  # nothing pending

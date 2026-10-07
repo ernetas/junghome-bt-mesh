@@ -555,17 +555,17 @@
   },
   {
    "id": "ui:msg:series_timer_scene_not_available_title",
-   "status": "partial",
+   "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/configurator/scenes.py::Scenes.store_scenes",
+    "custom_components/junghome_ble/configurator/scenes.py::Scenes._store_one",
+    "custom_components/junghome_ble/strings.json::exceptions.service_scene_channel_unsupported",
     "custom_components/junghome_ble/device_info.py::product_name"
    ],
    "tests": [
+    "tests/test_mesh_config.py::test_a_second_channel_without_its_own_scene_description_is_refused",
     "tests/test_mesh_config.py::test_two_channel_node_shares_one_scene_register"
    ],
-   "class": "build",
-   "verify": "offline",
-   "missing": "Home Assistant does not refuse: a second channel (location 2..63) of a node without a Scene Action Setup Server (0x0527:1017) stores the scene on the node's shared register with no per-channel action, where the app refuses with this message and asks for a firmware update (AbstractC0916e.T1 / Y1); with the server, both channels keep their own action on the shared register (MeshConfigurator.store_scenes)"
+   "note": "Unverified on air (no such node here, docs/on-air-sweep.md F: every node has the Scene Action Setup server 0x0527:1017): store_scene on a further channel of a node without that server is refused with the app's reason (AbstractC0916e.T1 / Y1: update the firmware), where its Store would have gone to the first channel's register and recorded that channel as the member (review-5 F5-2); with the server, both channels keep their own action on the shared register (MeshConfigurator.store_scenes)."
   },
   {
    "id": "ui:msg:update_available_snackbar_title",

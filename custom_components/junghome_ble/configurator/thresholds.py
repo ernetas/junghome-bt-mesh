@@ -70,9 +70,43 @@ class Thresholds(Operations):
     async def check_threshold_devices(
         self, socket_address: int, devices: Iterable[int]
     ) -> None:
-        """Refuse what `set_threshold_devices` would refuse, writing nothing: the caller checks before the threshold."""
+        """Refuse what `set_threshold_devices` would refuse, writing nothing: the caller checks before the threshold.
+
+        Its pre-flight comparison too (`PlanExecutor.preflight`): a load whose wiring differs from the export stops
+        the call before the threshold is written, not after; the caller then sends with `check=False`.
+        """
         async with self.store.lock:
-            self._threshold_plan(await self.store.load(), socket_address, devices)
+            pf = await self.store.load()
+            steps = self._devices_steps(pf, socket_address, devices)[2]
+            await self.executor.preflight(self.executor.in_order(steps)[0])
+
+    def _devices_steps(
+        self, pf: ProjectFile, socket_address: int, devices: Iterable[int]
+    ) -> tuple[Element, int | None, list[ConfigStep], list[Element]]:
+        """Plan `set_threshold_devices` on `pf`: (socket, the client's element group, the steps, the loads wanted)."""
+        socket, client, wanted, group = self._threshold_plan(
+            pf, socket_address, devices
+        )
+        steps: list[ConfigStep] = []
+        if group is None:
+            return socket, group, steps, wanted
+        if wanted:
+            bind = bind_step(client, ONOFF_CLIENT)
+            if bind is not None:
+                steps.append(bind)
+            steps += config_steps(pf, pf.subscribe(client, ONOFF_CLIENT, group))
+            if pf.publication(client, ONOFF_CLIENT) != group:
+                steps += config_steps(
+                    pf, pf.set_publication(client.node, client, ONOFF_CLIENT, group)
+                )
+        for element, model in threshold_wiring(pf.cdb, client, group):
+            if element not in wanted:
+                steps += config_steps(pf, pf.unsubscribe(element, model, group))
+        for element in wanted:
+            for model in THRESHOLD_TARGET_MODELS:
+                if has_model(element, model):
+                    steps += config_steps(pf, pf.subscribe(element, model, group))
+        return socket, group, steps, wanted
 
     async def set_threshold_devices(
         self,
@@ -80,6 +114,7 @@ class Thresholds(Operations):
         devices: Iterable[int],
         *,
         applied: Callable[[int, int], Applied] = applied_text,
+        check: bool = True,
     ) -> bool:
         """Make the socket's thresholds switch exactly `devices` (load elements), the wiring of `CreateThreshold`.
 
@@ -87,39 +122,26 @@ class Thresholds(Operations):
         and publishes there, then each load subscribes its JUNG User Property Server (`0x0527:1013`, where it has
         one) and its OnOff server to that group; a load no longer wanted leaves it (`threshold_wiring`). Both
         thresholds of the socket share the list: the app wires one client for both. The caller writes the
-        threshold first, as the app does; `applied` words a stop, with what the call wrote before.
+        threshold first, as the app does, having run the pre-flight before it (`check_threshold_devices`):
+        `check=False` then; `applied` words a stop, with what the call wrote before.
         """
         async with self.store.lock:
             pf = await self.store.load()
             before = pf.snapshot()
-            socket, client, wanted, group = self._threshold_plan(
+            socket, group, steps, wanted = self._devices_steps(
                 pf, socket_address, devices
             )
             if group is None:
                 return (
                     self.store.adopted
                 )  # no group, so no load listens to one: nothing to unwire
-            steps: list[ConfigStep] = []
-            if wanted:
-                bind = bind_step(client, ONOFF_CLIENT)
-                if bind is not None:
-                    steps.append(bind)
-                steps += config_steps(pf, pf.subscribe(client, ONOFF_CLIENT, group))
-                if pf.publication(client, ONOFF_CLIENT) != group:
-                    steps += config_steps(
-                        pf, pf.set_publication(client.node, client, ONOFF_CLIENT, group)
-                    )
-            for element, model in threshold_wiring(pf.cdb, client, group):
-                if element not in wanted:
-                    steps += config_steps(pf, pf.unsubscribe(element, model, group))
-            for element in wanted:
-                for model in THRESHOLD_TARGET_MODELS:
-                    if has_model(element, model):
-                        steps += config_steps(pf, pf.subscribe(element, model, group))
             if not steps and pf.snapshot() == before:
                 return self.store.adopted  # already wired so
             await self.executor.send(
-                steps, action="junghome_ble.set_threshold", applied=applied
+                steps,
+                action="junghome_ble.set_threshold",
+                applied=applied,
+                check=check,
             )
             await self.store.save(pf)
             _LOGGER.info(
@@ -131,11 +153,48 @@ class Thresholds(Operations):
             )
             return True
 
+    async def check_unwire_threshold(self, socket_address: int) -> None:
+        """Run `unwire_threshold`'s pre-flight comparison, writing nothing: the caller checks before the threshold."""
+        async with self.store.lock:
+            pf = await self.store.load()
+            steps = self._unwire_steps(pf, socket_address)[2]
+            await self.executor.preflight(
+                self.executor.in_order(steps, as_planned=True)[0]
+            )
+
+    def _unwire_steps(
+        self, pf: ProjectFile, socket_address: int
+    ) -> tuple[Element, int | None, list[ConfigStep]]:
+        """Plan `unwire_threshold` on `pf`: (socket, the client's element group, the steps in the app's order)."""
+        socket = find_element(pf, socket_address)
+        client = threshold_client(socket.node)
+        if client is None:
+            raise _validation("threshold_not_supported", name=hexaddr(socket.address))
+        group = element_groups(pf).get(client.address)
+        steps: list[ConfigStep] = []
+        if group is None:
+            return socket, group, steps
+        for element, model in threshold_wiring(pf.cdb, client, group):
+            steps += config_steps(pf, pf.unsubscribe(element, model, group))
+        if pf.publication(client, ONOFF_CLIENT) == group:
+            [off] = pf.set_publication(client.node, client, ONOFF_CLIENT, None)
+            steps.append(
+                replace(
+                    config_step(pf, off),
+                    pdu=C.model_publication_set(client.address, 0, ONOFF_CLIENT, ttl=0),
+                )
+            )
+            steps += config_steps(
+                pf, pf.set_publication(client.node, client, ONOFF_CLIENT, group)
+            )
+        return socket, group, steps
+
     async def unwire_threshold(
         self,
         socket_address: int,
         *,
         applied: Callable[[int, int], Applied] = applied_text,
+        check: bool = True,
     ) -> bool:
         """Stop the socket's thresholds switching anything, as the app does when it disables or deletes one.
 
@@ -145,36 +204,15 @@ class Thresholds(Operations):
         again — even when no load was left to unwire. The steps go out in that order
         (`PlanExecutor.send(as_planned=True)`). A publication the client does not have to its group is left alone. The
         app also writes KeyMode 5 to the meter element around it, which that element does not hold
-        (`air:access:03-0527:0x5003`): not sent. `applied` words a stop, with what the call wrote before.
+        (`air:access:03-0527:0x5003`): not sent. `applied` words a stop, with what the call wrote before;
+        `check=False` when the caller ran the pre-flight before writing the threshold (`check_unwire_threshold`).
         """
         async with self.store.lock:
             pf = await self.store.load()
             before = pf.snapshot()
-            socket = find_element(pf, socket_address)
-            client = threshold_client(socket.node)
-            if client is None:
-                raise _validation(
-                    "threshold_not_supported", name=hexaddr(socket.address)
-                )
-            group = element_groups(pf).get(client.address)
+            socket, group, steps = self._unwire_steps(pf, socket_address)
             if group is None:
                 return self.store.adopted  # no group, so no load listens to one
-            steps: list[ConfigStep] = []
-            for element, model in threshold_wiring(pf.cdb, client, group):
-                steps += config_steps(pf, pf.unsubscribe(element, model, group))
-            if pf.publication(client, ONOFF_CLIENT) == group:
-                [off] = pf.set_publication(client.node, client, ONOFF_CLIENT, None)
-                steps.append(
-                    replace(
-                        config_step(pf, off),
-                        pdu=C.model_publication_set(
-                            client.address, 0, ONOFF_CLIENT, ttl=0
-                        ),
-                    )
-                )
-                steps += config_steps(
-                    pf, pf.set_publication(client.node, client, ONOFF_CLIENT, group)
-                )
             if not steps:
                 return self.store.adopted
             await self.executor.send(
@@ -182,6 +220,7 @@ class Thresholds(Operations):
                 action="junghome_ble.set_threshold / delete_threshold",
                 applied=applied,
                 as_planned=True,
+                check=check,
             )
             if pf.snapshot() == before:
                 await (

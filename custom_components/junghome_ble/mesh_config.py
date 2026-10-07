@@ -97,7 +97,7 @@ from .configurator.plan import (
     said,
 )
 from .configurator.rooms import Keys, Rooms
-from .configurator.scenes import Scenes, held_scenes, scene_action_for
+from .configurator.scenes import Scenes, scene_action_for
 from .configurator.store import (
     GATEWAY_SYNCS,
     RELOAD_POLL,
@@ -105,10 +105,12 @@ from .configurator.store import (
     ExportStore,
     GatewaySync,
     PlanOutcome,
+    Reservations,
     applied_message,
     async_remove_gateway_sync,
     cancel_upload_retry,
     gateway_sync,
+    held_scenes,
     plan_history,
     plan_journal,
     run_to_end,
@@ -139,6 +141,7 @@ from .jhmesh.plan import ConfigStep, ordered, replay
 if TYPE_CHECKING:
     import asyncio
 
+    from .areas import AreaRoom
     from .coordinator import JungHomeHub
     from .gateway_api import JungHomeGatewayApi
     from .jhmesh import vendor_models as V
@@ -167,6 +170,7 @@ __all__ = [
     "GatewaySync",
     "MeshConfigurator",
     "PlanOutcome",
+    "Reservations",
     "app_copy_path",
     "applied_members",
     "applied_message",
@@ -322,9 +326,13 @@ class MeshConfigurator:
             return find_scene(pf, scene)
 
     # ------------------------------------------------------------------ dry runs, outcomes, the export, the gateway
-    def forcing(self, force: bool) -> AbstractContextManager[None]:
-        """Run the block's operations with an action's `force`: no pre-flight comparison (`ExportStore.forcing`)."""
-        return self.store.forcing(force)
+    def forcing(self, skip_preflight: bool) -> AbstractContextManager[None]:
+        """Run the block's operations with an action's `skip_preflight`: no pre-flight comparison (`ExportStore.forcing`)."""
+        return self.store.forcing(skip_preflight)
+
+    async def reservations(self) -> Reservations:
+        """Return what no allocator of the entry may hand out (`ExportStore.reservations`)."""
+        return await self.store.reservations()
 
     async def dry_run(
         self, operation: Callable[[MeshConfigurator], Coroutine[Any, Any, Any]]
@@ -393,6 +401,10 @@ class MeshConfigurator:
             template, entry_for, audit, plan, name, function, layout
         )
 
+    async def async_note_recorded_nodes(self) -> list[str]:
+        """At setup: mark recorded the pending vault nodes the export records (`Nodes.async_note_recorded_nodes`)."""
+        return await self.nodes.async_note_recorded_nodes()
+
     @_translated
     async def remove_node(self, unicast: int, *, force: bool = False) -> bool:
         """Remove the node whose primary element is `unicast` from the network (`Nodes.remove_node`)."""
@@ -415,48 +427,50 @@ class MeshConfigurator:
         return await self.rooms.create_room(name)
 
     @_translated
-    async def rename_room(self, room: str, name: str) -> bool:
+    async def rename_room(self, room: str | AreaRoom, name: str) -> bool:
         """Rename a room (`Rooms.rename_room`)."""
         return await self.rooms.rename_room(room, name)
 
     @_translated
-    async def delete_room(self, room: str) -> bool:
+    async def delete_room(self, room: str | AreaRoom) -> bool:
         """Delete a room (`Rooms.delete_room`)."""
         return await self.rooms.delete_room(room)
 
-    async def set_room(self, address: int, room: str, *, create: bool = False) -> bool:
+    async def set_room(
+        self, address: int, room: str | AreaRoom, *, create: bool = False
+    ) -> bool:
         """Put the load element at `address` into `room` (created when missing with `create`), leaving every other room."""
         return await self.set_rooms([address], room, create=create)
 
     @_translated
     async def set_rooms(
-        self, addresses: Iterable[int], room: str, *, create: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, create: bool = False
     ) -> bool:
         """Put every load element in `addresses` into `room`, leaving every other room (`Rooms.set_rooms`)."""
         return await self.rooms.set_rooms(addresses, room, create=create)
 
     async def add_to_room(
-        self, address: int, room: str, *, create: bool = False
+        self, address: int, room: str | AreaRoom, *, create: bool = False
     ) -> bool:
         """Put the load element at `address` into `room` as well (created when missing with `create`)."""
         return await self.add_to_rooms([address], room, create=create)
 
     @_translated
     async def add_to_rooms(
-        self, addresses: Iterable[int], room: str, *, create: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, create: bool = False
     ) -> bool:
         """Put every load element in `addresses` into `room` as well (`Rooms.add_to_rooms`)."""
         return await self.rooms.add_to_rooms(addresses, room, create=create)
 
     async def remove_from_room(
-        self, address: int, room: str, *, force: bool = False
+        self, address: int, room: str | AreaRoom, *, force: bool = False
     ) -> bool:
         """Take the load element at `address` out of `room`, leaving it in its other rooms."""
         return await self.remove_from_rooms([address], room, force=force)
 
     @_translated
     async def remove_from_rooms(
-        self, addresses: Iterable[int], room: str, *, force: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, force: bool = False
     ) -> bool:
         """Take every load element in `addresses` out of `room` (`Rooms.remove_from_rooms`)."""
         return await self.rooms.remove_from_rooms(addresses, room, force=force)
@@ -468,7 +482,7 @@ class MeshConfigurator:
         key_address: int,
         *,
         element: int | None = None,
-        room: str | None = None,
+        room: str | AreaRoom | None = None,
         scene: str | int | None = None,
         mode: str | None = None,
         target_element: str | None = None,
@@ -495,8 +509,13 @@ class MeshConfigurator:
     async def check_threshold_devices(
         self, socket_address: int, devices: Iterable[int]
     ) -> None:
-        """Refuse what `set_threshold_devices` would refuse, writing nothing (`Thresholds.check_threshold_devices`)."""
+        """Refuse what `set_threshold_devices` would refuse, and run its pre-flight (`Thresholds.check_threshold_devices`)."""
         await self.thresholds.check_threshold_devices(socket_address, devices)
+
+    @_translated
+    async def check_unwire_threshold(self, socket_address: int) -> None:
+        """Run the pre-flight of `unwire_threshold`, writing nothing (`Thresholds.check_unwire_threshold`)."""
+        await self.thresholds.check_unwire_threshold(socket_address)
 
     @_translated
     async def set_threshold_devices(
@@ -505,10 +524,11 @@ class MeshConfigurator:
         devices: Iterable[int],
         *,
         applied: Callable[[int, int], Applied] = applied_text,
+        check: bool = True,
     ) -> bool:
         """Make the socket's thresholds switch exactly `devices` (`Thresholds.set_threshold_devices`)."""
         return await self.thresholds.set_threshold_devices(
-            socket_address, devices, applied=applied
+            socket_address, devices, applied=applied, check=check
         )
 
     @_translated
@@ -517,9 +537,12 @@ class MeshConfigurator:
         socket_address: int,
         *,
         applied: Callable[[int, int], Applied] = applied_text,
+        check: bool = True,
     ) -> bool:
         """Stop the socket's thresholds switching anything (`Thresholds.unwire_threshold`)."""
-        return await self.thresholds.unwire_threshold(socket_address, applied=applied)
+        return await self.thresholds.unwire_threshold(
+            socket_address, applied=applied, check=check
+        )
 
     @_translated
     async def set_sensor_publication(

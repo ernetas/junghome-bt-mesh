@@ -11,11 +11,15 @@ area named after it, as before.
 `async_move_devices`: on a changed mapping (the reconfigure step) and, with `OPTION_SYNC_AREAS`, after an export
 adoption or a room action changed a device's room (`model_update.async_sync_areas`). It never moves a device the
 user placed: only one without an area, or in the very area the integration gave it.
+
+The other way round, an action's `room_area` names a room by its area: `room_in_area` resolves it per entry, with the
+same mapping (`room_area`), so an action and the devices agree on which room an area stands for.
 """
 
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.helpers import area_registry as ar
@@ -29,7 +33,7 @@ from .const import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterable, Mapping
 
     from homeassistant.core import HomeAssistant
 
@@ -58,25 +62,87 @@ def mapped_area(
     return area.id if area is not None else None
 
 
-def area_name_for(
-    hass: HomeAssistant, options: Mapping[str, Any], room: str | None
-) -> str | None:
-    """Return the area a device of `room` belongs in, by name (its `suggested_area`); None: no area.
+def room_area(
+    hass: HomeAssistant, options: Mapping[str, Any], room: str
+) -> ar.AreaEntry | None:
+    """Return the area `room` stands for, the one resolver of rooms and areas; None: none (yet).
 
-    None without a room, or with `OPTION_ASSIGN_AREAS` off. A room the mapping gives an area to goes there; one
-    it leaves empty (or whose area was deleted since) to the area named after the room; one the mapping does not
-    know to the area named or aliased like it, else to one named after it.
+    A room the mapping gives an area to stands for it; one it leaves empty (or whose area was deleted since) for
+    the area named after the room; one the mapping does not know for the area named or aliased like it. `room` is
+    the export's name of the room: the mapping is keyed by it.
     """
-    if room is None or not options.get(OPTION_ASSIGN_AREAS, DEFAULT_ASSIGN_AREAS):
-        return None
     mapping: Mapping[str, str | None] = options.get(CONF_ROOM_AREAS) or {}
     registry = ar.async_get(hass)
     if room in mapping:
         area_id = mapping[room]
         area = registry.async_get_area(area_id) if area_id else None
-        return area.name if area is not None else room
-    area = matching_area(hass, room)
+        return area if area is not None else registry.async_get_area_by_name(room)
+    return matching_area(hass, room)
+
+
+def area_name_for(
+    hass: HomeAssistant, options: Mapping[str, Any], room: str | None
+) -> str | None:
+    """Return the area a device of `room` belongs in, by name (its `suggested_area`); None: no area.
+
+    None without a room, or with `OPTION_ASSIGN_AREAS` off. The area the room stands for (`room_area`), else one
+    named after the room.
+    """
+    if room is None or not options.get(OPTION_ASSIGN_AREAS, DEFAULT_ASSIGN_AREAS):
+        return None
+    area = room_area(hass, options, room)
     return area.name if area is not None else room
+
+
+@dataclass(frozen=True)
+class AreaRoom:
+    """A room an action names by its area (`room_area`): which room that is, is up to each entry (`room_in_area`)."""
+
+    area_id: str
+
+
+class AmbiguousArea(Exception):
+    """Several rooms of an entry stand for the area an action names (`room_in_area`)."""
+
+    def __init__(self, area: str, rooms: list[str]) -> None:
+        """Name the area and the rooms."""
+        super().__init__(area, rooms)
+        self.area = area
+        self.rooms = rooms
+
+
+def room_in_area(
+    hass: HomeAssistant,
+    options: Mapping[str, Any],
+    area: ar.AreaEntry,
+    rooms: Iterable[str],
+) -> str:
+    """Return the room of an entry that `area` stands for, among its export's `rooms`: the one an action means.
+
+    First a room the entry's mapping gives that area to; then a room whose area it is otherwise (`room_area`: named
+    or aliased like it, or named like a room the mapping left empty); then a room the mapping gives the area to that
+    the export no longer has; else the area's own name — the room called like it, or the one `create` makes. So a
+    call never makes a new room for an area the mapping already gives a room. `AmbiguousArea` when several rooms
+    come first.
+    """
+    mapping: Mapping[str, str | None] = options.get(CONF_ROOM_AREAS) or {}
+    rooms = list(rooms)
+    tiers = (
+        [r for r in rooms if r in mapping and mapping[r] == area.id],
+        [
+            r
+            for r in rooms
+            if (found := room_area(hass, options, r)) is not None
+            and found.id == area.id
+        ],
+        [r for r in mapping if r not in rooms and mapping[r] == area.id],
+    )
+    for tier in tiers:
+        if len(tier) > 1:
+            raise AmbiguousArea(area.name, tier)
+        if tier:
+            return tier[0]
+    return area.name
 
 
 def area_id_for(

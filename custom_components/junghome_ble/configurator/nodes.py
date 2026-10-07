@@ -13,7 +13,16 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from custom_components.junghome_ble.const import SERVICE_LINK_WAIT
+from homeassistant.helpers import issue_registry as ir
+
+from custom_components.junghome_ble.const import (
+    DOMAIN,
+    ISSUE_VAULT_UNWRITABLE,
+    ISSUE_VAULT_UNWRITABLE_RECORDED,
+    SERVICE_LINK_WAIT,
+    issue_id,
+    learn_more_url,
+)
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import (
@@ -75,6 +84,12 @@ class Nodes(Operations):
         app's InsertId / ButtonLayout rows (with `layout`, the button layout it advertised); saved and
         handed to the gateway like any change. Returns the app's missing-devices check of the recorded rows
         (`onboarding.missing_devices`): None when the node has the devices its product and insert call for.
+
+        The vault is written after the export: until it is, the vault on disk still lists the node as pending. A
+        write that does not land raises the `vault_unwritable` repair (`vault_unwritable_recorded`: the device is
+        added, the export records it) and is logged; the call does not fail, the device works. The next start
+        marks the node recorded from the export (`async_note_recorded_nodes`), and the next save that lands
+        clears the repair. Unverified on air.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -92,9 +107,69 @@ class Nodes(Operations):
             # the vault keeps what the file got for it: the app's next upload lacks the node
             self.hub.vault.identity().remember_recorded(pf, node.uuid)
             await self.store.save(pf)
-            await self.hub.vault.async_save()
+            if not await self.hub.vault.async_save():
+                self._vault_unwritable(node.unicast)
             _LOGGER.info("Recorded the new node %r in the export", name)
             return count
+
+    def _vault_unwritable(self, unicast: int) -> None:
+        """Raise the `vault_unwritable` repair for a node the export records but the vault on disk lists as pending."""
+        keeper = self.hub.vault
+        entry = self.hub.entry
+        address = hexaddr(unicast)
+        error = keeper.write_error or "not written"
+        _LOGGER.error(
+            "The new device at %s is recorded in the export, but the vault %s could not be written (%s): it still "
+            "lists the device as pending until a write lands",
+            address,
+            keeper.path,
+            error,
+        )
+        ir.async_create_issue(
+            self.hub.hass,
+            DOMAIN,
+            issue_id(entry, ISSUE_VAULT_UNWRITABLE),
+            is_fixable=False,
+            is_persistent=False,
+            severity=ir.IssueSeverity.ERROR,
+            translation_key=ISSUE_VAULT_UNWRITABLE_RECORDED,
+            learn_more_url=learn_more_url(ISSUE_VAULT_UNWRITABLE_RECORDED),
+            translation_placeholders={
+                "title": entry.title,
+                "address": address,
+                "path": keeper.path,
+                "error": error,
+            },
+        )
+
+    async def async_note_recorded_nodes(self) -> list[str]:
+        """At setup: mark recorded every pending vault node the export records with its UUID and device key.
+
+        A node `record_node` wrote into the export whose vault write did not land (`vault_unwritable_recorded`)
+        is still pending in the vault on disk: it would be named by the `pending_device` repair, and
+        `reset_pending_device` would reset a working device. The export holding the same UUID and device key is
+        the proof it was recorded. Returns the addresses marked; the vault is written when there are any.
+        """
+        keeper = self.hub.vault
+        vault = keeper.vault
+        if vault is None or not vault.pending:
+            return []
+        async with self.store.lock:
+            pf = await self.store.read()
+            marked: list[str] = []
+            for pending in vault.pending:
+                node = next((n for n in pf.cdb.nodes if n.uuid == pending.uuid), None)
+                if node is None or node.dev_key != pending.dev_key:
+                    continue
+                vault.remember_recorded(pf, pending.uuid)
+                marked.append(hexaddr(pending.unicast))
+            if marked:
+                _LOGGER.warning(
+                    "The export records the device(s) at %s, which the vault still listed as pending: marked recorded",
+                    ", ".join(marked),
+                )
+                await keeper.async_save()
+            return marked
 
     async def remove_node(self, unicast: int, *, force: bool = False) -> bool:
         """Remove the node whose primary element is `unicast` from the network (experimental).
@@ -111,7 +186,8 @@ class Nodes(Operations):
         (`_reset_unconfirmed`) rather than reported as nothing changed. The node carrying Home Assistant's link
         (`hub.proxy_node`) is refused without `force`: its reset ends the link its confirmation would come back
         on. With `force` the link lost on its reset is that silence, and the unwiring waits for the next link.
-        Both unverified on air.
+        Both unverified on air. `force` does not skip the pre-flight comparison of the others' wiring
+        (`_preflight_unwiring`); the action's `skip_preflight` does.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -132,6 +208,7 @@ class Nodes(Operations):
                     first=[
                         f"{self.store.node_name(unicast)}: {M.describe(C.node_reset())}"
                     ],
+                    nodes=[unicast],
                 )
             await self._preflight_unwiring(pf, unicast)
             # scanners keep a device's advert data merged: one from before it was provisioned proves nothing later

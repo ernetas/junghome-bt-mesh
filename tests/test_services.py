@@ -18,6 +18,7 @@ from collections.abc import AsyncGenerator, Callable, Generator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, patch
 
@@ -44,6 +45,7 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.junghome_ble import mesh_config, repairs
 from custom_components.junghome_ble import services as svc
 from custom_components.junghome_ble.actions import common
+from custom_components.junghome_ble.areas import AreaRoom
 from custom_components.junghome_ble.climate import temperature_to_level
 from custom_components.junghome_ble.configurator import executor as executor_mod
 from custom_components.junghome_ble.configurator import plan as plan_mod
@@ -54,6 +56,7 @@ from custom_components.junghome_ble.const import (
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_PIN_SOURCE,
     CONF_GATEWAY_TOKEN,
+    CONF_ROOM_AREAS,
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
@@ -1124,7 +1127,9 @@ async def test_remove_from_room_needs_force_for_a_load_a_key_drives(
     await call(
         hass, "remove_from_room", {"entity_id": mirror, "room": "WC", "force": True}
     )
-    assert env.config_calls[0] == (
+    # `force` takes it out all the same, but no longer skips the comparison with the export (decision M17)
+    assert is_model_get(env.config_calls[0][1])
+    assert config_writes(env)[0] == (
         LIGHT_SWITCH,
         C.model_subscription_delete(LIGHT_SWITCH, DIMMER_KEY_GROUP, "1000"),
     )
@@ -3235,11 +3240,17 @@ async def test_a_dry_run_through_the_action_sends_writes_and_places_nothing(
             },
         ),
         ("remove_from_room", {**target, "room": "WC", "force": True}),
+        (
+            "remove_from_room",
+            {**target, "room": "WC", "force": True, "skip_preflight": True},
+        ),
         ("delete_room", {"room": "WC"}),
+        ("delete_room", {"room": "WC", "force": True}),
         ("create_room", {"name": "Attic"}),
         ("create_scene", {"name": "Movie night"}),
         ("delete_scene", {"scene": "WC off"}),
         ("delete_scene", {"scene": "WC off", "force": True}),  # no `confirm` needed
+        ("delete_scene", {"scene": "WC off", "skip_preflight": True}),
         ("clear_key", {"key_entity": entity_id(hass, "event", UID_ROCKER_A)}),
         (
             "assign_key",
@@ -3253,11 +3264,16 @@ async def test_a_dry_run_through_the_action_sends_writes_and_places_nothing(
         response = await respond(hass, service, {**data, "dry_run": True})
         assert response["dry_run"] is True, service
         assert response["diff"], service
-        # a destructive plan's pre-flight reads went out (not with `force`), and found the export's view
+        # a destructive plan's pre-flight reads went out (not with `skip_preflight`, nor with `force` where that
+        # is all it does: decision M17), and found the export's view
         if len(env.config_calls) > reads:
             assert response["preflight"] == {"differences": [], "unanswered": []}
-        if data.get("force"):
+        if data.get("skip_preflight") or (
+            data.get("force") and service == "delete_room"
+        ):
             assert "preflight" not in response, service
+        elif data.get("force"):  # an override of its own: the comparison still runs
+            assert "preflight" in response, service
     assert response["steps"][0].startswith("0232 (")  # named by the device
     # without a response asked for, a dry run answers nothing and does nothing either
     await call(hass, "set_room", {**target, "dry_run": True})
@@ -3443,6 +3459,67 @@ async def test_alternative_selectors_resolve_to_the_same_plan(
         )
 
 
+@pytest.mark.unavailable_ok  # the options change reloads the entry
+async def test_room_area_follows_the_entrys_rooms_to_areas_mapping(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-5 W5-2: the room an area stands for is the one the entry's rooms-to-areas step mapped to it, not a
+    room named like the area: `room_area` plans the same as naming the room, `create` makes no new room, and a
+    room typed in other letters still gives an area-less device the mapped area. Two rooms on one area are
+    refused rather than guessed."""
+    areas = ar.async_get(hass)
+    toilet = areas.async_create("Toilet")
+    mapping = {**(env.entry.options.get(CONF_ROOM_AREAS) or {}), "WC": toilet.id}
+    hass.config_entries.async_update_entry(
+        env.entry, options={**env.entry.options, CONF_ROOM_AREAS: mapping}
+    )
+    await hass.async_block_till_done()
+    await settled(hass, env)
+    light = entity_id(hass, "light", UID_LIGHT_SWITCH)
+    named = await respond(
+        hass, "set_room", {"entity_id": light, "room": "Kitchen", "dry_run": True}
+    )
+    by_area = await respond(
+        hass,
+        "set_room",
+        {"entity_id": light, "room_area": toilet.id, "create": True, "dry_run": True},
+    )
+    by_room = await respond(
+        hass, "set_room", {"entity_id": light, "room": "WC", "dry_run": True}
+    )
+    assert by_area == by_room != named
+    assert "Toilet" not in json.dumps(by_area["diff"])  # no new mesh room
+    # a real run, the room typed in lower case: the area-less device lands in the mapped area
+    registry = dr.async_get(hass)
+    switch = device_id(hass, UID_LIGHT_SWITCH)
+    registry.async_update_device(switch, area_id=None)
+    await call(hass, "add_to_room", {"entity_id": light, "room": "wc"})
+    await settled(hass, env)
+    placed = registry.async_get(switch)
+    assert placed is not None
+    assert placed.area_id == toilet.id  # not the area named like the room ("WC")
+    # two rooms mapped to the one area: which is meant is not guessed
+    mapping["Kitchen"] = toilet.id
+    hass.config_entries.async_update_entry(
+        env.entry, options={**env.entry.options, CONF_ROOM_AREAS: dict(mapping)}
+    )
+    await hass.async_block_till_done()
+    await settled(hass, env)
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "delete_room", {"room_area": toilet.id, "dry_run": True})
+    assert exc.value.translation_key == "service_room_area_ambiguous"
+    assert exc.value.translation_placeholders == {
+        "area": "Toilet",
+        "rooms": "WC, Kitchen",
+    }
+    # an area removed between the call's check and the plan
+    configurator = env.hub.configurator
+    assert configurator is not None
+    with pytest.raises(ServiceValidationError) as exc:
+        await configurator.delete_room(AreaRoom("gone"))  # type: ignore[attr-defined]
+    assert exc.value.translation_key == "service_unknown_area"
+
+
 async def test_a_scene_entity_of_another_network_is_refused(
     hass: HomeAssistant, env: Env
 ) -> None:
@@ -3541,3 +3618,62 @@ async def test_remove_from_scene_reads_the_register_and_force_skips_it(
     )
     await settled(hass, env)
     assert env.reload().cdb.scenes[1] == []
+
+
+def test_answers_of_several_entries_are_merged_not_added() -> None:
+    """Review-5 W5-3: a call over two entries answers one mapping: flags any, counts and lists added up, a dry
+    run's `preflight` merged key by key (it used to raise adding two dicts), texts kept once or listed."""
+    asked = SimpleNamespace(return_response=True)
+    first = {
+        "dry_run": True,
+        "applied": 1,
+        "steps": ["a"],
+        "preflight": {"differences": [{"node": "0300"}], "unanswered": []},
+        "room": "Kitchen",
+        "address": "C001",
+    }
+    second = {
+        "dry_run": False,
+        "applied": 2,
+        "steps": ["b"],
+        "preflight": {"differences": [], "unanswered": ["0148"]},
+        "reachability": {"unreachable": [], "asleep": ["0520"]},
+        "room": "Kitchen",
+        "address": "C002",
+    }
+    third = {"address": "C003", "skipped": None}
+    assert common._answer(asked, [first, second, third]) == {  # type: ignore[arg-type]
+        "dry_run": True,
+        "applied": 3,
+        "steps": ["a", "b"],
+        "preflight": {"differences": [{"node": "0300"}], "unanswered": ["0148"]},
+        "reachability": {"unreachable": [], "asleep": ["0520"]},
+        "room": "Kitchen",
+        "address": ["C001", "C002", "C003"],
+        "skipped": None,
+    }
+    assert common._answer(SimpleNamespace(return_response=False), [first]) is None  # type: ignore[arg-type]
+
+
+async def test_the_history_keeps_what_the_comparison_found(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-5: the diagnostics' plan history says what the pre-flight came to — the differences that stopped a
+    plan, also one stopped before its first message by a direct read (no logbook line then), and the reads a
+    call skipped."""
+    plans = async_capture_events(hass, EVENT_PLAN)
+    env.registers[LIGHT_SWITCH] = []  # the app deleted scene 1 there since the export
+    with pytest.raises(HomeAssistantError) as exc:
+        await call(hass, "delete_scene", {"scene": 1})
+    assert exc.value.translation_key == "service_preflight_differs"
+    history = mesh_config.plan_history(hass, env.entry.entry_id)[-1]
+    assert history["outcome"] == "stopped"
+    assert history["total"] == 0
+    assert history["preflight"]["differences"][0]["kind"] == "scene_register"
+    await hass.async_block_till_done()
+    assert plans == []  # no message sent: no logbook line
+    await call(hass, "delete_scene", {"scene": 1, "skip_preflight": True})
+    await settled(hass, env)
+    history = mesh_config.plan_history(hass, env.entry.entry_id)[-1]
+    assert history["outcome"] == "finished"
+    assert history["preflight"]["skipped"] > 0

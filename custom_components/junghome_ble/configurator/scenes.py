@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import issue_registry as ir
-from homeassistant.helpers.storage import Store
 
 from custom_components.junghome_ble.const import (
     DEFAULT_UNUSED_SCENES_DRY_RUN,
@@ -24,7 +23,6 @@ from custom_components.junghome_ble.const import (
 )
 from custom_components.junghome_ble.conversions import level_to_temperature
 from custom_components.junghome_ble.coordinator import issue_id
-from custom_components.junghome_ble.data import jung_data
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.devices import load_kind
@@ -49,7 +47,14 @@ from .plan import (
     applied_scene_stored,
     applied_unused_deleted,
 )
-from .store import _failure, _name_error, _validation, applied_message
+from .store import (
+    _failure,
+    _name_error,
+    _validation,
+    applied_message,
+    held_scene_pairs,
+    held_scenes,
+)
 from .wiring import (
     SCENE_ACTION_SETUP,
     SCENE_SETUP_SERVER,
@@ -61,8 +66,6 @@ from .wiring import (
 )
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
-
     from custom_components.junghome_ble.jhmesh.cdb import Element
 
 _LOGGER = logging.getLogger(__name__)
@@ -73,38 +76,12 @@ _LOGGER = logging.getLogger(__name__)
 SCENE_ACTION_CAPACITY, SCENE_REGISTER_CAPACITY = 8, 16
 
 
-HELD_SCENES_VERSION = 1
-
-
-def held_scenes(hass: HomeAssistant, entry_id: str) -> Store[dict[str, Any]]:
-    """Return the entry's held scene numbers (`.storage/junghome_ble.<entry id>.held_scenes`), one instance per entry.
-
-    `{"held": [[number, element], ...]}`: the scene registers a forced `delete_scene` skipped, which still hold a
-    number the export no longer names. `create_scene` does not hand such a number out again — the
-    skipped device would join every recall of the new scene — and `delete_unused_scenes` lets go of a pair once the
-    register no longer holds it. Numbers and addresses, no key material.
-    """
-    stores = jung_data(hass).held_scenes
-    if entry_id not in stores:
-        stores[entry_id] = Store(
-            hass, HELD_SCENES_VERSION, f"{DOMAIN}.{entry_id}.held_scenes"
-        )
-    return stores[entry_id]
-
-
 class Scenes(Operations):
     """The scenes of one hub's mesh: the export's scenes and what the loads' registers and channels hold."""
 
     async def _held_scenes(self) -> set[tuple[int, int]]:
         """(scene number, register element) of every register a forced `delete_scene` skipped and that may hold it."""
-        data = await held_scenes(self.hub.hass, self.hub.entry.entry_id).async_load()
-        try:
-            return {(int(n), int(e)) for n, e in (data or {}).get("held", [])}
-        except (TypeError, ValueError, AttributeError) as err:
-            _LOGGER.warning(
-                "Ignoring an unreadable record of held scene numbers: %s", err
-            )
-            return set()
+        return await held_scene_pairs(self.hub.hass, self.hub.entry.entry_id)
 
     async def _hold_scenes(self, pairs: set[tuple[int, int]]) -> None:
         """Keep `pairs` as the held scene numbers and let the `scene_held` repair name them (cleared when none).
@@ -175,15 +152,15 @@ class Scenes(Operations):
     async def create_scene(self, name: str, icon: str | None = None) -> int:
         """Create an empty scene (CDB `scenes[]` + `meta.scenes[]`); nothing goes on air. Returns its number.
 
-        Not a number a device still holds after a forced deletion skipped it (`held_scenes`): that device would
-        join every recall of the new scene.
+        Not a number a device still holds after a forced deletion skipped it (`held_scenes`, one of the entry's
+        `ExportStore.reservations`): that device would join every recall of the new scene.
         """
         async with self.store.lock:
             pf = await self.store.load()
-            held_numbers = {number for number, _ in await self._held_scenes()}
+            reserved = await self.store.reservations()
             try:
                 number = pf.add_scene(
-                    name, icon=icon or DEFAULT_SCENE_ICON, avoid=held_numbers
+                    name, icon=icon or DEFAULT_SCENE_ICON, avoid=reserved.scenes
                 )
             except InvalidName as err:
                 raise _name_error(err, name) from err
@@ -266,7 +243,21 @@ class Scenes(Operations):
         the members of such a node by their JUNG action, so removing the other channel from the scene would
         delete the shared register and drop this one without a word. (A blind's slat element is no channel a
         scene is stored on by itself.)
+
+        A channel other than the one holding the node's scene register, on a node with no Scene Action Setup
+        server (a two-channel insert of older firmware), is refused as the app refuses it (*Feature not
+        available*, asking for a firmware update): its Store would go to the register of the first channel, which
+        would then be recalled in its place, and nothing would describe the channel. Unverified on air: every node
+        here has the server.
         """
+        if element.address != store.address and not any(
+            has_model(e, SCENE_ACTION_SETUP) for e in element.node.elements
+        ):
+            raise _failure(
+                "service_scene_channel_unsupported",
+                address=hexaddr(element.address),
+                applied=applied_message(self.hub.hass, applied),
+            )
         if (
             action is None
             and has_model(element, SCENE_ACTION_SETUP)
@@ -411,7 +402,8 @@ class Scenes(Operations):
         *remove device from scene* does for every member). A member that cannot be reached, or refuses, stops the
         deletion with what was done recorded — unless `force`, the app's *Delete anyway*
         (`removeScene(scene, force)`): then that member is skipped, keeps the scene in its register, and the scene
-        leaves the export all the same. A skipped member's number is held (`held_scenes`, the `scene_held` repair
+        leaves the export all the same. `force` keeps the pre-flight comparison (`skip_preflight` skips it), passing
+        over the members it cannot read. A skipped member's number is held (`held_scenes`, the `scene_held` repair
         names it) until `delete_unused_scenes` deletes it there: a new scene with that number would also recall
         the skipped member. Returns the skipped members (`["0232"]`); the device model always
         changes.
@@ -425,10 +417,12 @@ class Scenes(Operations):
                 if (e := pf.cdb.element(a)) is not None
             ]
             keys = scene_key_steps(pf, [e.node for e in members], number)
-            # read before the keys' plan, whose stop `force` passes over: a difference is no member to skip
+            # read before the keys' plan, whose stop `force` passes over: a difference is no member to skip, while
+            # a member `force` would skip (out of reach, silent) is no reason to stop
             await self.executor.preflight(
                 self.executor.in_order(keys)[0],
                 registers=_registers(pf, members, number),
+                passable=force,
             )
             if self.store.dry:
                 pf.remove_scene(number)
@@ -446,6 +440,7 @@ class Scenes(Operations):
                             (stored_on, M.scene_delete(number)),
                         )
                     ],
+                    nodes=[e.node.unicast for e in members],
                 )
             try:
                 await self.executor.send(

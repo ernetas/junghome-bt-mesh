@@ -620,7 +620,8 @@ async def test_set_threshold_disabled_unwires_like_the_app(
     hass: HomeAssistant, env: Env
 ) -> None:
     """Disabled while the other threshold is not active either: the app's disable on air, in its order — the
-    threshold, each load leaving the group (OnOff server, then `0x0527:1013`), the client's publication reset."""
+    threshold, each load leaving the group (OnOff server, then `0x0527:1013`), the client's publication reset; the
+    unwiring's pre-flight reads before the threshold is written (review-5 W5-4)."""
     await call(
         hass,
         "set_threshold",
@@ -647,9 +648,9 @@ async def test_set_threshold_disabled_unwires_like_the_app(
     await call(hass, "set_threshold", disable)
     await settled(hass, env)
     assert sent == [
-        admin_set(SWITCH_ON, P.Threshold(20.0, 5, False)),
         *READ_DIMMER_LEAVES,
         *READ_PUBLICATION,
+        admin_set(SWITCH_ON, P.Threshold(20.0, 5, False)),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
         *PUBLICATION_RESET,
@@ -771,10 +772,10 @@ async def test_delete_threshold(hass: HomeAssistant, env: Env) -> None:
     assert env.thresholds[SOCKET, SWITCH_ON] == cleared
     assert env.thresholds[SOCKET, SWITCH_OFF] == cleared
     assert sent == [
-        admin_set(SWITCH_ON, T.CLEARED),
-        admin_set(SWITCH_OFF, T.CLEARED),
         *READ_DIMMER_LEAVES,
         *READ_PUBLICATION,
+        admin_set(SWITCH_ON, T.CLEARED),
+        admin_set(SWITCH_OFF, T.CLEARED),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "1000"),
         C.model_subscription_delete(LIGHT_DIMMER, METER_GROUP, "05271013"),
         *PUBLICATION_RESET,
@@ -975,7 +976,8 @@ async def test_a_meter_the_app_rewired_stops_the_unwiring_and_force_runs_it(
     hass: HomeAssistant, env: Env
 ) -> None:
     """Review-4 brief 70: `delete_threshold` reads the meter's publication before resetting it; one the app moved
-    stops the plan after the thresholds were cleared (written first, as the app does) and says so; `force` runs it."""
+    stops the call before the thresholds are cleared (review-5 W5-4: the reads come first) and says so; `force`
+    runs it."""
     await call(
         hass,
         "set_threshold",
@@ -1007,12 +1009,62 @@ async def test_a_meter_the_app_rewired_stops_the_unwiring_and_force_runs_it(
     assert err.value.translation_key == "service_preflight_differs"
     placeholders = err.value.translation_placeholders or {}
     assert (placeholders["expected"], placeholders["found"]) == ("C001", "C0FE")
-    assert placeholders["applied"].startswith(
-        "Both thresholds of socket 0172 were written"
-    )
+    assert placeholders["applied"].startswith("Nothing before it was applied")
     assert not any(not is_model_get(pdu) for _n, pdu in env.config_calls)
+    assert env.thresholds[SOCKET, SWITCH_OFF] != wire(T.CLEARED)  # not cleared
     await call(hass, "delete_threshold", {"entity_id": socket(hass), "force": True})
     await settled(hass, env)
     assert [pdu for _n, pdu in env.config_calls if not is_model_get(pdu)][-2:] == (
         PUBLICATION_RESET
     )
+
+
+async def test_set_threshold_compares_before_it_writes_the_threshold(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-5 W5-4: `set_threshold` with `devices` reads what its wiring removes before the threshold is
+    written: a load the app rewired since the export stops the call with the threshold as it was, nothing
+    written (it used to be written first, and kept switching the old loads)."""
+    await call(
+        hass,
+        "set_threshold",
+        {
+            "entity_id": socket(hass),
+            "threshold": "switch_off",
+            "power": 5,
+            "duration": 300,
+            "devices": [entity_id(hass, "light", UID_LIGHT_DIMMER)],
+        },
+    )
+    await settled(hass, env)
+    written = env.thresholds[SOCKET, SWITCH_OFF]
+    answer = env.link.config_reply
+    assert answer is not None
+
+    def rewired(node: int, pdu: bytes) -> bytes | None:
+        if pdu in READ_DIMMER_LEAVES:
+            env.config_calls.append((node, pdu))
+            return export_model_status(
+                env.path, pdu, subscriptions={(LIGHT_DIMMER, "1000"): []}
+            )
+        return answer(node, pdu)
+
+    env.link.config_reply = rewired
+    env.config_calls.clear()
+    with pytest.raises(HomeAssistantError) as err:
+        await call(
+            hass,
+            "set_threshold",
+            {
+                "entity_id": socket(hass),
+                "threshold": "switch_off",
+                "power": 50,
+                "devices": [],
+            },
+        )
+    assert err.value.translation_key == "service_preflight_differs"
+    assert (err.value.translation_placeholders or {})["applied"].startswith(
+        "Nothing before it was applied"
+    )
+    assert env.thresholds[SOCKET, SWITCH_OFF] == written  # not written
+    assert all(is_model_get(pdu) for _n, pdu in env.config_calls)

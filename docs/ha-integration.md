@@ -1661,7 +1661,11 @@ real run would answer of its own (`create_room`'s address, `create_scene`'s numb
 export, its backups, the plan journal, the held scene numbers, the vault), nothing is taken over from the gateway,
 no device is moved into an area, and nothing is sent but the pre-flight reads of a plan that removes or replaces
 something (see [Pre-flight reconcile](#pre-flight-reconcile)), whose findings the answer lists under `preflight`.
-The plan is made on the export on disk: with a gateway, the real run plans on the gateway's export when the app
+The devices the real run would find out of reach are listed under `reachability` (review 5): `unreachable`, the ones
+Home Assistant counts as not answering (their entities are unavailable; the real run refuses at once, naming them),
+and `asleep`, the battery devices not heard from in the last 6 s (press one of their keys right before the real run);
+a plan whose devices are all there answers no `reachability`. Whether a transmitter stays awake that long after a key
+press is unverified on air. The plan is made on the export on disk: with a gateway, the real run plans on the gateway's export when the app
 changed the installation since (taken over first), so its plan can differ by what the app changed. Its checks run as they would: what the real run refuses, the dry run refuses too.
 Ask for the response (*Return response* in the developer tools, `response_variable` in a script); without it a dry
 run does nothing visible.
@@ -1679,7 +1683,14 @@ server (English or German, see [Languages](#languages)): *0234 (…) now drives 
 *… removed from the network*, *Scene … deleted*, or *junghome_ble.assign_key stopped after 3 of 8 messages: …* /
 *… was cancelled after …*. The bus event is `junghome_ble_plan` (`entry_id`, `name`, `action`, `outcome`:
 `finished`, `stopped` or `cancelled`, `message`, `placeholders`). The diagnostics keep the last five such calls
-(`plans`: action, outcome, messages accepted and planned, the step texts, the error key; no key material).
+(`plans`: action, outcome, messages accepted and planned, the step texts, the error key, and `preflight` — what the
+comparison with the export came to: the Gets compared, the differences found, the devices that did not answer, and
+the Gets a call skipped with `skip_preflight` (review 5); no key material). A call stopped by a difference before its
+first message (a `remove_device` or `delete_scene` reads before anything else) is kept there too, without a logbook
+line.
+
+**Several networks in one call.** A call whose targets are in two networks answers one response: counts added up,
+lists joined, `preflight` and `reachability` merged key by key, a text both answers share once (review-5 W5-3).
 
 ### Pre-flight reconcile
 
@@ -1700,22 +1711,33 @@ A node that differs stops the plan before its first message — nothing is journ
 error *service_preflight_differs*, naming the device, the Get, what the export says and what the node holds, and
 how many more differences the plan met; export the project from the app again (or let the gateway's export be taken
 over) and run the action again. A node that does not answer the read stops it as a plan step would (*did not
-answer*, or *asleep* for a battery node), before anything was sent. `set_threshold` and `delete_threshold` write
-the threshold first, as the app does, so their error says it was written; `remove_device` reads the others' wiring
-to the device before its *Config Node Reset*, which cannot be taken back. A dry run sends the same reads and answers
+answer*, or *asleep* for a battery node), before anything was sent; devices Home Assistant already counts as not answering are refused before the first read, every
+one named (*service_nodes_unreachable*), rather than waited for one by one. `set_threshold` and `delete_threshold`
+write the threshold first, as the app does, but read what their wiring removes before that (review-5 W5-4): a
+difference leaves the threshold as it was; `remove_device` reads the others' wiring to the device before its
+*Config Node Reset*, which cannot be taken back. A dry run sends the same reads and answers
 `preflight`: `{"differences": [{"node", "element", "model", "kind", "expected", "found"}], "unanswered": [...]}`
 (every node unanswered when there is no link); a plan without destructive steps reads nothing and answers no
 `preflight`. The switches *Time keeper* and *Sensor values for IoT systems* set what the node holds whatever the
 export says, and are not compared.
 
-`force: true` skips the comparison: on `set_room`, `delete_room`, `assign_key`, `clear_key`, `remove_from_scene`,
-`set_threshold` and `delete_threshold` it does only that; on `remove_from_room`, `delete_scene` and `remove_device`
-it does that besides what it did already. Like every rewiring action, these are for administrators only.
+`force: true` skips the comparison on `set_room`, `delete_room`, `assign_key`, `clear_key`, `remove_from_scene`,
+`set_threshold` and `delete_threshold`: it does nothing else there. On `remove_from_room`, `delete_scene` and
+`remove_device`, whose `force` is an override of their own (a load a key drives, a member that does not answer, a
+reset not confirmed), `force` keeps the comparison and `skip_preflight: true` skips it (decision M17, review-5 U5-8):
+removing a dead device no longer drops the check of the live ones. `delete_scene` with `force` passes over the
+members it cannot read (out of reach, silent) — they are skipped as before — but a difference still stops it. Like
+every rewiring action, these are for administrators only.
 Unverified on air: a dry run of a destructive action against a node the app changed since the export.
 
-**Areas and scene entities.** Where an action takes a room's name (`room`), `room_area` picks the area named like the
-room instead (the rooms are matched by name, as the areas Home Assistant gives the devices); where it takes a
-scene's name or number (`scene`), `scene_entity` picks the scene's entity. The two forms are equivalent: the same
+**Areas and scene entities.** Where an action takes a room's name (`room`), `room_area` picks a room by its area
+instead, the way the devices get their areas (review-5 W5-2, `areas.room_in_area`): the room the entry's
+[rooms-to-areas step](#devices-and-areas) gives that area, else the room named or aliased like it, else a room the
+mapping gives it that the export no longer has, else the area's name. So `room_area: Toilet` for a room *WC* mapped
+to *Toilet* is *WC*, and `create: true` never makes a new mesh room for an area the mapping already gives a room;
+two rooms on one area are refused (*service_room_area_ambiguous*) — name the room then. A device without an area
+that a room action puts into a room lands in that room's area, whatever letters the call typed the room in. Where an
+action takes a scene's name or number (`scene`), `scene_entity` picks the scene's entity. The two forms are equivalent: the same
 call by either gives the same plan. *Store scene* keeps its state fields in a collapsed section *State to store*;
 the schedule actions group theirs into *When* and *What*.
 
@@ -1759,7 +1781,8 @@ data: { scene: "Dinner" }
   removed from the export. `force` (the app's *Delete anyway*): a member that cannot be reached or refuses is
   skipped — it keeps the scene in its register — and the scene is removed from the export all the same. With
   *Response* on, answers the skipped members (`{"skipped": ["0232"], …}`). `force` needs `confirm: true` (it cannot be
-  undone; a dry run needs none). A skipped member would join every recall of
+  undone; a dry run needs none). `force` keeps the [pre-flight comparison](#pre-flight-reconcile), passing over the
+  members it cannot read; `skip_preflight: true` skips it. A skipped member would join every recall of
   a new scene with the same number, so Home Assistant holds that number (kept in
   `.storage/junghome_ble.<entry id>.held_scenes`, numbers and addresses only): `create_scene` gives it to no new
   scene, and the repair issue [*Devices still hold a deleted JUNG HOME scene*](#repair-issue-devices-still-hold-a-deleted-jung-home-scene-on-)
@@ -1842,8 +1865,10 @@ response_variable: created   # {"light.kitchen_table": {"slot": 0}}
 - **`update_schedule`** — target, `slot` (0–15) and the fields of `create_schedule`, all of them given again (a
   field left out takes its default, nothing is kept from the slot): rewrites that used slot in place, as the app's
   edit does (review-4 F4-6) — location first for a sunrise / sunset one, the schedule inactive, its action, then
-  active. A free slot, or one the app did not write, is refused. When a write fails, the slot's old schedule and
-  action are written back (a warning in the log says when even that is not taken: the slot is then left inactive).
+  active. A free slot, or one the app did not write, is refused. When a write fails, or the call is cancelled
+  meanwhile (an automation in `mode: restart`, Home Assistant stopping; review-5 W5-5), the slot's old schedule and
+  action are written back before the error or the cancellation goes on (a warning in the log says when even that is
+  not taken: the slot is then left inactive).
   Calling it again with the same fields is harmless. Unverified on air.
 - **`enable_schedule`** / **`disable_schedule`** — target and `slot` (0–15): the slot fires again / stays in place
   without firing.
@@ -1851,7 +1876,8 @@ response_variable: created   # {"light.kitchen_table": {"slot": 0}}
 
 Every write is confirmed from the load's answer, or read back when it stays silent; a load that did not take it,
 has no free slot, or holds nothing in the slot named fails the action (a new schedule that was not fully taken is
-freed again; it goes in inactive, so it never fires with a slot's old action). Slots a central scheduler owns are
+freed again, also when the call is cancelled meanwhile; it goes in inactive, so it never fires with a slot's old
+action). The *Schedules* sensor follows what the slot then holds. Slots a central scheduler owns are
 left out, as in the app. To change a schedule in place, `update_schedule` it.
 
 ### Actions: thresholds
@@ -2175,7 +2201,7 @@ refused too — both before the device learns anything. No JUNG device is known 
 practice this is the app's method; add devices where nobody else is in range. What a device offered and the method
 used are kept in the vault and shown in the diagnostics (`added_devices`).
 
-**`junghome_ble.remove_device`** (`device`, `force`, `confirm`, `dry_run`; administrators only, same option; without
+**`junghome_ble.remove_device`** (`device`, `force`, `skip_preflight`, `confirm`, `dry_run`; administrators only, same option; without
 `confirm: true` it is refused, as it cannot be undone — a dry run needs none) takes a device out the app's
 way, reset first: *Config Node Reset* to the node (it forgets the network's keys and becomes a new device again) and,
 only once it confirmed, every other device's wiring to it is removed — its element groups with whoever subscribed or
@@ -2193,7 +2219,8 @@ for good; a device a scanner already saw advertising so before the reset (left f
 taken as proof. The device Home Assistant is connected through (the *Proxy node* sensor) is refused without `force`:
 its reset ends the connection its confirmation would come back on — wait until Home Assistant connects through
 another device, or use `force`, which takes the lost connection for that reset and does the rest once a connection
-is back. Unverified on air. When a message to another device
+is back. Unverified on air. `force` keeps the [pre-flight comparison](#pre-flight-reconcile) of the others' wiring;
+`skip_preflight: true` skips it. When a message to another device
 fails after the reset, the export still records the device as removed, with the messages that were accepted; the
 links the others keep to it are left in the export (they point at nothing) and the error says so. The gateway is
 refused. Removing cannot be undone: the device has to be added again.
@@ -2257,7 +2284,9 @@ that did not confirm the reset Home Assistant sent it is reset with `reset_pendi
   next start: while an action runs, its messages and how many of them the devices accepted are kept in
   `.storage/junghome_ble.<entry id>.plan_journal` (no key material; removed once the export records the outcome),
   the next setup records what it says, sets the entry up again and raises the repair issue *A JUNG HOME change on …
-  was interrupted* naming the action — run it again to finish. That record is not handed to the gateway at setup;
+  was interrupted* naming the action — run it again to finish. A reload while an action still runs (saving the
+  options, *Reload*) waits for that action's plan before it looks at the journal (the export's lock outlives the
+  reload, review-5 W5-7): the plan records itself, and nothing is recorded twice. That record is not handed to the gateway at setup;
   the next change or `junghome_ble.sync_gateway` does it.
 - **One connection per network.** The integration keeps a single GATT connection to one node of the mesh. That is
   enough to hear the whole installation, but every message goes through that node; if it goes away, entities are
@@ -2846,6 +2875,11 @@ address it was to get, the file and the last write error (never a key). Free up 
 filesystem remounted read-only usually needs the host restarted), then add the device again; do not edit, delete or
 replace the vault's files. The issue clears itself as soon as a write of the vault lands. Tested with injected write
 failures only; *unverified on air*.
+
+The same issue, worded for it, comes when the export already records the new device and only the vault's write after
+that does not land (review-5 W5-6): the device is added and works, but the vault on disk still lists it as not
+recorded. Do not reset it with `junghome_ble.reset_pending_device`; the next start marks it recorded from the export
+(same UUID and device key), and the issue clears with the next write that lands. *Unverified on air.*
 
 ### Repair issue "Devices Home Assistant added missed the new network key"
 

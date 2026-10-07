@@ -27,6 +27,7 @@ from .common import (
     _FORCE_FIELD,
     _ONE_SCENE,
     _SCENE_FIELDS,
+    _SKIP_PREFLIGHT_FIELD,
     _STATE_FIELDS,
     ATTR_CONFIG_ENTRY,
     ATTR_CONFIRM,
@@ -40,6 +41,7 @@ from .common import (
     _execute,
     _hub,
     _run,
+    _skips_preflight,
     _validation,
 )
 from .resolve import (
@@ -99,6 +101,7 @@ DELETE_SCENE_SCHEMA = vol.All(
         {
             **_SCENE_FIELDS,
             vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+            **_SKIP_PREFLIGHT_FIELD,
             vol.Optional(ATTR_CONFIRM, default=False): cv.boolean,
             **_DRY_RUN_FIELD,
             **_ENTRY_FIELD,
@@ -302,7 +305,13 @@ async def _remove_from_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceR
             )
             return True
 
-        await _run(hass, entry_id, operation, scenes=True, force=call.data[ATTR_FORCE])
+        await _run(
+            hass,
+            entry_id,
+            operation,
+            scenes=True,
+            skip_preflight=_skips_preflight(call.data),
+        )
     return None
 
 
@@ -311,7 +320,8 @@ async def _delete_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespon
 
     `skipped`: the members `force` passed over, which still hold the scene (the `scene_held` repair names them),
     beside what the keys' plan applied. `force` deletes a scene some members cannot forget, which cannot be
-    undone: it needs `confirm` (a dry run does not).
+    undone: it needs `confirm` (a dry run does not). `force` keeps the pre-flight comparison; `skip_preflight`
+    skips it (decision M17).
     """
     force: bool = call.data[ATTR_FORCE]
     if force and not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:

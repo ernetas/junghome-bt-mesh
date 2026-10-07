@@ -2,6 +2,15 @@
 
 ## 1.5.0 (unreleased)
 
+### Upgrading
+
+- **`force` no longer skips the comparison with the export on `remove_from_room`, `delete_scene` and
+  `remove_device`** (decision M17, review-5 U5-8). There `force` is an override of its own — take out a load a key
+  drives, pass over a scene member that does not answer, accept a reset that is not confirmed — and the pre-flight
+  comparison of the devices with the export now runs with it. The new field `skip_preflight: true` (*Without
+  comparing with the export*) skips it on those three actions; a script that relied on `force` to skip it there adds
+  `skip_preflight: true`. On every other rewiring action `force` still skips the comparison and nothing else.
+
 ### Added
 
 - **`abort_iv_update`, and an IV Update the mesh does not take ends** (review-5 P5-3, S5-3). An IV Update Home
@@ -21,6 +30,17 @@
 
 - Internal: section numbers say Mesh Protocol 1.1's (§3.11.5, §3.11.6) instead of Mesh Profile's; the heartbeat's
   `hops` docstring says what 0 and 1 are (the proxy itself, a node the proxy hears directly).
+- **A dry run says which devices are out of reach** (review 5): `reachability` lists the devices the real run would
+  refuse at once (`unreachable`: not answering) and the battery devices probably asleep (`asleep`: not heard from in
+  the last 6 s — press a key first). `delete_scene` and `remove_device` name the devices Home Assistant counts as not
+  answering before their pre-flight reads instead of waiting for each one, and `delete_scene` with `force` passes over
+  the members it cannot read. The diagnostics' plan history keeps what each call's comparison came to (`preflight`:
+  the Gets compared, the differences, the devices that did not answer, the Gets skipped), also for a call stopped
+  by a difference before its first message.
+- **One reservation provider for every allocator** (review-5 W5-1): a room — `create_room`, or `set_room` /
+  `add_to_room` with `create` — is no longer given an element group of a device Home Assistant provisioned but never
+  recorded; the vault's addresses and groups, the held scene numbers and Home Assistant's own address are the same
+  reservations for a new device, a room and a scene.
 
 ### Fixed
 
@@ -60,6 +80,28 @@
   beacon arrived, and so start its sequence numbers over at 0 under an index it had sent numbers under since. Every
   change of the IV state now goes through one rule: while a restored record waits for the first beacon, only a beacon
   may move the transmit index on.
+- **`room_area` names the room the entry maps to that area** (review-5 W5-2). The actions resolved an area to the
+  room *named* like it, ignoring the rooms-to-areas step: a room *WC* mapped to the area *Toilet* was not found by
+  `room_area: Toilet`, and with `create` a new mesh room *Toilet* was made and the devices moved into it. Now the
+  room the mapping gives the area comes first, then the room named or aliased like it; two rooms on one area are
+  refused. A room typed in other letters (`room: wc`) gives an area-less device the room's mapped area too.
+- **`store_scene` on the second channel of a two-channel device without per-channel scene descriptions is refused**
+  (review-5 F5-2), as the app refuses it: on such older firmware the Store went to the first channel's register,
+  which a recall then switched instead, and the export recorded the first channel as the member.
+- **A call over two networks answers** (review-5 W5-3): a dry run whose plans both read the devices first failed
+  adding two `preflight` answers; the answers are now merged key by key.
+- **`set_threshold` compares before it writes the threshold** (review-5 W5-4): a load rewired in the app since the
+  export used to stop the wiring after the new threshold was written, which then kept switching the old loads. The
+  comparison now runs first, for `delete_threshold` too, and a difference leaves the thresholds as they were.
+- **A cancelled `create_schedule` or `update_schedule` cleans up** (review-5 W5-5): cancelled between its writes (an
+  automation restarted, Home Assistant stopping), a new schedule's slot is freed again and an updated slot gets its
+  old schedule and action back, before the cancellation goes on; the *Schedules* sensor follows.
+- **A vault write that fails after a device was recorded is reported** (review-5 W5-6): the repair *JUNG HOME device
+  keys cannot be saved* now also comes when the export already records the new device; the next start marks such a
+  device recorded from the export, so *Reset pending device* is never offered for a working device.
+- **A reload during an action no longer records its plan twice** (review-5 W5-7): the export's lock now outlives a
+  reload, so the setup's journal replay waits for a plan still running on the hub before (which records itself),
+  instead of recording it again with a spurious *A JUNG HOME change was interrupted* repair.
 
 ## 1.4.1 (unreleased)
 

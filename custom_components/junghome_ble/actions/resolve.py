@@ -21,6 +21,7 @@ from homeassistant.helpers.target import (
     async_extract_referenced_entity_ids,
 )
 
+from custom_components.junghome_ble.areas import AreaRoom
 from custom_components.junghome_ble.const import ATTR_SCENE, DOMAIN
 from custom_components.junghome_ble.entity import (
     button_gang,
@@ -217,14 +218,17 @@ async def _resolve_loads(
     return list(loads.values())
 
 
-def _room_of(hass: HomeAssistant, data: Mapping[str, Any]) -> str:
-    """Return the room a call names: `room`, or the area `room_area` — the room called like it."""
+def _room_of(hass: HomeAssistant, data: Mapping[str, Any]) -> str | AreaRoom:
+    """Return the room a call names: `room`, or the area `room_area` — which room that is, each entry says.
+
+    An area stands for the room the entry's rooms-to-areas mapping gives it, else the one named or aliased like it
+    (`areas.room_in_area`, resolved against the export by the configurator); an unknown area is refused here.
+    """
     if (area_id := data.get(ATTR_ROOM_AREA)) is None:
         return str(data[ATTR_ROOM])
-    area = ar.async_get(hass).async_get_area(area_id)
-    if area is None:
+    if ar.async_get(hass).async_get_area(area_id) is None:
         raise _validation("service_unknown_area", id=area_id)
-    return area.name
+    return AreaRoom(area_id)
 
 
 def _scene_of(hass: HomeAssistant, data: Mapping[str, Any]) -> tuple[str | None, str]:

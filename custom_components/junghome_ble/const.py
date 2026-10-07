@@ -358,6 +358,8 @@ ISSUE_DEVICE_NAME: Final = "device_name_rejected"  # a device renamed in HA to a
 ISSUE_PENDING_DEVICE: Final = "pending_device"  # a device Home Assistant provisioned was never recorded (onboard.py)
 # the vault could not be written while a device was added: provisioning stopped before the device got anything
 ISSUE_VAULT_UNWRITABLE: Final = "vault_unwritable"
+# the same issue, raised once the export recorded the device (`Nodes.record_node`): another text, the same id
+ISSUE_VAULT_UNWRITABLE_RECORDED: Final = "vault_unwritable_recorded"
 # devices Home Assistant added that did not confirm the end of the app's key refresh (vault_refresh.py)
 ISSUE_VAULT_KEY_REFRESH: Final = "vault_key_refresh_lagging"
 # an adopted app export overrode what HA had changed (configurator/store.py)
@@ -425,6 +427,7 @@ ISSUE_LEARN_MORE: Final[Mapping[str, str]] = MappingProxyType(
         ISSUE_TIME_KEEPER_MISSING: "jung-home-pucks-have-no-time-keeper",
         ISSUE_PENDING_DEVICE: "a-device-home-assistant-added-is-not-recorded",
         ISSUE_VAULT_UNWRITABLE: "jung-home-device-keys-cannot-be-saved",
+        ISSUE_VAULT_UNWRITABLE_RECORDED: "jung-home-device-keys-cannot-be-saved",
         ISSUE_VAULT_KEY_REFRESH: "devices-home-assistant-added-missed-the-new-network-key",
     }
 )

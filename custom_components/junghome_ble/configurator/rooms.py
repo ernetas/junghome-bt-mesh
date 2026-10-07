@@ -65,6 +65,7 @@ from .wiring import (
 )
 
 if TYPE_CHECKING:
+    from custom_components.junghome_ble.areas import AreaRoom
     from custom_components.junghome_ble.jhmesh.cdb import Element
 
 _LOGGER = logging.getLogger(__name__)
@@ -104,18 +105,18 @@ class Rooms(Operations):
         """Create a room (CDB `groups[]` + `meta.userGroups[]`); nothing goes on air. Returns its address."""
         async with self.store.lock:
             pf = await self.store.load()
-            address = add_room(pf, name)
+            address = add_room(pf, name, (await self.store.reservations()).groups)
             if self.store.dry:
                 self.store.planned(room=name, address=hexaddr(address))
             await self.store.save(pf)
             _LOGGER.info("Created room %r at %04X", name, address)
             return address
 
-    async def rename_room(self, room: str, name: str) -> bool:
-        """Rename a room in the CDB and in `meta.userGroups[]`; nothing goes on air."""
+    async def rename_room(self, room: str | AreaRoom, name: str) -> bool:
+        """Rename a room (by name, or by its area: `ExportStore.room_name`) in the CDB and `meta.userGroups[]`; nothing goes on air."""
         async with self.store.lock:
             pf = await self.store.load()
-            address = find_room(pf, room)
+            address = find_room(pf, self.store.room_name(pf, room))
             wanted = check_room_name(name)
             before = pf.snapshot()
             try:
@@ -130,10 +131,11 @@ class Rooms(Operations):
             _LOGGER.info("Renamed room %04X to %r", address, name)
             return True
 
-    async def delete_room(self, room: str) -> bool:
+    async def delete_room(self, room: str | AreaRoom) -> bool:
         """Delete a room: members unsubscribed, room-linked keys cleared, CDB and `meta` entries dropped."""
         async with self.store.lock:
             pf = await self.store.load()
+            room = self.store.room_name(pf, room)
             address = find_room(pf, room)
             steps: list[ConfigStep] = []
             for link in pf.room_links(address):
@@ -150,7 +152,7 @@ class Rooms(Operations):
             return True
 
     async def set_rooms(
-        self, addresses: Iterable[int], room: str, *, create: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, create: bool = False
     ) -> bool:
         """Put every load element in `addresses` into `room`, leaving every other room.
 
@@ -165,7 +167,7 @@ class Rooms(Operations):
         )
 
     async def add_to_rooms(
-        self, addresses: Iterable[int], room: str, *, create: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, create: bool = False
     ) -> bool:
         """Put every load element in `addresses` into `room` as well, keeping the rooms it is in.
 
@@ -178,7 +180,7 @@ class Rooms(Operations):
         )
 
     async def remove_from_rooms(
-        self, addresses: Iterable[int], room: str, *, force: bool = False
+        self, addresses: Iterable[int], room: str | AreaRoom, *, force: bool = False
     ) -> bool:
         """Take every load element in `addresses` out of `room`, keeping the other rooms it is in.
 
@@ -200,7 +202,7 @@ class Rooms(Operations):
     async def _change_rooms(
         self,
         addresses: Iterable[int],
-        room: str,
+        room: str | AreaRoom,
         *,
         action: str,
         join: bool = True,
@@ -211,13 +213,15 @@ class Rooms(Operations):
         """Join `room` (leaving every other room as well with `only`), or leave it: one plan, one rewrite, one upload.
 
         `create` makes a missing room to join (its creation is the plan's `prepare` note, so a stopped plan
-        records it); leaving a room needs one the export has. `force`: leave even where a key's room link drives
-        the load (`room_keys`).
+        records it), at a group address no node holds (`ExportStore.reservations`); leaving a room needs one the
+        export has. A room named by its area is the one the entry's mapping gives it (`ExportStore.room_name`):
+        `create` never makes another. `force`: leave even where a key's room link drives the load (`room_keys`).
         """
         async with self.store.lock:
             pf = await self.store.load()
             before = pf.snapshot()
             elements = [find_element(pf, a) for a in addresses]
+            room = self.store.room_name(pf, room)
             created: str | None = None
             try:
                 group = find_room(pf, room)
@@ -225,7 +229,8 @@ class Rooms(Operations):
                 if not (join and create):
                     raise
                 created = check_room_name(room)
-                group = add_room(pf, room)
+                group = add_room(pf, room, (await self.store.reservations()).groups)
+            self.executor.outcome.room = pf.cdb.groups[group]
             changes: list[ModelChange] = []
             if join:
                 for element in elements:
@@ -292,7 +297,7 @@ class Keys(Operations):
         key_address: int,
         *,
         element: int | None = None,
-        room: str | None = None,
+        room: str | AreaRoom | None = None,
         scene: str | int | None = None,
         mode: str | None = None,
         target_element: str | None = None,
@@ -326,6 +331,8 @@ class Keys(Operations):
         async with self.store.lock:
             pf = await self.store.load()
             key = find_element(pf, key_address)
+            if room is not None:
+                room = self.store.room_name(pf, room)
             detector = key.node.pid in DETECTOR_PIDS
             if detector and element is None:
                 raise _validation(

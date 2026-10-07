@@ -30,6 +30,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
 from . import const
 from .config_entities import EntityTarget
+from .configurator.store import run_to_end
 from .const import (
     DOMAIN,
     PROPERTY_READ_RETRIES,
@@ -445,8 +446,10 @@ class Scheduler:
         """Write a new schedule into the element's first free slot, as the app does: location, schedule, action.
 
         The schedule goes in inactive and is made active (a type-only Set) once its action is in: the slot must
-        not fire with whatever action it held before (a deleted schedule's). When any write fails, the slot is
-        freed again, if the element lets us: it was free before.
+        not fire with whatever action it held before (a deleted schedule's). When any write fails, or the call is
+        cancelled meanwhile (an automation restarted, Home Assistant stopping), the slot is freed again, if the
+        element lets us: it was free before. That clean-up runs to its end (`run_to_end`) before the error or
+        the cancellation goes on, and the cache says the slot is free.
         """
         async with self._locks[address]:
             index = await self._free_slot(address)
@@ -463,21 +466,27 @@ class Scheduler:
                         V.scheduler_type_set(index, schedule.type),
                         schedule.type,
                     )
-            except HomeAssistantError:
-                try:
-                    await self._write_schedule(
-                        address, V.scheduler_type_set(index, AVAILABLE), AVAILABLE
-                    )
-                except HomeAssistantError:
-                    _LOGGER.warning(
-                        "%04X: slot %d was not freed again; it may hold the new schedule, active only if its action is in",
-                        address,
-                        index,
-                    )
+            except (HomeAssistantError, asyncio.CancelledError):
+                await run_to_end(self._free(address, index))
                 raise
             slot = Slot(schedule, action)
             self._store(address, index, slot)
             return slot
+
+    async def _free(self, address: int, index: int) -> None:
+        """Free slot `index` again after a failed or cancelled `create`; warn when the element does not take it."""
+        try:
+            await self._write_schedule(
+                address, V.scheduler_type_set(index, AVAILABLE), AVAILABLE
+            )
+        except HomeAssistantError:
+            _LOGGER.warning(
+                "%04X: slot %d was not freed again; it may hold the new schedule, active only if its action is in",
+                address,
+                index,
+            )
+            return
+        self._store(address, index, None)
 
     async def _slot(self, address: int, index: int) -> V.Schedule:
         schedule = (await self._get(address, index, V.SUB_SCHEDULE)).schedule
@@ -497,8 +506,10 @@ class Scheduler:
 
         The same writes as `create`, to slot `index`: location (astro), schedule, action. The schedule goes in
         inactive first and is made active once the new action is in, so the slot never fires the new times with its
-        old action. When a write fails the slot's old contents are written back, if the element lets us; else it is
-        left inactive, possibly with part of the update (a warning says so). A free slot, or one the app did not write (a
+        old action. When a write fails, or the call is cancelled meanwhile, the slot's old contents are written
+        back, if the element lets us — held to its end (`run_to_end`) before the error or the cancellation goes on,
+        and the cache follows: the old schedule when it is back, none known when not —; else it is left inactive,
+        possibly with part of the update (a warning says so). A free slot, or one the app did not write (a
         central scheduler's or a reserved type), is the caller's mistake. Unverified on air, like every write here.
         """
         async with self._locks[address]:
@@ -524,8 +535,8 @@ class Scheduler:
                         V.scheduler_type_set(index, schedule.type),
                         schedule.type,
                     )
-            except HomeAssistantError:
-                await self._restore(address, old, old_action)
+            except (HomeAssistantError, asyncio.CancelledError):
+                await run_to_end(self._restore(address, old, old_action))
                 raise
             slot = Slot(schedule, action)
             self._store(address, index, slot)
@@ -536,7 +547,8 @@ class Scheduler:
     ) -> None:
         """Write a slot's old schedule and action back after a failed update; warn when the element does not take it.
 
-        The schedule goes back inactive until its action is in again, as in `update`.
+        The schedule goes back inactive until its action is in again, as in `update`. The cache gets the old slot
+        back, or loses it when the element did not take it: what the slot holds then is not known.
         """
         index = schedule.index
         trigger = TRIGGER_OF[schedule.type]
@@ -555,6 +567,9 @@ class Scheduler:
                 address,
                 index,
             )
+            self._store(address, index, None)
+            return
+        self._store(address, index, Slot(schedule, action))
 
     async def set_enabled(self, address: int, index: int, enabled: bool) -> None:
         """Enable or disable a used slot: a type-only Set with its trigger's active or inactive type."""

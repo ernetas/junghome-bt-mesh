@@ -18,6 +18,7 @@ from .common import (
     _FORCE_FIELD,
     _ONE_ROOM,
     _ROOM_FIELDS,
+    _SKIP_PREFLIGHT_FIELD,
     ATTR_FORCE,
     ATTR_NAME,
     ATTR_NEW_NAME,
@@ -59,11 +60,13 @@ SET_ROOM_SCHEMA = vol.All(
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
     *_ONE_ROOM,
 )
+# `force` takes a load a key drives out all the same; `skip_preflight` skips the comparison (decision M17)
 REMOVE_FROM_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {
             **_ROOM_FIELDS,
             vol.Optional(ATTR_FORCE, default=False): cv.boolean,
+            **_SKIP_PREFLIGHT_FIELD,
             **_DRY_RUN_FIELD,
             **cv.ENTITY_SERVICE_FIELDS,
         }
@@ -97,7 +100,8 @@ def _suggest_area(
     """Put a device that has no area yet into its room's area (`areas.area_name_for`, as on creation).
 
     The area the entry's `areas` step mapped the room to, else the one named or aliased like it, else a new one
-    named after it; none when the entry assigns no areas.
+    named after it; none when the entry assigns no areas. `room` is the export's name of the room
+    (`PlanOutcome.room`), which the mapping is keyed by, not the call's spelling of it.
     """
     registry = dr.async_get(hass)
     device = registry.async_get(device_id) if device_id else None
@@ -143,8 +147,10 @@ async def _join_room(
             change = configurator.set_rooms if only else configurator.add_to_rooms
             changed = await change([load.address for load in mine], room, create=create)
             if not configurator.dry:
+                joined = configurator.outcome.room
+                assert joined is not None  # every room change names the room it joined
                 for load in mine:
-                    _suggest_area(hass, entry_id, load.device_id, room)
+                    _suggest_area(hass, entry_id, load.device_id, joined)
             return changed
 
         results.append(await _execute(hass, call, entry_id, operation))

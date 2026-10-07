@@ -14,7 +14,7 @@ what the app does when a device is added:
    every node the vault holds: one provisioned earlier but never recorded is in no export, yet still sends from
    its addresses and holds its element groups; and clear of every source and group address heard on air
    (`_heard_unicasts`, `JungHomeHub.heard_groups`): a restored backup rolls the export and the vault back
-   together, so a device provisioned after it is in neither (review-5 S5-4, `backup.py`);
+   together, so a device provisioned after it is in neither (`backup.py`);
 3. provisions it over PB-GATT (`provisioning.provision`, the export's NetKey and the IV state a beacon confirmed on
    the current link; the strongest method the device offers — Static OOB with the value the call gives, the HMAC
    algorithm, else No OOB as the app — within the app's 30 s), refusing a device whose element
@@ -114,6 +114,7 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
 
+    from .configurator.store import Reservations
     from .coordinator import JungHomeHub
     from .identity import VaultKeeper
     from .jhmesh.advert import JungAdvertisement
@@ -137,6 +138,9 @@ class NodeRecorder(Protocol):
 
     async def async_current_export(self) -> ProjectFile:
         """Return the export as a change would plan on it now."""
+
+    async def reservations(self) -> Reservations:
+        """Return what no allocator of the entry may hand out (`ExportStore.reservations`)."""
 
     async def record_node(
         self,
@@ -309,20 +313,21 @@ async def _place(
     """Return where a node of `count` elements goes in `cdb` and the group range for its element groups (None: the app's).
 
     Above every provisioner's range, or with the provisioner identity option inside Home Assistant's own ranges;
-    never on Home Assistant's own address, on any address of a node the vault holds, pending or recorded, nor
-    where a source was heard on air (`_heard_unicasts`).
+    never on Home Assistant's own address, on any address of a node the vault holds, pending or recorded (the
+    entry's `reservations`), nor where a source was heard on air (`_heard_unicasts`).
     """
     within: tuple[int, int] | None = None
     group_range: tuple[int, int] | None = None
     if configurator.identity_enabled:
         ranges = await configurator.async_identity_ranges()
         within, group_range = ranges.unicast, ranges.group
-    vault = hub.vault.vault
-    reserved = vault.reserved_unicasts() if vault is not None else set()
+    reserved = await configurator.reservations()
     unicast = free_unicast_block(
         cdb,
         count,
-        avoid=[hub.proxy.state.src, *reserved, *_heard_unicasts(hub, cdb, reserved)],
+        avoid=sorted(
+            set(reserved.unicasts) | _heard_unicasts(hub, cdb, set(reserved.unicasts))
+        ),
         within=within,
         own=hub.vault.own_uuid,
     )
@@ -336,8 +341,8 @@ def _heard_unicasts(hub: JungHomeHub, cdb: CDB, reserved: set[int]) -> set[int]:
 
     A restored backup rolls the export and the vault back together (`backup.py`): a device Home Assistant
     provisioned after the backup is in neither, yet sends from its addresses, and the top-down search
-    (`free_unicast_block`) would hand exactly those out again — two nodes on one address, their nonces colliding
-    (review-5 S5-4). The sources are the replay list's (kept with the counter), the last number heard per source
+    (`free_unicast_block`) would hand exactly those out again — two nodes on one address, their nonces colliding.
+    The sources are the replay list's (kept with the counter), the last number heard per source
     and the nodes last seen (`JungHomeHub.heard_sources`). A source neither the export nor the vault (`reserved`)
     knows may be any element of its node: the addresses below it, as many as the largest node of the export has
     elements, are kept clear too. A device not heard since the restart is not protected.
@@ -350,24 +355,22 @@ def _heard_unicasts(hub: JungHomeHub, cdb: CDB, reserved: set[int]) -> set[int]:
     return avoid
 
 
-def _reserved_groups(hub: JungHomeHub) -> set[int]:
-    """Return the element groups of every node the vault holds, and every group address heard on air.
+async def _reserved_groups(hub: JungHomeHub, configurator: NodeRecorder) -> set[int]:
+    """Return the element groups no allocator may hand out: the entry's `reservations` and every group heard on air.
 
     Warns about pending nodes the vault kept no groups for. The groups heard (`JungHomeHub.heard_groups`) cover a
     device a restored backup took out of the export and the vault (`_heard_unicasts`) as far as its groups were
     heard since the restart.
     """
     vault = hub.vault.vault
-    if vault is None:
-        return set(hub.heard_groups)
-    for node in vault.groups_unknown:
+    for node in vault.groups_unknown if vault is not None else ():
         _LOGGER.warning(
             "The device Home Assistant provisioned at %04X was never recorded, and the vault (kept by an earlier "
             "version) does not say which element groups it holds: they may be handed out again. Reset it with "
             "the action reset_pending_device",
             node.unicast,
         )
-    return vault.reserved_groups() | hub.heard_groups
+    return set((await configurator.reservations()).groups) | hub.heard_groups
 
 
 def _require_iv_state(hub: JungHomeHub) -> None:
@@ -671,7 +674,7 @@ async def async_add_device(
             count,
             template,
             group_range=group_range,
-            reserved_groups=_reserved_groups(hub),
+            reserved_groups=await _reserved_groups(hub, configurator),
             policy="top" if group_range is None else "app",
             function=function,
         )

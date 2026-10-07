@@ -21,10 +21,13 @@ from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.junghome_ble.areas import (
+    AmbiguousArea,
     area_id_for,
     area_name_for,
     async_move_devices,
     mapped_area,
+    room_area,
+    room_in_area,
 )
 from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
@@ -542,3 +545,31 @@ async def test_a_device_the_registry_does_not_have_is_skipped(
     assert (
         async_move_devices(hass, "entry", {"nothing": ("WC", "Kitchen")}, {}, {}) == 0
     )
+
+
+async def test_the_room_an_area_stands_for(hass: HomeAssistant) -> None:
+    """Review-5 W5-2, `room_in_area`: the room the mapping gives the area, else the one whose area it is (named or
+    aliased like it), else a room the mapping gives it that the export lacks (what `create` would make), else the
+    area's own name; several on one level are refused."""
+    areas = ar.async_get(hass)
+    toilet = areas.async_create("Toilet", aliases={"Loo"})
+    hall = areas.async_create("Hall")
+    rooms = ["WC", "Loo", "Hall", "Office"]
+    options: dict[str, Any] = {CONF_ROOM_AREAS: {"WC": toilet.id, "Office": None}}
+    assert (
+        room_in_area(hass, options, toilet, rooms) == "WC"
+    )  # mapped, before the alias
+    assert room_in_area(hass, {}, toilet, rooms) == "Loo"  # by alias
+    assert room_in_area(hass, options, hall, rooms) == "Hall"  # by name
+    gone = {CONF_ROOM_AREAS: {"Bath": toilet.id}}
+    assert room_in_area(hass, gone, toilet, ["Hall"]) == "Bath"  # the mapping's room
+    attic = areas.async_create("Attic")
+    assert room_in_area(hass, options, attic, rooms) == "Attic"  # the area's name
+    two = {CONF_ROOM_AREAS: {"WC": toilet.id, "Hall": toilet.id}}
+    with pytest.raises(AmbiguousArea) as err:
+        room_in_area(hass, two, toilet, rooms)
+    assert (err.value.area, err.value.rooms) == ("Toilet", ["WC", "Hall"])
+    # a room the mapping leaves empty stands for the area named like it, as its devices go there
+    office = areas.async_create("Office")
+    assert room_area(hass, options, "Office") == office
+    assert room_in_area(hass, options, office, rooms) == "Office"
