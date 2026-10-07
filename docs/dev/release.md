@@ -18,8 +18,7 @@ PyPI takes them by trusted publishing — no token in the repository: PyPI has t
 and the `pypi` environment as the project's trusted publisher. Before the first release no `jhmesh` project exists
 yet, so that is a *pending* publisher, added once under the PyPI account's *Publishing* page
 (<https://pypi.org/manage/account/publishing/>); it does not reserve the name until the first upload
-(`docs/roadmap.md`). What gates: every HACS validator except, while the repository is not public, `hacsjson` and
-`integration_manifest` (they download the raw files without the token) — see the `validate` job in `ci.yml`. A suffixed tag (`v1.1.0b1`, `v1.1.0rc1`) becomes a *pre-release*, which
+(`docs/roadmap.md`). What gates: every HACS validator, none ignored — see the `validate` job in `ci.yml`. A suffixed tag (`v1.1.0b1`, `v1.1.0rc1`) becomes a *pre-release*, which
 HACS only shows to users who enabled beta versions for the repository. The zip is not declared as a HACS `zip_release`
 on purpose: it carries a top-level `junghome_ble/` folder for unzipping into `custom_components/`, whereas HACS would
 extract such an asset straight into `custom_components/junghome_ble/`; HACS installs from the tagged tree instead.

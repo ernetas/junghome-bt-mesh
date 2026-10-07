@@ -8,6 +8,7 @@ For people who change the integration or the `jhmesh` library. Using the integra
 | [Architecture](architecture.md) | The repository layout, every module of the integration, the `jhmesh` library, the behaviour worth knowing before changing the hub, what is not done yet |
 | [Testing](testing.md) | Running the tests, lint and types; the synthetic fixtures, the fake proxy link, the simulated mesh and the soak; the documentation checks |
 | [Releases](release.md) | Tagging a version, what the release workflow checks and publishes, PyPI trusted publishing, Renovate |
+| [HACS default store](hacs-default-pr.md) | What the HACS default store requires, where each requirement holds, the pull request to `hacs/default` |
 | [Research notes](../research/README.md) | How the system was reverse-engineered, the command-line tools, the protocol and app notes |
 | [Parity ledger](../parity/README.md) | Every feature of the app and the air, and how this repository covers it |
 | [On-air sweep](../on-air-sweep.md) | The checklist for everything still unverified on the maintainer's installation |
