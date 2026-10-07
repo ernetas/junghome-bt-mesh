@@ -3035,6 +3035,7 @@ The loggers:
 | `jhmesh` | The link's lifecycle: attaching to a proxy, the proxy filter, beacons that move the IV index or a key refresh, a lost link, unanswered requests ("no response from … (attempt 1/3)") |
 | `jhmesh.trace` | The traffic, one line per PDU: every sent command (`TX`) and decrypted mesh message (`RX`: addresses, opcodes and values, never keys), the proxy's beacons, and every PDU dropped and why (undecryptable, a replay, malformed) |
 | `jhmesh.provisioning`, `jhmesh.standalone` | Adding a device, and the CLI's own Bluetooth link |
+| `jhmesh.vaultrefresh` | Taking the devices only Home Assistant knows through the app's key refresh |
 
 `jhmesh.trace` is a child of `jhmesh`: `jhmesh: debug` includes it, as before. To see only the traffic, or only the
 rest:

@@ -4,6 +4,7 @@ A name added to, or dropped from, a module's `__all__` changes what users of the
 it has to change here too, on purpose. Underscore names are private and never listed.
 """
 
+import ast
 import importlib
 import os
 import pkgutil
@@ -1007,3 +1008,22 @@ def test_importing_the_package_loads_no_dependency() -> None:
         cwd=root,
     ).stdout
     assert out.strip() == "[]"
+
+
+def test_every_logger_is_named_under_jhmesh() -> None:
+    """A logger named by its module path would be `custom_components.junghome_ble.jhmesh.…` inside Home Assistant,
+    out of reach of the documented `jhmesh` logger setting: every one has a literal `jhmesh…` name."""
+    names = [
+        (path.name, ast.unparse(node.args[0]))
+        for path in sorted(Path(jhmesh.__file__).parent.glob("*.py"))
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8")))
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "getLogger"
+    ]
+    assert len(names) >= 7
+    assert [
+        (file, name)
+        for file, name in names
+        if not name.startswith(("'jhmesh", '"jhmesh'))
+    ] == []

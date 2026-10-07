@@ -291,6 +291,8 @@
   `jhmesh` helpers (A5-5): `config_messages.model_get` (the Get and the status answering it) and `echoes`, and read
   the export with `cdb.Element.publication` / `subscriptions` (`model_publication`, `model_subscriptions`), one case
   rule for model ids (`Element.model_entry`).
+  `jhmesh.vaultrefresh` logs under that name inside Home Assistant too, not its module path (A5-7), so the
+  documented `jhmesh` logger setting covers it; a test keeps every `jhmesh` logger named under `jhmesh`.
 
 ## 1.4.1 (unreleased)
 

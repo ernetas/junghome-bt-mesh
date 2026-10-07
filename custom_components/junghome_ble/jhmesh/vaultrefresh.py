@@ -51,7 +51,7 @@ __all__ = [
     "wanted",
 ]
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("jhmesh.vaultrefresh")
 
 NET_KEY_INDEX = 0  # the only subnet a JUNG network has
 
