@@ -730,10 +730,10 @@ def has_model(element: Element, model: str) -> bool:
 
 def raw_model(element: Element, model: str) -> dict[str, Any]:
     """Return the element's CDB model entry for `model`; KeyError when it has none."""
-    for m in element.raw_models:
-        if m["modelId"].upper() == model.upper():
-            return m
-    raise KeyError(f"element {element.address:04X} has no model {model}")
+    entry = element.model_entry(model)
+    if entry is None:
+        raise KeyError(f"element {element.address:04X} has no model {model}")
+    return entry
 
 
 def group_addresses_in_use(cdb: CDB, meta: dict[str, Any] | None) -> set[int]:

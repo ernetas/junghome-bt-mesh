@@ -300,6 +300,24 @@ def test_element_subscriptions(cdb: CDB):
     assert button.subscriptions("1001") == [0xC005]
 
 
+def test_element_publication_and_subscriptions_ignore_the_case_of_a_model_id(cdb: CDB):
+    """One rule for the audit, the pre-flight and the export's edits: a model id matches whatever its case."""
+    light = cdb.element(PROXY_NODE)
+    assert light is not None
+    entry = light.model_entry("05271013")
+    assert entry is not None
+    entry["modelId"] = "0527101a"
+    entry["publish"] = {"address": "C061"}
+    assert light.model_entry("0527101A") is entry
+    assert light.subscriptions("0527101A") == [0xC061]
+    assert light.publication("0527101A") == 0xC061
+    assert light.publication("1300") == 0  # model absent
+    entry["publish"] = {}
+    assert (
+        light.publication("0527101a") == 0
+    )  # an entry without an address publishes nowhere
+
+
 # ----------------------------------------------------------------------------- export flavours
 
 

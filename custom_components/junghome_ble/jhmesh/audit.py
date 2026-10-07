@@ -39,7 +39,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from . import config_messages as C
-from .cdb import parse_address
+from .cdb import model_publication, model_subscriptions
 
 if TYPE_CHECKING:
     from .cdb import Node
@@ -166,14 +166,7 @@ class Query:
             )
         if self.model is None:
             return True
-        return (
-            isinstance(
-                decoded,
-                (C.ModelPublicationStatus, C.ModelSubscriptionList, C.ModelAppList),
-            )
-            and decoded.element == self.element
-            and decoded.model == C.model_id(self.model)
-        )
+        return self.element is not None and C.echoes(decoded, self.element, self.model)
 
 
 @dataclass(frozen=True)
@@ -316,35 +309,11 @@ def key_queries(node: Node) -> list[Query]:
 
 
 def _model_gets(node: Node, element: int, model: str) -> tuple[Query, Query, Query]:
-    vendor = C.is_vendor_model(model)
-    return (
-        Query(
-            node.unicast,
-            "publication",
-            C.model_publication_get(element, model),
-            C.CONFIG_MODEL_PUBLICATION_STATUS,
-            element,
-            model,
-        ),
-        Query(
-            node.unicast,
-            "subscriptions",
-            C.model_subscription_get(element, model),
-            C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST
-            if vendor
-            else C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST,
-            element,
-            model,
-        ),
-        Query(
-            node.unicast,
-            "app_keys",
-            C.model_app_get(element, model),
-            C.CONFIG_VENDOR_MODEL_APP_LIST if vendor else C.CONFIG_SIG_MODEL_APP_LIST,
-            element,
-            model,
-        ),
+    publication, subscriptions, app_keys = (
+        Query(node.unicast, kind, *C.model_get(kind, element, model), element, model)
+        for kind in ("publication", "subscriptions", "app_keys")
     )
+    return publication, subscriptions, app_keys
 
 
 def _audited_models(node: Node) -> list[tuple[int, dict[str, Any]]]:
@@ -559,12 +528,10 @@ def _model_answer(row: ModelAudit, query: Query, reply: AccessMessage | None) ->
 def _load_groups(node: Node) -> frozenset[int]:
     """Return the element groups of the node's loads: where the export has their state servers publish."""
     groups = {
-        parse_address(publish["address"])
+        model_publication(raw)
         for element in node.elements
         for raw in element.raw_models
         if raw["modelId"] in LOAD_SERVERS
-        and isinstance(publish := raw.get("publish"), dict)
-        and "address" in publish
     }
     return frozenset(groups - {0})
 
@@ -667,14 +634,11 @@ def evaluate(node: Node, replies: Mapping[Query, AccessMessage | None]) -> NodeA
             audit.findings.append(Finding(KEYS_EXTRA, setting=name, actual=extra))
     load_groups = _load_groups(node)
     for element, raw in _audited_models(node):
-        publish = raw.get("publish")
         row = ModelAudit(
             element,
             raw["modelId"],
-            parse_address(publish["address"])
-            if isinstance(publish, dict) and "address" in publish
-            else 0,
-            tuple(sorted(parse_address(a) for a in raw.get("subscribe", []))),
+            model_publication(raw),
+            tuple(sorted(model_subscriptions(raw))),
             tuple(sorted(raw.get("bind", []))),
         )
         for query in _model_gets(node, element, row.model):

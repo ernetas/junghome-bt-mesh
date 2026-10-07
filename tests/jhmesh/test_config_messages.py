@@ -988,3 +988,24 @@ def test_friend_get_and_status():
     assert (
         C.describe_config(0x8010, b"\x01") == "Config op 8010 01"
     )  # Friend Set: not built
+
+
+def test_a_models_get_names_the_status_that_answers_it() -> None:
+    """The audit, the pre-flight and the CLI build a model's Gets alike: the list status by the model kind."""
+    assert C.model_get("publication", 0x0100, "1000") == (
+        C.model_publication_get(0x0100, "1000"),
+        C.CONFIG_MODEL_PUBLICATION_STATUS,
+    )
+    assert C.model_get("subscriptions", 0x0100, "1000")[1] == (
+        C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST
+    )
+    assert C.model_get("subscriptions", 0x0100, "05271013") == (
+        C.model_subscription_get(0x0100, "05271013"),
+        C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST,
+    )
+    assert C.model_get("app_keys", 0x0100, "1000")[1] == C.CONFIG_SIG_MODEL_APP_LIST
+    assert C.model_get("app_keys", 0x0100, 0x05271013)[1] == (
+        C.CONFIG_VENDOR_MODEL_APP_LIST
+    )
+    with pytest.raises(KeyError):
+        C.model_get("scenes", 0x0100, "1000")

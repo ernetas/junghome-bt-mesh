@@ -281,6 +281,10 @@
   hub per mesh — is `seq_store.async_load_state`, which `JungHomeHub.async_create` calls and the nonce state machine
   test calls directly, with no hub. The re-exports `coordinator.py` and `services.py` kept after their splits are
   gone (A5-3): every module imports a name from the module that defines it, and `tests/test_layers.py` keeps it so.
+  The pre-flight comparison, the audit and the CLI build a model's Gets and match their statuses with the same
+  `jhmesh` helpers (A5-5): `config_messages.model_get` (the Get and the status answering it) and `echoes`, and read
+  the export with `cdb.Element.publication` / `subscriptions` (`model_publication`, `model_subscriptions`), one case
+  rule for model ids (`Element.model_entry`).
 
 ## 1.4.1 (unreleased)
 

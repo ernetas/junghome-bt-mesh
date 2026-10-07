@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING, Any, Literal
 from . import config_messages as C
 from . import messages as M
 from .audit import SCENE_MODELS
-from .cdb import parse_address
 from .devices import GROUP_RANGE
 from .export import ModelChange, ProjectFile, raw_model
 from .pdu import ALL_PROXIES, decode_opcode
@@ -280,30 +279,16 @@ def step_kind(step: ConfigStep) -> str:
     return change.kind
 
 
-def _raw(export: ProjectFile, element: int, model: str) -> dict[str, Any]:
-    """Return the export's entry for the model (empty for an element or a model it does not have)."""
-    target = export.cdb.element(element)
-    if target is None:
-        return {}
-    try:
-        return raw_model(target, model)
-    except KeyError:
-        return {}
-
-
 def _held_publication(export: ProjectFile, element: int, model: str) -> int:
     """Return the publish address the export records for the model (0x0000: none)."""
-    publish = _raw(export, element, model).get("publish")
-    if not isinstance(publish, dict) or "address" not in publish:
-        return 0
-    return parse_address(str(publish["address"]))
+    target = export.cdb.element(element)
+    return 0 if target is None else target.publication(model)
 
 
 def _held_subscriptions(export: ProjectFile, element: int, model: str) -> list[int]:
     """Return the addresses the export says the model subscribes to, sorted."""
-    return sorted(
-        parse_address(str(a)) for a in _raw(export, element, model).get("subscribe", [])
-    )
+    target = export.cdb.element(element)
+    return [] if target is None else sorted(target.subscriptions(model))
 
 
 def destructive(step: ConfigStep, export: ProjectFile) -> bool:
@@ -378,24 +363,16 @@ class Check:
     @property
     def pdu(self) -> bytes:
         """The Get's access payload."""
-        if self.kind == "subscriptions":
-            return C.model_subscription_get(self.element, self.model)
-        if self.kind == "publication":
-            return C.model_publication_get(self.element, self.model)
-        return M.scene_register_get()
+        if self.kind == "scene_register":
+            return M.scene_register_get()
+        return C.model_get(self.kind, self.element, self.model)[0]
 
     @property
     def expect(self) -> int:
         """The opcode of the status that answers the Get."""
-        if self.kind == "subscriptions":
-            return (
-                C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST
-                if C.is_vendor_model(self.model)
-                else C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST
-            )
-        if self.kind == "publication":
-            return C.CONFIG_MODEL_PUBLICATION_STATUS
-        return M.SCENE_REGISTER_STATUS
+        if self.kind == "scene_register":
+            return M.SCENE_REGISTER_STATUS
+        return C.model_get(self.kind, self.element, self.model)[1]
 
     @property
     def what(self) -> str:
@@ -413,9 +390,7 @@ class Check:
             return True
         if not isinstance(decoded, (C.ModelPublicationStatus, C.ModelSubscriptionList)):
             return True
-        return decoded.element == self.element and decoded.model == C.model_id(
-            self.model
-        )
+        return C.echoes(decoded, self.element, self.model)
 
     def compare(self, export: ProjectFile, reply: AccessMessage) -> Difference | None:
         """Compare the node's answer with the export; the difference, or None when the node holds what it says.

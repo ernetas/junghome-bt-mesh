@@ -20,6 +20,7 @@ from __future__ import annotations
 import base64
 import json
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TypeGuard
@@ -44,6 +45,8 @@ __all__ = [
     "Provisioner",
     "canonical_uuid",
     "is_virtual",
+    "model_publication",
+    "model_subscriptions",
     "parse_address",
     "virtual_address",
 ]
@@ -98,6 +101,19 @@ def parse_address(text: str) -> int:
     if len(text) == LABEL_HEX_LENGTH:
         return virtual_address(bytes.fromhex(text))
     return int(text, 16)
+
+
+def model_publication(raw: Mapping[str, Any]) -> int:
+    """Return the publish address a CDB model entry records (0x0000 when it records none)."""
+    publish = raw.get("publish")
+    if not isinstance(publish, dict) or "address" not in publish:
+        return 0
+    return parse_address(str(publish["address"]))
+
+
+def model_subscriptions(raw: Mapping[str, Any]) -> list[int]:
+    """Return the addresses a CDB model entry subscribes to, in the export's order (virtual ones as 0x8xxx)."""
+    return [parse_address(str(a)) for a in raw.get("subscribe", [])]
 
 
 def canonical_uuid(text: str) -> str:
@@ -282,12 +298,22 @@ class Element:
         default_factory=list
     )  # CDB model entries (bind/subscribe/publish)
 
-    def subscriptions(self, model_id: str) -> list[int]:
-        """Return the addresses the `model_id` model on this element subscribes to (virtual ones as 0x8xxx)."""
+    def model_entry(self, model: str) -> dict[str, Any] | None:
+        """Return this element's CDB entry of `model` (model ids compared regardless of case); None without one."""
         for m in self.raw_models:
-            if m["modelId"] == model_id:
-                return [parse_address(a) for a in m.get("subscribe", [])]
-        return []
+            if m["modelId"].upper() == model.upper():
+                return m
+        return None
+
+    def subscriptions(self, model: str) -> list[int]:
+        """Return the addresses the `model` model on this element subscribes to (virtual ones as 0x8xxx)."""
+        entry = self.model_entry(model)
+        return [] if entry is None else model_subscriptions(entry)
+
+    def publication(self, model: str) -> int:
+        """Return the address the `model` model on this element publishes to (0x0000: none, or no such model)."""
+        entry = self.model_entry(model)
+        return 0 if entry is None else model_publication(entry)
 
 
 @dataclass

@@ -412,10 +412,12 @@ def config_publication(
 ) -> ConfigRequest:
     """Publication Set to `group` (0 disables publishing, as the app does), or Publication Get without a group."""
     if group is None:
-        pdu = C.model_publication_get(element, model)
-    else:
-        pdu = C.model_publication_set(element, group, model)
-    return ConfigRequest(node, pdu, C.CONFIG_MODEL_PUBLICATION_STATUS)
+        return ConfigRequest(node, *C.model_get("publication", element, model))
+    return ConfigRequest(
+        node,
+        C.model_publication_set(element, group, model),
+        C.CONFIG_MODEL_PUBLICATION_STATUS,
+    )
 
 
 def config_subscription(
@@ -430,12 +432,7 @@ def config_subscription(
 
 def config_subscriptions(node: int, element: int, model: int | str) -> ConfigRequest:
     """SIG / Vendor Model Subscription Get (the list opcode depends on the model kind)."""
-    expect = (
-        C.CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST
-        if C.is_vendor_model(model)
-        else C.CONFIG_SIG_MODEL_SUBSCRIPTION_LIST
-    )
-    return ConfigRequest(node, C.model_subscription_get(element, model), expect)
+    return ConfigRequest(node, *C.model_get("subscriptions", element, model))
 
 
 def config_bind(

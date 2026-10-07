@@ -161,6 +161,7 @@ __all__ = [
     "default_ttl_get",
     "default_ttl_set",
     "describe_config",
+    "echoes",
     "encode_model_id",
     "friend_get",
     "gatt_proxy_get",
@@ -179,6 +180,7 @@ __all__ = [
     "model_app_bind",
     "model_app_get",
     "model_app_unbind",
+    "model_get",
     "model_id",
     "model_id_str",
     "model_publication_get",
@@ -752,6 +754,36 @@ def model_app_get(element: int, model: int | str) -> bytes:
         else CONFIG_SIG_MODEL_APP_GET
     )
     return encode_opcode(op) + _element(element) + encode_model_id(model)
+
+
+# a model's Gets by what they read: the builder, and the status answering it for a vendor and for a SIG model
+_MODEL_GETS: dict[str, tuple[Callable[[int, int | str], bytes], int, int]] = {
+    "publication": (
+        model_publication_get,
+        CONFIG_MODEL_PUBLICATION_STATUS,
+        CONFIG_MODEL_PUBLICATION_STATUS,
+    ),
+    "subscriptions": (
+        model_subscription_get,
+        CONFIG_VENDOR_MODEL_SUBSCRIPTION_LIST,
+        CONFIG_SIG_MODEL_SUBSCRIPTION_LIST,
+    ),
+    "app_keys": (
+        model_app_get,
+        CONFIG_VENDOR_MODEL_APP_LIST,
+        CONFIG_SIG_MODEL_APP_LIST,
+    ),
+}
+
+
+def model_get(kind: str, element: int, model: int | str) -> tuple[bytes, int]:
+    """Return the Get that reads a model's `publication`, `subscriptions` or `app_keys`, and its status's opcode.
+
+    A subscription or AppKey list answers in the vendor or the SIG form, by the model kind (`is_vendor_model`);
+    the answer echoes the element and model (`echoes`). KeyError for another `kind`.
+    """
+    build, vendor, sig = _MODEL_GETS[kind]
+    return build(element, model), vendor if is_vendor_model(model) else sig
 
 
 def gatt_proxy_get() -> bytes:
@@ -1495,6 +1527,21 @@ def decode_config(opcode: int, params: bytes) -> ConfigDecoded | None:
     """Decode any Config status by opcode; None for opcodes that are not a status decoded here."""
     decoder = _STATUS_DECODERS.get(opcode)
     return decoder(params) if decoder else None
+
+
+def echoes(decoded: object, element: int, model: int | str) -> bool:
+    """Whether a decoded status is a model's — publication, subscription list, AppKey list — about this one.
+
+    It echoes the element and the model: several Gets to one node are in flight at once and share status opcodes,
+    and the echo keeps the answer about one model from passing for another's.
+    """
+    return (
+        isinstance(
+            decoded, (ModelPublicationStatus, ModelSubscriptionList, ModelAppList)
+        )
+        and decoded.element == element
+        and decoded.model == model_id(model)
+    )
 
 
 # ----------------------------------------------------------------------------- describe for the CLI and logs
