@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Tudi če jo upravlja gumb",
-          "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+          "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več. Preverjanje, ki naprave primerja z izvozom mesh, se vseeno izvede (glejte „Brez primerjave z izvozom“)."
         },
         "skip_preflight": {
           "name": "Brez primerjave z izvozom",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Tudi če se naprava ne odzove",
-          "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+          "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke. Preverjanje, ki naprave primerja z izvozom mesh, se vseeno izvede, pri čemer izpusti naprave, ki jih ne doseže (glejte „Brez primerjave z izvozom“)."
         },
         "skip_preflight": {
           "name": "Brez primerjave z izvozom",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Tudi če se ne odzove",
-          "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+          "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje. Preverjanje, ki ostale naprave primerja z izvozom mesh, se vseeno izvede (glejte „Brez primerjave z izvozom“)."
         },
         "skip_preflight": {
           "name": "Brez primerjave z izvozom",

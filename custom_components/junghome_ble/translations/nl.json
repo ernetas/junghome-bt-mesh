@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Ook als een knop het aanstuurt",
-          "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+          "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer. De controle die de apparaten met de mesh-export vergelijkt, wordt toch uitgevoerd (zie “Zonder vergelijking met de export”)."
         },
         "skip_preflight": {
           "name": "Zonder vergelijking met de export",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Ook als een apparaat niet antwoordt",
-          "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+          "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer. De controle die de apparaten met de mesh-export vergelijkt, wordt toch uitgevoerd en slaat de apparaten over die ze niet kan bereiken (zie “Zonder vergelijking met de export”)."
         },
         "skip_preflight": {
           "name": "Zonder vergelijking met de export",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Ook als het niet antwoordt",
-          "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+          "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden. De controle die de overige apparaten met de mesh-export vergelijkt, wordt toch uitgevoerd (zie “Zonder vergelijking met de export”)."
         },
         "skip_preflight": {
           "name": "Zonder vergelijking met de export",

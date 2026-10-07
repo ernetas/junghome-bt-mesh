@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Aj keď ho ovláda tlačidlo",
-          "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+          "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať. Kontrola, ktorá porovná zariadenia s exportom mesh, sa aj tak vykoná (pozri „Bez porovnania s exportom“)."
         },
         "skip_preflight": {
           "name": "Bez porovnania s exportom",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Aj keď zariadenie neodpovedá",
-          "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+          "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo. Kontrola, ktorá porovná zariadenia s exportom mesh, sa aj tak vykoná, pričom vynechá nedosiahnuteľné zariadenia (pozri „Bez porovnania s exportom“)."
         },
         "skip_preflight": {
           "name": "Bez porovnania s exportom",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Aj keď neodpovedá",
-          "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+          "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený. Kontrola, ktorá porovná ostatné zariadenia s exportom mesh, sa aj tak vykoná (pozri „Bez porovnania s exportom“)."
         },
         "skip_preflight": {
           "name": "Bez porovnania s exportom",

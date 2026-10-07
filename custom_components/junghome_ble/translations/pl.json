@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Nawet jeśli steruje nim przycisk",
-          "description": "Usuń urządzenie z pomieszczenia, mimo że przełącza je przycisk powiązany z pomieszczeniem; przycisk przestaje je przełączać. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+          "description": "Usuń urządzenie z pomieszczenia, mimo że przełącza je przycisk powiązany z pomieszczeniem; przycisk przestaje je przełączać. Sprawdzenie, które porównuje urządzenia z eksportem mesh, i tak zostaje wykonane (zob. „Bez porównania z eksportem”)."
         },
         "skip_preflight": {
           "name": "Bez porównania z eksportem",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Nawet jeśli urządzenie nie odpowiada",
-          "description": "Usuń scenę z eksportu mesh, mimo że urządzenie, które ją zapisało, jest nieosiągalne lub odmawia (w aplikacji „Usuń mimo to”). To urządzenie zachowuje scenę, dopóki akcja „Usuń nieużywane sceny” jej nie usunie; wskazuje je problem w Naprawach, a w międzyczasie żadna nowa scena nie dostaje jej numeru. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+          "description": "Usuń scenę z eksportu mesh, mimo że urządzenie, które ją zapisało, jest nieosiągalne lub odmawia (w aplikacji „Usuń mimo to”). To urządzenie zachowuje scenę, dopóki akcja „Usuń nieużywane sceny” jej nie usunie; wskazuje je problem w Naprawach, a w międzyczasie żadna nowa scena nie dostaje jej numeru. Sprawdzenie, które porównuje urządzenia z eksportem mesh, i tak zostaje wykonane, z pominięciem nieosiągalnych urządzeń (zob. „Bez porównania z eksportem”)."
         },
         "skip_preflight": {
           "name": "Bez porównania z eksportem",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Nawet jeśli nie odpowiada",
-          "description": "Usuń je z zapisów sieci, mimo że nie potwierdza resetu (urządzenie, którego już nie ma), lub mimo że Home Assistant jest przez nie połączony. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+          "description": "Usuń je z zapisów sieci, mimo że nie potwierdza resetu (urządzenie, którego już nie ma), lub mimo że Home Assistant jest przez nie połączony. Sprawdzenie, które porównuje pozostałe urządzenia z eksportem mesh, i tak zostaje wykonane (zob. „Bez porównania z eksportem”)."
         },
         "skip_preflight": {
           "name": "Bez porównania z eksportem",

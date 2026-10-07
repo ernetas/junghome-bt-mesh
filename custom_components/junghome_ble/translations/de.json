@@ -2296,7 +2296,7 @@
         },
         "force": {
           "name": "Auch wenn eine Taste es steuert",
-          "description": "Nimmt das Gerät aus dem Raum, obwohl eine mit dem Raum verknüpfte Taste es schaltet; die Taste schaltet es danach nicht mehr. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+          "description": "Nimmt das Gerät aus dem Raum, obwohl eine mit dem Raum verknüpfte Taste es schaltet; die Taste schaltet es danach nicht mehr. Die Prüfung, die die Geräte mit dem Mesh-Export vergleicht, läuft trotzdem (siehe „Ohne Vergleich mit dem Export“)."
         },
         "skip_preflight": {
           "name": "Ohne Vergleich mit dem Export",
@@ -2578,7 +2578,7 @@
         },
         "force": {
           "name": "Auch wenn ein Gerät nicht antwortet",
-          "description": "Löscht die Szene aus dem Mesh-Export, obwohl ein Gerät, das sie gespeichert hat, nicht erreichbar ist oder ablehnt (in der App „Dennoch löschen“). Dieses Gerät behält die Szene, bis „Unbenutzte Szenen löschen“ sie entfernt; eine Reparatur nennt es, und bis dahin bekommt keine neue Szene ihre Nummer. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+          "description": "Löscht die Szene aus dem Mesh-Export, obwohl ein Gerät, das sie gespeichert hat, nicht erreichbar ist oder ablehnt (in der App „Dennoch löschen“). Dieses Gerät behält die Szene, bis „Unbenutzte Szenen löschen“ sie entfernt; eine Reparatur nennt es, und bis dahin bekommt keine neue Szene ihre Nummer. Die Prüfung, die die Geräte mit dem Mesh-Export vergleicht, läuft trotzdem und übergeht die Geräte, die sie nicht erreicht (siehe „Ohne Vergleich mit dem Export“)."
         },
         "skip_preflight": {
           "name": "Ohne Vergleich mit dem Export",
@@ -2912,7 +2912,7 @@
         },
         "force": {
           "name": "Auch wenn es nicht antwortet",
-          "description": "Entfernt es aus den Aufzeichnungen des Netzwerks, obwohl es das Zurücksetzen nicht bestätigt (ein Gerät, das endgültig weg ist) oder obwohl Home Assistant über es verbunden ist. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+          "description": "Entfernt es aus den Aufzeichnungen des Netzwerks, obwohl es das Zurücksetzen nicht bestätigt (ein Gerät, das endgültig weg ist) oder obwohl Home Assistant über es verbunden ist. Die Prüfung, die die übrigen Geräte mit dem Mesh-Export vergleicht, läuft trotzdem (siehe „Ohne Vergleich mit dem Export“)."
         },
         "skip_preflight": {
           "name": "Ohne Vergleich mit dem Export",

@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Mesmo que um botão o controle",
-          "description": "Retira o dispositivo do cômodo mesmo que um botão vinculado ao cômodo o comute; o botão deixa de comutá-lo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+          "description": "Retira o dispositivo do cômodo mesmo que um botão vinculado ao cômodo o comute; o botão deixa de comutá-lo. A verificação que compara os dispositivos com a exportação da mesh continua sendo executada (veja \"Sem comparar com a exportação\")."
         },
         "skip_preflight": {
           "name": "Sem comparar com a exportação",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Mesmo que um dispositivo não responda",
-          "description": "Exclui a cena da exportação da mesh mesmo que um dispositivo que a salvou não possa ser alcançado ou recuse (o \"Excluir mesmo assim\" do aplicativo). Esse dispositivo mantém a cena até que Excluir cenas não usadas a remova; um reparo o indica, e nenhuma cena nova recebe o número dela nesse meio-tempo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+          "description": "Exclui a cena da exportação da mesh mesmo que um dispositivo que a salvou não possa ser alcançado ou recuse (o \"Excluir mesmo assim\" do aplicativo). Esse dispositivo mantém a cena até que Excluir cenas não usadas a remova; um reparo o indica, e nenhuma cena nova recebe o número dela nesse meio-tempo. A verificação que compara os dispositivos com a exportação da mesh continua sendo executada, deixando de lado os dispositivos que não consegue alcançar (veja \"Sem comparar com a exportação\")."
         },
         "skip_preflight": {
           "name": "Sem comparar com a exportação",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Mesmo que ele não responda",
-          "description": "Remove-o dos registros da rede mesmo que ele não confirme a redefinição (um dispositivo que não existe mais), ou mesmo que o Home Assistant esteja conectado por meio dele. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+          "description": "Remove-o dos registros da rede mesmo que ele não confirme a redefinição (um dispositivo que não existe mais), ou mesmo que o Home Assistant esteja conectado por meio dele. A verificação que compara os outros dispositivos com a exportação da mesh continua sendo executada (veja \"Sem comparar com a exportação\")."
         },
         "skip_preflight": {
           "name": "Sem comparar com a exportação",

@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Chiar dacă o tastă îl comandă",
-          "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+          "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută. Verificarea care compară dispozitivele cu exportul rețelei mesh rulează în continuare (vezi „Fără comparare cu exportul”)."
         },
         "skip_preflight": {
           "name": "Fără comparare cu exportul",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Chiar dacă un dispozitiv nu răspunde",
-          "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+          "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei. Verificarea care compară dispozitivele cu exportul rețelei mesh rulează în continuare, sărind peste dispozitivele pe care nu le poate contacta (vezi „Fără comparare cu exportul”)."
         },
         "skip_preflight": {
           "name": "Fără comparare cu exportul",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Chiar dacă nu răspunde",
-          "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+          "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el. Verificarea care compară celelalte dispozitive cu exportul rețelei mesh rulează în continuare (vezi „Fără comparare cu exportul”)."
         },
         "skip_preflight": {
           "name": "Fără comparare cu exportul",

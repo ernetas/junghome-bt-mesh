@@ -9,7 +9,7 @@ checks below are the only automated guard:
 - same leaf keys, and equal values once `[%key:...%]` references in `strings.json` are resolved,
 - the same `{placeholder}` set per key,
 - every other language has exactly English's keys (none missing unless listed in `UNTRANSLATED`), with the same
-  placeholders and `literal` spans,
+  placeholders and `literal` spans, and naming every field English's descriptions name by its label,
 - every `icons.json` entry points at an entity translation key or an action, and every action has an icon,
 - every translation key the code uses (literal or a `CONSTANT` reference, per-property config entity, service
   error, repair issue, event type, device trigger, select option) exists in `strings.json`,
@@ -319,6 +319,68 @@ def test_translation_follows_english(path: Path, en_leaves: dict[str, str]) -> N
     assert not literals, f"{path.name}: `literal` spans differ from English: {literals}"
     references = sorted(key for key, value in leaves.items() if "[%key:" in value)
     assert not references, f"{path.name}: references in {references}"
+
+
+# A field label of three words or more is a phrase only a cross-reference uses; a shorter one ("Key", "Scene", "Mode",
+# "Network") is also an ordinary word of the text
+CITED_LABEL_WORDS = 3
+
+
+def _cited_fields(services: dict[str, Any]) -> list[tuple[str, str, str]]:
+    """(action, text, field): English's action or field description `text` names `field` of the same action by its
+    label."""
+    cited = []
+    for action, service in services.items():
+        fields = service.get("fields", {})
+        texts = {"description": service.get("description", "")} | {
+            name: field.get("description", "") for name, field in fields.items()
+        }
+        for text_key, text in texts.items():
+            cited += [
+                (action, text_key, name)
+                for name, field in fields.items()
+                if name != text_key
+                and len(field["name"].split()) >= CITED_LABEL_WORDS
+                and field["name"] in text
+            ]
+    return cited
+
+
+def test_split_force_cites_skip_preflight(strings: dict[str, Any]) -> None:
+    """Decision M17: on these three actions `force` keeps only the action's own override and points at
+    `skip_preflight` for the comparison it no longer skips, so the check below covers their translations."""
+    cited = set(_cited_fields(strings["services"]))
+    for action in ("remove_from_room", "delete_scene", "remove_device"):
+        assert (action, "force", "skip_preflight") in cited
+        assert (
+            "skips" not in strings["services"][action]["fields"]["force"]["description"]
+        )
+
+
+@pytest.mark.parametrize("path", TRANSLATED, ids=lambda p: p.name)
+def test_translation_cites_the_fields_english_cites(
+    path: Path, strings: dict[str, Any]
+) -> None:
+    """Where English names another field of the action by its label, the translation names it by its own label.
+
+    A translation written before English changed meaning keeps the old meaning under the same keys, which
+    `test_translation_follows_english` cannot see: after M17 every language still said `force` also skips the
+    comparison with the export, while English had come to say it still runs, see *Without comparing with the
+    export*. Looking for the language's word for the comparison would not tell the two apart (the new text names
+    the comparison too); the citation of the field that took the meaning over does.
+    """
+    services = _load(path)["services"]
+    missing = []
+    for action, text_key, name in _cited_fields(strings["services"]):
+        service = services[action]
+        text = (
+            service["description"]
+            if text_key == "description"
+            else service["fields"][text_key]["description"]
+        )
+        if service["fields"][name]["name"] not in text:
+            missing.append(f"{action}.{text_key} -> {name}")
+    assert not missing, f"{path.name}: does not cite the field English cites: {missing}"
 
 
 def test_model_names_are_the_english_strings(strings: dict[str, Any]) -> None:

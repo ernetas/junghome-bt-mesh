@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Selv om en knapp styrer den",
-          "description": "Ta enheten ut av rommet selv om en knapp koblet til rommet styrer den; knappen slutter å styre den. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
+          "description": "Ta enheten ut av rommet selv om en knapp koblet til rommet styrer den; knappen slutter å styre den. Kontrollen som sammenligner enhetene med mesh-eksporten, kjører fortsatt (se “Uten å sammenligne med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uten å sammenligne med eksporten",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Selv om en enhet ikke svarer",
-          "description": "Slett scenen fra mesh-eksporten selv om en enhet som har lagret den, ikke kan nås eller avviser (appens “Slett likevel”). Den enheten beholder scenen til “Slett ubrukte scener” fjerner den; et reparasjonsvarsel nevner den, og ingen ny scene får nummeret dens i mellomtiden. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
+          "description": "Slett scenen fra mesh-eksporten selv om en enhet som har lagret den, ikke kan nås eller avviser (appens “Slett likevel”). Den enheten beholder scenen til “Slett ubrukte scener” fjerner den; et reparasjonsvarsel nevner den, og ingen ny scene får nummeret dens i mellomtiden. Kontrollen som sammenligner enhetene med mesh-eksporten, kjører fortsatt og hopper over enhetene den ikke kan nå (se “Uten å sammenligne med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uten å sammenligne med eksporten",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Selv om den ikke svarer",
-          "description": "Fjern den fra nettverkets registreringer selv om den ikke bekrefter tilbakestillingen (en enhet som er borte for godt), eller selv om Home Assistant er koblet til gjennom den. Den hopper også over kontrollen som først sammenligner enhetene med mesh-eksporten."
+          "description": "Fjern den fra nettverkets registreringer selv om den ikke bekrefter tilbakestillingen (en enhet som er borte for godt), eller selv om Home Assistant er koblet til gjennom den. Kontrollen som sammenligner de andre enhetene med mesh-eksporten, kjører fortsatt (se “Uten å sammenligne med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uten å sammenligne med eksporten",

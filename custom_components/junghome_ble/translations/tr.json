@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Bir düğme kontrol etse bile",
-          "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+          "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz. Cihazları mesh dışa aktarımıyla karşılaştıran denetim yine de çalışır (bkz. “Dışa aktarımla karşılaştırmadan”)."
         },
         "skip_preflight": {
           "name": "Dışa aktarımla karşılaştırmadan",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Bir cihaz yanıt vermese bile",
-          "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+          "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz. Cihazları mesh dışa aktarımıyla karşılaştıran denetim, ulaşamadığı cihazları atlayarak yine de çalışır (bkz. “Dışa aktarımla karşılaştırmadan”)."
         },
         "skip_preflight": {
           "name": "Dışa aktarımla karşılaştırmadan",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Yanıt vermese bile",
-          "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+          "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır. Diğer cihazları mesh dışa aktarımıyla karşılaştıran denetim yine de çalışır (bkz. “Dışa aktarımla karşılaştırmadan”)."
         },
         "skip_preflight": {
           "name": "Dışa aktarımla karşılaştırmadan",

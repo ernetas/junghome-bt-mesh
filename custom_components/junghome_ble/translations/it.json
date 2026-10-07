@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Anche se un tasto lo comanda",
-          "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+          "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo. Il controllo che confronta i dispositivi con l'esportazione mesh viene comunque eseguito (vedi «Senza confronto con l'esportazione»)."
         },
         "skip_preflight": {
           "name": "Senza confronto con l'esportazione",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Anche se un dispositivo non risponde",
-          "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+          "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero. Il controllo che confronta i dispositivi con l'esportazione mesh viene comunque eseguito, tralasciando i dispositivi che non riesce a raggiungere (vedi «Senza confronto con l'esportazione»)."
         },
         "skip_preflight": {
           "name": "Senza confronto con l'esportazione",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Anche se non risponde",
-          "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+          "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso. Il controllo che confronta gli altri dispositivi con l'esportazione mesh viene comunque eseguito (vedi «Senza confronto con l'esportazione»)."
         },
         "skip_preflight": {
           "name": "Senza confronto con l'esportazione",

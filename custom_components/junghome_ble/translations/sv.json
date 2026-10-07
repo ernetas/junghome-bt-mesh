@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Även om en knapp styr den",
-          "description": "Ta bort enheten ur rummet trots att en knapp som är kopplad till rummet styr den; knappen slutar styra den. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+          "description": "Ta bort enheten ur rummet trots att en knapp som är kopplad till rummet styr den; knappen slutar styra den. Kontrollen som jämför enheterna med mesh-exporten körs ändå (se “Utan jämförelse med exporten”)."
         },
         "skip_preflight": {
           "name": "Utan jämförelse med exporten",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Även om en enhet inte svarar",
-          "description": "Ta bort scenen ur mesh-exporten trots att en enhet som sparat den inte kan nås eller vägrar (appens “Ta bort ändå”). Den enheten behåller scenen tills “Ta bort oanvända scener” tar bort den; en reparationsnotis nämner den, och ingen ny scen får dess nummer under tiden. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+          "description": "Ta bort scenen ur mesh-exporten trots att en enhet som sparat den inte kan nås eller vägrar (appens “Ta bort ändå”). Den enheten behåller scenen tills “Ta bort oanvända scener” tar bort den; en reparationsnotis nämner den, och ingen ny scen får dess nummer under tiden. Kontrollen som jämför enheterna med mesh-exporten körs ändå och hoppar över de enheter den inte kan nå (se “Utan jämförelse med exporten”)."
         },
         "skip_preflight": {
           "name": "Utan jämförelse med exporten",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Även om den inte svarar",
-          "description": "Ta bort den ur nätverkets register trots att den inte bekräftar återställningen (en enhet som är borta för gott), eller trots att Home Assistant är anslutet via den. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+          "description": "Ta bort den ur nätverkets register trots att den inte bekräftar återställningen (en enhet som är borta för gott), eller trots att Home Assistant är anslutet via den. Kontrollen som jämför de övriga enheterna med mesh-exporten körs ändå (se “Utan jämförelse med exporten”)."
         },
         "skip_preflight": {
           "name": "Utan jämförelse med exporten",

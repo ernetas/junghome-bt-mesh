@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "I když je ovládá tlačítko",
-          "description": "Vyjmout zařízení z místnosti, přestože jej spíná tlačítko propojené s místností; tlačítko jej pak přestane spínat. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+          "description": "Vyjmout zařízení z místnosti, přestože jej spíná tlačítko propojené s místností; tlačítko jej pak přestane spínat. Kontrola, která porovná zařízení s exportem mesh, proběhne i tak (viz „Bez porovnání s exportem“)."
         },
         "skip_preflight": {
           "name": "Bez porovnání s exportem",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "I když zařízení neodpovídá",
-          "description": "Smazat scénu z exportu mesh, přestože zařízení, které ji uložilo, není dosažitelné nebo odmítá (v aplikaci „Přesto smazat“). Toto zařízení si scénu ponechá, dokud ji neodstraní akce „Smazat nepoužívané scény“; uvede jej problém v Opravách a žádná nová scéna mezitím nedostane její číslo. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+          "description": "Smazat scénu z exportu mesh, přestože zařízení, které ji uložilo, není dosažitelné nebo odmítá (v aplikaci „Přesto smazat“). Toto zařízení si scénu ponechá, dokud ji neodstraní akce „Smazat nepoužívané scény“; uvede jej problém v Opravách a žádná nová scéna mezitím nedostane její číslo. Kontrola, která porovná zařízení s exportem mesh, proběhne i tak, jen vynechá zařízení, která nejsou dosažitelná (viz „Bez porovnání s exportem“)."
         },
         "skip_preflight": {
           "name": "Bez porovnání s exportem",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "I když neodpovídá",
-          "description": "Odebrat je ze záznamů sítě, přestože reset nepotvrdí (zařízení, které je nadobro pryč), nebo přestože je přes ně Home Assistant připojen. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+          "description": "Odebrat je ze záznamů sítě, přestože reset nepotvrdí (zařízení, které je nadobro pryč), nebo přestože je přes ně Home Assistant připojen. Kontrola, která porovná ostatní zařízení s exportem mesh, proběhne i tak (viz „Bez porovnání s exportem“)."
         },
         "skip_preflight": {
           "name": "Bez porovnání s exportem",

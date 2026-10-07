@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Fins i tot si una tecla el controla",
-          "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+          "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo. La comprovació que compara els dispositius amb l'exportació del mesh s'executa igualment (vegeu «Sense comparar amb l'exportació»)."
         },
         "skip_preflight": {
           "name": "Sense comparar amb l'exportació",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Fins i tot si un dispositiu no respon",
-          "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+          "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número. La comprovació que compara els dispositius amb l'exportació del mesh s'executa igualment, i passa per alt els dispositius que no pot contactar (vegeu «Sense comparar amb l'exportació»)."
         },
         "skip_preflight": {
           "name": "Sense comparar amb l'exportació",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Fins i tot si no respon",
-          "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+          "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell. La comprovació que compara els altres dispositius amb l'exportació del mesh s'executa igualment (vegeu «Sense comparar amb l'exportació»)."
         },
         "skip_preflight": {
           "name": "Sense comparar amb l'exportació",

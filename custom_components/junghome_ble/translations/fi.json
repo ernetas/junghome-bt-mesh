@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Vaikka painike ohjaa sitä",
-          "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+          "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä. Tarkistus, joka vertaa laitteita mesh-verkon vientiin, tehdään silti (katso \"Vertaamatta vientiin\")."
         },
         "skip_preflight": {
           "name": "Vertaamatta vientiin",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Vaikka laite ei vastaa",
-          "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+          "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin. Tarkistus, joka vertaa laitteita mesh-verkon vientiin, tehdään silti, ja se ohittaa laitteet, joita se ei tavoita (katso \"Vertaamatta vientiin\")."
         },
         "skip_preflight": {
           "name": "Vertaamatta vientiin",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Vaikka se ei vastaa",
-          "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+          "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta. Tarkistus, joka vertaa muita laitteita mesh-verkon vientiin, tehdään silti (katso \"Vertaamatta vientiin\")."
         },
         "skip_preflight": {
           "name": "Vertaamatta vientiin",

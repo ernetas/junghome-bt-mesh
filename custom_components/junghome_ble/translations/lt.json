@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Net jei jį valdo mygtukas",
-          "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+          "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys. Patikrinimas, kuris palygina įrenginius su tinklo eksportu, vis tiek atliekamas (žr. „Nepalyginus su eksportu“)."
         },
         "skip_preflight": {
           "name": "Nepalyginus su eksportu",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Net jei įrenginys neatsako",
-          "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+          "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio. Patikrinimas, kuris palygina įrenginius su tinklo eksportu, vis tiek atliekamas, praleidžiant nepasiekiamus įrenginius (žr. „Nepalyginus su eksportu“)."
         },
         "skip_preflight": {
           "name": "Nepalyginus su eksportu",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Net jei neatsako",
-          "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+          "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį. Patikrinimas, kuris palygina kitus įrenginius su tinklo eksportu, vis tiek atliekamas (žr. „Nepalyginus su eksportu“)."
         },
         "skip_preflight": {
           "name": "Nepalyginus su eksportu",

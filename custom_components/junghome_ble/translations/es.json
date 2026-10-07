@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Aunque una tecla lo controle",
-          "description": "Sacar el dispositivo de la estancia aunque lo conmute una tecla vinculada a la estancia; la tecla deja de conmutarlo. También omite la comprobación que compara primero los dispositivos con la exportación mesh."
+          "description": "Sacar el dispositivo de la estancia aunque lo conmute una tecla vinculada a la estancia; la tecla deja de conmutarlo. La comprobación que compara los dispositivos con la exportación mesh se sigue ejecutando (véase «Sin comparar con la exportación»)."
         },
         "skip_preflight": {
           "name": "Sin comparar con la exportación",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Aunque un dispositivo no responda",
-          "description": "Eliminar la escena de la exportación mesh aunque un dispositivo que la guardó no esté accesible o se niegue (el «Borrar de todos modos» de la aplicación). Ese dispositivo conserva la escena hasta que «Eliminar escenas no usadas» la quite; un aviso de reparación lo indica, y mientras tanto ninguna escena nueva recibe su número. También omite la comprobación que compara primero los dispositivos con la exportación mesh."
+          "description": "Eliminar la escena de la exportación mesh aunque un dispositivo que la guardó no esté accesible o se niegue (el «Borrar de todos modos» de la aplicación). Ese dispositivo conserva la escena hasta que «Eliminar escenas no usadas» la quite; un aviso de reparación lo indica, y mientras tanto ninguna escena nueva recibe su número. La comprobación que compara los dispositivos con la exportación mesh se sigue ejecutando y pasa por alto los dispositivos a los que no puede acceder (véase «Sin comparar con la exportación»)."
         },
         "skip_preflight": {
           "name": "Sin comparar con la exportación",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Aunque no responda",
-          "description": "Quitarlo de los registros de la red aunque no confirme el restablecimiento (un dispositivo que ha desaparecido definitivamente), o aunque Home Assistant esté conectado a través de él. También omite la comprobación que compara primero los dispositivos con la exportación mesh."
+          "description": "Quitarlo de los registros de la red aunque no confirme el restablecimiento (un dispositivo que ha desaparecido definitivamente), o aunque Home Assistant esté conectado a través de él. La comprobación que compara los demás dispositivos con la exportación mesh se sigue ejecutando (véase «Sin comparar con la exportación»)."
         },
         "skip_preflight": {
           "name": "Sin comparar con la exportación",

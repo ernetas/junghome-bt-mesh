@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Même si une touche le commande",
-          "description": "Retirer l'appareil de la zone bien qu'une touche liée à la zone le commute ; la touche cesse de le commuter. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+          "description": "Retirer l'appareil de la zone bien qu'une touche liée à la zone le commute ; la touche cesse de le commuter. La vérification qui compare les appareils à l'export du mesh s'exécute quand même (voir « Sans comparer avec l'export »)."
         },
         "skip_preflight": {
           "name": "Sans comparer avec l'export",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Même si un appareil ne répond pas",
-          "description": "Supprimer la scène de l'export du mesh bien qu'un appareil qui l'a mémorisée soit injoignable ou refuse (« Supprimer quand même » dans l'application). Cet appareil conserve la scène jusqu'à ce que Supprimer les scènes inutilisées la retire ; un problème de réparation le nomme, et aucune nouvelle scène ne reçoit son numéro entre-temps. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+          "description": "Supprimer la scène de l'export du mesh bien qu'un appareil qui l'a mémorisée soit injoignable ou refuse (« Supprimer quand même » dans l'application). Cet appareil conserve la scène jusqu'à ce que Supprimer les scènes inutilisées la retire ; un problème de réparation le nomme, et aucune nouvelle scène ne reçoit son numéro entre-temps. La vérification qui compare les appareils à l'export du mesh s'exécute quand même, en laissant de côté les appareils qu'elle ne peut pas joindre (voir « Sans comparer avec l'export »)."
         },
         "skip_preflight": {
           "name": "Sans comparer avec l'export",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Même s'il ne répond pas",
-          "description": "Le retirer des enregistrements du réseau bien qu'il ne confirme pas la réinitialisation (un appareil définitivement disparu), ou bien que Home Assistant soit connecté via lui. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+          "description": "Le retirer des enregistrements du réseau bien qu'il ne confirme pas la réinitialisation (un appareil définitivement disparu), ou bien que Home Assistant soit connecté via lui. La vérification qui compare les autres appareils à l'export du mesh s'exécute quand même (voir « Sans comparer avec l'export »)."
         },
         "skip_preflight": {
           "name": "Sans comparer avec l'export",

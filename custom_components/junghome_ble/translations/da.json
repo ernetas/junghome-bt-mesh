@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Også hvis en knap styrer den",
-          "description": "Tag enheden ud af rummet, selvom en knap koblet til rummet styrer den; knappen holder op med at styre den. Den springer også tjekket over, der først sammenligner enhederne med mesh-eksporten."
+          "description": "Tag enheden ud af rummet, selvom en knap koblet til rummet styrer den; knappen holder op med at styre den. Tjekket, der sammenligner enhederne med mesh-eksporten, kører stadig (se “Uden sammenligning med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uden sammenligning med eksporten",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Også hvis en enhed ikke svarer",
-          "description": "Slet scenen fra mesh-eksporten, selvom en enhed, der har gemt den, ikke kan nås eller afviser (appens “Slet alligevel”). Den enhed beholder scenen, indtil “Slet ubrugte scener” fjerner den; en reparationsmeddelelse nævner den, og ingen ny scene får dens nummer i mellemtiden. Den springer også tjekket over, der først sammenligner enhederne med mesh-eksporten."
+          "description": "Slet scenen fra mesh-eksporten, selvom en enhed, der har gemt den, ikke kan nås eller afviser (appens “Slet alligevel”). Den enhed beholder scenen, indtil “Slet ubrugte scener” fjerner den; en reparationsmeddelelse nævner den, og ingen ny scene får dens nummer i mellemtiden. Tjekket, der sammenligner enhederne med mesh-eksporten, kører stadig og springer de enheder over, det ikke kan nå (se “Uden sammenligning med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uden sammenligning med eksporten",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Også hvis den ikke svarer",
-          "description": "Fjern den fra netværkets registreringer, selvom den ikke bekræfter nulstillingen (en enhed, der er væk for altid), eller selvom Home Assistant er forbundet gennem den. Den springer også tjekket over, der først sammenligner enhederne med mesh-eksporten."
+          "description": "Fjern den fra netværkets registreringer, selvom den ikke bekræfter nulstillingen (en enhed, der er væk for altid), eller selvom Home Assistant er forbundet gennem den. Tjekket, der sammenligner de andre enheder med mesh-eksporten, kører stadig (se “Uden sammenligning med eksporten”)."
         },
         "skip_preflight": {
           "name": "Uden sammenligning med eksporten",

@@ -2295,7 +2295,7 @@
         },
         "force": {
           "name": "Akkor is, ha egy gomb vezérli",
-          "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+          "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább. Az ellenőrzés, amely összeveti az eszközöket a mesh-exporttal, ettől még lefut (lásd „Az exporttal való összevetés nélkül”)."
         },
         "skip_preflight": {
           "name": "Az exporttal való összevetés nélkül",
@@ -2577,7 +2577,7 @@
         },
         "force": {
           "name": "Akkor is, ha egy eszköz nem válaszol",
-          "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+          "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát. Az ellenőrzés, amely összeveti az eszközöket a mesh-exporttal, ettől még lefut, az el nem érhető eszközöket kihagyva (lásd „Az exporttal való összevetés nélkül”)."
         },
         "skip_preflight": {
           "name": "Az exporttal való összevetés nélkül",
@@ -2911,7 +2911,7 @@
         },
         "force": {
           "name": "Akkor is, ha nem válaszol",
-          "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+          "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik. Az ellenőrzés, amely összeveti a többi eszközt a mesh-exporttal, ettől még lefut (lásd „Az exporttal való összevetés nélkül”)."
         },
         "skip_preflight": {
           "name": "Az exporttal való összevetés nélkül",
