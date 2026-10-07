@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Zapisa zaporednih številk starejše različice ni bilo mogoče shraniti v shrambo omrežja mesh (`.storage/junghome_ble.seq.*`); preverite, ali je v konfiguracijsko mapo mogoče pisati."
     },
+    "seq_clock_behind": {
+      "message": "Zapis zaporednih številk je bil obnovljen iz varnostne kopije, ura Home Assistanta pa zaostaja za časom, ko je bil zapis ustvarjen; nastavitev počaka, dokler ura ni nastavljena (preverite časovno sinhronizacijo gostitelja)."
+    },
     "seq_floor_not_written": {
       "message": "Zapis zaporednih številk je bil obnovljen iz varnostne kopije in njegove spodnje meje (`.storage/junghome_ble.seq.*.floor`) pred preskokom naprej ni bilo mogoče zapisati; preverite, ali je v konfiguracijsko mapo mogoče pisati."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Dejanje znova zaženite z istim ciljem, da ga dokončate."
+    },
+    "service_room_area_ambiguous": {
+      "message": "V območje {area} spada več kot en prostor izvoza mesh ({rooms}): namesto tega navedite ime prostora."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} je dodatni kanal naprave brez lastnega opisa scene za vsak kanal (starejša strojna programska oprema): njegova scena bi se namesto tega shranila na prvi kanal, kot pove aplikacija JUNG HOME, ko jo zavrne („Funkcija ni na voljo“). Če želite scene shranjevati na ta kanal, v aplikaciji posodobite strojno programsko opremo naprave. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Ključev naprav JUNG HOME ni mogoče shraniti",
       "description": "Home Assistant med dodajanjem naprave na naslovu {address} ni mogel zapisati svojega trezorja za omrežje mesh {title} ({path}; zadnja napaka: {error}). Trezor hrani ključe naprav, ki jih doda Home Assistant in ki jih nima nič drugega, dokler jih ne zabeleži izvoz, zato naprava ni bila pripravljena: ni prejela ničesar in je še vedno nova. To običajno pomeni, da je disk poln ali da je bil njegov datotečni sistem znova priklopljen samo za branje, pogosto zaradi odpovedujoče kartice SD. Sprostite prostor ali popravite shrambo (datotečni sistem, znova priklopljen samo za branje, običajno zahteva ponovni zagon gostitelja), nato napravo dodajte znova; datotek trezorja ne urejajte, brišite ali zamenjujte. Na resnični napravi še ni preizkušeno. Težava izgine sama, takoj ko zapis v trezor uspe."
     },
+    "vault_unwritable_recorded": {
+      "title": "Ključev naprav JUNG HOME ni mogoče shraniti",
+      "description": "Home Assistant je napravo na naslovu {address} dodal v omrežje mesh {title} in jo zabeležil v izvozu mesh, nato pa ni mogel zapisati svojega trezorja ({path}; zadnja napaka: {error}). Naprava deluje; trezor na disku jo še vedno navaja kot nezabeleženo, dokler zapis ne uspe, naslednji zagon integracije pa jo na podlagi izvoza označi kot zabeleženo. To običajno pomeni, da je disk poln ali da je bil njegov datotečni sistem znova priklopljen samo za branje, pogosto zaradi odpovedujoče kartice SD. Sprostite prostor ali popravite shrambo (datotečni sistem, znova priklopljen samo za branje, običajno zahteva ponovni zagon gostitelja); datotek trezorja ne urejajte, brišite ali zamenjujte in naprave ne ponastavljajte z dejanjem „Ponastavi čakajočo napravo“. Na resnični napravi še ni preizkušeno. Težava izgine sama, takoj ko zapis v trezor uspe."
+    },
     "carry_over_conflict": {
       "title": "Aplikacija JUNG HOME je razveljavila spremembo, ki jo je Home Assistant naredil na {title}",
       "description": "Home Assistant je prevzel izvoz, ki ga je aplikacija JUNG HOME nazadnje predala prehodu, in nanj prenesel svoje spremembe, vendar je aplikacija medtem spremenila iste vnose. Različica aplikacije je ohranjena za: {paths}. Naprave morda še vedno hranijo, kar je zapisal Home Assistant: {held}. Te prostore, scene in vezave preverite v aplikaciji in v Home Assistantu ter jih znova nastavite z ene strani. Aplikacija ne vidi, kaj doda Home Assistant, dokler ne uvozi datoteke. Težava izgine ob naslednjem prevzemu izvoza prehoda brez takega spora."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Prehod JUNG HOME ne sprejema več Home Assistanta",
       "description": "Prehod JUNG HOME na naslovu {host} zavrača dostop, ki ga je Home Assistant registriral za omrežje mesh {title} (verjetno je bil odstranjen v aplikaciji JUNG HOME pod Nastavitve → Prehod → Dovoljenja za dostop). Home Assistant še naprej spreminja prostore, vezave gumbov in scene v svojem izvozu, vendar ga ne predaja več prehodu, zato aplikacija teh sprememb ne vidi; naprave še naprej delujejo. Home Assistant znova zahteva dostop: sledite njegovi zahtevi za ponovno preverjanje pristnosti JUNG HOME Bluetooth Mesh (Nastavitve → Naprave in storitve; Popravila jo navajajo tudi kot poteklo preverjanje pristnosti) in vnesite geslo omrežnega ključa prehoda ali odobrite novo zahtevo za dostop v aplikaciji. Težava izgine, ko prehod znova sprejme Home Assistant; dejanje „Sinhroniziraj prehod“ nato preda spremembe, narejene medtem."
+    },
+    "restore_too_old": {
+      "title": "Obnovljena varnostna kopija je prestara za omrežje mesh JUNG HOME {title}",
+      "description": "Home Assistant je bil obnovljen iz varnostne kopije in glede na hitrost, s katero pošilja naslov Home Assistanta {unicast}, zaporedne številke, ki jih je morda porabil od nastanka te varnostne kopije, dosežejo konec številk trenutnega indeksa IV omrežja mesh. Ponovno pošiljanje bi znova uporabilo številke, ki so jih naprave že videle: Home Assistanta ne bi upoštevale, vsaka ponovno uporabljena številka pa oslabi šifriranje omrežja mesh. Zato Home Assistant omrežju mesh ne pošlje ničesar, dokler ni izvedeno eno od tega: IV Update omrežja mesh — sprožite jo z dejanjem `junghome_ble.start_iv_update` (*Orodja za razvijalce → Dejanja*, z `confirm: true`; ni je mogoče razveljaviti; Home Assistant znova pošilja, ko je omrežje mesh na indeksu IV, pod katerim ni mogel pošiljati, kar lahko po obnovi zahteva dve zaporedni IV Update) — ali naslov unicast, ki ga Home Assistant še nikoli ni uporabil, nastavljen pod *Znova konfiguriraj*. Shrambe zaporednih številk ne obnavljajte iz druge kopije. Obvestilo izgine samo, ko Home Assistant spet lahko pošilja. Še ni preverjeno na resničnih napravah."
     },
     "seq_store_lost": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME {title} so izgubljene",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Tudi če jo upravlja gumb",
           "description": "Napravo odstrani iz prostora, čeprav jo preklaplja gumb, vezan na prostor; gumb je nato ne preklaplja več. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+        },
+        "skip_preflight": {
+          "name": "Brez primerjave z izvozom",
+          "description": "Izvede načrt, ne da bi najprej iz naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Le kadar je znano, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
         },
         "room_area": {
           "name": "Prostor prek območja",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Tudi če se naprava ne odzove",
           "description": "Sceno izbriše iz izvoza mesh, čeprav naprava, ki jo je shranila, ni dosegljiva ali jo zavrne (v aplikaciji „Vseeno izbriši“). Ta naprava obdrži sceno, dokler je ne odstrani dejanje „Izbriši neuporabljene scene“; težava v popravilih jo navede, nobena nova scena pa medtem ne dobi njene številke. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+        },
+        "skip_preflight": {
+          "name": "Brez primerjave z izvozom",
+          "description": "Izvede načrt, ne da bi najprej iz naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Le kadar je znano, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
         },
         "config_entry_id": {
           "name": "Omrežje mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Tudi če se ne odzove",
           "description": "Odstrani jo iz zapisov omrežja, čeprav ne potrdi ponastavitve (naprava, ki je dokončno izginila), ali čeprav je Home Assistant povezan prek nje. Preskoči tudi preverjanje, ki naprave najprej primerja z izvozom mesh."
+        },
+        "skip_preflight": {
+          "name": "Brez primerjave z izvozom",
+          "description": "Izvede načrt, ne da bi najprej iz naprav prebral, kaj odstrani ali zamenja, in to primerjal z izvozom mesh. Le kadar je znano, da je izvoz mesh pravilen. Še ni preverjeno na resničnih napravah."
         },
         "confirm": {
           "name": "Potrdi",

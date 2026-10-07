@@ -183,8 +183,8 @@ def iv_update_summary(state: LocalState) -> dict[str, Any]:
     Who started it (`home_assistant`, `beacon`; None when none was seen since this was kept), when, whether and when
     the mesh took one Home Assistant started (`LocalState.iv_update_confirmed`, `iv_update_confirmed_at`), whether it
     is still in progress, and the window Mesh Protocol 1.1 §3.11.5 gives its return to Normal Operation: 96 to 144
-    hours after the mesh took it (review-5 P5-1; unknown until then). While one Home Assistant started waits for the
-    mesh, `waiting_for_mesh_until` says when it is given up (144 hours after the start, review-5 P5-3);
+    hours after the mesh took it (unknown until then). While one Home Assistant started waits for the
+    mesh, `waiting_for_mesh_until` says when it is given up (144 hours after the start);
     `abandoned` says why one was (`not_taken`, `aborted`). `mesh_iv_changed_at`: the last change of the mesh's IV
     state its beacons showed (`LocalState.mesh_iv_changed_at`).
     """
@@ -759,7 +759,7 @@ async def _async_skip_restored_record(
     `backup.async_pre_backup`); one that carries a mark this process did not set (a reload during the backup is no
     restore) is rewritten as the `seq_store_lost` repair does: past the further copy by what the address may have
     sent since the record was written (`_restore_skip`: twice its send rate over the backup's age, at least
-    SEQ_SKIP_AHEAD — review-5 S5-1: a fixed 2^20 was outrun within months by the hub's own polls), not `clean`,
+    SEQ_SKIP_AHEAD: a fixed 2^20 was outrun within months by the hub's own polls), not `clean`,
     `seq_guard` pending the first beacon, the rest kept. A concrete guard the record,
     its copy or the floor already holds (an `iv_index_mismatch` rewind: numbers went out under every index up to
     it) is kept instead, with the index stored as not known, so the first beacon still raises it to one past its

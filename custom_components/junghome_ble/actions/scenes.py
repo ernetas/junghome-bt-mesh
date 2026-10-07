@@ -321,7 +321,7 @@ async def _delete_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespon
     `skipped`: the members `force` passed over, which still hold the scene (the `scene_held` repair names them),
     beside what the keys' plan applied. `force` deletes a scene some members cannot forget, which cannot be
     undone: it needs `confirm` (a dry run does not). `force` keeps the pre-flight comparison; `skip_preflight`
-    skips it (decision M17).
+    skips it.
     """
     force: bool = call.data[ATTR_FORCE]
     if force and not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:

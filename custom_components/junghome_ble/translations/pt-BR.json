@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Não foi possível salvar o registro de números de sequência de uma versão anterior no armazenamento da mesh (`.storage/junghome_ble.seq.*`); verifique se o diretório de configuração permite gravação."
     },
+    "seq_clock_behind": {
+      "message": "O registro de números de sequência foi restaurado de um backup, e o relógio do Home Assistant está atrasado em relação ao momento em que o registro foi gravado; a configuração aguarda até que o relógio seja acertado (verifique a sincronização de horário do host)."
+    },
     "seq_floor_not_written": {
       "message": "O registro de números de sequência foi restaurado de um backup, e o seu piso (`.storage/junghome_ble.seq.*.floor`) não pôde ser gravado antes de avançar; verifique se o diretório de configuração permite gravação."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Execute a ação novamente com o mesmo alvo para concluir."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mais de um cômodo da exportação da mesh vai para a área {area} ({rooms}): informe o nome do cômodo em vez disso."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} é um canal adicional de um dispositivo sem descrição de cena própria por canal (firmware mais antigo): a cena dele seria salva no primeiro canal em vez disso, como o aplicativo JUNG HOME informa ao recusá-la (\"Recurso não disponível\"). Atualize o firmware do dispositivo no aplicativo para salvar cenas neste canal. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "As chaves dos dispositivos JUNG HOME não podem ser salvas",
       "description": "O Home Assistant não conseguiu gravar seu cofre para a mesh {title} ({path}; último erro: {error}) ao adicionar o dispositivo em {address}. O cofre guarda as chaves dos dispositivos que o Home Assistant adiciona, que ninguém mais tem até que a exportação as registre, então o dispositivo não foi provisionado: ele não recebeu nada e continua novo. Isso normalmente significa que o disco está cheio ou que o sistema de arquivos foi remontado como somente leitura, muitas vezes por um cartão SD com defeito. Libere espaço ou repare o armazenamento (um sistema de arquivos remontado como somente leitura normalmente exige reiniciar o host) e adicione o dispositivo novamente; não edite, exclua nem substitua os arquivos do cofre. Ainda não testado em um dispositivo real. O problema desaparece sozinho assim que uma gravação do cofre for bem-sucedida."
     },
+    "vault_unwritable_recorded": {
+      "title": "As chaves dos dispositivos JUNG HOME não podem ser salvas",
+      "description": "O Home Assistant adicionou o dispositivo em {address} à mesh {title} e o registrou na exportação da mesh, mas depois não conseguiu gravar seu cofre ({path}; último erro: {error}). O dispositivo funciona; o cofre no disco ainda o lista como não registrado até que uma gravação seja bem-sucedida, e a próxima inicialização da integração o marca como registrado a partir da exportação. Isso normalmente significa que o disco está cheio ou que o sistema de arquivos foi remontado como somente leitura, muitas vezes por um cartão SD com defeito. Libere espaço ou repare o armazenamento (um sistema de arquivos remontado como somente leitura normalmente exige reiniciar o host); não edite, exclua nem substitua os arquivos do cofre, e não redefina o dispositivo com Redefinir dispositivo pendente. Ainda não testado em um dispositivo real. O problema desaparece sozinho assim que uma gravação do cofre for bem-sucedida."
+    },
     "carry_over_conflict": {
       "title": "O aplicativo JUNG HOME sobrepôs uma alteração que o Home Assistant fez em {title}",
       "description": "O Home Assistant assumiu a exportação que o aplicativo JUNG HOME entregou por último ao gateway e levou para ela as suas próprias alterações, mas o aplicativo havia alterado as mesmas entradas nesse meio-tempo. A versão do aplicativo é mantida para: {paths}. Os dispositivos ainda podem conter o que o Home Assistant havia gravado: {held}. Verifique esses cômodos, cenas e vínculos no aplicativo e no Home Assistant, e defina-os novamente a partir de um dos lados. O aplicativo não vê o que o Home Assistant adiciona até importar um arquivo. O problema desaparece na próxima assunção da exportação do gateway que não tiver esse conflito."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "O gateway JUNG HOME não aceita mais o Home Assistant",
       "description": "O gateway JUNG HOME em {host} rejeita o acesso que o Home Assistant registrou para a mesh {title} (provavelmente ele foi removido no aplicativo JUNG HOME em Configurações → Gateway → Permissões de acesso). O Home Assistant continua alterando cômodos, vínculos de botões e cenas na sua própria exportação, mas não a entrega mais ao gateway, então o aplicativo não vê essas alterações; os dispositivos continuam funcionando. O Home Assistant pede acesso novamente: siga a solicitação dele para reautenticar o JUNG HOME Bluetooth Mesh (Configurações → Dispositivos e serviços; Reparos também a lista como autenticação expirada) e informe a senha da chave de rede do gateway ou aprove a nova solicitação de acesso no aplicativo. O problema desaparece assim que o gateway aceitar o Home Assistant novamente; a ação Sincronizar gateway então entrega as alterações feitas desde então."
+    },
+    "restore_too_old": {
+      "title": "Backup restaurado antigo demais para a mesh JUNG HOME {title}",
+      "description": "O Home Assistant foi restaurado de um backup e, no ritmo em que o endereço {unicast} do Home Assistant envia, os números de sequência que ele pode ter usado desde que esse backup foi feito chegam ao fim dos números do IV index atual da mesh. Enviar de novo reutilizaria números que os dispositivos já viram: eles ignorariam o Home Assistant, e cada número reutilizado enfraquece a criptografia da mesh. Por isso o Home Assistant não envia nada à mesh até que uma destas opções seja feita: um IV Update da mesh — inicie um com a ação `junghome_ble.start_iv_update` (*Ferramentas de desenvolvedor → Ações*, com `confirm: true`; não pode ser desfeito; o Home Assistant volta a enviar assim que a mesh estiver em um IV index sob o qual ele não pode ter enviado, o que após uma restauração pode exigir dois IV Updates seguidos) — ou um endereço unicast que o Home Assistant nunca usou, definido em *Reconfigurar*. Não restaure o armazenamento de números de sequência de outra cópia. O aviso desaparece sozinho assim que o Home Assistant puder enviar novamente. Ainda não verificado na prática."
     },
     "seq_store_lost": {
       "title": "Números de sequência da mesh JUNG HOME {title} perdidos",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Mesmo que um botão o controle",
           "description": "Retira o dispositivo do cômodo mesmo que um botão vinculado ao cômodo o comute; o botão deixa de comutá-lo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+        },
+        "skip_preflight": {
+          "name": "Sem comparar com a exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado na prática."
         },
         "room_area": {
           "name": "Cômodo pela área",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Mesmo que um dispositivo não responda",
           "description": "Exclui a cena da exportação da mesh mesmo que um dispositivo que a salvou não possa ser alcançado ou recuse (o \"Excluir mesmo assim\" do aplicativo). Esse dispositivo mantém a cena até que Excluir cenas não usadas a remova; um reparo o indica, e nenhuma cena nova recebe o número dela nesse meio-tempo. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+        },
+        "skip_preflight": {
+          "name": "Sem comparar com a exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado na prática."
         },
         "config_entry_id": {
           "name": "Rede mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Mesmo que ele não responda",
           "description": "Remove-o dos registros da rede mesmo que ele não confirme a redefinição (um dispositivo que não existe mais), ou mesmo que o Home Assistant esteja conectado por meio dele. Também pula a verificação que compara primeiro os dispositivos com a exportação da mesh."
+        },
+        "skip_preflight": {
+          "name": "Sem comparar com a exportação",
+          "description": "Executa o plano sem antes ler dos dispositivos o que ele remove ou substitui e comparar isso com a exportação da mesh. Somente quando se sabe que a exportação da mesh está correta. Ainda não verificado na prática."
         },
         "confirm": {
           "name": "Confirmar",

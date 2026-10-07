@@ -190,7 +190,7 @@ async def test_the_repair_starts_it_with_the_actions_guards(
 ) -> None:
     """Review-5 (improvement): `sequence_space_low` is fixable — no action and `confirm: true` to compose in
     Developer tools. Its confirmation starts the IV Update as the action does, and a guard's refusal (here: one
-    started already) aborts with the action's words; the started update clears the issue."""
+    started already) aborts with the action's words; the issue goes once the mesh takes the update."""
     hub = hub_of(init_integration)
     running_low(hub)
     issue = find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW)
@@ -201,8 +201,8 @@ async def test_the_repair_starts_it_with_the_actions_guards(
     assert form["description_placeholders"]["percent"] == "75"
     assert result["type"] == "create_entry"
     assert fake_link.beacons_in == [(1, True)]
-    assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is None
-    running_low(hub)  # in the new index: raised again, but an update runs
+    # the mesh has not taken it yet: the issue stays, and confirming it again is refused (an update runs)
+    assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is not None
     _form, result = await start_by_repair(
         hass, find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW)
     )
@@ -210,6 +210,9 @@ async def test_the_repair_starts_it_with_the_actions_guards(
     assert result["reason"] == "start_failed"
     assert result["description_placeholders"]["error"]
     assert fake_link.beacons_in == [(1, True)]
+    # the proxy beaconed it back: the mesh took it, and the new index's space is untouched
+    await pause_iv_loop(hass, hub)
+    assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is None
     await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
     _form, result = await start_by_repair(hass, issue)

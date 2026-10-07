@@ -559,7 +559,7 @@ class StartIVUpdateFlow(_IssueFlow):
 
     `actions.iv_update.async_start_iv_update`, with the action's guards: refused while no sender is past three
     quarters any more, without a link, during a key refresh, while an update runs or within 96 hours of the last
-    one; the abort says which. The started update clears the issue. Unverified on air.
+    one; the abort says which. The issue goes once the mesh takes the update. Unverified on air.
     """
 
     async def async_step_init(

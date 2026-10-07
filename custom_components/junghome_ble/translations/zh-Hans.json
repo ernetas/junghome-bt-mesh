@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "无法将旧版本的序列号记录保存到 Mesh 的存储（`.storage/junghome_ble.seq.*`）中；请检查配置目录是否可写。"
     },
+    "seq_clock_behind": {
+      "message": "序列号记录是从备份中恢复的，而 Home Assistant 的时钟早于写入该记录的时间；设置将等待时钟校准后再继续（请检查主机的时间同步）。"
+    },
     "seq_floor_not_written": {
       "message": "序列号记录已从备份中恢复，但在向前跳过之前无法写入其下限（`.storage/junghome_ble.seq.*.floor`）；请检查配置目录是否可写。"
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "请以相同目标再次运行该动作以完成。"
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mesh 导出文件中有多个房间归入区域 {area}（{rooms}）：请改为指定房间名称。"
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} 是某设备的附加通道，该设备没有按通道单独的场景描述（较旧固件）：其场景将改为存储在第一个通道上，正如 JUNG HOME 应用拒绝时所提示的（“功能不可用”）。请在应用中更新该设备的固件，以便在此通道上存储场景。{applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "无法保存 JUNG HOME 设备密钥",
       "description": "Home Assistant 在添加位于 {address} 的设备时，无法写入 Mesh {title} 的密钥库（{path}；最后一个错误：{error}）。密钥库保存着 Home Assistant 所添加设备的设备密钥，在导出文件记录它们之前，其他任何地方都没有这些密钥，因此该设备未被配网：它没有收到任何内容，仍然是新设备。这通常意味着磁盘已满，或其文件系统被重新挂载为只读，常见原因是 SD 卡故障。请释放空间或修复存储（重新挂载为只读的文件系统通常需要重启主机），然后重新添加该设备；请勿编辑、删除或替换密钥库的文件。尚未在真实设备上尝试。一旦成功写入密钥库，此问题即会自动清除。"
     },
+    "vault_unwritable_recorded": {
+      "title": "无法保存 JUNG HOME 设备密钥",
+      "description": "Home Assistant 已将位于 {address} 的设备添加到 Mesh {title}，并已将其记录到 Mesh 导出文件中，但之后无法写入其密钥库（{path}；最后一个错误：{error}）。该设备可以正常工作；在写入成功之前，磁盘上的密钥库仍将其列为未记录，而集成下次启动时会根据导出文件将其标记为已记录。这通常意味着磁盘已满，或其文件系统被重新挂载为只读，常见原因是 SD 卡故障。请释放空间或修复存储（重新挂载为只读的文件系统通常需要重启主机）；请勿编辑、删除或替换密钥库的文件，也不要使用“重置待处理设备”重置该设备。尚未在真实设备上尝试。一旦成功写入密钥库，此问题即会自动清除。"
+    },
     "carry_over_conflict": {
       "title": "JUNG HOME 应用覆盖了 Home Assistant 在 {title} 上所做的一项更改",
       "description": "Home Assistant 接管了 JUNG HOME 应用最近一次交给网关的导出文件，并将自己的更改转移到其中，但应用在此期间更改了相同的条目。以下内容保留了应用的版本：{paths}。设备可能仍保存着 Home Assistant 写入的内容：{held}。请在应用和 Home Assistant 中检查这些房间、场景和关联，并从其中一方重新设置。应用在导入文件之前看不到 Home Assistant 添加的内容。下一次接管网关的导出文件且没有此类冲突时，此问题即会清除。"
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "JUNG HOME 网关不再接受 Home Assistant",
       "description": "位于 {host} 的 JUNG HOME 网关拒绝了 Home Assistant 为 Mesh {title} 注册的访问权限（可能已在 JUNG HOME 应用的 设置 → 网关 → 访问权限 下被移除）。Home Assistant 仍会在自己的导出文件中更改房间、按钮关联和场景，但不再将其交给网关，因此应用看不到这些更改；设备仍正常工作。Home Assistant 会再次请求访问权限：请按照其重新验证 JUNG HOME Bluetooth Mesh 的请求操作（设置 → 设备与服务；“修复”中也会将其列为身份验证已过期），并输入网关的网络密钥密码，或在应用中批准新的访问请求。一旦网关再次接受 Home Assistant，此问题即会清除；之后动作“同步网关”会交出此后所做的更改。"
+    },
+    "restore_too_old": {
+      "title": "恢复的备份对于 JUNG HOME Mesh {title} 而言过旧",
+      "description": "Home Assistant 已从备份中恢复，按照 Home Assistant 的地址 {unicast} 的发送速率，自该备份创建以来它可能已用掉的序列号会达到 Mesh 当前 IV index 下序列号的末尾。再次发送将重复使用设备已经见过的序列号：设备会忽略 Home Assistant，并且每个被重复使用的序列号都会削弱 Mesh 的加密。因此，在完成以下任一操作之前，Home Assistant 不会向 Mesh 发送任何内容：Mesh 的 IV Update——通过操作 `junghome_ble.start_iv_update` 启动（*开发者工具 → 操作*，并设置 `confirm: true`；此操作不可撤销；当 Mesh 处于 Home Assistant 不可能在其下发送过的 IV index 时，Home Assistant 才会再次发送，恢复后这可能需要连续两次 IV Update）——或在*重新配置*中设置一个 Home Assistant 从未使用过的单播地址。请勿从其他副本恢复序列号存储。一旦 Home Assistant 可以再次发送，此通知即会自动清除。尚未在真实设备上验证。"
     },
     "seq_store_lost": {
       "title": "JUNG HOME Mesh {title} 的序列号已丢失",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "即使有按钮控制它",
           "description": "即使有关联到该房间的按钮在控制该设备，也将其移出房间；该按钮将不再控制它。也会跳过先将设备与 Mesh 导出文件进行比较的检查。"
+        },
+        "skip_preflight": {
+          "name": "不与导出文件比较",
+          "description": "运行该计划，而不先从设备读取它将删除或替换的内容并与 Mesh 导出文件进行比较。仅在确定 Mesh 导出文件正确时使用。尚未在真实设备上验证。"
         },
         "room_area": {
           "name": "按区域指定房间",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "即使有设备未应答",
           "description": "即使保存了该场景的某个设备无法访问或拒绝删除，也从 Mesh 导出文件中删除该场景（即应用中的“仍然删除”）。该设备会保留此场景，直到“删除未使用的场景”将其删除；一个修复问题会列出该设备，在此期间新场景不会获得其编号。也会跳过先将设备与 Mesh 导出文件进行比较的检查。"
+        },
+        "skip_preflight": {
+          "name": "不与导出文件比较",
+          "description": "运行该计划，而不先从设备读取它将删除或替换的内容并与 Mesh 导出文件进行比较。仅在确定 Mesh 导出文件正确时使用。尚未在真实设备上验证。"
         },
         "config_entry_id": {
           "name": "Mesh 网络",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "即使其未应答",
           "description": "即使它未确认重置（已永久消失的设备），或 Home Assistant 正通过它连接，也将其从网络记录中移除。也会跳过先将设备与 Mesh 导出文件进行比较的检查。"
+        },
+        "skip_preflight": {
+          "name": "不与导出文件比较",
+          "description": "运行该计划，而不先从设备读取它将删除或替换的内容并与 Mesh 导出文件进行比较。仅在确定 Mesh 导出文件正确时使用。尚未在真实设备上验证。"
         },
         "confirm": {
           "name": "确认",

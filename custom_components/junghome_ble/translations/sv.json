@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Sekvensnummerposten från en äldre version kunde inte sparas i meshets lagring (`.storage/junghome_ble.seq.*`); kontrollera att konfigurationskatalogen är skrivbar."
     },
+    "seq_clock_behind": {
+      "message": "Sekvensnummerposten återställdes från en säkerhetskopia, och Home Assistants klocka ligger efter den tidpunkt då posten skrevs; konfigurationen väntar tills klockan är ställd (kontrollera värdens tidssynkronisering)."
+    },
     "seq_floor_not_written": {
       "message": "Sekvensnummerposten återställdes från en säkerhetskopia, och dess golv (`.storage/junghome_ble.seq.*.floor`) kunde inte skrivas innan det hoppades framåt; kontrollera att konfigurationskatalogen är skrivbar."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Kör åtgärden igen med samma mål för att slutföra."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mer än ett rum i mesh-exporten hamnar i området {area} ({rooms}): ange rummets namn i stället."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} är en ytterligare kanal på en enhet utan egen scenbeskrivning per kanal (äldre firmware): dess scen skulle i stället sparas på den första kanalen, vilket JUNG HOME-appen säger när den vägrar (“Funktionen är inte tillgänglig”). Uppdatera enhetens firmware i appen för att spara scener på den här kanalen. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "JUNG HOME-enhetsnycklar kan inte sparas",
       "description": "Home Assistant kunde inte skriva sitt valv för meshet {title} ({path}; senaste fel: {error}) när enheten på {address} lades till. Valvet innehåller enhetsnycklarna för de enheter som Home Assistant lägger till, som inget annat har förrän exporten registrerar dem, så enheten driftsattes inte: den fick inget och är fortfarande ny. Det betyder oftast att disken är full eller att dess filsystem har monterats om som skrivskyddat, ofta på grund av ett felande SD-kort. Frigör utrymme eller reparera lagringen (ett filsystem som monterats om som skrivskyddat kräver oftast att värden startas om) och lägg sedan till enheten igen; redigera, ta inte bort eller ersätt inte valvets filer. Ännu inte provat på en riktig enhet. Problemet försvinner av sig självt så snart en skrivning till valvet lyckas."
     },
+    "vault_unwritable_recorded": {
+      "title": "JUNG HOME-enhetsnycklar kan inte sparas",
+      "description": "Home Assistant lade till enheten på {address} i meshet {title} och registrerade den i mesh-exporten, men kunde inte skriva sitt valv ({path}; senaste fel: {error}) efteråt. Enheten fungerar; valvet på disken anger den fortfarande som inte registrerad tills en skrivning lyckas, och nästa start av integrationen markerar den som registrerad utifrån exporten. Det betyder oftast att disken är full eller att dess filsystem har monterats om som skrivskyddat, ofta på grund av ett felande SD-kort. Frigör utrymme eller reparera lagringen (ett filsystem som monterats om som skrivskyddat kräver oftast att värden startas om); redigera inte, ta inte bort och ersätt inte valvets filer, och återställ inte enheten med “Återställ väntande enhet”. Ännu inte provat på en riktig enhet. Problemet försvinner av sig självt så snart en skrivning till valvet lyckas."
+    },
     "carry_over_conflict": {
       "title": "JUNG HOME-appen skrev över en ändring som Home Assistant gjorde på {title}",
       "description": "Home Assistant tog över exporten som JUNG HOME-appen senast lämnade till gatewayen och förde över sina egna ändringar till den, men appen hade under tiden ändrat samma poster. Appens version behålls för: {paths}. Enheterna kan fortfarande innehålla det som Home Assistant hade skrivit: {held}. Kontrollera de rummen, scenerna och kopplingarna i appen och i Home Assistant, och ställ in dem igen från ena sidan. Appen ser inte vad Home Assistant lägger till förrän den importerar en fil. Problemet försvinner vid nästa övertagande av gatewayens export som inte har någon sådan konflikt."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway godtar inte längre Home Assistant",
       "description": "JUNG HOME Gateway på {host} avvisar den åtkomst som Home Assistant registrerade för meshet {title} (den togs troligen bort i JUNG HOME-appen under Inställningar → Gateway → Åtkomstbehörigheter). Home Assistant fortsätter att ändra rum, knappkopplingar och scener i sin egen export men lämnar inte längre över den till gatewayen, så appen ser inte de ändringarna; enheterna fortsätter att fungera. Home Assistant ber om åtkomst igen: följ dess begäran om att autentisera JUNG HOME Bluetooth Mesh på nytt (Inställningar → Enheter och tjänster; Reparationer listar det också som utgången autentisering) och ange gatewayens lösenord för nätverksnyckeln eller godkänn den nya åtkomstbegäran i appen. Problemet försvinner när gatewayen godtar Home Assistant igen; åtgärden Synkronisera gateway lämnar sedan över de ändringar som gjorts sedan dess."
+    },
+    "restore_too_old": {
+      "title": "Återställd säkerhetskopia för gammal för JUNG HOME-meshet {title}",
+      "description": "Home Assistant återställdes från en säkerhetskopia, och i den takt som Home Assistants adress {unicast} skickar når de sekvensnummer som det kan ha använt sedan säkerhetskopian togs slutet av numren för meshets nuvarande IV-index. Att skicka igen skulle återanvända nummer som enheterna redan har sett: de skulle ignorera Home Assistant, och varje återanvänt nummer försvagar meshets kryptering. Därför skickar Home Assistant ingenting till meshet förrän något av följande är gjort: en IV Update av meshet — starta en med åtgärden `junghome_ble.start_iv_update` (*Utvecklarverktyg → Åtgärder*, med `confirm: true`; den kan inte ångras; Home Assistant skickar igen när meshet är på ett IV-index som det inte kan ha skickat under, vilket efter en återställning kan kräva två IV Updates i rad) — eller en unicast-adress som Home Assistant aldrig har använt, inställd under *Omkonfigurera*. Återställ inte sekvensnummerlagringen från en annan kopia. Notisen försvinner av sig själv när Home Assistant kan skicka igen. Ännu inte verifierat på riktiga enheter."
     },
     "seq_store_lost": {
       "title": "Sekvensnummer för JUNG HOME-meshet {title} har gått förlorade",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Även om en knapp styr den",
           "description": "Ta bort enheten ur rummet trots att en knapp som är kopplad till rummet styr den; knappen slutar styra den. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+        },
+        "skip_preflight": {
+          "name": "Utan jämförelse med exporten",
+          "description": "Kör planen utan att först läsa från enheterna vad den tar bort eller ersätter och jämföra det med mesh-exporten. Endast när man vet att mesh-exporten stämmer. Ännu inte verifierat på riktiga enheter."
         },
         "room_area": {
           "name": "Rum via område",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Även om en enhet inte svarar",
           "description": "Ta bort scenen ur mesh-exporten trots att en enhet som sparat den inte kan nås eller vägrar (appens “Ta bort ändå”). Den enheten behåller scenen tills “Ta bort oanvända scener” tar bort den; en reparationsnotis nämner den, och ingen ny scen får dess nummer under tiden. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+        },
+        "skip_preflight": {
+          "name": "Utan jämförelse med exporten",
+          "description": "Kör planen utan att först läsa från enheterna vad den tar bort eller ersätter och jämföra det med mesh-exporten. Endast när man vet att mesh-exporten stämmer. Ännu inte verifierat på riktiga enheter."
         },
         "config_entry_id": {
           "name": "Mesh-nätverk",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Även om den inte svarar",
           "description": "Ta bort den ur nätverkets register trots att den inte bekräftar återställningen (en enhet som är borta för gott), eller trots att Home Assistant är anslutet via den. Den hoppar också över kontrollen som först jämför enheterna med mesh-exporten."
+        },
+        "skip_preflight": {
+          "name": "Utan jämförelse med exporten",
+          "description": "Kör planen utan att först läsa från enheterna vad den tar bort eller ersätter och jämföra det med mesh-exporten. Endast när man vet att mesh-exporten stämmer. Ännu inte verifierat på riktiga enheter."
         },
         "confirm": {
           "name": "Bekräfta",

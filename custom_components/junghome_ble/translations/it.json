@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Impossibile salvare il record dei numeri di sequenza di una versione precedente nell'archivio della mesh (`.storage/junghome_ble.seq.*`); verifica che la directory di configurazione sia scrivibile."
     },
+    "seq_clock_behind": {
+      "message": "Il record dei numeri di sequenza è stato ripristinato da un backup e l'orologio di Home Assistant è indietro rispetto all'ora in cui il record è stato scritto; la configurazione attende finché l'orologio non viene impostato (controlla la sincronizzazione dell'ora dell'host)."
+    },
     "seq_floor_not_written": {
       "message": "Il record dei numeri di sequenza è stato ripristinato da un backup e la sua soglia minima (`.storage/junghome_ble.seq.*.floor`) non ha potuto essere scritta prima di saltare avanti; verifica che la directory di configurazione sia scrivibile."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Esegui di nuovo l'azione con la stessa destinazione per terminare."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Più di una stanza dell'esportazione mesh va nell'area {area} ({rooms}): indica invece la stanza."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} è un ulteriore canale di un dispositivo senza una propria descrizione della scena per canale (firmware meno recente): la sua scena verrebbe invece memorizzata sul primo canale, come dice l'app JUNG HOME quando la rifiuta («Funzione non disponibile»). Aggiorna il firmware del dispositivo nell'app per memorizzare scene su questo canale. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Impossibile salvare le chiavi dei dispositivi JUNG HOME",
       "description": "Home Assistant non ha potuto scrivere il suo archivio protetto per la mesh {title} ({path}; ultimo errore: {error}) durante l'aggiunta del dispositivo su {address}. L'archivio contiene le chiavi dei dispositivi che Home Assistant aggiunge, che nessun altro possiede finché l'esportazione non le registra, quindi il dispositivo non è stato messo in servizio: non ha ricevuto nulla ed è ancora nuovo. Di solito significa che il disco è pieno o che il suo file system è stato rimontato in sola lettura, spesso a causa di una scheda SD difettosa. Libera spazio o ripara la memoria (un file system rimontato in sola lettura di solito richiede il riavvio dell'host), poi aggiungi di nuovo il dispositivo; non modificare, eliminare o sostituire i file dell'archivio. Non ancora provato su un dispositivo reale. Il problema scompare da solo non appena una scrittura dell'archivio va a buon fine."
     },
+    "vault_unwritable_recorded": {
+      "title": "Impossibile salvare le chiavi dei dispositivi JUNG HOME",
+      "description": "Home Assistant ha aggiunto il dispositivo su {address} alla mesh {title} e lo ha registrato nell'esportazione mesh, ma in seguito non ha potuto scrivere il suo archivio protetto ({path}; ultimo errore: {error}). Il dispositivo funziona; l'archivio su disco lo elenca ancora come non registrato finché una scrittura non va a buon fine, e il prossimo avvio dell'integrazione lo segna come registrato in base all'esportazione. Di solito significa che il disco è pieno o che il suo file system è stato rimontato in sola lettura, spesso a causa di una scheda SD difettosa. Libera spazio o ripara la memoria (un file system rimontato in sola lettura di solito richiede il riavvio dell'host); non modificare, eliminare o sostituire i file dell'archivio, e non ripristinare il dispositivo con Ripristina dispositivo in sospeso. Non ancora provato su un dispositivo reale. Il problema scompare da solo non appena una scrittura dell'archivio va a buon fine."
+    },
     "carry_over_conflict": {
       "title": "L'app JUNG HOME ha sovrascritto una modifica fatta da Home Assistant su {title}",
       "description": "Home Assistant ha adottato l'esportazione che l'app JUNG HOME ha consegnato per ultima al gateway e vi ha riportato le proprie modifiche, ma nel frattempo l'app aveva modificato le stesse voci. Viene mantenuta la versione dell'app per: {paths}. I dispositivi potrebbero contenere ancora ciò che Home Assistant aveva scritto: {held}. Controlla quelle stanze, scene e collegamenti nell'app e in Home Assistant, e impostali di nuovo da una sola parte. L'app non vede ciò che Home Assistant aggiunge finché non importa un file. Il problema scompare con la prossima adozione dell'esportazione del gateway che non presenti un conflitto del genere."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Il gateway JUNG HOME non accetta più Home Assistant",
       "description": "Il gateway JUNG HOME su {host} rifiuta l'accesso che Home Assistant ha registrato per la mesh {title} (probabilmente è stato rimosso nell'app JUNG HOME in Impostazioni → Gateway → Autorizzazioni di accesso). Home Assistant continua a modificare stanze, collegamenti dei tasti e scene nella propria esportazione, ma non la consegna più al gateway, quindi l'app non vede quelle modifiche; i dispositivi continuano a funzionare. Home Assistant chiede di nuovo l'accesso: segui la sua richiesta di riautenticare JUNG HOME Bluetooth Mesh (Impostazioni → Dispositivi e servizi; anche Riparazioni la elenca come autenticazione scaduta) e inserisci la password della chiave di rete del gateway oppure approva la nuova richiesta di accesso nell'app. Il problema scompare non appena il gateway accetta di nuovo Home Assistant; l'azione Sincronizza il gateway consegna poi le modifiche fatte nel frattempo."
+    },
+    "restore_too_old": {
+      "title": "Backup ripristinato troppo vecchio per la mesh JUNG HOME {title}",
+      "description": "Home Assistant è stato ripristinato da un backup e, al ritmo con cui invia l'indirizzo {unicast} di Home Assistant, i numeri di sequenza che può aver usato da quando è stato creato quel backup raggiungono la fine dei numeri dell'indice IV attuale della mesh. Inviare di nuovo riutilizzerebbe numeri che i dispositivi hanno già visto: ignorerebbero Home Assistant, e ogni numero riutilizzato indebolisce la crittografia della mesh. Per questo Home Assistant non invia nulla alla mesh finché non viene fatta una di queste cose: un IV Update della mesh — avvialo con l'azione `junghome_ble.start_iv_update` (*Strumenti per sviluppatori → Azioni*, con `confirm: true`; non si può annullare; Home Assistant invia di nuovo non appena la mesh è a un indice IV con cui non può aver inviato, il che dopo un ripristino può richiedere due IV Update di seguito) — oppure un indirizzo unicast che Home Assistant non ha mai usato, impostato in *Riconfigura*. Non ripristinare l'archivio dei numeri di sequenza da un'altra copia. L'avviso scompare da solo non appena Home Assistant può inviare di nuovo. Non verificato su dispositivi reali."
     },
     "seq_store_lost": {
       "title": "Numeri di sequenza della mesh JUNG HOME {title} persi",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Anche se un tasto lo comanda",
           "description": "Togli il dispositivo dalla stanza anche se un tasto collegato alla stanza lo commuta; il tasto smette di commutarlo. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+        },
+        "skip_preflight": {
+          "name": "Senza confronto con l'esportazione",
+          "description": "Esegui il piano senza leggere prima dai dispositivi ciò che rimuove o sostituisce e senza confrontarlo con l'esportazione mesh. Solo quando si sa che l'esportazione mesh è corretta. Non verificato su dispositivi reali."
         },
         "room_area": {
           "name": "Stanza per area",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Anche se un dispositivo non risponde",
           "description": "Elimina la scena dall'esportazione mesh anche se un dispositivo che l'ha memorizzata non è raggiungibile o rifiuta (il «Elimina comunque» dell'app). Quel dispositivo mantiene la scena finché Elimina le scene inutilizzate non la rimuove; un problema da riparare lo indica, e nel frattempo nessuna nuova scena riceve il suo numero. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+        },
+        "skip_preflight": {
+          "name": "Senza confronto con l'esportazione",
+          "description": "Esegui il piano senza leggere prima dai dispositivi ciò che rimuove o sostituisce e senza confrontarlo con l'esportazione mesh. Solo quando si sa che l'esportazione mesh è corretta. Non verificato su dispositivi reali."
         },
         "config_entry_id": {
           "name": "Rete mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Anche se non risponde",
           "description": "Rimuovilo dai registri della rete anche se non conferma il ripristino (un dispositivo che non c'è più definitivamente), o anche se Home Assistant è connesso tramite esso. Salta anche il controllo che confronta prima i dispositivi con l'esportazione mesh."
+        },
+        "skip_preflight": {
+          "name": "Senza confronto con l'esportazione",
+          "description": "Esegui il piano senza leggere prima dai dispositivi ciò che rimuove o sostituisce e senza confrontarlo con l'esportazione mesh. Solo quando si sa che l'esportazione mesh è corretta. Non verificato su dispositivi reali."
         },
         "confirm": {
           "name": "Conferma",

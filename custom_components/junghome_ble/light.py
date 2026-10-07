@@ -9,7 +9,7 @@ Lightness Sets); the three actions were seen to dim, stop and step a dimmer on a
 agreeing to ±1), a tunable-white channel was not tried. The light's state is asked for after a stop or a step, as
 its Level Status does not carry the lightness the entity shows.
 
-**Transitions** (decision M19, from the on-air probe, sweep B8 and `docs/hidden-features.md` §11): neither the app
+**Transitions** (from the on-air probe, sweep B8 and `docs/hidden-features.md` §11): neither the app
 nor the gateway ever sends one, and only a brightness change fades — the DALI insert answered a Lightness Set with a
 transition with its target and the time left, and faded; it answered a CTL Set and an OnOff on at once, and a switch
 insert took a transition on off as a delay. So HA's `transition` goes only into a Lightness Set
@@ -199,7 +199,7 @@ class JungHomeLight(LoadLock, LightEntity):
     def _transition(
         self, kwargs: dict[str, Any], lightness: int | None, kelvin: Any
     ) -> float | None:
-        """HA's `transition` for a brightness change of a light that fades and is on; None otherwise (decision M19).
+        """HA's `transition` for a brightness change of a light that fades and is on; None otherwise.
 
         A brightness alone is a Lightness Set (`_turn_on`); with a colour temperature it is a CTL Set, which does not
         fade, and to a light that is off it is an *on*, which does not either.
@@ -238,7 +238,7 @@ class JungHomeLight(LoadLock, LightEntity):
             await self.hub.set_onoff(self.address, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Send Generic OnOff Set off; never with a `transition` (decision M19: only a brightness change fades)."""
+        """Send Generic OnOff Set off; never with a `transition`: only a brightness change fades."""
         await self._check_unlocked()
         await self._send_switch(self.hub.set_onoff(self.address, False), False)
 
@@ -287,7 +287,7 @@ class JungHomeAllLights(JungHomeCentralEntity, LightEntity):
     Dimmable when any member is; the brightness is the mean of the dimmable members that are on. A brightness goes
     to the dimmers only (the switched loads just switch on), as the app's "dim all" does. The lights of a room: the
     brightness as one Lightness Set to the room address (`Dim.Group`), on / off per light
-    (`JungHomeHub.room_command`). No transition (decision M19): the group's Lightness Set also switches the members
+    (`JungHomeHub.room_command`). No transition: the group's Lightness Set also switches the members
     that are off on, and an *on* does not fade.
     """
 

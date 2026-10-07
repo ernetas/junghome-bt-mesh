@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Nepavyko perkelti senesnės versijos sekos numerių įrašo į tinklo saugyklą (`.storage/junghome_ble.seq.*`); patikrinkite, ar į konfigūracijos katalogą galima rašyti."
     },
+    "seq_clock_behind": {
+      "message": "Sekos numerių įrašas atkurtas iš atsarginės kopijos, o Home Assistant laikrodis atsilieka nuo laiko, kai įrašas buvo įrašytas; sąranka laukia, kol laikrodis bus nustatytas (patikrinkite serverio laiko sinchronizavimą)."
+    },
     "seq_floor_not_written": {
       "message": "Sekos numerių įrašas atkurtas iš atsarginės kopijos, tačiau prieš peršokant į priekį nepavyko įrašyti jo apatinės ribos (`.storage/junghome_ble.seq.*.floor`); patikrinkite, ar į konfigūracijos katalogą galima rašyti."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Paleiskite veiksmą dar kartą su tuo pačiu tikslu, kad jį užbaigtumėte."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Sričiai {area} priskirta daugiau nei viena tinklo eksporto patalpa ({rooms}): verčiau nurodykite patalpą."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} yra tolesnis kanalas įrenginio, kuris neturi atskiro scenos aprašo kiekvienam kanalui (senesnė programinė aparatinė įranga): jo scena būtų išsaugota pirmajame kanale, kaip ir sako „JUNG HOME“ programėlė, kai to atsisako („Feature not available“). Kad scenos būtų išsaugomos šiame kanale, programėlėje atnaujinkite įrenginio programinę aparatinę įrangą. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Nepavyksta išsaugoti „JUNG HOME“ įrenginių raktų",
       "description": "Pridėdamas įrenginį adresu {address}, Home Assistant negalėjo įrašyti tinklo {title} raktų saugyklos ({path}; paskutinė klaida: {error}). Saugykloje laikomi Home Assistant pridedamų įrenginių raktai, kurių niekas kitas neturi, kol jų neįrašo eksportas, todėl įrenginys nebuvo įtrauktas į tinklą: jis nieko negavo ir tebėra naujas. Paprastai tai reiškia, kad diskas pilnas arba jo failų sistema iš naujo prijungta tik skaitymui – dažnai dėl gendančios SD kortelės. Atlaisvinkite vietos arba sutvarkykite saugojimo įrenginį (failų sistemai, prijungtai tik skaitymui, paprastai reikia paleisti serverį iš naujo), tada pridėkite įrenginį dar kartą; saugyklos failų neredaguokite, netrinkite ir nekeiskite. Su tikru įrenginiu dar neišbandyta. Problema išnyks savaime, kai tik saugyklą pavyks įrašyti."
     },
+    "vault_unwritable_recorded": {
+      "title": "Nepavyksta išsaugoti „JUNG HOME“ įrenginių raktų",
+      "description": "Home Assistant pridėjo įrenginį adresu {address} prie tinklo {title} ir įrašė jį į tinklo eksportą, bet po to negalėjo įrašyti savo raktų saugyklos ({path}; paskutinė klaida: {error}). Įrenginys veikia; diske esanti saugykla jį vis dar rodo kaip neįrašytą, kol įrašymas pavyks, o kitą kartą paleidus integraciją jis pažymimas įrašytu pagal eksportą. Paprastai tai reiškia, kad diskas pilnas arba jo failų sistema iš naujo prijungta tik skaitymui – dažnai dėl gendančios SD kortelės. Atlaisvinkite vietos arba sutvarkykite saugojimo įrenginį (failų sistemai, prijungtai tik skaitymui, paprastai reikia paleisti serverį iš naujo); saugyklos failų neredaguokite, netrinkite ir nekeiskite, o įrenginio nustatymų neatkurkite veiksmu „Atkurti neužregistruoto įrenginio nustatymus“. Su tikru įrenginiu dar neišbandyta. Problema išnyks savaime, kai tik saugyklą pavyks įrašyti."
+    },
     "carry_over_conflict": {
       "title": "„JUNG HOME“ programėlė perrašė Home Assistant pakeitimą tinkle {title}",
       "description": "Home Assistant perėmė eksportą, kurį „JUNG HOME“ programėlė paskutinį kartą perdavė sietuvui, ir perkėlė į jį savo pakeitimus, tačiau programėlė tuo metu buvo pakeitusi tuos pačius įrašus. Išlaikyta programėlės versija: {paths}. Įrenginiuose dar gali būti tai, ką įrašė Home Assistant: {held}. Patikrinkite tas patalpas, scenas ir susiejimus programėlėje ir Home Assistant ir nustatykite juos iš naujo vienoje pusėje. Programėlė nemato to, ką prideda Home Assistant, kol neimportuoja failo. Problema išnyks, kai kitą kartą bus perimtas sietuvo eksportas be tokio konflikto."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "„JUNG HOME“ sietuvas nebepriima Home Assistant",
       "description": "„JUNG HOME“ sietuvas {host} atmeta prieigą, kurią Home Assistant užregistravo tinklui {title} (tikriausiai ji pašalinta „JUNG HOME“ programėlėje skiltyje Nustatymai → Sietuvas → Prieigos teisės). Home Assistant ir toliau keičia patalpas, mygtukų susiejimus ir scenas savo eksporte, bet nebeperduoda jo sietuvui, todėl programėlė tų pakeitimų nemato; įrenginiai ir toliau veikia. Home Assistant vėl prašo prieigos: vykdykite jo prašymą iš naujo nustatyti JUNG HOME Bluetooth Mesh tapatybę (Nustatymai → Įrenginiai ir paslaugos; Taisymuose tai taip pat rodoma kaip pasibaigęs autentifikavimas) ir įveskite sietuvo tinklo rakto slaptažodį arba patvirtinkite naują prieigos užklausą programėlėje. Problema išnyks, kai sietuvas vėl priims Home Assistant; tada veiksmas „Sinchronizuoti sietuvą“ perduos nuo to laiko padarytus pakeitimus."
+    },
+    "restore_too_old": {
+      "title": "Atkurta atsarginė kopija per sena „JUNG HOME“ tinklui {title}",
+      "description": "Home Assistant atkurtas iš atsarginės kopijos, ir tokiu tempu, kokiu siunčia Home Assistant adresas {unicast}, sekos numeriai, kuriuos jis galėjo panaudoti nuo tos kopijos sukūrimo, pasiekia tinklo dabartinio IV indekso numerių pabaigą. Vėl pradėjus siųsti, būtų pakartotinai naudojami įrenginių jau matyti numeriai: jie nepaisytų Home Assistant, o kiekvienas pakartotas numeris silpnina tinklo šifravimą. Todėl Home Assistant tinklui nieko nesiunčia, kol neatliekamas vienas iš šių veiksmų: tinklo IV Update – pradėkite jį veiksmu `junghome_ble.start_iv_update` (*Kūrėjo įrankiai → Veiksmai*, su `confirm: true`; jo negalima atšaukti; Home Assistant vėl siunčia, kai tinklas pasiekia IV indeksą, kuriuo jis negalėjo siųsti, o po atkūrimo tam gali prireikti dviejų IV Update iš eilės) – arba unicast adresas, kurio Home Assistant niekada nenaudojo, nustatomas per *Perkonfigūruoti*. Neatkurkite sekos numerių saugyklos iš kitos kopijos. Pranešimas išnyks savaime, kai tik Home Assistant vėl galės siųsti. Dar nepatikrinta su tikrais įrenginiais."
     },
     "seq_store_lost": {
       "title": "Prarasti „JUNG HOME“ tinklo {title} sekos numeriai",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Net jei jį valdo mygtukas",
           "description": "Pašalinti įrenginį iš patalpos, nors jį įjungia ir išjungia su patalpa susietas mygtukas; mygtukas jo nebevaldys. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+        },
+        "skip_preflight": {
+          "name": "Nepalyginus su eksportu",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
         },
         "room_area": {
           "name": "Patalpa pagal sritį",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Net jei įrenginys neatsako",
           "description": "Ištrinti sceną iš tinklo eksporto, nors ją įsiminęs įrenginys nepasiekiamas arba atsisako (programėlėje – „Delete anyway“). Tas įrenginys sceną išsaugo, kol ją pašalins veiksmas „Ištrinti nenaudojamas scenas“; tas įrenginys nurodomas taisymų pranešime, o kol kas jokia nauja scena negauna jos numerio. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+        },
+        "skip_preflight": {
+          "name": "Nepalyginus su eksportu",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
         },
         "config_entry_id": {
           "name": "Tinklas",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Net jei neatsako",
           "description": "Pašalinti jį iš tinklo įrašų, nors jis nepatvirtina gamyklinių nustatymų atkūrimo (įrenginys, kurio nebeliko visam laikui), arba nors Home Assistant prie tinklo prisijungęs per jį. Taip pat praleidžia patikrinimą, kuris pirmiausia palygina įrenginius su tinklo eksportu."
+        },
+        "skip_preflight": {
+          "name": "Nepalyginus su eksportu",
+          "description": "Vykdyti planą pirmiau neperskaičius iš įrenginių, ką jis pašalina ar pakeičia, ir nepalyginus to su tinklo eksportu. Tik kai tikrai žinoma, kad tinklo eksportas teisingas. Dar nepatikrinta su tikrais įrenginiais."
         },
         "confirm": {
           "name": "Patvirtinti",

@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Nie udało się zapisać rekordu numerów sekwencyjnych ze starszej wersji w magazynie sieci mesh (`.storage/junghome_ble.seq.*`); sprawdź, czy katalog konfiguracji jest zapisywalny."
     },
+    "seq_clock_behind": {
+      "message": "Rekord numerów sekwencyjnych został przywrócony z kopii zapasowej, a zegar Home Assistant jest cofnięty względem chwili zapisania rekordu; konfiguracja czeka, aż zegar zostanie ustawiony (sprawdź synchronizację czasu hosta)."
+    },
     "seq_floor_not_written": {
       "message": "Rekord numerów sekwencyjnych został przywrócony z kopii zapasowej, a jego dolnej granicy (`.storage/junghome_ble.seq.*.floor`) nie udało się zapisać przed przeskokiem do przodu; sprawdź, czy katalog konfiguracji jest zapisywalny."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Uruchom akcję ponownie z tym samym celem, aby dokończyć."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Do obszaru {area} trafia więcej niż jedno pomieszczenie eksportu mesh ({rooms}): zamiast tego podaj nazwę pomieszczenia."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} jest kolejnym kanałem urządzenia bez własnego opisu sceny dla każdego kanału (starsze oprogramowanie sprzętowe): jego scena zostałaby zamiast tego zapisana na pierwszym kanale, o czym informuje aplikacja JUNG HOME, gdy tego odmawia („Funkcja niedostępna”). Zaktualizuj oprogramowanie sprzętowe urządzenia w aplikacji, aby zapisywać sceny na tym kanale. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Nie można zapisać kluczy urządzeń JUNG HOME",
       "description": "Home Assistant nie mógł zapisać swojego sejfu dla sieci mesh {title} ({path}; ostatni błąd: {error}) podczas dodawania urządzenia pod adresem {address}. Sejf przechowuje klucze urządzeń dodanych przez Home Assistant, których nikt inny nie ma, dopóki nie zapisze ich eksport, więc urządzenie nie zostało sprowizjonowane: niczego nie otrzymało i nadal jest nowe. Zwykle oznacza to, że dysk jest pełny lub jego system plików został ponownie zamontowany tylko do odczytu, często z powodu psującej się karty SD. Zwolnij miejsce lub napraw pamięć masową (system plików zamontowany tylko do odczytu zwykle wymaga ponownego uruchomienia hosta), a potem dodaj urządzenie ponownie; nie edytuj, nie usuwaj ani nie zastępuj plików sejfu. Jeszcze nie wypróbowane na prawdziwym urządzeniu. Problem zniknie sam, gdy tylko zapis sejfu się powiedzie."
     },
+    "vault_unwritable_recorded": {
+      "title": "Nie można zapisać kluczy urządzeń JUNG HOME",
+      "description": "Home Assistant dodał urządzenie pod adresem {address} do sieci mesh {title} i zapisał je w eksporcie mesh, ale potem nie mógł zapisać swojego sejfu ({path}; ostatni błąd: {error}). Urządzenie działa; sejf na dysku nadal wykazuje je jako niezapisane, dopóki zapis się nie powiedzie, a przy następnym uruchomieniu integracji zostanie ono oznaczone jako zapisane na podstawie eksportu. Zwykle oznacza to, że dysk jest pełny lub jego system plików został ponownie zamontowany tylko do odczytu, często z powodu psującej się karty SD. Zwolnij miejsce lub napraw pamięć masową (system plików zamontowany tylko do odczytu zwykle wymaga ponownego uruchomienia hosta); nie edytuj, nie usuwaj ani nie zastępuj plików sejfu i nie resetuj urządzenia akcją „Zresetuj oczekujące urządzenie”. Jeszcze nie wypróbowane na prawdziwym urządzeniu. Problem zniknie sam, gdy tylko zapis sejfu się powiedzie."
+    },
     "carry_over_conflict": {
       "title": "Aplikacja JUNG HOME nadpisała zmianę wprowadzoną przez Home Assistant w {title}",
       "description": "Home Assistant przejął eksport, który aplikacja JUNG HOME ostatnio przekazała do bramki, i przeniósł na niego własne zmiany, ale aplikacja w międzyczasie zmieniła te same wpisy. Wersja aplikacji została zachowana dla: {paths}. Urządzenia mogą nadal zawierać to, co zapisał Home Assistant: {held}. Sprawdź te pomieszczenia, sceny i powiązania w aplikacji i w Home Assistant i ustaw je ponownie z jednej strony. Aplikacja nie widzi tego, co dodaje Home Assistant, dopóki nie zaimportuje pliku. Problem zniknie przy następnym przejęciu eksportu bramki bez takiego konfliktu."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Bramka JUNG HOME nie akceptuje już Home Assistant",
       "description": "Bramka JUNG HOME pod adresem {host} odrzuca dostęp, który Home Assistant zarejestrował dla sieci mesh {title} (prawdopodobnie został usunięty w aplikacji JUNG HOME w Ustawienia → Bramka → Uprawnienia dostępu). Home Assistant nadal zmienia pomieszczenia, powiązania przycisków i sceny we własnym eksporcie, ale nie przekazuje go już do bramki, więc aplikacja nie widzi tych zmian; urządzenia nadal działają. Home Assistant ponownie prosi o dostęp: wykonaj jego prośbę o ponowne uwierzytelnienie JUNG HOME Bluetooth Mesh (Ustawienia → Urządzenia oraz usługi; Naprawy również pokazują ją jako wygasłe uwierzytelnienie) i wprowadź hasło klucza sieciowego bramki lub zatwierdź nowe żądanie dostępu w aplikacji. Problem zniknie, gdy bramka znów zaakceptuje Home Assistant; akcja „Synchronizuj bramkę” przekaże wtedy zmiany wprowadzone w międzyczasie."
+    },
+    "restore_too_old": {
+      "title": "Przywrócona kopia zapasowa jest zbyt stara dla sieci mesh JUNG HOME {title}",
+      "description": "Home Assistant został przywrócony z kopii zapasowej, a przy tempie, w jakim nadaje adres Home Assistant {unicast}, numery sekwencyjne, których mógł użyć od utworzenia tej kopii, sięgają końca numerów bieżącego IV index sieci mesh. Ponowne nadawanie oznaczałoby ponowne użycie numerów, które urządzenia już widziały: ignorowałyby Home Assistant, a każdy ponownie użyty numer osłabia szyfrowanie sieci mesh. Dlatego Home Assistant nie wysyła niczego do sieci mesh, dopóki nie zostanie wykonane jedno z poniższych: IV Update sieci mesh — rozpocznij go akcją `junghome_ble.start_iv_update` (*Narzędzia deweloperskie → Akcje*, z `confirm: true`; nie można tego cofnąć; Home Assistant znów nadaje, gdy sieć mesh osiągnie IV index, pod którym nie mógł nadawać, co po przywróceniu może wymagać dwóch IV Update z rzędu) — albo adres unicast, którego Home Assistant nigdy nie używał, ustawiony w *Skonfiguruj ponownie*. Nie przywracaj magazynu numerów sekwencyjnych z innej kopii. Powiadomienie zniknie samo, gdy Home Assistant znów będzie mógł nadawać. Jeszcze niesprawdzone w działaniu."
     },
     "seq_store_lost": {
       "title": "Utracono numery sekwencyjne sieci mesh JUNG HOME {title}",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Nawet jeśli steruje nim przycisk",
           "description": "Usuń urządzenie z pomieszczenia, mimo że przełącza je przycisk powiązany z pomieszczeniem; przycisk przestaje je przełączać. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porównania z eksportem",
+          "description": "Wykonaj plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest prawidłowy. Jeszcze niesprawdzone w działaniu."
         },
         "room_area": {
           "name": "Pomieszczenie według obszaru",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Nawet jeśli urządzenie nie odpowiada",
           "description": "Usuń scenę z eksportu mesh, mimo że urządzenie, które ją zapisało, jest nieosiągalne lub odmawia (w aplikacji „Usuń mimo to”). To urządzenie zachowuje scenę, dopóki akcja „Usuń nieużywane sceny” jej nie usunie; wskazuje je problem w Naprawach, a w międzyczasie żadna nowa scena nie dostaje jej numeru. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porównania z eksportem",
+          "description": "Wykonaj plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest prawidłowy. Jeszcze niesprawdzone w działaniu."
         },
         "config_entry_id": {
           "name": "Sieć mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Nawet jeśli nie odpowiada",
           "description": "Usuń je z zapisów sieci, mimo że nie potwierdza resetu (urządzenie, którego już nie ma), lub mimo że Home Assistant jest przez nie połączony. Pomija też sprawdzenie, które najpierw porównuje urządzenia z eksportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porównania z eksportem",
+          "description": "Wykonaj plan bez wcześniejszego odczytania z urządzeń tego, co usuwa lub zastępuje, i porównania tego z eksportem mesh. Tylko gdy wiadomo, że eksport mesh jest prawidłowy. Jeszcze niesprawdzone w działaniu."
         },
         "confirm": {
           "name": "Potwierdź",

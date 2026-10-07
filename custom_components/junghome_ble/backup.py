@@ -7,7 +7,7 @@ this backup and the time it began (`backup_at`), and waits until both copies on 
 only marked records; `async_post_backup` removes the mark again. A start that finds a mark this process did not set
 (`JungHomeHub.async_create`) continues past the record by what the address may have sent since: twice its measured
 send rate over the backup's age (every record keeps when it was written and its rate, `seq_store.SendRate`), at
-least SEQ_SKIP_AHEAD — review-5 S5-1: a fixed 2^20 was outrun within months by the integration's own polls. A skip
+least SEQ_SKIP_AHEAD: a fixed 2^20 was outrun within months by the integration's own polls. A skip
 that would pass the end of the sequence space sends nothing under that IV index and raises `restore_too_old` (an IV
 Update, or a new address, is the way on). A record an older version wrote (no write time) continues
 SEQ_SKIP_UNKNOWN; a clock behind the record's time keeps the setup not ready until it is set. So does the start
@@ -17,7 +17,7 @@ installation, with the lights answering at once afterwards, is the check.
 Supervisor backups run the same hooks: the Supervisor calls Home Assistant's `backup/start` and `backup/end` before
 and after it archives the configuration directory (read from Home Assistant's source; unverified on air).
 
-What a restore rolls back besides the counters (review-5 S5-4): the device vault (`.storage/junghome_ble.vault.*`,
+What a restore rolls back besides the counters: the device vault (`.storage/junghome_ble.vault.*`,
 the device keys of the devices Home Assistant added) and the export with Home Assistant's own changes go back to
 the backup together. A device Home Assistant provisioned after the backup is in neither any more: its device key is
 gone, so it can only be reset by hand (and added again), and nothing lists its addresses. It still sends from them,

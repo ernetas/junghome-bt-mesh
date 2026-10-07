@@ -6702,7 +6702,9 @@ async def test_a_removal_refuses_unreachable_nodes_before_reading_them(
     with pytest.raises(HomeAssistantError) as err:
         await bench.configurator.remove_node(DIMMER_NODE)
     assert err.value.translation_key == "service_nodes_unreachable"
-    assert err.value.translation_placeholders["nodes"].startswith(f"{SWITCH_NODE:04X}")
+    assert err.value.translation_placeholders["nodes"].startswith(
+        bench.configurator.store.node_name(SWITCH_NODE)
+    )
     assert bench.config_pdus() == []
     assert bench.file_unchanged()
 
@@ -6720,7 +6722,7 @@ async def test_a_dry_run_says_which_nodes_are_out_of_reach(
     )
     assert dry["reachability"] == {
         "unreachable": [bench.configurator.store.node_name(MOTION_RELAY)],
-        "asleep": ["0520 (Wall transmitter 1-gang)"],
+        "asleep": ["Wall transmitter 1-gang 0520"],
     }
     bench.hub.unreachable.clear()
     bench.hub.last_heard[TRANSMITTER] = time.monotonic()

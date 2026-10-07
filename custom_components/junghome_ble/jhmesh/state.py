@@ -712,8 +712,7 @@ class LocalState:
         """The IV index the mesh is at as far as this state knows: its own, or the old one while it waits.
 
         While an IV Update this client started waits for the mesh to take it (`iv_update_confirmed`), the mesh is
-        still at the old index, in Normal Operation, and its senders keep using up that index's sequence numbers
-        (review-5 S5-3).
+        still at the old index, in Normal Operation, and its senders keep using up that index's sequence numbers.
         """
         if (
             self.iv_update_active
@@ -846,8 +845,8 @@ class LocalState:
         from a backup) does not know which indexes those numbers went out under; only an authenticated beacon names
         that, and `apply_beacon` raises the guard before it moves. Until then no other move may take the transmit
         index forward: a record restored in the middle of an IV Update this client started completed it by the clock
-        (`complete_iv_update`) and restarted the counter at 0 under an index numbers had been sent under since
-        (review-5 S5-2). A move that keeps or lowers the transmit index is always allowed.
+        (`complete_iv_update`) and restarted the counter at 0 under an index numbers had been sent under since.
+        A move that keeps or lowers the transmit index is always allowed.
         """
         tx = iv_index - 1 if update_active else iv_index
         return self.seq_guard != SEQ_GUARD_FIRST_BEACON or tx <= self.tx_iv_index
@@ -995,7 +994,7 @@ class LocalState:
         §3.11.5: after at least 96 h and before 144 h in IV Update in Progress; here once `IV_UPDATE_MIN_STATE` has
         passed since the mesh took it (`iv_update_confirmed_at`) — the 96 h are there so that every node has the new
         index before anyone transmits under it, and a proxy that took it late (refusing it within its own 96 h first)
-        has had it for less than the time since our start (review-5 P5-1). Only an update the mesh took: completing
+        has had it for less than the time since our start. Only an update the mesh took: completing
         one it never took would move our transmit index past the mesh's, and every node would drop us. Not while
         `seq_guard` waits for the first beacon (`_may_move_iv`). An update a beacon started is completed by the beacon
         that ends it, as before.
@@ -1026,7 +1025,7 @@ class LocalState:
         `IV_UPDATE_MAX_STATE` (144 h) after its start without the mesh taking it: a node returns to Normal Operation
         before that, so a mesh that has not taken it by then will not — its proxy refused it within its own 96 h, or
         does not take an update from a proxy client at all (unverified on air). The caller gives it up
-        (`abandon_iv_update`) once a beacon of its link said where the mesh is (review-5 P5-3).
+        (`abandon_iv_update`) once a beacon of its link said where the mesh is.
         """
         now = _wall_now() if now is None else now
         return (

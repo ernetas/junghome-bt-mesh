@@ -54,10 +54,10 @@ ATTR_SCENE_ENTITY = (
     "scene_entity"  # the scene behind this scene entity, instead of `scene`
 )
 # the action's own override where it has one (`remove_from_room`, `delete_scene`, `remove_device`, and the
-# non-plan actions); on a destructive action without one, the same as `skip_preflight` (decision M17)
+# non-plan actions); on a destructive action without one, the same as `skip_preflight`
 ATTR_FORCE = "force"
 # skips the pre-flight comparison of the nodes with the export, on the actions whose `force` is an override of their
-# own; `force` alone no longer skips it there (decision M17)
+# own; `force` alone no longer skips it there
 ATTR_SKIP_PREFLIGHT = "skip_preflight"
 ATTR_DRY_RUN = "dry_run"
 # what cannot be undone asks for it explicitly: `remove_device`, `delete_scene` with `force`
@@ -139,7 +139,7 @@ def _skips_preflight(data: Mapping[str, Any]) -> bool:
     """Whether a call skips the pre-flight comparison: its `skip_preflight` where it has one, else its `force`.
 
     An action whose `force` is an override of its own declares `skip_preflight` (`_SKIP_PREFLIGHT_FIELD`, with a
-    default, so it is always in the data); every other destructive action's `force` does only this (decision M17).
+    default, so it is always in the data); every other destructive action's `force` does only this.
     """
     if ATTR_SKIP_PREFLIGHT in data:
         return bool(data[ATTR_SKIP_PREFLIGHT])

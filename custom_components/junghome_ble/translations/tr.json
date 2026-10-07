@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Eski bir sürümün sıra numarası kaydı mesh ağının deposuna (`.storage/junghome_ble.seq.*`) kaydedilemedi; yapılandırma dizininin yazılabilir olduğunu kontrol edin."
     },
+    "seq_clock_behind": {
+      "message": "Sıra numarası kaydı bir yedekten geri yüklendi ve Home Assistant'ın saati kaydın yazıldığı zamanın gerisinde; kurulum, saat ayarlanana kadar bekler (sunucunun saat senkronizasyonunu denetleyin)."
+    },
     "seq_floor_not_written": {
       "message": "Sıra numarası kaydı bir yedekten geri yüklendi ve ileri atlanmadan önce alt sınırı (`.storage/junghome_ble.seq.*.floor`) yazılamadı; yapılandırma dizininin yazılabilir olduğunu kontrol edin."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Bitirmek için eylemi aynı hedefle yeniden çalıştırın."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mesh dışa aktarımının birden fazla odası {area} alanına gidiyor ({rooms}): bunun yerine odanın adını belirtin."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address}, kanal başına kendi sahne tanımı olmayan bir cihazın ek bir kanalı (eski donanım yazılımı): sahnesi bunun yerine ilk kanalda saklanırdı; JUNG HOME uygulaması da bunu reddederken böyle söyler (“Özellik kullanılamıyor”). Sahneleri bu kanalda saklamak için cihazın donanım yazılımını uygulamada güncelleyin. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "JUNG HOME cihaz anahtarları kaydedilemiyor",
       "description": "Home Assistant, {address} adresindeki cihazı eklerken {title} adlı mesh ağının anahtar kasasını yazamadı ({path}; son hata: {error}). Anahtar kasası, Home Assistant'ın eklediği cihazların cihaz anahtarlarını tutar; dışa aktarım onları kaydedene kadar bu anahtarlar başka hiçbir yerde yoktur, bu yüzden cihaz ağa katılmadı: hiçbir şey almadı ve hâlâ yeni. Bu genellikle diskin dolu olduğu veya dosya sisteminin salt okunur olarak yeniden bağlandığı anlamına gelir; çoğu zaman nedeni arızalanmakta olan bir SD karttır. Yer açın veya depolamayı onarın (salt okunur olarak yeniden bağlanan bir dosya sistemi genellikle sunucunun yeniden başlatılmasını gerektirir), ardından cihazı yeniden ekleyin; anahtar kasasının dosyalarını düzenlemeyin, silmeyin veya değiştirmeyin. Henüz gerçek bir cihazda denenmedi. Anahtar kasasına bir yazma başarılı olur olmaz sorun kendiliğinden kaybolur."
     },
+    "vault_unwritable_recorded": {
+      "title": "JUNG HOME cihaz anahtarları kaydedilemiyor",
+      "description": "Home Assistant, {address} adresindeki cihazı {title} adlı mesh ağına ekledi ve mesh dışa aktarımına kaydetti, ancak ardından anahtar kasasını yazamadı ({path}; son hata: {error}). Cihaz çalışıyor; diskteki anahtar kasası, bir yazma başarılı olana kadar cihazı hâlâ kaydedilmemiş olarak listeler ve entegrasyonun bir sonraki başlatılışı onu dışa aktarıma göre kaydedilmiş olarak işaretler. Bu genellikle diskin dolu olduğu veya dosya sisteminin salt okunur olarak yeniden bağlandığı anlamına gelir; çoğu zaman nedeni arızalanmakta olan bir SD karttır. Yer açın veya depolamayı onarın (salt okunur olarak yeniden bağlanan bir dosya sistemi genellikle sunucunun yeniden başlatılmasını gerektirir); anahtar kasasının dosyalarını düzenlemeyin, silmeyin veya değiştirmeyin ve cihazı “Bekleyen cihazı sıfırla” ile sıfırlamayın. Henüz gerçek bir cihazda denenmedi. Anahtar kasasına bir yazma başarılı olur olmaz sorun kendiliğinden kaybolur."
+    },
     "carry_over_conflict": {
       "title": "JUNG HOME uygulaması, Home Assistant'ın {title} üzerinde yaptığı bir değişikliği geçersiz kıldı",
       "description": "Home Assistant, JUNG HOME uygulamasının ağ geçidine en son ilettiği dışa aktarımı devraldı ve kendi değişikliklerini onun üzerine aktardı, ancak uygulama bu arada aynı kayıtları değiştirmişti. Şunlar için uygulamanın sürümü korunuyor: {paths}. Cihazlar hâlâ Home Assistant'ın yazdıklarını tutuyor olabilir: {held}. Bu odaları, sahneleri ve bağlantıları uygulamada ve Home Assistant'ta kontrol edin ve tek bir taraftan yeniden ayarlayın. Uygulama, bir dosyayı içe aktarana kadar Home Assistant'ın eklediklerini görmez. Ağ geçidinin dışa aktarımı böyle bir çakışma olmadan bir sonraki devralındığında sorun kaybolur."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "JUNG HOME Gateway artık Home Assistant'ı kabul etmiyor",
       "description": "{host} adresindeki JUNG HOME Gateway, Home Assistant'ın {title} adlı mesh ağı için kaydettiği erişimi reddediyor (erişim muhtemelen JUNG HOME uygulamasında Ayarlar → Ağ Geçidi → Erişim İzinleri altında kaldırıldı). Home Assistant odaları, düğme bağlantılarını ve sahneleri kendi dışa aktarımında değiştirmeye devam eder, ancak dışa aktarımı artık ağ geçidine iletmez; bu yüzden uygulama bu değişiklikleri görmez; cihazlar çalışmaya devam eder. Home Assistant yeniden erişim istiyor: JUNG HOME Bluetooth Mesh için yeniden kimlik doğrulama isteğini izleyin (Ayarlar → Cihazlar ve hizmetler; Onarımlar da bunu süresi dolmuş kimlik doğrulaması olarak listeler) ve ağ geçidinin ağ anahtarı parolasını girin veya uygulamada yeni erişim isteğini onaylayın. Ağ geçidi Home Assistant'ı yeniden kabul ettiğinde sorun kaybolur; ardından Ağ geçidini eşitle eylemi o zamandan beri yapılan değişiklikleri iletir."
+    },
+    "restore_too_old": {
+      "title": "Geri yüklenen yedek, {title} JUNG HOME mesh ağı için çok eski",
+      "description": "Home Assistant bir yedekten geri yüklendi ve Home Assistant'ın {unicast} adresinin gönderim hızına göre, bu yedek alındığından beri kullanmış olabileceği sıra numaraları mesh ağının geçerli IV dizininin numaralarının sonuna ulaşıyor. Yeniden göndermek, cihazların zaten gördüğü numaraları yeniden kullanır: cihazlar Home Assistant'ı yok sayar ve yeniden kullanılan her numara mesh ağının şifrelemesini zayıflatır. Bu yüzden Home Assistant, şunlardan biri yapılana kadar mesh ağına hiçbir şey göndermez: mesh ağında bir IV Update — `junghome_ble.start_iv_update` eylemiyle başlatın (*Geliştirici araçları → Eylemler*, `confirm: true` ile; geri alınamaz; Home Assistant, mesh ağı altında gönderim yapmış olamayacağı bir IV dizinine geçtiğinde yeniden gönderir; bu, bir geri yüklemeden sonra art arda iki IV Update gerektirebilir) — ya da Home Assistant'ın hiç kullanmadığı, *Yeniden yapılandır* altında ayarlanan bir unicast adresi. Sıra numarası deposunu başka bir kopyadan geri yüklemeyin. Home Assistant yeniden gönderebildiğinde bildirim kendiliğinden kaybolur. Gerçek cihazlarda henüz doğrulanmadı."
     },
     "seq_store_lost": {
       "title": "{title} JUNG HOME mesh ağının sıra numaraları kayboldu",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Bir düğme kontrol etse bile",
           "description": "Odaya bağlı bir düğme cihazı anahtarlasa da cihazı odadan çıkarır; düğme artık onu anahtarlamaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+        },
+        "skip_preflight": {
+          "name": "Dışa aktarımla karşılaştırmadan",
+          "description": "Planı, önce cihazlardan neyi kaldırdığını veya değiştirdiğini okuyup bunu mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu biliniyorsa. Gerçek cihazlarda henüz doğrulanmadı."
         },
         "room_area": {
           "name": "Alana göre oda",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Bir cihaz yanıt vermese bile",
           "description": "Sahneyi saklayan bir cihaza ulaşılamasa veya cihaz reddetse de sahneyi mesh dışa aktarımından siler (uygulamadaki “Yine de sil”). O cihaz, “Kullanılmayan sahneleri sil” sahneyi kaldırana kadar onu tutar; Onarımlar bölümündeki bir sorun bu cihazı belirtir ve bu sırada hiçbir yeni sahne onun numarasını almaz. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+        },
+        "skip_preflight": {
+          "name": "Dışa aktarımla karşılaştırmadan",
+          "description": "Planı, önce cihazlardan neyi kaldırdığını veya değiştirdiğini okuyup bunu mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu biliniyorsa. Gerçek cihazlarda henüz doğrulanmadı."
         },
         "config_entry_id": {
           "name": "Mesh ağı",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Yanıt vermese bile",
           "description": "Cihaz sıfırlamayı onaylamasa da (kalıcı olarak ortadan kalkmış bir cihaz) veya Home Assistant onun üzerinden bağlı olsa da cihazı ağın kayıtlarından kaldırır. Cihazları önce mesh dışa aktarımıyla karşılaştıran denetimi de atlar."
+        },
+        "skip_preflight": {
+          "name": "Dışa aktarımla karşılaştırmadan",
+          "description": "Planı, önce cihazlardan neyi kaldırdığını veya değiştirdiğini okuyup bunu mesh dışa aktarımıyla karşılaştırmadan çalıştırır. Yalnızca mesh dışa aktarımının doğru olduğu biliniyorsa. Gerçek cihazlarda henüz doğrulanmadı."
         },
         "confirm": {
           "name": "Onayla",

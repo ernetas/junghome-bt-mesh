@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Het volgnummerrecord van een oudere versie kon niet in de opslag van de mesh worden bewaard (`.storage/junghome_ble.seq.*`); controleer of de configuratiemap beschrijfbaar is."
     },
+    "seq_clock_behind": {
+      "message": "Het volgnummerrecord is hersteld uit een back-up en de klok van Home Assistant loopt achter op het tijdstip waarop het record is geschreven; het instellen wacht tot de klok gelijkgezet is (controleer de tijdsynchronisatie van de host)."
+    },
     "seq_floor_not_written": {
       "message": "Het volgnummerrecord is hersteld uit een back-up en de ondergrens ervan (`.storage/junghome_ble.seq.*.floor`) kon niet worden geschreven voordat er vooruit werd gesprongen; controleer of de configuratiemap beschrijfbaar is."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Voer de actie opnieuw uit met hetzelfde doel om af te ronden."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Meer dan één kamer uit de mesh-export hoort bij de ruimte {area} ({rooms}): geef in plaats daarvan de kamer op."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} is een verder kanaal van een apparaat zonder eigen scènebeschrijving per kanaal (oudere firmware): de scène zou in plaats daarvan op het eerste kanaal worden opgeslagen, zoals de JUNG HOME-app zegt wanneer die het weigert (“Functie niet beschikbaar”). Werk de firmware van het apparaat bij in de app om scènes op dit kanaal op te slaan. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Apparaatsleutels van JUNG HOME kunnen niet worden opgeslagen",
       "description": "Home Assistant kon zijn kluis voor de mesh {title} niet schrijven ({path}; laatste fout: {error}) bij het toevoegen van het apparaat op {address}. De kluis bevat de apparaatsleutels van de apparaten die Home Assistant toevoegt, die niets anders heeft totdat de export ze vastlegt, dus het apparaat is niet ingeleerd: het heeft niets ontvangen en is nog steeds nieuw. Dit betekent meestal dat de schijf vol is of dat het bestandssysteem alleen-lezen opnieuw is gekoppeld, vaak door een falende SD-kaart. Maak schijfruimte vrij of herstel de opslag (een bestandssysteem dat alleen-lezen opnieuw is gekoppeld, vereist meestal een herstart van de host) en voeg het apparaat daarna opnieuw toe; bewerk, verwijder of vervang de bestanden van de kluis niet. Nog niet op een echt apparaat geprobeerd. Het probleem verdwijnt vanzelf zodra het schrijven van de kluis lukt."
     },
+    "vault_unwritable_recorded": {
+      "title": "Apparaatsleutels van JUNG HOME kunnen niet worden opgeslagen",
+      "description": "Home Assistant heeft het apparaat op {address} aan de mesh {title} toegevoegd en in de mesh-export vastgelegd, maar kon daarna zijn kluis niet schrijven ({path}; laatste fout: {error}). Het apparaat werkt; de kluis op schijf vermeldt het nog als niet vastgelegd totdat het schrijven lukt, en de volgende start van de integratie markeert het als vastgelegd op basis van de export. Dit betekent meestal dat de schijf vol is of dat het bestandssysteem alleen-lezen opnieuw is gekoppeld, vaak door een falende SD-kaart. Maak schijfruimte vrij of herstel de opslag (een bestandssysteem dat alleen-lezen opnieuw is gekoppeld, vereist meestal een herstart van de host); bewerk, verwijder of vervang de bestanden van de kluis niet, en reset het apparaat niet met “Apparaat in behandeling resetten”. Nog niet op een echt apparaat geprobeerd. Het probleem verdwijnt vanzelf zodra het schrijven van de kluis lukt."
+    },
     "carry_over_conflict": {
       "title": "De JUNG HOME-app heeft een wijziging van Home Assistant aan {title} overschreven",
       "description": "Home Assistant heeft de export overgenomen die de JUNG HOME-app het laatst aan de gateway gaf en zijn eigen wijzigingen erop gezet, maar de app had intussen dezelfde items gewijzigd. De versie van de app is behouden voor: {paths}. De apparaten bevatten mogelijk nog wat Home Assistant had geschreven: {held}. Controleer die kamers, scènes en koppelingen in de app en in Home Assistant, en stel ze vanaf één kant opnieuw in. De app ziet niet wat Home Assistant toevoegt, totdat hij een bestand importeert. Het probleem verdwijnt bij de volgende overname van de export van de gateway zonder zo'n conflict."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "De JUNG HOME Gateway accepteert Home Assistant niet meer",
       "description": "De JUNG HOME Gateway op {host} weigert de toegang die Home Assistant voor de mesh {title} heeft geregistreerd (waarschijnlijk verwijderd in de JUNG HOME-app onder Instellingen → Gateway → Toegangsrechten). Home Assistant blijft kamers, knopkoppelingen en scènes in zijn eigen export wijzigen, maar geeft die niet meer aan de gateway door, dus de app ziet die wijzigingen niet; de apparaten blijven werken. Home Assistant vraagt opnieuw om toegang: volg zijn verzoek om JUNG HOME Bluetooth Mesh opnieuw te authenticeren (Instellingen → Apparaten & diensten; Reparaties toont het ook als verlopen authenticatie) en voer het netwerksleutelwachtwoord van de gateway in of keur het nieuwe toegangsverzoek goed in de app. Het probleem verdwijnt zodra de gateway Home Assistant weer accepteert; de actie Gateway synchroniseren geeft dan de sindsdien gemaakte wijzigingen door."
+    },
+    "restore_too_old": {
+      "title": "Herstelde back-up te oud voor de JUNG HOME-mesh {title}",
+      "description": "Home Assistant is hersteld uit een back-up, en in het tempo waarin het adres {unicast} van Home Assistant verzendt, bereiken de volgnummers die het sinds het maken van die back-up kan hebben gebruikt het einde van de nummers van de huidige IV-index van de mesh. Opnieuw verzenden zou nummers hergebruiken die de apparaten al hebben gezien: ze zouden Home Assistant negeren, en elk hergebruikt nummer verzwakt de versleuteling van de mesh. Daarom verzendt Home Assistant niets naar de mesh totdat een van deze is gedaan: een IV Update van de mesh — start er een met de actie `junghome_ble.start_iv_update` (*Ontwikkelhulpmiddelen → Acties*, met `confirm: true`; dit kan niet ongedaan worden gemaakt; Home Assistant verzendt weer zodra de mesh op een IV-index staat waaronder het niet verzonden kan hebben, wat na een herstel twee IV Updates na elkaar kan vergen) — of een unicast-adres dat Home Assistant nooit heeft gebruikt, ingesteld onder *Herconfigureren*. Herstel de volgnummeropslag niet uit een andere kopie. De melding verdwijnt vanzelf zodra Home Assistant weer kan verzenden. Nog niet op echte apparaten geverifieerd."
     },
     "seq_store_lost": {
       "title": "Volgnummers van de JUNG HOME-mesh {title} verloren",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Ook als een knop het aanstuurt",
           "description": "Haal het apparaat uit de kamer hoewel een knop die met de kamer is gekoppeld het schakelt; de knop schakelt het daarna niet meer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+        },
+        "skip_preflight": {
+          "name": "Zonder vergelijking met de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
         },
         "room_area": {
           "name": "Kamer via ruimte",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Ook als een apparaat niet antwoordt",
           "description": "Verwijder de scène uit de mesh-export, ook al is een apparaat dat haar heeft opgeslagen niet bereikbaar of weigert het (“Toch verwijderen” in de app). Dat apparaat houdt de scène tot “Ongebruikte scènes verwijderen” haar verwijdert; een reparatiemelding noemt het, en intussen krijgt geen nieuwe scène haar nummer. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+        },
+        "skip_preflight": {
+          "name": "Zonder vergelijking met de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
         },
         "config_entry_id": {
           "name": "Mesh-netwerk",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Ook als het niet antwoordt",
           "description": "Verwijder het uit de registratie van het netwerk, ook al bevestigt het de reset niet (een apparaat dat definitief weg is), of ook al is Home Assistant via dit apparaat verbonden. Slaat ook de controle over die de apparaten eerst met de mesh-export vergelijkt."
+        },
+        "skip_preflight": {
+          "name": "Zonder vergelijking met de export",
+          "description": "Voer het plan uit zonder eerst van de apparaten te lezen wat het verwijdert of vervangt en dat te vergelijken met de mesh-export. Alleen als vaststaat dat de mesh-export klopt. Nog niet op echte apparaten geverifieerd."
         },
         "confirm": {
           "name": "Bevestigen",

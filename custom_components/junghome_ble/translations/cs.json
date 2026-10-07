@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Záznam sekvenčních čísel starší verze nelze uložit do úložiště sítě mesh (`.storage/junghome_ble.seq.*`); zkontrolujte, zda je konfigurační adresář zapisovatelný."
     },
+    "seq_clock_behind": {
+      "message": "Záznam sekvenčních čísel byl obnoven ze zálohy a hodiny Home Assistantu jsou pozadu za časem, kdy byl záznam zapsán; nastavení čeká, dokud nebudou hodiny nastaveny (zkontrolujte synchronizaci času hostitele)."
+    },
     "seq_floor_not_written": {
       "message": "Záznam sekvenčních čísel byl obnoven ze zálohy a jeho spodní hranici (`.storage/junghome_ble.seq.*.floor`) nebylo možné zapsat před posunem vpřed; zkontrolujte, zda je konfigurační adresář zapisovatelný."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Spusťte akci znovu se stejným cílem, aby se dokončila."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Více než jedna místnost exportu mesh patří do oblasti {area} ({rooms}): zadejte místo toho název místnosti."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} je další kanál zařízení bez vlastního popisu scény pro každý kanál (starší firmware): jeho scéna by se místo toho uložila na první kanál, jak uvádí aplikace JUNG HOME, když ji odmítne („Funkce není k dispozici“). Aktualizujte firmware zařízení v aplikaci, aby bylo možné ukládat scény na tento kanál. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Klíče zařízení JUNG HOME nelze uložit",
       "description": "Home Assistant nemohl zapsat svůj trezor pro síť mesh {title} ({path}; poslední chyba: {error}) při přidávání zařízení na adrese {address}. Trezor obsahuje klíče zařízení, která Home Assistant přidává, a ty nikdo jiný nemá, dokud je nezaznamená export, proto u zařízení nebyl proveden provisioning: nic nedostalo a je stále nové. Obvykle to znamená, že je disk plný nebo byl jeho souborový systém znovu připojen jen pro čtení, často kvůli selhávající SD kartě. Uvolněte místo nebo opravte úložiště (souborový systém připojený jen pro čtení obvykle vyžaduje restart hostitele) a pak zařízení přidejte znovu; soubory trezoru neupravujte, nemažte ani nenahrazujte. Zatím nevyzkoušeno na skutečném zařízení. Problém zmizí sám, jakmile se zápis trezoru podaří."
     },
+    "vault_unwritable_recorded": {
+      "title": "Klíče zařízení JUNG HOME nelze uložit",
+      "description": "Home Assistant přidal zařízení na adrese {address} do sítě mesh {title} a zaznamenal je v exportu mesh, ale poté nemohl zapsat svůj trezor ({path}; poslední chyba: {error}). Zařízení funguje; trezor na disku jej stále vede jako nezaznamenané, dokud se zápis nepodaří, a příští start integrace jej podle exportu označí jako zaznamenané. Obvykle to znamená, že je disk plný nebo byl jeho souborový systém znovu připojen jen pro čtení, často kvůli selhávající SD kartě. Uvolněte místo nebo opravte úložiště (souborový systém připojený jen pro čtení obvykle vyžaduje restart hostitele); soubory trezoru neupravujte, nemažte ani nenahrazujte a zařízení neresetujte akcí „Resetovat čekající zařízení“. Zatím nevyzkoušeno na skutečném zařízení. Problém zmizí sám, jakmile se zápis trezoru podaří."
+    },
     "carry_over_conflict": {
       "title": "Aplikace JUNG HOME přepsala změnu, kterou Home Assistant provedl v {title}",
       "description": "Home Assistant převzal export, který aplikace JUNG HOME naposledy předala bráně, a přenesl na něj své vlastní změny, ale aplikace mezitím změnila tytéž položky. Verze aplikace je ponechána pro: {paths}. Zařízení mohou stále obsahovat to, co zapsal Home Assistant: {held}. Zkontrolujte tyto místnosti, scény a propojení v aplikaci i v Home Assistantu a nastavte je znovu z jedné strany. Aplikace nevidí, co Home Assistant přidá, dokud neimportuje soubor. Problém zmizí při příštím převzetí exportu brány, které takový konflikt nemá."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Brána JUNG HOME už nepřijímá Home Assistant",
       "description": "Brána JUNG HOME na adrese {host} odmítá přístup, který Home Assistant zaregistroval pro síť mesh {title} (pravděpodobně byl odebrán v aplikaci JUNG HOME v Nastavení → Brána → Přístupová oprávnění). Home Assistant dál mění místnosti, propojení tlačítek a scény ve svém vlastním exportu, ale už jej nepředává bráně, takže aplikace tyto změny nevidí; zařízení dál fungují. Home Assistant znovu žádá o přístup: postupujte podle jeho žádosti o opětovné ověření JUNG HOME Bluetooth Mesh (Nastavení → Zařízení a služby; Opravy jej uvádějí také jako vypršelé ověření) a zadejte heslo síťového klíče brány nebo schvalte novou žádost o přístup v aplikaci. Problém zmizí, jakmile brána Home Assistant opět přijme; akce „Synchronizovat bránu“ pak předá změny provedené mezitím."
+    },
+    "restore_too_old": {
+      "title": "Obnovená záloha je pro síť mesh JUNG HOME {title} příliš stará",
+      "description": "Home Assistant byl obnoven ze zálohy a při rychlosti, s jakou vysílá adresa Home Assistantu {unicast}, dosahují sekvenční čísla, která mohl od pořízení této zálohy použít, až na konec čísel aktuálního IV indexu sítě mesh. Opětovné vysílání by znovu použilo čísla, která zařízení už viděla: Home Assistant by ignorovala a každé znovu použité číslo oslabuje šifrování sítě mesh. Proto Home Assistant do sítě mesh nic neodesílá, dokud se neprovede jedno z následujícího: IV Update sítě mesh — spusťte ji akcí `junghome_ble.start_iv_update` (*Vývojářské nástroje → Akce*, s `confirm: true`; nelze ji vrátit zpět; Home Assistant začne znovu vysílat, jakmile je síť mesh na IV indexu, pod kterým nemohl vysílat, což po obnovení může vyžadovat dvě IV Update po sobě) — nebo adresa unicast, kterou Home Assistant nikdy nepoužil, nastavená v *Překonfigurovat*. Neobnovujte úložiště sekvenčních čísel z jiné kopie. Upozornění zmizí samo, jakmile Home Assistant může znovu vysílat. V provozu zatím neověřeno."
     },
     "seq_store_lost": {
       "title": "Sekvenční čísla sítě mesh JUNG HOME {title} ztracena",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "I když je ovládá tlačítko",
           "description": "Vyjmout zařízení z místnosti, přestože jej spíná tlačítko propojené s místností; tlačítko jej pak přestane spínat. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnání s exportem",
+          "description": "Spustit plán bez předchozího načtení toho, co odebírá nebo nahrazuje, ze zařízení a bez porovnání s exportem mesh. Jen pokud je jisté, že export mesh je správný. Zatím neověřeno na skutečných zařízeních."
         },
         "room_area": {
           "name": "Místnost podle oblasti",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "I když zařízení neodpovídá",
           "description": "Smazat scénu z exportu mesh, přestože zařízení, které ji uložilo, není dosažitelné nebo odmítá (v aplikaci „Přesto smazat“). Toto zařízení si scénu ponechá, dokud ji neodstraní akce „Smazat nepoužívané scény“; uvede jej problém v Opravách a žádná nová scéna mezitím nedostane její číslo. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnání s exportem",
+          "description": "Spustit plán bez předchozího načtení toho, co odebírá nebo nahrazuje, ze zařízení a bez porovnání s exportem mesh. Jen pokud je jisté, že export mesh je správný. Zatím neověřeno na skutečných zařízeních."
         },
         "config_entry_id": {
           "name": "Síť mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "I když neodpovídá",
           "description": "Odebrat je ze záznamů sítě, přestože reset nepotvrdí (zařízení, které je nadobro pryč), nebo přestože je přes ně Home Assistant připojen. Přeskočí také kontrolu, která nejprve porovná zařízení s exportem mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnání s exportem",
+          "description": "Spustit plán bez předchozího načtení toho, co odebírá nebo nahrazuje, ze zařízení a bez porovnání s exportem mesh. Jen pokud je jisté, že export mesh je správný. Zatím neověřeno na skutečných zařízeních."
         },
         "confirm": {
           "name": "Potvrdit",

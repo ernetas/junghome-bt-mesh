@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Egy korábbi verzió sorszám-nyilvántartását nem sikerült menteni a mesh hálózat tárába (`.storage/junghome_ble.seq.*`); ellenőrizze, hogy a konfigurációs könyvtár írható-e."
     },
+    "seq_clock_behind": {
+      "message": "A sorszámrekordot biztonsági mentésből állították vissza, és a Home Assistant órája késik ahhoz az időponthoz képest, amikor a rekordot írták; a beállítás addig vár, amíg az órát be nem állítják (ellenőrizze a kiszolgáló időszinkronizálását)."
+    },
     "seq_floor_not_written": {
       "message": "A sorszám-nyilvántartás biztonsági mentésből lett visszaállítva, és az alsó határát (`.storage/junghome_ble.seq.*.floor`) nem sikerült kiírni az előreugrás előtt; ellenőrizze, hogy a konfigurációs könyvtár írható-e."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "A befejezéshez futtassa újra a műveletet ugyanazzal a céllal."
+    },
+    "service_room_area_ambiguous": {
+      "message": "A mesh-export több helyisége is a(z) {area} területhez tartozik ({rooms}): adja meg inkább a helyiséget."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "A(z) {address} egy olyan eszköz további csatornája, amelynek nincs csatornánként saját jelenetleírása (régebbi firmware): a jelenete helyette az első csatornán tárolódna, ahogy a JUNG HOME alkalmazás is jelzi, amikor elutasítja („A funkció nem érhető el”). A jelenetek ezen a csatornán való tárolásához frissítse az eszköz firmware-ét az alkalmazásban. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "A JUNG HOME eszközkulcsok nem menthetők",
       "description": "A Home Assistant nem tudta írni a(z) {title} mesh hálózat kulcstárát ({path}; utolsó hiba: {error}) a(z) {address} címen lévő eszköz hozzáadása közben. A kulcstár a Home Assistant által hozzáadott eszközök eszközkulcsait tárolja, amelyek máshol nincsenek meg, amíg az export nem rögzíti őket, ezért a Home Assistant nem léptette hálózatba az eszközt: semmit nem kapott, és továbbra is új eszköz. Ez általában azt jelenti, hogy megtelt a lemez, vagy a fájlrendszert csak olvashatóként csatolták újra, gyakran egy meghibásodó SD-kártya miatt. Szabadítson fel helyet vagy javítsa meg a tárolót (a csak olvashatóként újracsatolt fájlrendszerhez általában a kiszolgáló újraindítása szükséges), majd adja hozzá újra az eszközt; ne szerkessze, törölje vagy cserélje le a kulcstár fájljait. Valós eszközön még nem próbálták ki. A probléma magától megszűnik, amint a kulcstár egy írása sikerül."
     },
+    "vault_unwritable_recorded": {
+      "title": "A JUNG HOME eszközkulcsok nem menthetők",
+      "description": "A Home Assistant hozzáadta a(z) {address} címen lévő eszközt a(z) {title} mesh hálózathoz, és rögzítette a mesh-exportban, de utána nem tudta írni a kulcstárát ({path}; utolsó hiba: {error}). Az eszköz működik; a lemezen lévő kulcstár továbbra is rögzítetlenként tartja nyilván, amíg egy írás nem sikerül, és az integráció következő indítása az export alapján rögzítettnek jelöli. Ez általában azt jelenti, hogy megtelt a lemez, vagy a fájlrendszert csak olvashatóként csatolták újra, gyakran egy meghibásodó SD-kártya miatt. Szabadítson fel helyet vagy javítsa meg a tárolót (a csak olvashatóként újracsatolt fájlrendszerhez általában a kiszolgáló újraindítása szükséges); ne szerkessze, törölje vagy cserélje le a kulcstár fájljait, és ne állítsa vissza az eszközt a „Függőben lévő eszköz visszaállítása” művelettel. Valós eszközön még nem próbálták ki. A probléma magától megszűnik, amint a kulcstár egy írása sikerül."
+    },
     "carry_over_conflict": {
       "title": "A JUNG HOME alkalmazás felülírta a Home Assistant egyik módosítását ({title})",
       "description": "A Home Assistant átvette azt az exportot, amelyet a JUNG HOME alkalmazás legutóbb átadott az átjárónak, és átvezette rá a saját módosításait, de az alkalmazás időközben ugyanazokat az elemeket módosította. Az alkalmazás változata marad meg a következőknél: {paths}. Az eszközökön még az lehet, amit a Home Assistant írt: {held}. Ellenőrizze ezeket a helyiségeket, jeleneteket és hozzárendeléseket az alkalmazásban és a Home Assistantban, és állítsa be őket újra az egyik oldalról. Az alkalmazás csak egy fájl importálása után látja, amit a Home Assistant hozzáad. A probléma az átjáró exportjának következő, ilyen ütközés nélküli átvételével megszűnik."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "A JUNG HOME átjáró már nem fogadja el a Home Assistantot",
       "description": "A(z) {host} címen lévő JUNG HOME átjáró elutasítja azt a hozzáférést, amelyet a Home Assistant a(z) {title} mesh hálózathoz regisztrált (valószínűleg eltávolították a JUNG HOME alkalmazásban a Beállítások → Átjáró → Hozzáférési jogosultságok menüpontban). A Home Assistant továbbra is módosítja a helyiségeket, gombhozzárendeléseket és jeleneteket a saját exportjában, de azt már nem adja át az átjárónak, így az alkalmazás nem látja ezeket a módosításokat; az eszközök továbbra is működnek. A Home Assistant újra hozzáférést kér: kövesse a JUNG HOME Bluetooth Mesh újrahitelesítésére vonatkozó kérését (Beállítások → Eszközök és szolgáltatások; a Javítások között is lejárt hitelesítésként szerepel), és adja meg az átjáró hálózatikulcs-jelszavát, vagy hagyja jóvá az új hozzáférési kérelmet az alkalmazásban. A probléma megszűnik, amint az átjáró ismét elfogadja a Home Assistantot; ezután az „Átjáró szinkronizálása” művelet átadja az azóta végzett módosításokat."
+    },
+    "restore_too_old": {
+      "title": "A visszaállított biztonsági mentés túl régi a(z) {title} JUNG HOME mesh hálózathoz",
+      "description": "A Home Assistantot biztonsági mentésből állították vissza, és azzal az ütemmel számolva, ahogy a Home Assistant {unicast} címe küld, a mentés készítése óta esetleg felhasznált sorszámok elérik a mesh hálózat jelenlegi IV-indexéhez tartozó számok végét. Az újbóli küldés olyan számokat használna újra, amelyeket az eszközök már láttak: az eszközök figyelmen kívül hagynák a Home Assistantot, és minden újrahasznált szám gyengíti a mesh hálózat titkosítását. Ezért a Home Assistant semmit nem küld a mesh hálózatnak, amíg az alábbiak egyike meg nem történik: a mesh hálózat IV Update-je — indítson egyet a `junghome_ble.start_iv_update` művelettel (*Fejlesztői eszközök → Műveletek*, `confirm: true` megadásával; nem vonható vissza; a Home Assistant akkor küld újra, amikor a mesh hálózat olyan IV-indexen van, amelyen nem küldhetett, ami visszaállítás után két egymást követő IV Update-et is igényelhet) — vagy egy olyan unicast cím, amelyet a Home Assistant még soha nem használt, az *Újrakonfigurálás* alatt beállítva. Ne állítsa vissza a sorszámtárat egy másik másolatból. Az értesítés magától megszűnik, amint a Home Assistant újra küldhet. Valós eszközökön még nem ellenőrzött."
     },
     "seq_store_lost": {
       "title": "Elvesztek a(z) {title} JUNG HOME mesh hálózat sorszámai",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Akkor is, ha egy gomb vezérli",
           "description": "Akkor is kiveszi az eszközt a helyiségből, ha egy, a helyiséghez hozzárendelt gomb kapcsolja; a gomb ezután nem kapcsolja tovább. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+        },
+        "skip_preflight": {
+          "name": "Az exporttal való összevetés nélkül",
+          "description": "A tervet anélkül futtatja, hogy előbb kiolvasná az eszközökből, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak akkor, ha biztosan tudható, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
         },
         "room_area": {
           "name": "Helyiség terület alapján",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Akkor is, ha egy eszköz nem válaszol",
           "description": "Akkor is törli a jelenetet a mesh-exportból, ha egy azt tároló eszköz nem érhető el vagy elutasítja a kérést (az alkalmazásban „Törlés mindenképp”). Az ilyen eszköz megtartja a jelenetet, amíg a „Nem használt jelenetek törlése” művelet el nem távolítja; egy probléma a Javítások között megnevezi, és addig egyetlen új jelenet sem kapja meg a számát. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+        },
+        "skip_preflight": {
+          "name": "Az exporttal való összevetés nélkül",
+          "description": "A tervet anélkül futtatja, hogy előbb kiolvasná az eszközökből, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak akkor, ha biztosan tudható, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
         },
         "config_entry_id": {
           "name": "Mesh hálózat",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Akkor is, ha nem válaszol",
           "description": "Akkor is eltávolítja a hálózat nyilvántartásából, ha nem erősíti meg a visszaállítást (véglegesen eltűnt eszköz), vagy ha a Home Assistant éppen rajta keresztül csatlakozik. Kihagyja azt az ellenőrzést is, amely előbb összeveti az eszközöket a mesh-exporttal."
+        },
+        "skip_preflight": {
+          "name": "Az exporttal való összevetés nélkül",
+          "description": "A tervet anélkül futtatja, hogy előbb kiolvasná az eszközökből, mit távolít el vagy cserél le, és összevetné a mesh-exporttal. Csak akkor, ha biztosan tudható, hogy a mesh-export helyes. Valós eszközökön még nem ellenőrzött."
         },
         "confirm": {
           "name": "Megerősítés",

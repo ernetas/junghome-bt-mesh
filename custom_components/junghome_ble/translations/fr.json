@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "L'enregistrement des numéros de séquence d'une version antérieure n'a pas pu être sauvegardé dans le stockage du mesh (`.storage/junghome_ble.seq.*`) ; vérifiez que le répertoire de configuration est accessible en écriture."
     },
+    "seq_clock_behind": {
+      "message": "L'enregistrement des numéros de séquence a été restauré depuis une sauvegarde, et l'horloge de Home Assistant est en retard sur l'heure à laquelle l'enregistrement a été écrit ; la configuration attend que l'horloge soit réglée (vérifiez la synchronisation horaire de l'hôte)."
+    },
     "seq_floor_not_written": {
       "message": "L'enregistrement des numéros de séquence a été restauré depuis une sauvegarde, et son plancher (`.storage/junghome_ble.seq.*.floor`) n'a pas pu être écrit avant le saut en avant ; vérifiez que le répertoire de configuration est accessible en écriture."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Exécutez à nouveau l'action avec la même cible pour terminer."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Plusieurs zones de l'export du mesh vont dans la pièce {area} ({rooms}) : indiquez plutôt la zone."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} est un canal supplémentaire d'un appareil sans description de scène propre à chaque canal (micrologiciel plus ancien) : sa scène serait mémorisée sur le premier canal à la place, comme l'indique l'application JUNG HOME lorsqu'elle la refuse (« Fonction non disponible »). Mettez à jour le micrologiciel de l'appareil dans l'application pour mémoriser des scènes sur ce canal. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Les clés des appareils JUNG HOME ne peuvent pas être enregistrées",
       "description": "Home Assistant n'a pas pu écrire son coffre pour le mesh {title} ({path} ; dernière erreur : {error}) lors de l'ajout de l'appareil à l'adresse {address}. Le coffre contient les clés des appareils que Home Assistant ajoute, que rien d'autre ne possède tant que l'export ne les enregistre pas ; l'appareil n'a donc pas été mis en service : il n'a rien reçu et est toujours neuf. Cela signifie généralement que le disque est plein ou que son système de fichiers a été remonté en lecture seule, souvent à cause d'une carte SD défaillante. Libérez de l'espace ou réparez le stockage (un système de fichiers remonté en lecture seule nécessite généralement un redémarrage de l'hôte), puis ajoutez à nouveau l'appareil ; ne modifiez, ne supprimez et ne remplacez pas les fichiers du coffre. Pas encore essayé sur un vrai appareil. Le problème disparaît de lui-même dès qu'une écriture du coffre aboutit."
     },
+    "vault_unwritable_recorded": {
+      "title": "Les clés des appareils JUNG HOME ne peuvent pas être enregistrées",
+      "description": "Home Assistant a ajouté l'appareil à l'adresse {address} au mesh {title} et l'a enregistré dans l'export du mesh, mais n'a pas pu écrire son coffre ({path} ; dernière erreur : {error}) ensuite. L'appareil fonctionne ; le coffre sur le disque le liste toujours comme non enregistré tant qu'une écriture n'a pas abouti, et le prochain démarrage de l'intégration le marque comme enregistré d'après l'export. Cela signifie généralement que le disque est plein ou que son système de fichiers a été remonté en lecture seule, souvent à cause d'une carte SD défaillante. Libérez de l'espace ou réparez le stockage (un système de fichiers remonté en lecture seule nécessite généralement un redémarrage de l'hôte) ; ne modifiez, ne supprimez et ne remplacez pas les fichiers du coffre, et ne réinitialisez pas l'appareil avec Réinitialiser un appareil en attente. Pas encore essayé sur un vrai appareil. Le problème disparaît de lui-même dès qu'une écriture du coffre aboutit."
+    },
     "carry_over_conflict": {
       "title": "L'application JUNG HOME a écrasé une modification faite par Home Assistant sur {title}",
       "description": "Home Assistant a repris l'export que l'application JUNG HOME a transmis en dernier à la passerelle et y a reporté ses propres modifications, mais l'application avait modifié les mêmes entrées entre-temps. La version de l'application est conservée pour : {paths}. Les appareils contiennent peut-être encore ce que Home Assistant avait écrit : {held}. Vérifiez ces zones, scènes et liens dans l'application et dans Home Assistant, et définissez-les à nouveau d'un seul côté. L'application ne voit pas ce que Home Assistant ajoute tant qu'elle n'a pas importé de fichier. Le problème disparaît à la prochaine reprise de l'export de la passerelle sans conflit de ce type."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "La passerelle JUNG HOME n'accepte plus Home Assistant",
       "description": "La passerelle JUNG HOME à l'adresse {host} rejette l'accès que Home Assistant a enregistré pour le mesh {title} (il a probablement été supprimé dans l'application JUNG HOME sous Réglages → Passerelle → Clients). Home Assistant continue de modifier les zones, liens de touche et scènes dans son propre export, mais ne le transmet plus à la passerelle, si bien que l'application ne voit pas ces modifications ; les appareils continuent de fonctionner. Home Assistant demande à nouveau l'accès : suivez sa demande de réauthentification de JUNG HOME Bluetooth Mesh (Paramètres → Appareils et services ; Réparations l'indique aussi comme authentification expirée) et saisissez le mot de passe de la clé réseau de la passerelle ou approuvez la nouvelle demande d'accès dans l'application. Le problème disparaît dès que la passerelle accepte à nouveau Home Assistant ; l'action Synchroniser la passerelle transmet alors les modifications faites entre-temps."
+    },
+    "restore_too_old": {
+      "title": "Sauvegarde restaurée trop ancienne pour le mesh JUNG HOME {title}",
+      "description": "Home Assistant a été restauré depuis une sauvegarde, et au rythme auquel l'adresse {unicast} de Home Assistant émet, les numéros de séquence qu'il a pu utiliser depuis la création de cette sauvegarde atteignent la fin des numéros de l'IV Index actuel du mesh. Émettre à nouveau réutiliserait des numéros que les appareils ont déjà vus : ils ignoreraient Home Assistant, et chaque numéro réutilisé affaiblit le chiffrement du mesh. Home Assistant n'envoie donc rien au mesh tant que l'une de ces opérations n'a pas été effectuée : un IV Update du mesh — lancez-en un avec l'action `junghome_ble.start_iv_update` (*Outils de développement → Actions*, avec `confirm: true` ; irréversible ; Home Assistant émet à nouveau dès que le mesh est à un IV Index sous lequel il ne peut pas avoir émis, ce qui, après une restauration, peut nécessiter deux IV Updates d'affilée) — ou une adresse unicast que Home Assistant n'a jamais utilisée, définie sous *Reconfigurer*. Ne restaurez pas le stockage des numéros de séquence depuis une autre copie. L'avis disparaît de lui-même dès que Home Assistant peut à nouveau émettre. Non vérifié sur de vrais appareils."
     },
     "seq_store_lost": {
       "title": "Numéros de séquence du mesh JUNG HOME {title} perdus",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Même si une touche le commande",
           "description": "Retirer l'appareil de la zone bien qu'une touche liée à la zone le commute ; la touche cesse de le commuter. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+        },
+        "skip_preflight": {
+          "name": "Sans comparer avec l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Uniquement lorsque l'export du mesh est reconnu comme correct. Non vérifié sur de vrais appareils."
         },
         "room_area": {
           "name": "Zone par pièce",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Même si un appareil ne répond pas",
           "description": "Supprimer la scène de l'export du mesh bien qu'un appareil qui l'a mémorisée soit injoignable ou refuse (« Supprimer quand même » dans l'application). Cet appareil conserve la scène jusqu'à ce que Supprimer les scènes inutilisées la retire ; un problème de réparation le nomme, et aucune nouvelle scène ne reçoit son numéro entre-temps. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+        },
+        "skip_preflight": {
+          "name": "Sans comparer avec l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Uniquement lorsque l'export du mesh est reconnu comme correct. Non vérifié sur de vrais appareils."
         },
         "config_entry_id": {
           "name": "Réseau mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Même s'il ne répond pas",
           "description": "Le retirer des enregistrements du réseau bien qu'il ne confirme pas la réinitialisation (un appareil définitivement disparu), ou bien que Home Assistant soit connecté via lui. Saute aussi la vérification qui compare d'abord les appareils à l'export du mesh."
+        },
+        "skip_preflight": {
+          "name": "Sans comparer avec l'export",
+          "description": "Exécuter le plan sans lire d'abord sur les appareils ce qu'il supprime ou remplace ni le comparer à l'export du mesh. Uniquement lorsque l'export du mesh est reconnu comme correct. Non vérifié sur de vrais appareils."
         },
         "confirm": {
           "name": "Confirmer",

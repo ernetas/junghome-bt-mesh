@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Înregistrarea numerelor de secvență dintr-o versiune mai veche nu a putut fi salvată în depozitul rețelei mesh (`.storage/junghome_ble.seq.*`); verifică dacă se poate scrie în directorul de configurare."
     },
+    "seq_clock_behind": {
+      "message": "Înregistrarea numerelor de secvență a fost restaurată dintr-un backup, iar ceasul lui Home Assistant este în urma momentului în care a fost scrisă înregistrarea; configurarea așteaptă până când ceasul este setat (verifică sincronizarea orei pe gazdă)."
+    },
     "seq_floor_not_written": {
       "message": "Înregistrarea numerelor de secvență a fost restaurată dintr-un backup, iar limita ei minimă (`.storage/junghome_ble.seq.*.floor`) nu a putut fi scrisă înainte de saltul înainte; verifică dacă se poate scrie în directorul de configurare."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Rulează din nou acțiunea cu aceeași țintă pentru a termina."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mai multe camere din exportul rețelei mesh merg în zona {area} ({rooms}): specifică în schimb numele camerei."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} este un canal suplimentar al unui dispozitiv fără descriere proprie a scenei pentru fiecare canal (firmware mai vechi): scena sa ar fi salvată în schimb pe primul canal, așa cum spune aplicația JUNG HOME când o refuză („Funcție indisponibilă”). Actualizează firmware-ul dispozitivului în aplicație pentru a salva scene pe acest canal. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Cheile dispozitivelor JUNG HOME nu pot fi salvate",
       "description": "Home Assistant nu a putut scrie seiful de chei pentru rețeaua mesh {title} ({path}; ultima eroare: {error}) în timp ce adăuga dispozitivul de la {address}. Seiful de chei conține cheile dispozitivelor pe care le adaugă Home Assistant, pe care nimic altceva nu le are până când exportul nu le înregistrează, așa că dispozitivul nu a fost provizionat: nu a primit nimic și este încă nou. De obicei, asta înseamnă că discul este plin sau că sistemul lui de fișiere a fost remontat doar în citire, adesea din cauza unui card SD pe cale să cedeze. Eliberează spațiu sau repară stocarea (un sistem de fișiere remontat doar în citire necesită de obicei repornirea gazdei), apoi adaugă din nou dispozitivul; nu edita, nu șterge și nu înlocui fișierele seifului. Încă neîncercat pe un dispozitiv real. Problema dispare de la sine imediat ce o scriere în seif reușește."
     },
+    "vault_unwritable_recorded": {
+      "title": "Cheile dispozitivelor JUNG HOME nu pot fi salvate",
+      "description": "Home Assistant a adăugat dispozitivul de la {address} în rețeaua mesh {title} și l-a înregistrat în exportul rețelei mesh, dar apoi nu a putut scrie seiful de chei ({path}; ultima eroare: {error}). Dispozitivul funcționează; seiful de pe disc îl listează în continuare ca neînregistrat până când o scriere reușește, iar următoarea pornire a integrării îl marchează ca înregistrat pe baza exportului. De obicei, asta înseamnă că discul este plin sau că sistemul lui de fișiere a fost remontat doar în citire, adesea din cauza unui card SD pe cale să cedeze. Eliberează spațiu sau repară stocarea (un sistem de fișiere remontat doar în citire necesită de obicei repornirea gazdei); nu edita, nu șterge și nu înlocui fișierele seifului și nu reseta dispozitivul cu „Resetează dispozitivul în așteptare”. Încă neîncercat pe un dispozitiv real. Problema dispare de la sine imediat ce o scriere în seif reușește."
+    },
     "carry_over_conflict": {
       "title": "Aplicația JUNG HOME a suprascris o modificare făcută de Home Assistant în {title}",
       "description": "Home Assistant a preluat exportul transmis ultima dată gateway-ului de aplicația JUNG HOME și și-a aplicat peste el propriile modificări, dar între timp aplicația modificase aceleași elemente. Se păstrează versiunea aplicației pentru: {paths}. Dispozitivele pot conține încă ce scrisese Home Assistant: {held}. Verifică acele camere, scene și legături în aplicație și în Home Assistant și setează-le din nou dintr-o singură parte. Aplicația nu vede ce adaugă Home Assistant până nu importă un fișier. Problema dispare la următoarea preluare a exportului gateway-ului fără un astfel de conflict."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Gateway-ul JUNG HOME nu mai acceptă Home Assistant",
       "description": "Gateway-ul JUNG HOME de la {host} respinge accesul înregistrat de Home Assistant pentru rețeaua mesh {title} (probabil a fost eliminat în aplicația JUNG HOME în Setări → Gateway → Permisiuni de acces). Home Assistant continuă să modifice camere, legături de taste și scene în propriul export, dar nu îl mai transmite gateway-ului, așa că aplicația nu vede aceste modificări; dispozitivele continuă să funcționeze. Home Assistant cere din nou acces: urmează solicitarea sa de reautentificare JUNG HOME Bluetooth Mesh (Setări → Dispozitive și servicii; Reparații o listează și ca autentificare expirată) și introdu parola cheii de rețea a gateway-ului sau aprobă noua cerere de acces în aplicație. Problema dispare după ce gateway-ul acceptă din nou Home Assistant; acțiunea „Sincronizează gateway-ul” transmite apoi modificările făcute între timp."
+    },
+    "restore_too_old": {
+      "title": "Backup restaurat prea vechi pentru rețeaua mesh JUNG HOME {title}",
+      "description": "Home Assistant a fost restaurat dintr-un backup și, în ritmul în care trimite adresa {unicast} a lui Home Assistant, numerele de secvență pe care este posibil să le fi folosit de la realizarea acelui backup ajung la capătul numerelor indexului IV curent al rețelei mesh. Trimiterea din nou ar refolosi numere pe care dispozitivele le-au văzut deja: ar ignora Home Assistant, iar fiecare număr refolosit slăbește criptarea rețelei mesh. De aceea Home Assistant nu trimite nimic în rețeaua mesh până când nu se face unul dintre acestea: un IV Update al rețelei mesh — pornește unul cu acțiunea `junghome_ble.start_iv_update` (*Instrumente pentru dezvoltatori → Acțiuni*, cu `confirm: true`; nu poate fi anulat; Home Assistant trimite din nou după ce rețeaua mesh ajunge la un index IV sub care nu poate să fi trimis, ceea ce după o restaurare poate necesita două IV Update la rând) — sau o adresă unicast pe care Home Assistant nu a folosit-o niciodată, setată în *Reconfigurează*. Nu restaura depozitul numerelor de secvență dintr-o altă copie. Notificarea dispare de la sine după ce Home Assistant poate trimite din nou. Neverificat încă în funcționare reală."
     },
     "seq_store_lost": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME {title} s-au pierdut",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Chiar dacă o tastă îl comandă",
           "description": "Scoate dispozitivul din cameră deși o tastă legată de cameră îl comută; tasta nu îl mai comută. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+        },
+        "skip_preflight": {
+          "name": "Fără comparare cu exportul",
+          "description": "Execută planul fără a citi mai întâi de la dispozitive ce elimină sau înlocuiește și fără a compara acestea cu exportul rețelei mesh. Doar când se știe că exportul rețelei mesh este corect. Neverificat încă în funcționare reală."
         },
         "room_area": {
           "name": "Cameră după zonă",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Chiar dacă un dispozitiv nu răspunde",
           "description": "Șterge scena din exportul rețelei mesh deși un dispozitiv care a salvat-o nu poate fi contactat sau refuză („Șterge oricum” în aplicație). Acel dispozitiv păstrează scena până când „Șterge scenele nefolosite” o elimină; o problemă din Reparații îl indică, iar între timp nicio scenă nouă nu primește numărul ei. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+        },
+        "skip_preflight": {
+          "name": "Fără comparare cu exportul",
+          "description": "Execută planul fără a citi mai întâi de la dispozitive ce elimină sau înlocuiește și fără a compara acestea cu exportul rețelei mesh. Doar când se știe că exportul rețelei mesh este corect. Neverificat încă în funcționare reală."
         },
         "config_entry_id": {
           "name": "Rețea mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Chiar dacă nu răspunde",
           "description": "Îl elimină din evidențele rețelei deși nu confirmă resetarea (un dispozitiv dispărut definitiv) sau deși Home Assistant este conectat prin el. Sare și peste verificarea care compară mai întâi dispozitivele cu exportul rețelei mesh."
+        },
+        "skip_preflight": {
+          "name": "Fără comparare cu exportul",
+          "description": "Execută planul fără a citi mai întâi de la dispozitive ce elimină sau înlocuiește și fără a compara acestea cu exportul rețelei mesh. Doar când se știe că exportul rețelei mesh este corect. Neverificat încă în funcționare reală."
         },
         "confirm": {
           "name": "Confirmare",

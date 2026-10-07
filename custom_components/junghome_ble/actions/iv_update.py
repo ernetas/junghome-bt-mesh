@@ -13,7 +13,7 @@ IV index and when Normal Operation is due.
 
 `abort_iv_update` gives up one the mesh has not taken yet (`ProxyClient.abort_iv_update`): back at the old index,
 which nothing was sent under but beacons; also `confirm: true`. Home Assistant gives one up by itself 144 hours after
-the start (review-5 P5-3, the `iv_update_not_taken` repair).
+the start (the `iv_update_not_taken` repair).
 """
 
 from __future__ import annotations

@@ -661,7 +661,7 @@ class JungHomeHub:
         self._last_seq: dict[int, int] = {}
         self._node_signalled: dict[int, float] = {}
         # every group address a message heard on this run was sent to: a new device's element groups keep clear of
-        # them, as of the sources heard (`heard_sources`; `onboard._reserved_groups`, review-5 S5-4)
+        # them, as of the sources heard (`heard_sources`; `onboard._reserved_groups`)
         self.heard_groups: set[int] = set()
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread = self.lifecycle.keyed("transition_reread")
@@ -704,7 +704,7 @@ class JungHomeHub:
         this one (`_refuse_duplicate_mesh`). A record restored from a Home Assistant backup continues past every
         number sent since (`_async_skip_restored_record`). An address without a record anywhere starts at 0 only
         when nothing says it was used before (`_evidence_of_use`); otherwise SEQ_SKIP_AHEAD on — SEQ_SKIP_UNKNOWN
-        when the store, its `.backup` and the floor are all gone (review-5 S5-5: nothing bounds what was sent, and
+        when the store, its `.backup` and the floor are all gone (nothing bounds what was sent, and
         an installation stays at one IV index for years, so 2^20 is outrun within one; the same distance the
         `seq_store_lost` repair takes with nothing left).
         """
@@ -2123,8 +2123,8 @@ class JungHomeHub:
         A status answering a Set with a transition time carries the present state, the target and the time still to
         run; the entity shows the present one (see the status handlers), which a load that publishes nothing at the
         end of its fade would leave behind. Nothing is scheduled for a status at rest or one whose remaining time is
-        unknown; a newer Set replaces the pending read. Only a Lightness Set carries a transition (`set_lightness`,
-        decision M19); on air the DALI insert answered one with its target and remaining time and published a final
+        unknown; a newer Set replaces the pending read. Only a Lightness Set carries a transition (`set_lightness`);
+        on air the DALI insert answered one with its target and remaining time and published a final
         status at the end (sweep B8, CLI only), so the read is a safeguard for a load that does not. Unverified on air
         from Home Assistant.
         """
@@ -2155,7 +2155,7 @@ class JungHomeHub:
     async def set_onoff(self, addr: int, on: bool) -> None:
         """Switch the element at `addr` on or off, with transition time 0.
 
-        Never with a transition (decision M19, from sweep B8): a switch insert waits it out before it switches off,
+        Never with a transition (sweep B8): a switch insert waits it out before it switches off,
         and the DALI insert switches on at once whatever it says.
         """
         self._note_request(addr, on=on)
@@ -2193,7 +2193,7 @@ class JungHomeHub:
         Unacknowledged Sets (an acknowledged one would have every member answer at the same moment): a lightness
         first, which only the dimmable members take, then OnOff, which switches the others and leaves a dimmer that
         is already on where the lightness put it. No transition: the group's Lightness Set also switches on the
-        members that are off, and an *on* takes none (decision M19).
+        members that are off, and an *on* takes none.
         """
         if lightness is not None:
             await self._command(
@@ -2249,7 +2249,7 @@ class JungHomeHub:
         """Set the lightness (0-65535) of the element at `addr`, over `transition` seconds when given.
 
         Without a transition the Set carries none (the light's Default Transition Time, 0 on every JUNG load seen).
-        The one Set that takes a transition (decision M19, `const.TRANSITION_KINDS`): a brightness change of a dimmer
+        The one Set that takes a transition (`const.TRANSITION_KINDS`): a brightness change of a dimmer
         or DALI load, which the DALI insert fades and reports (sweep B8). Unverified on air from Home Assistant.
         """
         lightness = max(0, min(65535, lightness))
@@ -2267,7 +2267,7 @@ class JungHomeHub:
     async def set_ctl(self, addr: int, lightness: int, kelvin: int) -> None:
         """Set lightness (0-65535) and colour temperature (Kelvin) of the element at `addr`.
 
-        Never with a transition (decision M19): the DALI insert answers a CTL Set at once and reports no fade
+        Never with a transition: the DALI insert answers a CTL Set at once and reports no fade
         (sweep B8).
         """
         lightness = max(0, min(65535, lightness))
@@ -2284,7 +2284,7 @@ class JungHomeHub:
         answers with a Light CTL Temperature Status, which lands on the light (`_ctl_light_of`); the Set is noted
         on the light too, whose Light CTL Get `async_wait_settled` reads. The Set is the gateway's 7-byte form,
         transition 0 and delay 0: without them the light would fall back to its Default Transition Time. A colour
-        temperature never fades (decision M19).
+        temperature never fades.
         """
         assert light.temperature_address is not None  # the caller checks it has one
         self._note_request(light.address, kelvin=kelvin)

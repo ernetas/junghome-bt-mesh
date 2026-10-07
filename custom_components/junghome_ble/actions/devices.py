@@ -216,7 +216,7 @@ async def _remove_device(hass: HomeAssistant, call: ServiceCall) -> ServiceRespo
     Refused unless the entry's *Allow Home Assistant to add devices* option is on, and without `confirm` (it
     cannot be undone; a dry run needs none); `force` records the removal of a node that does not confirm its
     reset (one that is gone for good). `force` keeps the pre-flight comparison of the others' wiring;
-    `skip_preflight` skips it (decision M17).
+    `skip_preflight` skips it.
     """
     if not call.data[ATTR_CONFIRM] and not call.data[ATTR_DRY_RUN]:
         raise _validation("remove_device_needs_confirm")

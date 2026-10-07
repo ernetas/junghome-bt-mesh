@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Záznam sekvenčných čísel staršej verzie sa nepodarilo uložiť do úložiska siete mesh (`.storage/junghome_ble.seq.*`); skontrolujte, či je do konfiguračného adresára možné zapisovať."
     },
+    "seq_clock_behind": {
+      "message": "Záznam sekvenčných čísel bol obnovený zo zálohy a hodiny Home Assistant zaostávajú za časom, keď bol záznam zapísaný; nastavenie čaká, kým sa hodiny nenastavia (skontrolujte synchronizáciu času hostiteľa)."
+    },
     "seq_floor_not_written": {
       "message": "Záznam sekvenčných čísel bol obnovený zo zálohy a jeho dolnú hranicu (`.storage/junghome_ble.seq.*.floor`) sa pred preskočením dopredu nepodarilo zapísať; skontrolujte, či je do konfiguračného adresára možné zapisovať."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Na dokončenie spustite akciu znova s rovnakým cieľom."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Do oblasti {area} patrí viac ako jedna miestnosť exportu mesh ({rooms}): namiesto toho zadajte názov miestnosti."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} je ďalší kanál zariadenia bez vlastného popisu scény pre každý kanál (starší firmvér): jeho scéna by sa namiesto toho uložila na prvý kanál, ako to uvádza aplikácia JUNG HOME, keď ju odmietne („Funkcia nie je k dispozícii“). Aktualizujte firmvér zariadenia v aplikácii, aby sa scény ukladali na tento kanál. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "Kľúče zariadení JUNG HOME sa nedajú uložiť",
       "description": "Home Assistant nedokázal zapísať svoj trezor pre sieť mesh {title} ({path}; posledná chyba: {error}) pri pridávaní zariadenia na adrese {address}. Trezor obsahuje kľúče zariadení, ktoré Home Assistant pridáva a ktoré nikto iný nemá, kým ich nezaznamená export, preto zariadenie neprešlo provisioningom: nič nedostalo a je stále nové. Zvyčajne to znamená, že disk je plný alebo jeho súborový systém bol znova pripojený len na čítanie, často kvôli zlyhávajúcej SD karte. Uvoľnite miesto alebo opravte úložisko (súborový systém pripojený len na čítanie zvyčajne vyžaduje reštart hostiteľa) a potom pridajte zariadenie znova; súbory trezora neupravujte, neodstraňujte ani nenahrádzajte. Zatiaľ nevyskúšané na skutočnom zariadení. Oprava zmizne sama, len čo sa zápis trezora podarí."
     },
+    "vault_unwritable_recorded": {
+      "title": "Kľúče zariadení JUNG HOME sa nedajú uložiť",
+      "description": "Home Assistant pridal zariadenie na adrese {address} do siete mesh {title} a zaznamenal ho v exporte mesh, no potom nedokázal zapísať svoj trezor ({path}; posledná chyba: {error}). Zariadenie funguje; trezor na disku ho uvádza ako nezaznamenané, kým sa zápis nepodarí, a pri ďalšom spustení integrácie sa podľa exportu označí ako zaznamenané. Zvyčajne to znamená, že disk je plný alebo jeho súborový systém bol znova pripojený len na čítanie, často kvôli zlyhávajúcej SD karte. Uvoľnite miesto alebo opravte úložisko (súborový systém pripojený len na čítanie zvyčajne vyžaduje reštart hostiteľa); súbory trezora neupravujte, neodstraňujte ani nenahrádzajte a zariadenie neresetujte akciou „Resetovať čakajúce zariadenie“. Zatiaľ nevyskúšané na skutočnom zariadení. Oprava zmizne sama, len čo sa zápis trezora podarí."
+    },
     "carry_over_conflict": {
       "title": "Aplikácia JUNG HOME prepísala zmenu, ktorú Home Assistant vykonal v {title}",
       "description": "Home Assistant prevzal export, ktorý aplikácia JUNG HOME naposledy odovzdala bráne, a preniesol naň svoje vlastné zmeny, ale aplikácia medzitým zmenila tie isté položky. Verzia aplikácie sa ponecháva pre: {paths}. Zariadenia môžu stále obsahovať to, čo zapísal Home Assistant: {held}. Skontrolujte tieto miestnosti, scény a prepojenia v aplikácii aj v Home Assistant a nastavte ich znova z jednej strany. Aplikácia nevidí, čo Home Assistant pridá, kým neimportuje súbor. Oprava zmizne pri ďalšom prevzatí exportu brány, pri ktorom takýto konflikt nenastane."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "Brána JUNG HOME už neakceptuje Home Assistant",
       "description": "Brána JUNG HOME na adrese {host} odmieta prístup, ktorý Home Assistant zaregistroval pre sieť mesh {title} (pravdepodobne bol odstránený v aplikácii JUNG HOME v časti Nastavenia → Brána → Prístupové oprávnenia). Home Assistant naďalej mení miestnosti, prepojenia tlačidiel a scény vo svojom vlastnom exporte, ale už ho neodovzdáva bráne, takže aplikácia tieto zmeny nevidí; zariadenia naďalej fungujú. Home Assistant znova žiada o prístup: postupujte podľa jeho výzvy na opätovné overenie JUNG HOME Bluetooth Mesh (Nastavenia → Zariadenia a služby; v časti Opravy je uvedené aj ako vypršané overenie) a zadajte heslo sieťového kľúča brány alebo schváľte novú žiadosť o prístup v aplikácii. Oprava zmizne, keď brána znova akceptuje Home Assistant; akcia „Synchronizovať bránu“ potom odovzdá zmeny vykonané medzitým."
+    },
+    "restore_too_old": {
+      "title": "Obnovená záloha je príliš stará pre sieť JUNG HOME mesh {title}",
+      "description": "Home Assistant bol obnovený zo zálohy a pri tempe, akým vysiela adresa Home Assistant {unicast}, siahajú sekvenčné čísla, ktoré mohol od vytvorenia tejto zálohy použiť, až na koniec čísel aktuálneho IV indexu siete mesh. Opätovné vysielanie by znova použilo čísla, ktoré zariadenia už videli: Home Assistant by ignorovali a každé znova použité číslo oslabuje šifrovanie siete mesh. Preto Home Assistant do siete mesh nič neposiela, kým sa nevykoná jedno z nasledujúceho: IV Update siete mesh — spustite ho akciou `junghome_ble.start_iv_update` (*Nástroje pre vývojárov → Akcie*, s `confirm: true`; nedá sa vrátiť späť; Home Assistant znova vysiela, len čo je sieť mesh na IV indexe, pod ktorým nemohol vysielať, čo po obnovení môže vyžadovať dva IV Update za sebou) — alebo adresa unicast, ktorú Home Assistant nikdy nepoužil, nastavená v *Prekonfigurovať*. Neobnovujte úložisko sekvenčných čísel z inej kópie. Upozornenie zmizne samo, len čo Home Assistant môže znova vysielať. V prevádzke zatiaľ neoverené."
     },
     "seq_store_lost": {
       "title": "Sekvenčné čísla siete JUNG HOME mesh {title} sa stratili",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Aj keď ho ovláda tlačidlo",
           "description": "Vyradí zariadenie z miestnosti, hoci ho spína tlačidlo prepojené s miestnosťou; tlačidlo ho potom prestane spínať. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnania s exportom",
+          "description": "Vykoná plán bez toho, aby najprv prečítal zo zariadení, čo odstraňuje alebo nahrádza, a porovnal to s exportom mesh. Len ak je známe, že export mesh je správny. V prevádzke zatiaľ neoverené."
         },
         "room_area": {
           "name": "Miestnosť podľa oblasti",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Aj keď zariadenie neodpovedá",
           "description": "Odstráni scénu z exportu mesh, hoci zariadenie, ktoré ju uložilo, je nedosiahnuteľné alebo odmieta (v aplikácii „Napriek tomu odstrániť“). Toto zariadenie si scénu ponechá, kým ju neodstráni akcia „Odstrániť nepoužívané scény“; oprava ho uvedie a žiadna nová scéna medzitým nedostane jej číslo. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnania s exportom",
+          "description": "Vykoná plán bez toho, aby najprv prečítal zo zariadení, čo odstraňuje alebo nahrádza, a porovnal to s exportom mesh. Len ak je známe, že export mesh je správny. V prevádzke zatiaľ neoverené."
         },
         "config_entry_id": {
           "name": "Sieť mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Aj keď neodpovedá",
           "description": "Odstráni ho zo záznamov siete, hoci nepotvrdí reset (zariadenie, ktoré je natrvalo preč), alebo hoci je cez neho Home Assistant pripojený. Preskočí aj kontrolu, ktorá najprv porovná zariadenia s exportom mesh."
+        },
+        "skip_preflight": {
+          "name": "Bez porovnania s exportom",
+          "description": "Vykoná plán bez toho, aby najprv prečítal zo zariadení, čo odstraňuje alebo nahrádza, a porovnal to s exportom mesh. Len ak je známe, že export mesh je správny. V prevádzke zatiaľ neoverené."
         },
         "confirm": {
           "name": "Potvrdiť",

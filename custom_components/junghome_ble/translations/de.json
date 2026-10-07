@@ -1090,6 +1090,9 @@
     "seq_store_not_written": {
       "message": "Der Sequenznummern-Stand einer älteren Version konnte nicht in den Speicher des Mesh (`.storage/junghome_ble.seq.*`) übernommen werden. Prüfe, ob das Konfigurationsverzeichnis beschreibbar ist."
     },
+    "seq_clock_behind": {
+      "message": "Der Sequenznummern-Stand wurde aus einer Sicherung wiederhergestellt, und die Uhr von Home Assistant liegt hinter dem Zeitpunkt zurück, zu dem der Stand geschrieben wurde; die Einrichtung wartet, bis die Uhr gestellt ist (prüfe die Zeitsynchronisierung des Hosts)."
+    },
     "seq_floor_not_written": {
       "message": "Der Sequenznummern-Stand wurde aus einer Sicherung wiederhergestellt, und seine Untergrenze (`.storage/junghome_ble.seq.*.floor`) konnte vor dem Vorspringen nicht geschrieben werden. Prüfe, ob das Konfigurationsverzeichnis beschreibbar ist."
     },
@@ -1728,6 +1731,12 @@
     },
     "applied_rerun": {
       "message": "Führe die Aktion mit demselben Ziel erneut aus, um abzuschließen."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Mehr als ein Raum des Mesh-Exports gehört zum Bereich {area} ({rooms}): Gib stattdessen den Namen des Raums an."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} ist ein weiterer Kanal eines Geräts ohne eigene Szenenbeschreibung pro Kanal (ältere Firmware): Seine Szene würde stattdessen auf dem ersten Kanal gespeichert, wie die JUNG HOME App sagt, wenn sie sie ablehnt („Funktion nicht verfügbar“). Aktualisiere die Firmware des Geräts in der App, um Szenen auf diesem Kanal zu speichern. {applied}"
     }
   },
   "issues": {
@@ -2123,6 +2132,10 @@
       "title": "Geräteschlüssel des JUNG HOME Mesh können nicht gespeichert werden",
       "description": "Home Assistant konnte seinen Schlüsseltresor für das Mesh {title} nicht schreiben ({path}; letzter Fehler: {error}), während es das Gerät unter {address} hinzufügte. Der Tresor enthält die Geräteschlüssel der Geräte, die Home Assistant hinzufügt, die sonst niemand hat, bis der Export sie festhält. Deshalb wurde das Gerät nicht in Betrieb genommen: Es hat nichts erhalten und ist weiterhin neu. Meist ist der Datenträger voll oder sein Dateisystem wurde schreibgeschützt neu eingehängt, oft wegen einer defekten SD-Karte. Schaffe Platz oder repariere den Speicher (ein schreibgeschützt eingehängtes Dateisystem erfordert meist einen Neustart des Hosts) und füge das Gerät dann erneut hinzu; bearbeite, lösche oder ersetze die Dateien des Tresors nicht. Auf einem echten Gerät noch nicht ausprobiert. Die Reparatur verschwindet von selbst, sobald ein Schreibvorgang des Tresors gelingt."
     },
+    "vault_unwritable_recorded": {
+      "title": "Geräteschlüssel des JUNG HOME Mesh können nicht gespeichert werden",
+      "description": "Home Assistant hat das Gerät unter {address} dem Mesh {title} hinzugefügt und im Mesh-Export festgehalten, konnte danach aber seinen Schlüsseltresor nicht schreiben ({path}; letzter Fehler: {error}). Das Gerät funktioniert; der Tresor auf dem Datenträger führt es weiterhin als nicht festgehalten, bis ein Schreibvorgang gelingt, und der nächste Start der Integration markiert es anhand des Exports als festgehalten. Meist ist der Datenträger voll oder sein Dateisystem wurde schreibgeschützt neu eingehängt, oft wegen einer defekten SD-Karte. Schaffe Platz oder repariere den Speicher (ein schreibgeschützt eingehängtes Dateisystem erfordert meist einen Neustart des Hosts); bearbeite, lösche oder ersetze die Dateien des Tresors nicht und setze das Gerät nicht mit „Ausstehendes Gerät zurücksetzen“ zurück. Auf einem echten Gerät noch nicht ausprobiert. Die Reparatur verschwindet von selbst, sobald ein Schreibvorgang des Tresors gelingt."
+    },
     "carry_over_conflict": {
       "title": "Die JUNG HOME App hat eine Änderung von Home Assistant an {title} überschrieben",
       "description": "Home Assistant hat den Export übernommen, den die JUNG HOME App zuletzt an das Gateway übergeben hat, und seine eigenen Änderungen darauf übertragen, aber die App hatte dieselben Einträge inzwischen geändert. Die Version der App bleibt erhalten für: {paths}. Die Geräte haben möglicherweise noch gespeichert, was Home Assistant geschrieben hatte: {held}. Prüfe diese Räume, Szenen und Verknüpfungen in der App und in Home Assistant und stelle sie von einer Seite aus neu ein. Die App sieht, was Home Assistant hinzufügt, erst, wenn sie eine Datei importiert. Die Reparatur verschwindet mit der nächsten Übernahme des Gateway-Exports ohne einen solchen Konflikt."
@@ -2134,6 +2147,10 @@
     "gateway_token_rejected": {
       "title": "Das JUNG HOME Gateway akzeptiert Home Assistant nicht mehr",
       "description": "Das JUNG HOME Gateway unter {host} lehnt den Zugriff ab, den Home Assistant für das Mesh {title} registriert hat (er wurde wahrscheinlich in der JUNG HOME App unter Einstellungen → Gateway → Zugriffsberechtigungen entfernt). Home Assistant ändert Räume, Tastenverknüpfungen und Szenen weiterhin in seinem eigenen Export, übergibt ihn aber nicht mehr an das Gateway, daher sieht die App diese Änderungen nicht; die Geräte funktionieren weiter. Home Assistant bittet erneut um Zugriff: Folge seiner Aufforderung, JUNG HOME Bluetooth Mesh erneut zu authentifizieren (Einstellungen → Geräte & Dienste; Reparaturen listet sie auch als abgelaufene Authentifizierung), und gib das Netzwerk-Key-Passwort des Gateways ein oder bestätige die neue Zugriffsanfrage in der App. Die Reparatur verschwindet, sobald das Gateway Home Assistant wieder akzeptiert; die Aktion Gateway synchronisieren übergibt dann die seitdem gemachten Änderungen."
+    },
+    "restore_too_old": {
+      "title": "Wiederhergestellte Sicherung zu alt für das JUNG HOME Mesh {title}",
+      "description": "Home Assistant wurde aus einer Sicherung wiederhergestellt, und bei der Rate, mit der die Adresse {unicast} von Home Assistant sendet, erreichen die Sequenznummern, die es seit dieser Sicherung verwendet haben kann, das Ende der Nummern des aktuellen IV-Index des Mesh. Erneutes Senden würde Nummern wiederverwenden, die die Geräte schon gesehen haben: Sie würden Home Assistant ignorieren, und jede wiederverwendete Nummer schwächt die Verschlüsselung des Mesh. Deshalb sendet Home Assistant nichts an das Mesh, bis eines davon erledigt ist: ein IV-Update des Mesh – starte eines mit der Aktion `junghome_ble.start_iv_update` (*Entwicklerwerkzeuge → Aktionen*, mit `confirm: true`; es lässt sich nicht rückgängig machen; Home Assistant sendet wieder, sobald das Mesh auf einem IV-Index ist, unter dem es nicht gesendet haben kann, was nach einer Wiederherstellung zwei IV-Updates nacheinander erfordern kann) – oder eine Unicast-Adresse, die Home Assistant noch nie verwendet hat, festgelegt unter *Neu konfigurieren*. Stelle den Sequenznummern-Speicher nicht aus einer anderen Kopie wieder her. Der Hinweis verschwindet von selbst, sobald Home Assistant wieder senden kann. Im Betrieb noch nicht erprobt."
     },
     "seq_store_lost": {
       "title": "Sequenznummern des JUNG HOME Mesh {title} verloren",
@@ -2280,6 +2297,10 @@
         "force": {
           "name": "Auch wenn eine Taste es steuert",
           "description": "Nimmt das Gerät aus dem Raum, obwohl eine mit dem Raum verknüpfte Taste es schaltet; die Taste schaltet es danach nicht mehr. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+        },
+        "skip_preflight": {
+          "name": "Ohne Vergleich mit dem Export",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
         },
         "room_area": {
           "name": "Raum über Bereich",
@@ -2558,6 +2579,10 @@
         "force": {
           "name": "Auch wenn ein Gerät nicht antwortet",
           "description": "Löscht die Szene aus dem Mesh-Export, obwohl ein Gerät, das sie gespeichert hat, nicht erreichbar ist oder ablehnt (in der App „Dennoch löschen“). Dieses Gerät behält die Szene, bis „Unbenutzte Szenen löschen“ sie entfernt; eine Reparatur nennt es, und bis dahin bekommt keine neue Szene ihre Nummer. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+        },
+        "skip_preflight": {
+          "name": "Ohne Vergleich mit dem Export",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
         },
         "config_entry_id": {
           "name": "Mesh-Netzwerk",
@@ -2888,6 +2913,10 @@
         "force": {
           "name": "Auch wenn es nicht antwortet",
           "description": "Entfernt es aus den Aufzeichnungen des Netzwerks, obwohl es das Zurücksetzen nicht bestätigt (ein Gerät, das endgültig weg ist) oder obwohl Home Assistant über es verbunden ist. Überspringt außerdem die Prüfung, die die Geräte zuerst mit dem Mesh-Export vergleicht."
+        },
+        "skip_preflight": {
+          "name": "Ohne Vergleich mit dem Export",
+          "description": "Führt den Plan aus, ohne vorher von den Geräten zu lesen, was er entfernt oder ersetzt, und es mit dem Mesh-Export zu vergleichen. Nur wenn sicher ist, dass der Mesh-Export stimmt. Auf echten Geräten noch nicht überprüft."
         },
         "confirm": {
           "name": "Bestätigen",

@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "No s'ha pogut desar el registre de números de seqüència d'una versió anterior al magatzem del mesh (`.storage/junghome_ble.seq.*`); comprova que el directori de configuració es pugui escriure."
     },
+    "seq_clock_behind": {
+      "message": "El registre de números de seqüència s'ha restaurat d'una còpia de seguretat, i el rellotge de Home Assistant va per darrere de l'hora en què es va escriure el registre; la configuració espera fins que el rellotge estigui ajustat (comprova la sincronització horària de l'amfitrió)."
+    },
     "seq_floor_not_written": {
       "message": "El registre de números de seqüència s'ha restaurat d'una còpia de seguretat, i el seu límit inferior (`.storage/junghome_ble.seq.*.floor`) no s'ha pogut escriure abans de saltar endavant; comprova que el directori de configuració es pugui escriure."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Torna a executar l'acció amb el mateix objectiu per acabar."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Més d'una habitació de l'exportació del mesh va a l'àrea {area} ({rooms}): indica el nom de l'habitació."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} és un canal addicional d'un dispositiu sense descripció d'escena pròpia per canal (microprogramari més antic): la seva escena es desaria en canvi al primer canal, com diu l'aplicació JUNG HOME quan la rebutja («Funció no disponible»). Actualitza el microprogramari del dispositiu a l'aplicació per desar escenes en aquest canal. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "No es poden desar les claus dels dispositius JUNG HOME",
       "description": "Home Assistant no ha pogut escriure el seu magatzem segur (vault) del mesh {title} ({path}; últim error: {error}) mentre afegia el dispositiu a {address}. El magatzem conté les claus dels dispositius que afegeix Home Assistant, que ningú més no té fins que l'exportació les registra, així que el dispositiu no s'ha posat en servei: no ha rebut res i continua sent nou. Normalment això vol dir que el disc és ple o que el seu sistema de fitxers s'ha tornat a muntar només de lectura, sovint per una targeta SD que falla. Allibera espai o repara l'emmagatzematge (un sistema de fitxers muntat de nou només de lectura sol requerir reiniciar l'amfitrió) i després torna a afegir el dispositiu; no editis, eliminis ni substitueixis els fitxers del magatzem. Encara no s'ha provat en un dispositiu real. El problema desapareix tot sol tan bon punt una escriptura del magatzem té èxit."
     },
+    "vault_unwritable_recorded": {
+      "title": "No es poden desar les claus dels dispositius JUNG HOME",
+      "description": "Home Assistant ha afegit el dispositiu a {address} al mesh {title} i l'ha registrat a l'exportació del mesh, però després no ha pogut escriure el seu magatzem segur ({path}; últim error: {error}). El dispositiu funciona; el magatzem al disc el continua indicant com a no registrat fins que una escriptura tingui èxit, i el següent inici de la integració el marca com a registrat a partir de l'exportació. Normalment això vol dir que el disc és ple o que el seu sistema de fitxers s'ha tornat a muntar només de lectura, sovint per una targeta SD que falla. Allibera espai o repara l'emmagatzematge (un sistema de fitxers muntat de nou només de lectura sol requerir reiniciar l'amfitrió); no editis, eliminis ni substitueixis els fitxers del magatzem, i no restableixis el dispositiu amb Restableix un dispositiu pendent. Encara no s'ha provat en un dispositiu real. El problema desapareix tot sol tan bon punt una escriptura del magatzem té èxit."
+    },
     "carry_over_conflict": {
       "title": "L'aplicació JUNG HOME ha sobreescrit un canvi que Home Assistant va fer a {title}",
       "description": "Home Assistant ha adoptat l'exportació que l'aplicació JUNG HOME va lliurar per última vegada a la passarel·la i hi ha traslladat els seus propis canvis, però mentrestant l'aplicació havia canviat les mateixes entrades. Es conserva la versió de l'aplicació per a: {paths}. Pot ser que els dispositius encara tinguin el que havia escrit Home Assistant: {held}. Comprova aquestes habitacions, escenes i vinculacions a l'aplicació i a Home Assistant, i torna-les a definir des d'un sol costat. L'aplicació no veu el que afegeix Home Assistant fins que importa un fitxer. El problema desapareix amb la següent adopció de l'exportació de la passarel·la que no tingui cap conflicte d'aquest tipus."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "La passarel·la JUNG HOME ja no accepta Home Assistant",
       "description": "La passarel·la JUNG HOME a {host} rebutja l'accés que Home Assistant va registrar per al mesh {title} (probablement es va eliminar a l'aplicació JUNG HOME a Configuració → Passarel·la → Permisos d'accés). Home Assistant continua canviant habitacions, vinculacions de tecla i escenes a la seva pròpia exportació, però ja no la lliura a la passarel·la, de manera que l'aplicació no veu aquests canvis; els dispositius continuen funcionant. Home Assistant torna a demanar accés: segueix la seva sol·licitud per tornar a autenticar JUNG HOME Bluetooth Mesh (Configuració → Dispositius i serveis; Reparacions també la mostra com a autenticació caducada) i introdueix la contrasenya de la clau de xarxa de la passarel·la o aprova la nova sol·licitud d'accés a l'aplicació. El problema desapareix quan la passarel·la torna a acceptar Home Assistant; llavors l'acció Sincronitza la passarel·la lliura els canvis fets des d'aleshores."
+    },
+    "restore_too_old": {
+      "title": "Còpia de seguretat restaurada massa antiga per al mesh JUNG HOME {title}",
+      "description": "Home Assistant s'ha restaurat d'una còpia de seguretat i, al ritme al qual envia l'adreça {unicast} de Home Assistant, els números de seqüència que pot haver fet servir des que es va fer aquella còpia arriben al final dels números de l'índex IV actual del mesh. Tornar a enviar reutilitzaria números que els dispositius ja han vist: ignorarien Home Assistant, i cada número reutilitzat debilita el xifratge del mesh. Per això Home Assistant no envia res al mesh fins que es faci una d'aquestes coses: una IV Update del mesh — inicia'n una amb l'acció `junghome_ble.start_iv_update` (*Eines per a desenvolupadors → Accions*, amb `confirm: true`; no es pot desfer; Home Assistant torna a enviar quan el mesh és a un índex IV amb el qual no pot haver enviat, cosa que després d'una restauració pot requerir dues IV Updates seguides) — o una adreça unicast que Home Assistant no hagi fet servir mai, configurada a *Reconfigura*. No restauris el magatzem de números de seqüència d'una altra còpia. L'avís desapareix tot sol quan Home Assistant pot tornar a enviar. No verificat en funcionament real."
     },
     "seq_store_lost": {
       "title": "S'han perdut els números de seqüència del mesh JUNG HOME {title}",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Fins i tot si una tecla el controla",
           "description": "Treu el dispositiu de l'habitació tot i que el commuta una tecla vinculada a l'habitació; la tecla deixa de commutar-lo. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+        },
+        "skip_preflight": {
+          "name": "Sense comparar amb l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
         },
         "room_area": {
           "name": "Habitació per àrea",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Fins i tot si un dispositiu no respon",
           "description": "Elimina l'escena de l'exportació del mesh tot i que un dispositiu que la té desada no es pot contactar o s'hi nega (l'«Elimina igualment» de l'aplicació). Aquest dispositiu conserva l'escena fins que Elimina les escenes no utilitzades la treu; un problema de reparació l'esmenta, i mentrestant cap escena nova no rep el seu número. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+        },
+        "skip_preflight": {
+          "name": "Sense comparar amb l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
         },
         "config_entry_id": {
           "name": "Xarxa mesh",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Fins i tot si no respon",
           "description": "Elimina'l dels registres de la xarxa tot i que no confirmi el restabliment (un dispositiu que ha desaparegut definitivament), o tot i que Home Assistant hi estigui connectat a través d'ell. També omet la comprovació que compara primer els dispositius amb l'exportació del mesh."
+        },
+        "skip_preflight": {
+          "name": "Sense comparar amb l'exportació",
+          "description": "Executa el pla sense llegir primer dels dispositius el que elimina o substitueix ni comparar-ho amb l'exportació del mesh. Només quan se sap que l'exportació del mesh és correcta. No verificat en dispositius reals."
         },
         "confirm": {
           "name": "Confirma",

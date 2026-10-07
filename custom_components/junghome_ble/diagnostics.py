@@ -432,7 +432,7 @@ async def async_get_config_entry_diagnostics(
             else list(hub.state.address_shared),
             # per address of the sequence-number store (ours live): numbers sent per day, and for a backup taken
             # now the age up to which its restore skips only the minimum and the age past which its restore would
-            # send nothing (`seq_store.restore_coverage`; review-5 S5-1)
+            # send nothing (`seq_store.restore_coverage`)
             "send_rates": hub.state.send_rates(),
         },
         "link": async_redact_data(link, TO_REDACT_LINK),

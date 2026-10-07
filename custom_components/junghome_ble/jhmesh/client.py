@@ -1636,7 +1636,7 @@ class ProxyClient:
         the key we transmit with (`nk`: the new one from a proven Phase 2 on) and with the Key Refresh flag set in
         Phase 2. A key refresh may start during the update's 96 h; a beacon under the new key with the flag clear
         tells a node in Phase 1 or 2 that the refresh is over (§3.11.4.1), and it revokes the old key — cutting off
-        every node the provisioner had not reached yet (review-5 P5-2).
+        every node the provisioner had not reached yet.
         """
         payload = secure_network_beacon(
             self.nk,
@@ -1688,7 +1688,7 @@ class ProxyClient:
         at 0. Then the proxy gets our beacon of Normal Operation. An update the mesh has not taken 144 h after its
         start (`LocalState.iv_update_overdue`) is given up once a beacon of this link was seen — still unconfirmed,
         so the proxy beaconed the old index — back at that index (`LocalState.abandon_iv_update`), and
-        `on_iv_update_abandoned` is told (review-5 P5-3). Ends when the update ends (a beacon of the mesh can end it
+        `on_iv_update_abandoned` is told. Ends when the update ends (a beacon of the mesh can end it
         first) or the link goes.
         """
         state = self.state

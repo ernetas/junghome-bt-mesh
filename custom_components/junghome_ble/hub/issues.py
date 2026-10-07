@@ -244,7 +244,7 @@ class Issues:
         """Raise `iv_update_not_taken` while the last IV Update Home Assistant started was given up untaken; else clear it.
 
         `ProxyClient._run_iv_update` gives an update up when the mesh has not taken it 144 hours after its start
-        (`LocalState.abandon_iv_update`, review-5 P5-3): Home Assistant is back at the mesh's index, having sent
+        (`LocalState.abandon_iv_update`): Home Assistant is back at the mesh's index, having sent
         nothing under the new one, and the sender that ran low is as far along as before. Cleared by the next IV
         Update or IV change (Home Assistant's or the mesh's; `iv_update_abandoned` goes with it); one an
         administrator aborted raises nothing. Unverified on air.

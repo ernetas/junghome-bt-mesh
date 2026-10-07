@@ -1089,6 +1089,9 @@
     "seq_store_not_written": {
       "message": "Vanhemman version järjestysnumerotietuetta ei voitu tallentaa mesh-verkon varastoon (`.storage/junghome_ble.seq.*`); tarkista, että määrityskansioon voi kirjoittaa."
     },
+    "seq_clock_behind": {
+      "message": "Järjestysnumerotietue palautettiin varmuuskopiosta, ja Home Assistantin kello on jäljessä ajasta, jolloin tietue kirjoitettiin; määritys odottaa, kunnes kello on asetettu (tarkista palvelimen ajan synkronointi)."
+    },
     "seq_floor_not_written": {
       "message": "Järjestysnumerotietue palautettiin varmuuskopiosta, eikä sen alarajaa (`.storage/junghome_ble.seq.*.floor`) voitu kirjoittaa ennen eteenpäin hyppäämistä; tarkista, että määrityskansioon voi kirjoittaa."
     },
@@ -1727,6 +1730,12 @@
     },
     "applied_rerun": {
       "message": "Suorita toiminto uudelleen samalla kohteella viedäksesi sen loppuun."
+    },
+    "service_room_area_ambiguous": {
+      "message": "Useampi kuin yksi mesh-verkon viennin huone kuuluu alueelle {area} ({rooms}): anna sen sijaan huone."
+    },
+    "service_scene_channel_unsupported": {
+      "message": "{address} on sellaisen laitteen lisäkanava, jolla ei ole omaa tilanteen kuvausta kanavaa kohden (vanhempi laiteohjelmisto): sen tilanne tallennettaisiin sen sijaan ensimmäiselle kanavalle, kuten JUNG HOME -sovellus kertoo hylätessään sen (\"Feature not available\"). Päivitä laitteen laiteohjelmisto sovelluksessa, jotta tilanteita voi tallentaa tälle kanavalle. {applied}"
     }
   },
   "issues": {
@@ -2122,6 +2131,10 @@
       "title": "JUNG HOME -laiteavaimia ei voi tallentaa",
       "description": "Home Assistant ei voinut kirjoittaa mesh-verkon {title} avainholvia ({path}; viimeisin virhe: {error}) lisätessään laitetta osoitteessa {address}. Holvi sisältää Home Assistantin lisäämien laitteiden laiteavaimet, joita kenelläkään muulla ei ole ennen kuin vienti kirjaa ne, joten laitetta ei otettu käyttöön verkossa: se ei saanut mitään ja on yhä uusi. Tämä tarkoittaa yleensä, että levy on täynnä tai sen tiedostojärjestelmä on liitetty uudelleen vain luku -tilaan, usein vikaantuvan SD-kortin vuoksi. Vapauta tilaa tai korjaa tallennustila (vain luku -tilaan uudelleen liitetty tiedostojärjestelmä vaatii yleensä palvelimen uudelleenkäynnistyksen) ja lisää laite sitten uudelleen; älä muokkaa, poista tai korvaa holvin tiedostoja. Ei vielä kokeiltu oikealla laitteella. Ongelma poistuu itsestään heti, kun holvin kirjoitus onnistuu."
     },
+    "vault_unwritable_recorded": {
+      "title": "JUNG HOME -laiteavaimia ei voi tallentaa",
+      "description": "Home Assistant lisäsi laitteen osoitteessa {address} mesh-verkkoon {title} ja kirjasi sen mesh-verkon vientiin, mutta ei sen jälkeen voinut kirjoittaa sen avainholvia ({path}; viimeisin virhe: {error}). Laite toimii; levyllä oleva holvi näyttää sen yhä kirjaamattomana, kunnes kirjoitus onnistuu, ja integraation seuraava käynnistys merkitsee sen kirjatuksi viennin perusteella. Tämä tarkoittaa yleensä, että levy on täynnä tai sen tiedostojärjestelmä on liitetty uudelleen vain luku -tilaan, usein vikaantuvan SD-kortin vuoksi. Vapauta tilaa tai korjaa tallennustila (vain luku -tilaan uudelleen liitetty tiedostojärjestelmä vaatii yleensä palvelimen uudelleenkäynnistyksen); älä muokkaa, poista tai korvaa holvin tiedostoja äläkä palauta laitetta toiminnolla Palauta odottava laite. Ei vielä kokeiltu oikealla laitteella. Ongelma poistuu itsestään heti, kun holvin kirjoitus onnistuu."
+    },
     "carry_over_conflict": {
       "title": "JUNG HOME -sovellus kumosi Home Assistantin muutoksen verkossa {title}",
       "description": "Home Assistant otti käyttöön viennin, jonka JUNG HOME -sovellus viimeksi luovutti yhdyskäytävälle, ja siirsi omat muutoksensa siihen, mutta sovellus oli sillä välin muuttanut samoja kohtia. Sovelluksen versio säilytetään kohteille: {paths}. Laitteissa voi yhä olla se, mitä Home Assistant oli kirjoittanut: {held}. Tarkista nämä huoneet, tilanteet ja kytkennät sovelluksessa ja Home Assistantissa ja aseta ne uudelleen yhdeltä puolelta. Sovellus ei näe Home Assistantin lisäyksiä ennen kuin se tuo tiedoston. Ongelma poistuu seuraavalla yhdyskäytävän viennin käyttöönotolla, jossa tällaista ristiriitaa ei ole."
@@ -2133,6 +2146,10 @@
     "gateway_token_rejected": {
       "title": "JUNG HOME -yhdyskäytävä ei enää hyväksy Home Assistantia",
       "description": "JUNG HOME -yhdyskäytävä osoitteessa {host} hylkää käyttöoikeuden, jonka Home Assistant rekisteröi mesh-verkolle {title} (se poistettiin todennäköisesti JUNG HOME -sovelluksessa kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet). Home Assistant jatkaa huoneiden, painikkeiden kytkentöjen ja tilanteiden muuttamista omassa viennissään, mutta ei enää luovuta sitä yhdyskäytävälle, joten sovellus ei näe näitä muutoksia; laitteet toimivat edelleen. Home Assistant pyytää käyttöoikeutta uudelleen: noudata sen pyyntöä todentaa JUNG HOME Bluetooth Mesh uudelleen (Asetukset → Laitteet ja palvelut; Korjaukset näyttää sen myös vanhentuneena todennuksena) ja anna yhdyskäytävän verkkoavaimen salasana tai hyväksy uusi käyttöoikeuspyyntö sovelluksessa. Ongelma poistuu, kun yhdyskäytävä hyväksyy taas Home Assistantin; toiminto Synkronoi yhdyskäytävä luovuttaa sitten sen jälkeen tehdyt muutokset."
+    },
+    "restore_too_old": {
+      "title": "Palautettu varmuuskopio on liian vanha JUNG HOME -mesh-verkolle {title}",
+      "description": "Home Assistant palautettiin varmuuskopiosta, ja sillä tahdilla, jolla Home Assistantin osoite {unicast} lähettää, järjestysnumerot, joita se on voinut käyttää varmuuskopion ottamisen jälkeen, ulottuvat mesh-verkon nykyisen IV-indeksin numeroiden loppuun. Lähettäminen uudelleen käyttäisi uudelleen numeroita, jotka laitteet ovat jo nähneet: ne jättäisivät Home Assistantin huomiotta, ja jokainen uudelleen käytetty numero heikentää mesh-verkon salausta. Siksi Home Assistant ei lähetä mesh-verkkoon mitään, ennen kuin jokin näistä on tehty: mesh-verkon IV Update — aloita se toiminnolla `junghome_ble.start_iv_update` (*Kehittäjätyökalut → Toiminnot*, asetuksella `confirm: true`; sitä ei voi perua; Home Assistant lähettää taas, kun mesh-verkko on IV-indeksissä, jolla se ei ole voinut lähettää, mikä palautuksen jälkeen voi vaatia kaksi IV Updatea peräkkäin) — tai unicast-osoite, jota Home Assistant ei ole koskaan käyttänyt, asetettuna kohdassa *Määritä uudelleen*. Älä palauta järjestysnumerovarastoa toisesta kopiosta. Ilmoitus poistuu itsestään, kun Home Assistant voi taas lähettää. Ei vielä varmistettu oikeilla laitteilla."
     },
     "seq_store_lost": {
       "title": "JUNG HOME -mesh-verkon {title} järjestysnumerot kadonneet",
@@ -2279,6 +2296,10 @@
         "force": {
           "name": "Vaikka painike ohjaa sitä",
           "description": "Poista laite huoneesta, vaikka huoneeseen kytketty painike ohjaa sitä; painike lakkaa ohjaamasta sitä. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+        },
+        "skip_preflight": {
+          "name": "Vertaamatta vientiin",
+          "description": "Suorita suunnitelma lukematta ensin laitteista, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon vienti tiedetään oikeaksi. Ei vielä varmistettu oikeilla laitteilla."
         },
         "room_area": {
           "name": "Huone alueen mukaan",
@@ -2557,6 +2578,10 @@
         "force": {
           "name": "Vaikka laite ei vastaa",
           "description": "Poista tilanne mesh-verkon viennistä, vaikka laitetta, joka on tallentanut sen, ei tavoiteta tai se kieltäytyy (sovelluksessa \"Delete anyway\"). Kyseinen laite säilyttää tilanteen, kunnes Poista käyttämättömät tilanteet poistaa sen; korjausilmoitus nimeää sen, eikä mikään uusi tilanne saa sen numeroa sillä välin. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+        },
+        "skip_preflight": {
+          "name": "Vertaamatta vientiin",
+          "description": "Suorita suunnitelma lukematta ensin laitteista, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon vienti tiedetään oikeaksi. Ei vielä varmistettu oikeilla laitteilla."
         },
         "config_entry_id": {
           "name": "Verkko",
@@ -2887,6 +2912,10 @@
         "force": {
           "name": "Vaikka se ei vastaa",
           "description": "Poista se verkon tiedoista, vaikka se ei vahvista palautusta (laite, joka on lopullisesti poissa) tai vaikka Home Assistant on yhteydessä sen kautta. Ohittaa myös tarkistuksen, joka vertaa ensin laitteita mesh-verkon vientiin."
+        },
+        "skip_preflight": {
+          "name": "Vertaamatta vientiin",
+          "description": "Suorita suunnitelma lukematta ensin laitteista, mitä se poistaa tai korvaa, ja vertaamatta sitä mesh-verkon vientiin. Vain kun mesh-verkon vienti tiedetään oikeaksi. Ei vielä varmistettu oikeilla laitteilla."
         },
         "confirm": {
           "name": "Vahvista",

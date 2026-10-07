@@ -60,7 +60,7 @@ SET_ROOM_SCHEMA = vol.All(
     cv.has_at_least_one_key(*cv.ENTITY_SERVICE_FIELDS),
     *_ONE_ROOM,
 )
-# `force` takes a load a key drives out all the same; `skip_preflight` skips the comparison (decision M17)
+# `force` takes a load a key drives out all the same; `skip_preflight` skips the comparison
 REMOVE_FROM_ROOM_SCHEMA = vol.All(
     vol.Schema(
         {

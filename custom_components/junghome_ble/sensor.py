@@ -1690,8 +1690,7 @@ def _iv_state(hub: JungHomeHub) -> dict[str, Any]:
     """Return the *IV index* sensor's attributes: the IV state, and since when an IV Update Home Assistant started waits.
 
     `waiting_for_mesh_since` (ISO 8601, UTC): set while the mesh has not taken an IV Update Home Assistant started
-    (`LocalState.mesh_iv_index` behind its index), the time it started; None otherwise. Given up 144 hours on
-    (review-5 P5-3).
+    (`LocalState.mesh_iv_index` behind its index), the time it started; None otherwise. Given up 144 hours on.
     """
     state = hub.proxy.state
     started = state.iv_update_started_at

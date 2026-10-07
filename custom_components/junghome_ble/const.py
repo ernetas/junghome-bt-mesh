@@ -89,11 +89,11 @@ OPTION_INSERT_OVERRIDES: Final = "insert_overrides"
 OPTION_HEARTBEATS: Final = "heartbeats"  # ask every mains node for periodic Heartbeats; a silent node's entities go unavailable
 DEFAULT_HEARTBEATS: Final = False
 # fade the brightness changes of dimmer and DALI lights, and the scenes whose members all fade, over Home Assistant's
-# `transition` (decision M19, `TRANSITION_KINDS`); off until a person watched a fade (sweep B8)
+# `transition` (`TRANSITION_KINDS`); off until a person watched a fade (sweep B8)
 OPTION_TRANSITIONS: Final = "transitions"
 DEFAULT_TRANSITIONS: Final = False
-# The light kinds (`Light.kind`) that fade a brightness change sent as a Lightness Set with a transition time
-# (decision M19): the DALI insert did on air (sweep B8), a dimmer insert is taken to do the same (none here). Never
+# The light kinds (`Light.kind`) that fade a brightness change sent as a Lightness Set with a transition time:
+# the DALI insert did on air (sweep B8), a dimmer insert is taken to do the same (none here). Never
 # a switch insert, which waits a transition out before it switches off.
 TRANSITION_KINDS: Final = frozenset({"dimmer", "ctl"})
 # Follow the app (`app_follow.py`): the phone heard on the mesh makes an entry set up from
@@ -131,6 +131,7 @@ LIVE_OPTIONS: Final = frozenset(
 REBUILD_OPTION_DEFAULTS: Final[Mapping[str, Any]] = MappingProxyType(
     {
         OPTION_HEARTBEATS: DEFAULT_HEARTBEATS,
+        OPTION_TRANSITIONS: DEFAULT_TRANSITIONS,
         OPTION_PROVISIONER_IDENTITY: DEFAULT_PROVISIONER_IDENTITY,
         OPTION_ASSIGN_AREAS: DEFAULT_ASSIGN_AREAS,
     }
@@ -373,7 +374,7 @@ ISSUE_ADDRESS_SHARED_AGAIN: Final = "address_shared_again"
 # How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`,
 # an address without a record that may have sent: `coordinator._evidence_of_use`): past what the nodes may remember
 # from the best record left; the 24-bit space holds 16 of them. It covers months, not years, of Home Assistant's own
-# traffic (review-5 S5-1): the energy poll alone sends 4 property Gets per metered load every 300 s, about 420 000
+# traffic: the energy poll alone sends 4 property Gets per metered load every 300 s, about 420 000
 # numbers per load a year, and every unreachable node gets a Heartbeat Publication Set every 120 s, about 263 000 a
 # year — two metering sockets and one unpowered device pass 2^20 in eleven months, ten sockets in under three. So a
 # restored backup skips by its measured send rate and age instead, this at least (`seq_store._restore_skip`), and an

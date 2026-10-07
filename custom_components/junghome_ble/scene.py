@@ -11,7 +11,7 @@ scene list leaves them out. A recall heard on the mesh — a key's, the app's, t
 Scene Status told of — counts as an activation, as HA's own does (the entity's state is the last one), and
 `active_members` names the members whose Scene Server reports the scene as its current one.
 
-A recall carries HA's `transition` only when every member of the scene fades (decision M19: a dimmer or DALI light,
+A recall carries HA's `transition` only when every member of the scene fades (a dimmer or DALI light,
 `const.TRANSITION_KINDS`) and the option *Fade brightness changes* is on: the Recall goes to every node with one
 transition, and a switch insert or a socket among the members would only switch off that much later. Neither the app
 nor the gateway sends one, and no recall was seen fading yet. Unverified on air.
@@ -166,7 +166,7 @@ class JungHomeScene(JungHomeEntity, Scene):
         return out
 
     def _fades(self) -> bool:
-        """Whether every member fades a recall's transition (decision M19) and the option to fade is on."""
+        """Whether every member fades a recall's transition and the option to fade is on."""
         members = [
             self.hub.devices.by_address.get(a)
             for _, acting in self._members()
