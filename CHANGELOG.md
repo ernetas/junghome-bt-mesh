@@ -276,6 +276,10 @@
   they point at. `tools/parity.py check` now warns of a `gap` or `partial` row whose `missing` names code the tree
   defines without citing it — built since, or to be cited — and `tests/test_parity.py` keeps the ledger free of
   such warnings.
+- Internal: behaviour-identical moves (review-5 A5-1): where an address's sequence numbers start — the store, its
+  `.backup`, the floor, the `seq_store_lost` issue, the restore skip, the skip-ahead of an address used before, one
+  hub per mesh — is `seq_store.async_load_state`, which `JungHomeHub.async_create` calls and the nonce state machine
+  test calls directly, with no hub.
 
 ## 1.4.1 (unreleased)
 

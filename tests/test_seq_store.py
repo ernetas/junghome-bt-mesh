@@ -608,7 +608,7 @@ async def test_both_copies_lost_with_a_corrupt_file_refuses_to_start_at_0(
     del hass_storage[SEQ_STORE_KEY]
     del hass_storage[f"{SEQ_STORE_KEY}.backup"]
     with patch(
-        "custom_components.junghome_ble.coordinator._newest_corrupt_seq_store",
+        "custom_components.junghome_ble.seq_store._newest_corrupt_seq_store",
         return_value=f"{SEQ_STORE_KEY}.corrupt.2026-01-01T00:00:00",
     ):
         assert not await hass.config_entries.async_setup(init_integration.entry_id)
@@ -1016,7 +1016,7 @@ async def test_nothing_left_of_a_used_address_starts_it_further_in(
     for key in (SEQ_STORE_KEY, f"{SEQ_STORE_KEY}.backup", f"{SEQ_STORE_KEY}.floor"):
         hass_storage.pop(key, None)
     with patch.object(
-        coordinator,
+        seq_store_module,
         "_evidence_of_use",
         return_value="the vault keeps Home Assistant's identity in this mesh",
     ):
@@ -1036,21 +1036,21 @@ def test_evidence_that_an_address_without_a_record_was_used() -> None:
     nobody = SimpleNamespace(vault=None)
     pf = ProjectFile.load(Path(SHARE_EXPORT_PATH))
     plain = CDB.load(Path(CDB_PATH))
-    assert coordinator._evidence_of_use(plain, 0x0D00, nobody, None, None) is None
+    assert seq_store_module._evidence_of_use(plain, 0x0D00, nobody, None, None) is None
     Vault.create().merge_into(pf, 0x0D00)
     assert "provisioner node" in (
-        coordinator._evidence_of_use(pf.cdb, 0x0D00, nobody) or ""
+        seq_store_module._evidence_of_use(pf.cdb, 0x0D00, nobody) or ""
     )
     assert "a node of the export" in (
-        coordinator._evidence_of_use(plain, 0x0148, nobody) or ""
+        seq_store_module._evidence_of_use(plain, 0x0148, nobody) or ""
     )
     assert "the vault" in (
-        coordinator._evidence_of_use(
+        seq_store_module._evidence_of_use(
             plain, 0x0D00, SimpleNamespace(vault=Vault.create())
         )
         or ""
     )
-    assert coordinator._evidence_of_use(
+    assert seq_store_module._evidence_of_use(
         plain,
         0x0D00,
         nobody,

@@ -372,7 +372,7 @@ ISSUE_ADDRESS_SHARED: Final = "address_shared"
 # the text that asks for another address (a translation key cannot hold two descriptions)
 ISSUE_ADDRESS_SHARED_AGAIN: Final = "address_shared_again"
 # How far the counter jumps when the numbers already sent are not known for sure (`seq_store_lost`, `pdus_dropped`,
-# an address without a record that may have sent: `coordinator._evidence_of_use`): past what the nodes may remember
+# an address without a record that may have sent: `seq_store._evidence_of_use`): past what the nodes may remember
 # from the best record left; the 24-bit space holds 16 of them. It covers months, not years, of Home Assistant's own
 # traffic: the energy poll alone sends 4 property Gets per metered load every 300 s, about 420 000
 # numbers per load a year, and every unreachable node gets a Heartbeat Publication Set every 120 s, about 263 000 a

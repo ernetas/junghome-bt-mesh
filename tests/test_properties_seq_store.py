@@ -8,8 +8,8 @@ still pending, the storage writes of the store or of its `.backup` copy failing 
 read-only), a copy lost or unreadable, the `seq_store_lost` repair (and the floor file it keeps), Home Assistant
 backups taken (the integration's `backup` platform hooks around them) and any of them restored later, however much
 was sent since — and after every step checks that nothing it was handed was handed before under the same transmit IV
-index. A hub is created the way the integration creates it: `JungHomeHub.async_create` picks the record (the store,
-else the backup, else the repair issue) and builds the `HAState`.
+index. A hub's state is built the way the integration builds it: `seq_store.async_load_state` picks the record (the
+store, else the backup, else the repair issue) and builds the `HAState` (`JungHomeHub.async_create` calls it).
 
 The address sends at a constant rate, which its records measure (review-5 S5-1): the wall clock the store reads
 (`seq_store.wall_now`) moves with every number handed out, RATE numbers a second, the months of a long run too, and
@@ -72,10 +72,10 @@ from custom_components.junghome_ble.coordinator import (
     SEQ_STORES,
     STORAGE_VERSION,
     HAState,
-    JungHomeHub,
     SeqStore,
     async_skip_seq_store_ahead,
 )
+from custom_components.junghome_ble.identity import async_vault_keeper
 from custom_components.junghome_ble.jhmesh.client import (
     IV_RECOVERY_MIN_INTERVAL,
     IV_UPDATE_MIN_STATE,
@@ -86,6 +86,7 @@ from custom_components.junghome_ble.jhmesh.client import (
 from custom_components.junghome_ble.jhmesh.keyrefresh import KeyRefreshRecord
 from custom_components.junghome_ble.seq_store import (
     SEQ_SKIP_UNKNOWN,
+    async_load_state,
 )
 
 from .conftest import CDB_PATH, META_DIR
@@ -131,21 +132,6 @@ class FlakySeqStore(SeqStore):
         if self.role in self.disk.failing:
             raise WriteError("No space left on device (injected)")
         await super()._async_write_data(data)
-
-
-class _Hub:
-    """What `JungHomeHub.async_create` builds its hub from; the machine only needs the `HAState`."""
-
-    def __new__(
-        cls,
-        hass: HomeAssistant,
-        entry: Any,
-        cdb: Any,
-        devices: Any,
-        state: HAState,
-        *_rest: Any,  # the vault and whatever else the hub takes after its state
-    ) -> Any:
-        return state
 
 
 class _Cdb:
@@ -207,11 +193,12 @@ class HAStateMachine(RuleBasedStateMachine):
             self.stores.append(store)
 
     async def _create(self) -> None:
-        """`JungHomeHub.async_create` as `async_setup_entry` calls it (the hub itself replaced by its `HAState`)."""
+        """`seq_store.async_load_state` as `JungHomeHub.async_create` calls it: the hub's `HAState`."""
         self.state = None
         try:
-            self.state = await JungHomeHub.async_create.__func__(
-                _Hub, self.hass, self.entry, _Cdb(self.uuid), None, UNICAST
+            vault = await async_vault_keeper(self.hass, self.uuid)
+            self.state = await async_load_state(
+                self.hass, self.entry, _Cdb(self.uuid), UNICAST, vault
             )
             self.refused = False
         except ConfigEntryError:

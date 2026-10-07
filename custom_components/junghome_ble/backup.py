@@ -5,7 +5,7 @@ together, readable, and nothing in them could tell that numbers were sent since:
 and reused AES-CCM nonces under the mesh's keys. `async_pre_backup` therefore marks every record with a token of
 this backup and the time it began (`backup_at`), and waits until both copies on disk carry it, so the archive holds
 only marked records; `async_post_backup` removes the mark again. A start that finds a mark this process did not set
-(`JungHomeHub.async_create`) continues past the record by what the address may have sent since: twice its measured
+(`seq_store.async_load_state`) continues past the record by what the address may have sent since: twice its measured
 send rate over the backup's age (every record keeps when it was written and its rate, `seq_store.SendRate`), at
 least SEQ_SKIP_AHEAD: a fixed 2^20 was outrun within months by the integration's own polls. A skip
 that would pass the end of the sequence space sends nothing under that IV index and raises `restore_too_old` (an IV

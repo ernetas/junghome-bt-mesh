@@ -46,7 +46,6 @@ from .const import (
     ISSUE_INSERT_MISMATCH,
     ISSUE_KEY_REFRESH,
     ISSUE_NODE_CLOCK_WRONG,
-    ISSUE_SEQ_STORE_LOST,
     ISSUE_UNKNOWN_NODES,
     ISSUE_VAULT_KEY_REFRESH,
     LINK_SEARCHING,
@@ -58,7 +57,6 @@ from .const import (
     REBUILD_OPTION_DEFAULTS,
     REFRESH_CHUNK,
     REQUEST_ATTEMPTS,
-    SEQ_SKIP_AHEAD,
     SIGNAL_NODE,
     SIGNAL_SCENES,
     SIGNAL_UPDATE,
@@ -126,7 +124,6 @@ from .jhmesh.properties import (
     SIG_SOFTWARE_VERSION,
     Scaled,
 )
-from .jhmesh.vault import recognise
 from .keep_awake import KeepAwake
 from .node_clocks import NodeClocks
 from .node_info import (
@@ -148,7 +145,6 @@ from .seq_store import (
     SEQ_OWNERS,
     SEQ_RESTART_MARGIN,
     SEQ_SAVE_EVERY,
-    SEQ_SKIP_UNKNOWN,
     SEQ_STALL_RETRY,
     SEQ_STORAGE_MINOR_VERSION,
     SEQ_STORES,
@@ -156,18 +152,9 @@ from .seq_store import (
     AddressShared,
     HAState,
     SeqStore,
-    _addresses_of,
-    _async_skip_restored_record,
-    _has_history,
-    _landed,
-    _mesh_of,
-    _newest_corrupt_seq_store,
-    _refuse_duplicate_mesh,
-    _report_seq_store_lost,
-    _store_with,
     _stored_key_refresh,
-    _usable_record,
     async_apply_followed_key_refresh,
+    async_load_state,
     async_migrate_legacy_seq_store,
     async_skip_seq_store_ahead,
     merge_legacy_seq_store,
@@ -440,30 +427,6 @@ async def async_release_network_id(
         await hass.config_entries.async_remove(holder.entry_id)
 
 
-def _evidence_of_use(
-    cdb: CDB, unicast: int, keeper: VaultKeeper, *stores: Any
-) -> str | None:
-    """Why address `unicast`, which has no sequence-number record, may have sent before; None when nothing says so.
-
-    The export holds Home Assistant's provisioner node, or any node, at it (`jhmesh.vault.recognise`); the vault
-    keeps Home Assistant's identity in this mesh (it ran here, so a store existed); or the loaded `stores` (the store,
-    its `.backup` copy, the floor) know other addresses (this Home Assistant sent in this mesh, a lost record of
-    this one would look the same). Wrong only for a genuinely fresh address on an installation that matches: that
-    one spends SEQ_SKIP_AHEAD of its 2^24 numbers, once — SEQ_SKIP_UNKNOWN when none of the stores is left at all
-    (`JungHomeHub.async_create`).
-    """
-    if recognise(cdb, unicast) is not None:
-        return "the export holds Home Assistant's provisioner node there"
-    if cdb.element(unicast) is not None:
-        return "a node of the export has that address"
-    if keeper.vault is not None:
-        return "the vault keeps Home Assistant's identity in this mesh"
-    known = sorted({src for data in stores for src in _addresses_of(data) or {}})
-    if known:
-        return f"the store knows other addresses ({', '.join(known)})"
-    return None
-
-
 def _settled(st: ElementState, kind: str) -> bool:
     """Whether the element's last Status of `kind` shows no transition: its present values equal their targets."""
     if kind == "level":
@@ -699,14 +662,7 @@ class JungHomeHub:
         no-op here when `async_setup_entry` already called it (the normal path), a safety net for a caller that
         goes straight to `async_create`. A legacy record that still could not be saved stops the setup (not
         ready): the mesh's store does not know its numbers, so the address would start over at 0 and reuse them.
-
-        One running hub per mesh: another entry's hub already owning the mesh's counters (`SEQ_OWNERS`) refuses
-        this one (`_refuse_duplicate_mesh`). A record restored from a Home Assistant backup continues past every
-        number sent since (`_async_skip_restored_record`). An address without a record anywhere starts at 0 only
-        when nothing says it was used before (`_evidence_of_use`); otherwise SEQ_SKIP_AHEAD on — SEQ_SKIP_UNKNOWN
-        when the store, its `.backup` and the floor are all gone (nothing bounds what was sent, and
-        an installation stays at one IV index for years, so 2^20 is outrun within one; the same distance the
-        `seq_store_lost` repair takes with nothing left).
+        Where the address's numbers start from then is `seq_store.async_load_state`.
         """
         if not await async_migrate_legacy_seq_store(hass, entry, cdb.mesh_uuid):
             raise ConfigEntryNotReady(
@@ -714,96 +670,7 @@ class JungHomeHub:
             )
         await async_load_node_versions(hass, entry.entry_id)
         vault = await async_vault_keeper(hass, cdb.mesh_uuid)
-        store = seq_store(hass, cdb)
-        backup = seq_backup_store(hass, cdb)
-        floor = seq_floor_store_for_uuid(hass, cdb.mesh_uuid)
-        data = await store.async_load()
-        backup_data = await backup.async_load()
-        floor_data = _landed(floor, await floor.async_load())
-        floor.written = floor_data  # what `HAState` keeps the floor up from
-        corrupt = (
-            await hass.async_add_executor_job(_newest_corrupt_seq_store, store.path)
-            if data is None
-            else None
-        )
-        key = f"{unicast:04X}"
-        if _usable_record(data, key) is None:
-            # a record that parses as JSON but not as a counter used to start at 0 (reusing nonces)
-            # and its first save overwrote the good backup; a lost store with history did the same
-            if (record := _usable_record(backup_data, key)) is not None:
-                _LOGGER.warning(
-                    "Sequence-number record of address %s unusable in the store, continuing from the backup copy",
-                    key,
-                )
-                base = _addresses_of(data) or _addresses_of(backup_data) or {}
-                data = _store_with(
-                    data if _mesh_of(data) else backup_data, {**base, key: record}
-                )
-                await store.async_save(data)
-            elif (
-                _has_history(data, key)
-                or _has_history(backup_data, key)
-                or _has_history(floor_data, key)  # an earlier repair's floor
-                or corrupt is not None
-            ):
-                _report_seq_store_lost(hass, entry, cdb.mesh_uuid, key, corrupt)
-            elif data is None and backup_data is not None:
-                _LOGGER.warning(
-                    "sequence-number store unreadable, continuing from the backup copy"
-                )
-                data = backup_data
-                await store.async_save(data)
-        restored = await _async_skip_restored_record(
-            hass, entry, cdb.mesh_uuid, key, data, backup_data, floor_data
-        )
-        if restored is not data:
-            data = backup_data = restored
-        ir.async_delete_issue(hass, DOMAIN, issue_id(entry, ISSUE_SEQ_STORE_LOST))
-        # what is on disk right now, before anything new is reserved from it (both copies bound it: `_limit`)
-        store.written = data
-        backup.written = backup_data
-        start = data
-        if _usable_record(data, key) is None and (
-            why := _evidence_of_use(cdb, unicast, vault, data, backup_data, floor_data)
-        ):
-            # only in what the `HAState` starts from — on disk it is the first save, which sends
-            # wait for (`_limit`): a crash before it lands starts here again, with nothing sent
-            nothing_left = data is None and backup_data is None and floor_data is None
-            first = SEQ_SKIP_UNKNOWN if nothing_left else SEQ_SKIP_AHEAD
-            _LOGGER.warning(
-                "Address %s has no sequence-number record, but %s: its numbers start at %06X, past any it may "
-                "have sent, rather than at 0",
-                key,
-                why,
-                first,
-            )
-            start = _store_with(
-                data,
-                {
-                    **(_addresses_of(data) or {}),
-                    key: {
-                        "seq": first,
-                        "iv_index": 0,
-                        "iv_update_active": False,
-                        "iv_known": False,
-                        "rpl": {},
-                        "clean": False,
-                        # sent under an index nobody knows: keep counting on up to the first beacon's
-                        "seq_guard": SEQ_GUARD_FIRST_BEACON,
-                    },
-                },
-            )
-        # no await from here to the HAState: two entries set up at once cannot both pass the check
-        _refuse_duplicate_mesh(hass, entry, cdb.mesh_uuid)
-        state = HAState(
-            store,
-            start,
-            unicast,
-            cdb.mesh_uuid.lower(),
-            backup,
-            entry.entry_id,
-            floor=floor,
-        )
+        state = await async_load_state(hass, entry, cdb, unicast, vault)
         return cls(hass, entry, cdb, devices, state, vault)
 
     async def async_start(self) -> None:
