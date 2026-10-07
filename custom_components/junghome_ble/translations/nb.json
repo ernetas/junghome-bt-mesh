@@ -179,6 +179,7 @@
       "invalid_address": "Adressen må være heksadesimal mellom 0001 og 7FFF.",
       "address_in_use": "Den adressen tilhører en node i meshet; velg en ubrukt.",
       "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+      "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
       "export_keys_stale": "Enheter i dette meshet er synlige via Bluetooth, men ingen av dem annonserer nettverksnøkkelen i denne eksporten: Nettverkets nøkler ble fornyet (en key refresh i JUNG HOME-appen) etter at eksporten ble laget. Eksporter nettverket på nytt fra JUNG HOME-appen, eller hent det på nytt fra gatewayen, og bruk den filen.",
       "network_mismatch": "Eksporten tilhører et annet mesh-nettverk enn det som ble oppdaget.",
       "mesh_already_configured": "Dette meshet er allerede satt opp som en annen oppføring (nettverksnøkkelen er sannsynligvis fornyet siden Home Assistant sist så det). Bruk Rekonfigurer på den oppføringen i stedet for å legge til en ny.",
@@ -229,7 +230,7 @@
           "sync_areas": "Flytt enheter med når JUNG-rommet deres endres"
         },
         "data_description": {
-          "click_delay": "En `click`-hendelse holdes tilbake i et halvt sekund og forkastes hvis et nytt klikk følger, slik at et dobbelttrykk bare utløser `double_click`. Av: Hvert trykk utløser `click` med en gang, og det andre trykket i et dobbelttrykk utløser også `double_click`. Dette gjelder alle knapper; for å vente bare på noen, la det være av og velg dem i listen nedenfor.",
+          "click_delay": "En `click`-hendelse holdes tilbake i et halvt sekund og forkastes hvis et nytt klikk følger, slik at et dobbelttrykk bare utløser `double_click`. Av: Hvert trykk utløser `click` med en gang, og det andre trykket i et dobbelttrykk utløser også `double_click`. Dette gjelder alle knapper; for å vente bare på noen, la det være av og velg dem under *Knapper som venter på et dobbeltklikk*, som vises mens dette er av og integrasjonen kjører.",
           "double_click_keys": "Bare disse knappene holder sitt `click` tilbake i et halvt sekund og forkaster det hvis et nytt klikk følger, slik at et dobbelttrykk bare utløser `double_click`; alle andre knapper utløser `click` med en gang. Velg knappene som har en dobbeltklikk-automasjon. Bare knapper som kan klikke, vises. Ennå ikke verifisert på ekte enheter.",
           "heartbeats": "Hver nettdrevne enhet blir bedt om å sende et heartbeat til Home Assistant hvert 64. sekund (en standard Bluetooth Mesh-innstilling som JUNG-appen lar være av). En enhet som ikke sender noe på omtrent tre og et halvt minutt, får entitetene sine merket som utilgjengelige til den høres igjen. Når dette slås av, får enhetene beskjed om å stoppe (på nytt ved neste tilkobling hvis ikke alle kunne nås på én gang); slå det av før du fjerner integrasjonen, som ikke kan gi dem beskjed etterpå.",
           "allow_provisioning": "Lar handlingen `junghome_ble.add_device` klargjøre en ny JUNG-enhet og konfigurere den slik appen ville gjort, etter mønster av en enhet av samme produkt som allerede er i nettverket, og `junghome_ble.remove_device` tilbakestille en enhet og ta den ut av nettverket. Ennå ikke prøvd på ekte enheter: Prøv først med en reserveenhet. Å legge til gir enheten nettverkets nøkler; fjerning kan ikke angres.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Ikke sendt: {node} svarte {found} på {message}, men mesh-eksporten sier {expected} ({others} flere forskjeller). Installasjonen er endret etter at mesh-eksporten ble laget (i JUNG HOME-appen, ved en tilbakestilling av en enhet eller av en tidligere handling som stoppet halvveis), og planen ville overskrevet det eksporten ikke lenger beskriver. Eksporter prosjektet fra appen på nytt, eller la Home Assistant overta gatewayens eksport, og kjør handlingen igjen; med `force` kjører den uten denne kontrollen. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "En IV Update kan ikke angres: legg til \"confirm: true\" i kallet for å starte den."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Ingen sender i meshet har ennå brukt tre firedeler av sekvensnumrene for sin IV-indeks, så en IV Update trengs ikke; legg til \"force: true\" for å starte en likevel."
+    },
+    "start_iv_update_in_progress": {
+      "message": "En IV Update til IV-indeks {iv_index} pågår allerede."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Meshets nettverksnøkkel fornyes (en key refresh): start IV Update når det er ferdig."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant har ennå ikke hørt meshets IV-indeks fra enheten det er koblet til via; prøv igjen om et øyeblikk. Den siste endringen av meshets IV-tilstand som Home Assistant så i en beacon: {mesh_changed}. En enhet avviser en IV Update innen 96 timer etter sin egen siste."
     },
     "start_iv_update_too_early": {
       "message": "En IV Update begynte eller sluttet i meshet for mindre enn 96 timer siden (IV-indeksen er {iv_index}): en ny kan startes fra {not_before}. Den siste endringen av meshets IV-tilstand som Home Assistant så i en beacon: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Meshets IV-indeks er på sin høyeste verdi ({iv_index}): den kan ikke gå lenger."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant kunne ikke skrive den nye IV-indeksen til lageret sitt for sekvensnumre og startet derfor ikke IV Update; se loggen."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Å avbryte IV Update-en tar Home Assistant tilbake til IV-indeksen meshet er på: legg til \"confirm: true\" i kallet for å gjøre det."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Metadatamappen inneholder ikke appens device_metadata.json og scene_metadata.json i forventet form.",
           "no_project": "Gatewayen har ingen nettverkseksport. Åpne JUNG HOME-appen én gang mens den er koblet til gatewayen (den laster opp prosjektet automatisk), og sørg for at gatewayens fastvare er 2.1 eller nyere.",
           "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+          "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
           "not_a_directory": "Metadatabanen er ikke en mappe.",
           "not_approved": "Tilgangsforespørselen ble ikke godkjent i appen i tide. Send inn på nytt og godkjenn den under Innstillinger → Gateway → Tilgangstillatelser → Åpne forespørsler.",
           "token_rejected": "Gatewayen godtar ikke lenger den lagrede tilgangen. Send inn på nytt for å be om tilgang på nytt.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Metadatamappen inneholder ikke appens device_metadata.json og scene_metadata.json i forventet form.",
           "no_project": "Gatewayen har ingen nettverkseksport. Åpne JUNG HOME-appen én gang mens den er koblet til gatewayen (den laster opp prosjektet automatisk), og sørg for at gatewayens fastvare er 2.1 eller nyere.",
           "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+          "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
           "not_a_directory": "Metadatabanen er ikke en mappe.",
           "not_approved": "Tilgangsforespørselen ble ikke godkjent i appen i tide. Send inn på nytt og godkjenn den under Innstillinger → Gateway → Tilgangstillatelser → Åpne forespørsler.",
           "token_rejected": "Gatewayen godtar ikke lenger den lagrede tilgangen. Send inn på nytt for å be om tilgang på nytt.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Metadatamappen inneholder ikke appens device_metadata.json og scene_metadata.json i forventet form.",
           "no_project": "Gatewayen har ingen nettverkseksport. Åpne JUNG HOME-appen én gang mens den er koblet til gatewayen (den laster opp prosjektet automatisk), og sørg for at gatewayens fastvare er 2.1 eller nyere.",
           "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+          "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
           "not_a_directory": "Metadatabanen er ikke en mappe.",
           "not_approved": "Tilgangsforespørselen ble ikke godkjent i appen i tide. Send inn på nytt og godkjenn den under Innstillinger → Gateway → Tilgangstillatelser → Åpne forespørsler.",
           "token_rejected": "Gatewayen godtar ikke lenger den lagrede tilgangen. Send inn på nytt for å be om tilgang på nytt.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Metadatamappen inneholder ikke appens device_metadata.json og scene_metadata.json i forventet form.",
           "no_project": "Gatewayen har ingen nettverkseksport. Åpne JUNG HOME-appen én gang mens den er koblet til gatewayen (den laster opp prosjektet automatisk), og sørg for at gatewayens fastvare er 2.1 eller nyere.",
           "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+          "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
           "not_a_directory": "Metadatabanen er ikke en mappe.",
           "not_approved": "Tilgangsforespørselen ble ikke godkjent i appen i tide. Send inn på nytt og godkjenn den under Innstillinger → Gateway → Tilgangstillatelser → Åpne forespørsler.",
           "token_rejected": "Gatewayen godtar ikke lenger den lagrede tilgangen. Send inn på nytt for å be om tilgang på nytt.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Metadatamappen inneholder ikke appens device_metadata.json og scene_metadata.json i forventet form.",
           "no_project": "Gatewayen har ingen nettverkseksport. Åpne JUNG HOME-appen én gang mens den er koblet til gatewayen (den laster opp prosjektet automatisk), og sørg for at gatewayens fastvare er 2.1 eller nyere.",
           "no_proxy_visible": "Ingen node i dette mesh-nettverket er synlig via Bluetooth for øyeblikket. Sørg for at en Bluetooth-adapter eller ESPHome Bluetooth-proxy er innen rekkevidde av en nettdrevet JUNG-enhet.",
+          "no_connectable_scanner": "Home Assistant har ingen Bluetooth-adapter eller proxy som kan koble til en enhet. Legg til en Bluetooth-adapter eller en ESPHome Bluetooth-proxy med aktive tilkoblinger (`bluetooth_proxy: active: true` i konfigurasjonen): en proxy uten dem bare lytter.",
           "not_a_directory": "Metadatabanen er ikke en mappe.",
           "not_approved": "Tilgangsforespørselen ble ikke godkjent i appen i tide. Send inn på nytt og godkjenn den under Innstillinger → Gateway → Tilgangstillatelser → Åpne forespørsler.",
           "token_rejected": "Gatewayen godtar ikke lenger den lagrede tilgangen. Send inn på nytt for å be om tilgang på nytt.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME-meshets sekvensnumre begynner å gå tomme",
-      "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. En sender kan ikke gå forbi slutten av det intervallet før meshet går over til neste IV-indeks (en IV Update). Bluetooth Mesh forventer at en enhet som begynner å gå tom, starter den oppdateringen selv; om JUNG HOME-enheter gjør det, er ennå ikke kjent. Home Assistant følger en IV Update, og en administrator kan få den til å starte en med handlingen `junghome_ble.start_iv_update` (kan ikke angres; ikke utprøvd i drift). Hver omstart av en enhet (et strømbrudd, en utløst sikring) får sekvensnumrene dens til å hoppe langt frem, så en enhet som ofte mister strømmen, går tom først. Problemet forsvinner av seg selv etter oppdateringen."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Start en IV Update",
+            "description": "I meshet {title} har {source} brukt {percent} % av sekvensnumrene for IV-indeks {iv_index}. En sender kan ikke gå forbi slutten av det intervallet før meshet går over til neste IV-indeks (en IV Update). Bluetooth Mesh forventer at en enhet som begynner å gå tom, starter den oppdateringen selv; om JUNG HOME-enheter gjør det, er ennå ikke kjent. Home Assistant følger en IV Update. Bekreft for å få den til å starte en nå, slik handlingen `junghome_ble.start_iv_update` gjør: det kan ikke angres, og det avvises uten tilkobling til meshet, mens nettverksnøkkelen fornyes, og innen 96 timer etter siste IV Update. Ikke utprøvd i drift. Hver omstart av en enhet (et strømbrudd, en utløst sikring) får sekvensnumrene dens til å hoppe langt frem, så en enhet som ofte mister strømmen, går tom først. Problemet forsvinner av seg selv etter oppdateringen."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME-oppføringen dette problemet hører til, er ikke lenger satt opp.",
+          "not_loaded": "JUNG HOME-oppføringen dette problemet hører til, kjører ikke akkurat nå. Prøv igjen når den er satt opp.",
+          "start_failed": "IV Update ble ikke startet: {error} Problemet består så lenge en sender begynner å gå tom; reparer det igjen når årsaken er borte."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME-meshet tok ikke IV Update-en",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Klient",
           "description": "Navnet klienten ber om tilgang som, nøyaktig slik det står under `waiting`. Står det tomt, godkjennes ingenting."
+        },
+        "config_entry_id": {
+          "name": "Mesh-nettverk",
+          "description": "Hvilket JUNG HOME-nettverk, når mer enn ett er konfigurert."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Start IV Update",
+      "description": "Får Home Assistant til å starte en IV Update av meshet: meshet går over til neste IV-indeks, som gir hver sender et nytt intervall av sekvensnumre. Bluetooth Mesh forventer at en enhet som begynner å gå tom for sekvensnumre, starter en selv; å reparere problemet *JUNG HOME-meshets sekvensnumre begynner å gå tomme* starter en på samme måte. Det kan ikke angres (IV-indeksen går bare opp), og meshet går tilbake til normal drift 96 til 144 timer senere. Avvises med mindre en sender har brukt tre firedeler av sekvensnumrene sine (eller *Selv om det ikke trengs* er slått på), uten tilkobling til meshet, mens nettverksnøkkelen fornyes, og innen 96 timer etter siste start eller slutt på en IV Update. Bare for administratorer. Ikke utprøvd i drift.",
+      "fields": {
+        "confirm": {
+          "name": "Bekreft",
+          "description": "Påkrevd for å utføre den: en IV Update kan ikke angres."
+        },
+        "force": {
+          "name": "Selv om det ikke trengs",
+          "description": "Start den selv om ingen sender ennå har brukt tre firedeler av sekvensnumrene sine."
         },
         "config_entry_id": {
           "name": "Mesh-nettverk",

@@ -64,6 +64,7 @@ from custom_components.junghome_ble.const import (
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_PASSWORD,
     CONF_GATEWAY_PIN_SOURCE,
+    CONF_GATEWAY_SERIAL,
     CONF_GATEWAY_SYNCED,
     CONF_GATEWAY_TOKEN,
     CONF_METADATA_DIR,
@@ -118,6 +119,7 @@ from .conftest import (
     wait_until,
 )
 from .helpers import (
+    MAC_GATEWAY,
     UID_BUTTON_WC,
     UID_ROCKER_A,
     advanced,
@@ -661,6 +663,19 @@ async def test_user_flow_address_in_use(
     result = await through_areas(hass, result)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"][CONF_UNICAST] == "0CCD"
+
+
+async def test_user_flow_without_a_scanner_that_can_connect(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any], mock_setup_entry: AsyncMock
+) -> None:
+    """Review-5 U5-5: no adapter and no proxy that can connect (only passive ESPHome proxies, say) is its own error,
+    naming active proxies — not *no node within range*, which sends the user moving the proxy around."""
+    mock_bluetooth_env["infos"] = []
+    mock_bluetooth_env["scanners"] = 0
+    flow_id = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER_INPUT)
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {"base": "no_connectable_scanner"}
 
 
 async def test_user_flow_no_proxy_visible(
@@ -2364,6 +2379,9 @@ async def test_zeroconf_flow_prefills_the_gateway_form(
     assert result["data"][CONF_SOURCE] == "gateway"
     assert result["data"][CONF_GATEWAY_HOST] == ZC_HOST
     assert result["data"][CONF_GATEWAY_FINGERPRINT] == FINGERPRINT
+    assert (
+        result["data"][CONF_GATEWAY_SERIAL] == ZC_SERIAL
+    )  # what later announcements are matched with
     mock_learn.assert_awaited_once()
     assert mock_learn.call_args[0][1] == ZC_HOST
     assert len(mock_setup_entry.mock_calls) == 1
@@ -2375,7 +2393,8 @@ async def test_zeroconf_flow_prefills_the_gateway_form(
         (ZC_HOST, "already_configured"),
         ("JungHome-0022D1000001.local", "already_configured"),  # the announced name
         (f"https://{ZC_HOST}/", "already_configured"),
-        ("junghome.local", None),  # not known to be this gateway: offered
+        # not known to be this gateway (no serial recorded, its MAC not a node of the mesh): offered
+        ("junghome.local", None),
     ],
     ids=["address", "hostname", "url", "generic_name"],
 )
@@ -2399,6 +2418,74 @@ async def test_zeroconf_flow_skips_a_gateway_an_entry_names(
         assert result["type"] is FlowResultType.ABORT
         assert result["reason"] == reason
     mock_learn.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("data", "announced"),
+    [
+        # a gateway entry that recorded the serial, whose gateway moved to another address (DHCP)
+        (
+            {
+                CONF_SOURCE: "gateway",
+                CONF_GATEWAY_HOST: "192.0.2.99",
+                CONF_GATEWAY_SERIAL: ZC_SERIAL,
+            },
+            {},
+        ),
+        # one naming the gateway by the documented default: the announced MAC is the mesh's gateway node
+        (
+            {CONF_SOURCE: "gateway", CONF_GATEWAY_HOST: "junghome.local"},
+            {"mac": MAC_GATEWAY.lower()},
+        ),
+        # one set up from a file on the host: no host at all
+        ({}, {"mac": MAC_GATEWAY}),
+    ],
+    ids=["serial_new_address", "mesh_generic_name", "mesh_file_entry"],
+)
+async def test_zeroconf_flow_skips_the_gateway_of_a_configured_mesh(
+    hass: HomeAssistant,
+    mock_learn: AsyncMock,
+    data: dict[str, str],
+    announced: dict[str, str],
+) -> None:
+    """Review-5 U5-2: the gateway is known by its serial, or by the mesh it serves (its MAC is a node's of the
+    export), not only by an address the entry names: no card that could only end at *already configured*, with a
+    new access permission left behind on the gateway. A gateway entry records the serial and follows an address
+    change; a host name, and a file entry, stay as they are."""
+    entry = MockConfigEntry(
+        domain=DOMAIN, unique_id=MESH_UUID.lower(), data={**ENTRY_DATA, **data}
+    )
+    entry.add_to_hass(hass)
+    result = await _announce(hass, _announcement(**announced))
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    mock_learn.assert_not_awaited()
+    if data.get(CONF_SOURCE) != "gateway":
+        assert dict(entry.data) == {**ENTRY_DATA, **data}
+        return
+    assert entry.data[CONF_GATEWAY_SERIAL] == ZC_SERIAL
+    assert entry.data[CONF_GATEWAY_HOST] == (
+        ZC_HOST if data[CONF_GATEWAY_HOST] == "192.0.2.99" else "junghome.local"
+    )
+
+
+async def test_zeroconf_flow_offers_a_gateway_of_another_mesh(
+    hass: HomeAssistant,
+) -> None:
+    """Another serial, another address and a MAC no node of the configured mesh has: a neighbour's gateway, say."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id=MESH_UUID.lower(),
+        data={
+            **ENTRY_DATA,
+            CONF_SOURCE: "gateway",
+            CONF_GATEWAY_HOST: "192.0.2.99",
+            CONF_GATEWAY_SERIAL: "00000000ffffffff",
+        },
+    ).add_to_hass(hass)
+    result = await _announce(hass, _announcement())
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "zeroconf_confirm"
 
 
 async def test_zeroconf_announcements_make_one_flow(hass: HomeAssistant) -> None:
@@ -3383,19 +3470,18 @@ async def test_options_change_reloads_the_entry(
     count_setups: AsyncMock,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """The hub reads the option when it starts, so a changed option reloads (once, through the update listener); a
+    """An option the hub is built from (node heartbeats) reloads the entry, once, through the update listener; a
     title change does not."""
     hub = init_integration.runtime_data
-    assert hub.click_delay is False
     count_setups.reset_mock()
     result = await hass.config_entries.options.async_init(init_integration.entry_id)
     await hass.config_entries.options.async_configure(
-        result["flow_id"], {OPTION_CLICK_DELAY: True, OPTION_HEARTBEATS: False}
+        result["flow_id"], {OPTION_CLICK_DELAY: False, OPTION_HEARTBEATS: True}
     )
     await hass.async_block_till_done()
     assert init_integration.state is ConfigEntryState.LOADED
     assert init_integration.runtime_data is not hub
-    assert init_integration.runtime_data.click_delay is True
+    assert init_integration.runtime_data.heartbeats_enabled is True
     assert count_setups.call_count == 1
     assert _deprecation_reports(caplog) == []
 
@@ -3404,6 +3490,39 @@ async def test_options_change_reloads_the_entry(
     await hass.async_block_till_done()
     assert init_integration.runtime_data is hub
     assert count_setups.call_count == 1
+
+
+async def test_a_live_option_applies_without_a_reload(
+    hass: HomeAssistant, init_integration: MockConfigEntry, count_setups: AsyncMock
+) -> None:
+    """Review-5 U5-7: the click options (and the other `LIVE_OPTIONS`) are read where they are used: saving them
+    keeps the hub, its link and every entity's state; the keys' event entities show the new wait at once. A first
+    save of the form as it opened (it records defaults the entry did not hold) reloads nothing either."""
+    hub = init_integration.runtime_data
+    key = entity_id(hass, "event", UID_BUTTON_WC)
+    assert hass.states.get(key).attributes["waits_for_double_click"] is False
+    count_setups.reset_mock()
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {})
+    await hass.async_block_till_done()
+    assert (
+        init_integration.options[OPTION_HEARTBEATS] is False
+    )  # written, as the form showed it
+    assert init_integration.runtime_data is hub
+
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC], OPTION_GATEWAY_CHECK: False},
+    )
+    await hass.async_block_till_done()
+    assert init_integration.runtime_data is hub
+    assert hub.link_count == 1
+    assert hub.gestures.double_click_keys == {UID_BUTTON_WC}
+    assert hass.states.get(key).attributes["waits_for_double_click"] is True
+    assert hub.app_follow is not None
+    assert hub.app_follow.periodic is False
+    assert count_setups.call_count == 0
 
 
 async def test_options_flow_keys_that_wait_for_a_double_click(
@@ -3453,6 +3572,27 @@ async def test_options_flow_keys_that_wait_for_a_double_click(
         await hass.config_entries.options.async_configure(result["flow_id"], {})
     await hass.async_block_till_done()
     assert init_integration.options[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+
+
+async def test_the_keys_are_not_listed_while_every_key_waits(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-5 (options form hints): with `click_delay` on every key waits, so the list of keys is not shown; what
+    it holds stays for when the option goes off again."""
+    hass.config_entries.async_update_entry(
+        init_integration,
+        options={OPTION_CLICK_DELAY: True, OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC]},
+    )
+    await hass.async_block_till_done()
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    assert OPTION_DOUBLE_CLICK_KEYS not in result["data_schema"]({})
+    await hass.config_entries.options.async_configure(
+        result["flow_id"], {OPTION_CLICK_DELAY: False}
+    )
+    await hass.async_block_till_done()
+    assert init_integration.options[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
+    result = await hass.config_entries.options.async_init(init_integration.entry_id)
+    assert result["data_schema"]({})[OPTION_DOUBLE_CLICK_KEYS] == [UID_BUTTON_WC]
 
 
 async def test_double_click_choices_without_the_entity_state(

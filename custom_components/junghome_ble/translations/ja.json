@@ -179,6 +179,7 @@
       "invalid_address": "アドレスは 0001 から 7FFF までの 16 進数で指定してください。",
       "address_in_use": "そのアドレスはメッシュ内のノードが使用しています。未使用のアドレスを選択してください。",
       "no_proxy_visible": "このメッシュネットワークのノードが、現在 Bluetooth 経由で見えていません。Bluetooth アダプターまたは ESPHome の Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+      "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
       "export_keys_stale": "このメッシュのデバイスは Bluetooth 経由で見えていますが、このエクスポートのネットワークキーをアドバタイズしているデバイスがありません。エクスポートの作成後に、ネットワークのキーが更新されています（JUNG HOME アプリでのキーリフレッシュ）。JUNG HOME アプリからネットワークを再度エクスポートするか、ゲートウェイから再取得して、そのファイルを使用してください。",
       "network_mismatch": "このエクスポートは、検出されたものとは別のメッシュネットワークのものです。",
       "mesh_already_configured": "このメッシュはすでに別のエントリとしてセットアップされています（Home Assistant が最後に確認した後に、ネットワークキーがリフレッシュされた可能性があります）。新しいエントリを追加する代わりに、そのエントリの「再構成」を使用してください。",
@@ -229,7 +230,7 @@
           "sync_areas": "JUNG の部屋が変わったらデバイスも移動する"
         },
         "data_description": {
-          "click_delay": "`click` イベントを 0.5 秒間保留し、2 回目のクリックが続いた場合は破棄します。そのため、2 回続けて押すと `double_click` のみが発生します。オフ: 押すたびに直ちに `click` が発生し、2 回続けて押したときの 2 回目には `double_click` も発生します。これはすべてのボタンに適用されます。一部のボタンだけで待つ場合は、オフのままにして下のリストでボタンを選んでください。",
+          "click_delay": "`click` イベントを 0.5 秒間保留し、2 回目のクリックが続いた場合は破棄します。そのため、2 回続けて押すと `double_click` のみが発生します。オフ: 押すたびに直ちに `click` が発生し、2 回続けて押したときの 2 回目には `double_click` も発生します。これはすべてのボタンに適用されます。一部のボタンだけで待つ場合は、オフのままにして「ダブルクリックを待つボタン」でボタンを選んでください。この一覧は、この設定がオフでインテグレーションが動作しているときに表示されます。",
           "double_click_keys": "これらのボタンだけが `click` を 0.5 秒間保留し、2 回目のクリックが続いた場合は破棄します。そのため、2 回続けて押すと `double_click` のみが発生します。その他のボタンでは直ちに `click` が発生します。ダブルクリックのオートメーションがあるボタンを選んでください。クリックできるボタンのみが表示されます。実機では未検証です。",
           "heartbeats": "商用電源で動作するすべてのデバイスに、64 秒ごとに Home Assistant へハートビートを送信するよう要求します（JUNG アプリではオフになっている Bluetooth Mesh の標準設定です）。約 3 分半にわたって何も送信しないデバイスは、再び受信されるまでエンティティが利用不可になります。これをオフにすると、デバイスに送信の停止を指示します（一度にすべてのデバイスに伝えられなかった場合は、次回の接続時に改めて指示します）。統合を削除する前にオフにしてください。削除後はデバイスに指示できません。",
           "allow_provisioning": "`junghome_ble.add_device` アクションで新しい JUNG デバイスをプロビジョニングし、ネットワーク内にある同じ製品のデバイスに倣ってアプリと同様に設定できるようにします。また、`junghome_ble.remove_device` でデバイスをリセットしてネットワークから外せるようにします。実際のデバイスではまだ試されていません。まず予備のデバイスで試してください。追加するとデバイスにネットワークのキーが渡されます。削除は元に戻せません。",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "送信されませんでした: {node} は {message} に {found} と応答しましたが、メッシュのエクスポートでは {expected} です（その他の相違: {others} 件）。メッシュのエクスポート作成後に設備が変更されたため（JUNG HOME アプリでの変更、デバイスのリセット、または途中で止まった以前のアクション）、プランはエクスポートに記載されていない内容を上書きしてしまいます。アプリからプロジェクトを再度エクスポートするか、Home Assistant にゲートウェイのエクスポートを引き継がせてから、アクションを再実行してください。`force` を指定すると、この確認なしで実行されます。{applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update は元に戻せません。開始するには、呼び出しに \"confirm: true\" を追加してください。"
+    },
+    "start_iv_update_not_needed": {
+      "message": "メッシュのどの送信元も、まだその IV index のシーケンス番号の 4 分の 3 を使っていないため、IV Update は必要ありません。それでも開始するには \"force: true\" を追加してください。"
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV index {iv_index} への IV Update がすでに進行中です。"
+    },
+    "start_iv_update_key_refresh": {
+      "message": "メッシュのネットワークキーを更新中です（キーリフレッシュ）。完了してから IV Update を開始してください。"
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant は、接続に使っているデバイスからメッシュの IV index をまだ受信していません。しばらくしてからもう一度お試しください。Home Assistant がビーコンで確認したメッシュの IV 状態の最後の変化: {mesh_changed}。デバイスは自身の最後の IV Update から 96 時間以内の IV Update を拒否します。"
     },
     "start_iv_update_too_early": {
       "message": "メッシュで IV Update が開始または終了してから 96 時間経っていません（IV index は {iv_index}）。新しい IV Update は {not_before} 以降に開始できます。Home Assistant がビーコンで確認したメッシュの IV 状態の最後の変化: {mesh_changed}。"
+    },
+    "start_iv_update_iv_max": {
+      "message": "メッシュの IV index は最大値（{iv_index}）に達しているため、これ以上進めません。"
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant は新しい IV index をシーケンス番号ストアに書き込めなかったため、IV Update を開始しませんでした。ログを確認してください。"
     },
     "abort_iv_update_needs_confirm": {
       "message": "IV Update を中止すると、Home Assistant はメッシュの現在の IV index に戻ります。実行するには、呼び出しに \"confirm: true\" を追加してください。"
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
           "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
           "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
           "not_a_directory": "メタデータのパスはディレクトリではありません。",
           "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
           "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
           "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
           "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
           "not_a_directory": "メタデータのパスはディレクトリではありません。",
           "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
           "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
           "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
           "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
           "not_a_directory": "メタデータのパスはディレクトリではありません。",
           "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
           "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
           "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
           "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
           "not_a_directory": "メタデータのパスはディレクトリではありません。",
           "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
           "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "メタデータディレクトリに、アプリの device_metadata.json と scene_metadata.json が想定された形式で含まれていません。",
           "no_project": "ゲートウェイにネットワークのエクスポートがありません。ゲートウェイに接続した状態で JUNG HOME アプリを一度開き（プロジェクトが自動的にアップロードされます）、ゲートウェイのファームウェアが 2.1 以降であることを確認してください。",
           "no_proxy_visible": "このメッシュネットワークのノードが現在 Bluetooth で 1 つも見えません。Bluetooth アダプターまたは ESPHome Bluetooth プロキシが、商用電源で動作する JUNG デバイスの通信範囲内にあることを確認してください。",
+          "no_connectable_scanner": "Home Assistant には、デバイスに接続できる Bluetooth アダプターもプロキシもありません。Bluetooth アダプターか、アクティブ接続が有効な ESPHome Bluetooth プロキシ（設定に `bluetooth_proxy: active: true`）を追加してください。アクティブ接続のないプロキシは受信するだけです。",
           "not_a_directory": "メタデータのパスはディレクトリではありません。",
           "not_approved": "アクセスリクエストが時間内にアプリで承認されませんでした。もう一度送信し、設定 → ゲートウェイ → アクセス許可 → 保留中のリクエストで承認してください。",
           "token_rejected": "ゲートウェイは保存されているアクセスを受け付けなくなりました。もう一度送信して、アクセスを新たにリクエストしてください。",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME のメッシュのシーケンス番号が残り少なくなっています",
-      "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、送信元はその範囲の終わりを越えて送信できません。Bluetooth Mesh では、番号が残り少なくなったデバイスが自らこの更新を開始することになっていますが、JUNG HOME デバイスがそうするかどうかはまだわかっていません。Home Assistant は IV Update に追従します。管理者はアクション `junghome_ble.start_iv_update` で Home Assistant に IV Update を開始させることもできます（元に戻せません。実機では未検証です）。デバイスが再起動するたびに（停電、ブレーカーの遮断など）そのシーケンス番号は大きく先へ進むため、電源が頻繁に切れるデバイスほど先に番号が残り少なくなります。更新後、この修復は自動的に解消されます。"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "IV Update を開始",
+            "description": "メッシュ {title} で、{source} は IV index {iv_index} のシーケンス番号の {percent} % を使用しました。メッシュが次の IV index に移行する（IV Update）まで、送信元はその範囲の終わりを越えて送信できません。Bluetooth Mesh では、番号が残り少なくなったデバイスが自らこの更新を開始することになっていますが、JUNG HOME デバイスがそうするかどうかはまだわかっていません。Home Assistant は IV Update に追従します。確認すると、アクション `junghome_ble.start_iv_update` と同じように、Home Assistant が今すぐ IV Update を開始します。元に戻せません。メッシュに接続していない場合、ネットワークキーの更新中、および前回の IV Update から 96 時間以内は拒否されます。実機では未検証です。デバイスが再起動するたびに（停電、ブレーカーの遮断など）そのシーケンス番号は大きく先へ進むため、電源が頻繁に切れるデバイスほど先に番号が残り少なくなります。更新後、この修復は自動的に解消されます。"
+          }
+        },
+        "abort": {
+          "entry_gone": "この修復が属する JUNG HOME のエントリは、もうセットアップされていません。",
+          "not_loaded": "この修復が属する JUNG HOME のエントリは、現在実行されていません。セットアップが完了してから、もう一度お試しください。",
+          "start_failed": "IV Update は開始されませんでした: {error} 送信元の番号が残り少ない間、この修復は残ります。原因が解消したら、もう一度修復してください。"
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME のメッシュが IV Update を受け入れませんでした",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "クライアント",
           "description": "クライアントがアクセスを要求している名前。`waiting` に表示されているとおりに指定します。空欄の場合、何も承認されません。"
+        },
+        "config_entry_id": {
+          "name": "メッシュネットワーク",
+          "description": "複数設定されている場合の、対象の JUNG HOME ネットワーク。"
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "IV Update を開始",
+      "description": "Home Assistant にメッシュの IV Update を開始させます。メッシュは次の IV index に移行し、すべての送信元が新しいシーケンス番号の範囲を得ます。Bluetooth Mesh では、シーケンス番号が残り少なくなったデバイスが自ら開始することになっています。修復「JUNG HOME のメッシュのシーケンス番号が残り少なくなっています」でも同じように開始できます。元に戻せず（IV index は増えるだけです）、メッシュは 96～144 時間後に通常動作に戻ります。どの送信元もシーケンス番号の 4 分の 3 を使っていない場合（「必要でなくても」がオンのときを除く）、メッシュに接続していない場合、ネットワークキーの更新中、および前回の IV Update の開始または終了から 96 時間以内は拒否されます。管理者のみ。実機では未検証です。",
+      "fields": {
+        "confirm": {
+          "name": "確認",
+          "description": "実行に必要です。IV Update は元に戻せません。"
+        },
+        "force": {
+          "name": "必要でなくても",
+          "description": "シーケンス番号の 4 分の 3 を使った送信元がまだなくても開始します。"
         },
         "config_entry_id": {
           "name": "メッシュネットワーク",

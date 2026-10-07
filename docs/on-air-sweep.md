@@ -362,7 +362,9 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Checks:** review-4 U4-8 (brief 50) — the gateway's mDNS announcement (`_junghome._tcp`, its shape already seen on
   air) starts the integration's zeroconf flow: no card when the entry names the gateway by the announced address or
   host name, else one *JUNG HOME Gateway &lt;address&gt;* card whose confirmation opens the gateway form with that
-  address filled in; nothing goes to the gateway before that form is submitted.
+  address filled in; nothing goes to the gateway before that form is submitted. Review-5 U5-2 (brief 82): no card
+  either for a gateway the entry knows by its recorded serial number or by the mesh it serves (the announced `mac` is a
+  node of the export), and a gateway entry follows its gateway to a new IP address.
 - **Needs:** the gateway entry, the gateway on the LAN. **Safety:** nothing is submitted (submitting would ask the
   gateway for another token); the card is left as it is.
 - **Do:**
@@ -374,9 +376,16 @@ says connected and the state refresh is through (a few minutes), then do the lin
 - **Capture:** none (mDNS, not Bluetooth); the debug log of `custom_components.junghome_ble.config_flow`.
 - **Pass:** an entry naming the announced IPv4 address or the `junghome-….local` name: no card. An entry naming
   `junghome.local`: one card (not one per announcement), the form shows the announced address and `0D00` under
-  *Advanced*, and the log has no *certificate pinned* line for it. Finishing it would end with *already configured*;
-  not needed.
+  *Advanced*, and the log has no *certificate pinned* line for it — unless the announced `mac` (step 1's
+  `avahi-browse`) is the MAC of a node of the export (the gateway's node device shows its MAC as its serial number):
+  then no card, and the entry's diagnostics show `gateway_serial` (redacted) in its data after the restart. Note
+  which of the two it was: whether the gateway announces its mesh node's MAC is what this settles. Finishing a card
+  would end with *already configured*; not needed. Optional, when the router can do it: give the gateway another IP
+  address (a DHCP reservation), restart it, and check that no card appears and that *Reconfigure* names the new
+  address (an entry that names the gateway by IP address).
 - **Markers:** `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow.async_step_zeroconf_confirm`,
+  `custom_components/junghome_ble/config_flow.py::JungHomeConfigFlow._configured_gateway`,
+  `custom_components/junghome_ble/config_flow.py::_follow_gateway`,
   `custom_components/junghome_ble/strings.json::config.step.zeroconf_confirm.description`.
 
 ### A11 · JUNG-only discovery and the mesh UUID as unique id (M10)
@@ -1091,7 +1100,13 @@ starting state restored; the app shows Home Assistant's changes only once it tak
   `--src <ha>`.
 - **Pass:** the light's history shows no gap or `unavailable`; the link does not drop; only the Config messages of the
   change go out, no wave of state Gets. A change that cannot be followed in place reloads (debug log: the reason).
-- **Markers:** `custom_components/junghome_ble/model_update.py::<module>`.
+- **Also (review-5 U5-7, brief 82):** open the options, pick a key under *Keys that wait for a double click* and save,
+  then remove it again and save; save the form once more without changing anything. **Pass:** no entity passes
+  through `unavailable`, the *Link state* sensor stays `connected`, the key's event entity shows
+  `waits_for_double_click: true` at once (and `false` after), and a click of that key arrives half a second late
+  while it is picked.
+- **Markers:** `custom_components/junghome_ble/model_update.py::<module>`,
+  `custom_components/junghome_ble/coordinator.py::JungHomeHub.async_options_updated`.
 
 ### D8 · Several rooms per light, leaving a room (F4-5)
 
@@ -1364,7 +1379,8 @@ spend.
   it spends nothing but moves the index once (`force: true`). Not within 96 hours of an IV change.
 - **Do:** start the unattended capture (`docs/sniffer.md`) and keep it running for the whole update (about six days);
   note the *IV index* sensor; run `junghome_ble.start_iv_update` with `confirm: true` (and `force: true` unless the
-  repair is open), response on; keep Home Assistant running. During the update switch a light from Home Assistant, the
+  repair is open), response on — or, when the *sequence numbers running low* repair is open, repair it and confirm
+  (review-5, brief 82: the same start, the same refusals); keep Home Assistant running. During the update switch a light from Home Assistant, the
   app and a rocker once a day; after it, the same.
 - **Capture:** Home Assistant's beacon to its proxy (on the GATT link: Home Assistant's log at `jhmesh.trace: info`,
   `beacon sent: iv_index=<n+1> iv_update=True`), the proxy's beacon back (`beacon: iv_index=<n+1> iv_update=True`),
@@ -1394,6 +1410,8 @@ spend.
 - **Markers:** `custom_components/junghome_ble/actions/iv_update.py::<module>`,
   `custom_components/junghome_ble/actions/iv_update.py::_start_iv_update`,
   `custom_components/junghome_ble/actions/iv_update.py::_abort_iv_update`,
+  `custom_components/junghome_ble/actions/iv_update.py::async_start_iv_update`,
+  `custom_components/junghome_ble/repairs.py::StartIVUpdateFlow`,
   `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.start_iv_update`,
   `custom_components/junghome_ble/jhmesh/client.py::ProxyClient.abort_iv_update`,
   `custom_components/junghome_ble/jhmesh/state.py::<module>`,
@@ -1404,8 +1422,9 @@ spend.
   `custom_components/junghome_ble/jhmesh/state.py::LocalState.abort_iv_update`,
   `custom_components/junghome_ble/hub/issues.py::Issues.report_iv_update_not_taken`,
   `custom_components/junghome_ble/services.py::<module>` (its `start_iv_update` sentence),
-  `custom_components/junghome_ble/strings.json::issues.sequence_space_low.description` (and every translation),
   `custom_components/junghome_ble/strings.json::issues.iv_update_not_taken.description` (and every translation),
+  `custom_components/junghome_ble/strings.json::issues.sequence_space_low.fix_flow.step.confirm.description` (and
+  every translation),
   `custom_components/junghome_ble/strings.json::services.start_iv_update.description`,
   `custom_components/junghome_ble/strings.json::services.abort_iv_update.description`,
   `mgmt:api:meshnetwork.setivindex`.

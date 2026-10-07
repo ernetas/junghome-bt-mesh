@@ -33,6 +33,7 @@ from .const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
     CONF_GATEWAY_HOST,
+    CONF_GATEWAY_SERIAL,
     CONF_GATEWAY_TOKEN,
     CONF_METADATA_DIR,
     DOMAIN,
@@ -75,6 +76,7 @@ TO_REDACT_ENTRY = {
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_TOKEN,  # the gateway hands the export (every mesh key) to whoever holds it
     CONF_GATEWAY_FINGERPRINT,  # the pinned certificate: a stable, unique id of the user's gateway
+    CONF_GATEWAY_SERIAL,  # the same
 }
 # the keys that wait for a double click are named by unique id, whose node UUID is a MAC: an entry that is not loaded
 # has no hub to mask them with (`redact_node_uuids`)
@@ -191,6 +193,33 @@ def redact_paths(text: str | None) -> str | None:
     return None if text is None else _PATH.sub(REDACTED, text)
 
 
+def _node_masks(hub: JungHomeHub) -> dict[str, str]:
+    """Return the MAC half of each MAC-derived node UUID of the export, lower case, with what replaces it."""
+    return {
+        node.uuid[:UUID_MAC_PART].lower(): f"xxxxxxxx-xxxx-{node.unicast:04x}"
+        for node in hub.cdb.nodes
+        if mac_from_uuid(node.uuid) is not None
+    }
+
+
+def _options(hub: JungHomeHub, options: Mapping[str, Any]) -> dict[str, Any]:
+    """Return a loaded entry's options for the diagnostics, double-click keys `redact_node_uuids` cannot mask redacted.
+
+    `TO_REDACT_ENTRY` as for the data. The option names keys by unique id, a MAC-derived node UUID; one whose node has left the export since (removed
+    with `remove_device` or in the app) has no mask, and would show its MAC.
+    """
+    out = async_redact_data(dict(options), TO_REDACT_ENTRY)
+    if isinstance(keys := out.get(OPTION_DOUBLE_CLICK_KEYS), list):
+        masks = _node_masks(hub)
+        out[OPTION_DOUBLE_CLICK_KEYS] = [
+            key
+            if isinstance(key, str) and any(m in key.lower() for m in masks)
+            else REDACTED
+            for key in keys
+        ]
+    return out
+
+
 def redact_node_uuids[T: Mapping[str, Any]](hub: JungHomeHub, data: T) -> T:
     """Return `data` with the MAC half of every MAC-derived node UUID replaced by `xxxxxxxx-xxxx-<unicast>`.
 
@@ -198,11 +227,7 @@ def redact_node_uuids[T: Mapping[str, Any]](hub: JungHomeHub, data: T) -> T:
     `<uuid>-<location>` identifiers, the buttons' device id) is masked the same way and stays distinct per node.
     A UUID that is no MAC (the app's own provisioner node) is left alone.
     """
-    masks = {
-        node.uuid[:UUID_MAC_PART].lower(): f"xxxxxxxx-xxxx-{node.unicast:04x}"
-        for node in hub.cdb.nodes
-        if mac_from_uuid(node.uuid) is not None
-    }
+    masks = _node_masks(hub)
 
     def mask(value: Any) -> Any:
         if isinstance(value, str):
@@ -385,7 +410,7 @@ async def async_get_config_entry_diagnostics(
     }
     data: EntryDiagnostics = {
         "entry": async_redact_data(entry.data, TO_REDACT_ENTRY),
-        "options": async_redact_data(dict(entry.options), TO_REDACT_ENTRY),
+        "options": _options(hub, entry.options),
         "network": _network(hub.cdb, hub.proxy.nk.network_id),
         "local": {
             "src": f"{st.src:04X}",

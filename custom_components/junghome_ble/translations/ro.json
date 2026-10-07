@@ -179,6 +179,7 @@
       "invalid_address": "Adresa trebuie să fie hexazecimală, între 0001 și 7FFF.",
       "address_in_use": "Această adresă aparține unui nod din rețeaua mesh; alege una nefolosită.",
       "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+      "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
       "export_keys_stale": "Dispozitivele acestei rețele mesh sunt vizibile prin Bluetooth, dar niciunul nu anunță cheia de rețea din acest export: cheile rețelei au fost reînnoite (o reîmprospătare a cheilor în aplicația JUNG HOME) după realizarea exportului. Exportă din nou rețeaua din aplicația JUNG HOME sau preia-o din nou de la gateway și folosește acel fișier.",
       "network_mismatch": "Exportul aparține altei rețele mesh decât cea descoperită.",
       "mesh_already_configured": "Această rețea mesh este deja configurată ca altă intrare (probabil cheia ei de rețea a fost reîmprospătată de când Home Assistant a văzut-o ultima dată). Folosește „Reconfigurează” la acea intrare în loc să adaugi una nouă.",
@@ -229,7 +230,7 @@
           "sync_areas": "Mută dispozitivele odată cu schimbarea camerei JUNG"
         },
         "data_description": {
-          "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`. Se aplică tuturor tastelor; pentru a aștepta doar la unele, lasă-l dezactivat și alege-le în lista de mai jos.",
+          "click_delay": "Un eveniment `click` este reținut o jumătate de secundă și eliminat dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`. Dezactivat: fiecare apăsare declanșează imediat `click`, iar a doua apăsare dintr-o apăsare dublă declanșează în plus și `double_click`. Se aplică tuturor tastelor; pentru a aștepta doar la unele, lasă-l dezactivat și alege-le la *Taste care așteaptă un dublu clic*, afișat cât timp aceasta este dezactivată și integrarea rulează.",
           "double_click_keys": "Doar aceste taste își rețin `click` o jumătate de secundă și îl elimină dacă urmează un al doilea clic, astfel încât o apăsare dublă declanșează doar `double_click`; orice altă tastă declanșează imediat `click`. Alege tastele care au o automatizare pentru dublu clic. Sunt afișate doar tastele care pot da clic. Neverificat încă pe dispozitive reale.",
           "heartbeats": "Fiecărui dispozitiv alimentat de la rețeaua electrică i se cere să trimită un semnal heartbeat către Home Assistant la fiecare 64 de secunde (o setare standard Bluetooth Mesh pe care aplicația JUNG o lasă dezactivată). Entitățile unui dispozitiv care nu trimite nimic timp de aproximativ trei minute și jumătate sunt marcate ca indisponibile până când acesta este auzit din nou. Dezactivarea opțiunii le cere dispozitivelor să se oprească (din nou la următoarea conexiune, dacă nu au putut fi anunțate toate deodată); dezactiveaz-o înainte de a elimina integrarea, care ulterior nu le mai poate anunța.",
           "allow_provisioning": "Permite acțiunii `junghome_ble.add_device` să provizioneze un dispozitiv JUNG nou și să-l configureze așa cum ar face aplicația, după modelul unui dispozitiv de același tip aflat deja în rețea, iar acțiunii `junghome_ble.remove_device` să reseteze un dispozitiv și să-l scoată din rețea. Încă neîncercat pe dispozitive reale: încearcă mai întâi cu un dispozitiv de rezervă. Adăugarea îi transmite dispozitivului cheile rețelei; eliminarea nu poate fi anulată.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Netrimis: {node} a răspuns la {message} cu {found}, dar exportul rețelei mesh indică {expected} (alte diferențe: {others}). Instalația s-a schimbat după crearea exportului rețelei mesh (în aplicația JUNG HOME, prin resetarea unui dispozitiv sau printr-o acțiune anterioară oprită la jumătate), iar planul ar suprascrie ce exportul nu mai descrie. Exportă din nou proiectul din aplicație sau lasă Home Assistant să preia exportul gateway-ului și rulează din nou acțiunea; cu `force` rulează fără această verificare. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "Un IV Update nu poate fi anulat: adaugă \"confirm: true\" la apel pentru a-l porni."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Niciun expeditor din rețeaua mesh nu a folosit încă trei sferturi din numerele de secvență ale indexului său IV, deci un IV Update nu este necesar; adaugă \"force: true\" pentru a porni totuși unul."
+    },
+    "start_iv_update_in_progress": {
+      "message": "Un IV Update către indexul IV {iv_index} este deja în desfășurare."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Cheia de rețea a rețelei mesh este în curs de reînnoire (un key refresh): pornește IV Update după ce aceasta s-a încheiat."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant nu a auzit încă indexul IV al rețelei mesh de la dispozitivul prin care este conectat; încercați din nou peste un moment. Ultima schimbare a stării IV a rețelei mesh pe care Home Assistant a văzut-o într-un beacon: {mesh_changed}. Un dispozitiv refuză un IV Update în 96 de ore de la ultimul său."
     },
     "start_iv_update_too_early": {
       "message": "Un IV Update a început sau s-a încheiat în rețeaua mesh acum mai puțin de 96 de ore (indexul IV este {iv_index}): unul nou poate fi pornit de la {not_before}. Ultima schimbare a stării IV a rețelei mesh pe care Home Assistant a văzut-o într-un beacon: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Indexul IV al rețelei mesh este la valoarea maximă ({iv_index}): nu poate merge mai departe."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant nu a putut scrie noul index IV în depozitul său de numere de secvență, așa că nu a pornit IV Update; consultă jurnalul."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Anularea IV Update readuce Home Assistant la indexul IV la care se află rețeaua mesh: adăugați \"confirm: true\" la apel pentru a o face."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
           "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
           "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
           "not_a_directory": "Calea metadatelor nu este un director.",
           "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
           "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
           "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
           "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
           "not_a_directory": "Calea metadatelor nu este un director.",
           "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
           "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
           "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
           "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
           "not_a_directory": "Calea metadatelor nu este un director.",
           "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
           "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
           "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
           "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
           "not_a_directory": "Calea metadatelor nu este un director.",
           "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
           "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Directorul de metadate nu conține fișierele device_metadata.json și scene_metadata.json ale aplicației în forma așteptată.",
           "no_project": "Gateway-ul nu are niciun export al rețelei. Deschide o dată aplicația JUNG HOME cât timp este conectată la gateway (încarcă automat proiectul) și asigură-te că firmware-ul gateway-ului este 2.1 sau mai nou.",
           "no_proxy_visible": "Niciun nod al acestei rețele mesh nu este vizibil momentan prin Bluetooth. Asigură-te că un adaptor Bluetooth sau un proxy Bluetooth ESPHome se află în raza unui dispozitiv JUNG alimentat de la rețeaua electrică.",
+          "no_connectable_scanner": "Home Assistant nu are niciun adaptor Bluetooth și niciun proxy care să se poată conecta la un dispozitiv. Adaugă un adaptor Bluetooth sau un proxy Bluetooth ESPHome cu conexiuni active (`bluetooth_proxy: active: true` în configurația sa): un proxy fără ele doar ascultă.",
           "not_a_directory": "Calea metadatelor nu este un director.",
           "not_approved": "Cererea de acces nu a fost aprobată la timp în aplicație. Trimite din nou și aprob-o în Setări → Gateway → Permisiuni de acces → Cereri deschise.",
           "token_rejected": "Gateway-ul nu mai acceptă accesul stocat. Trimite din nou pentru a cere din nou acces.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate",
-      "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Un expeditor nu poate trece de capătul acestui spațiu până când rețeaua mesh nu trece la următorul index IV (un IV Update). Bluetooth Mesh prevede ca un dispozitiv căruia i se termină numerele să pornească singur această actualizare; nu se știe încă dacă dispozitivele JUNG HOME fac acest lucru. Home Assistant urmează un IV Update, iar un administrator îl poate face să pornească unul cu acțiunea `junghome_ble.start_iv_update` (nu poate fi anulat; neverificat încă în funcționare reală). Fiecare repornire a unui dispozitiv (o pană de curent, o siguranță declanșată) îi mută numerele de secvență mult înainte, așa că un dispozitiv care rămâne des fără curent este primul care rămâne fără numere. Problema dispare de la sine după actualizare."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Pornește un IV Update",
+            "description": "În rețeaua mesh {title}, {source} a folosit {percent} % din numerele de secvență ale indexului IV {iv_index}. Un expeditor nu poate trece de capătul acestui spațiu până când rețeaua mesh nu trece la următorul index IV (un IV Update). Bluetooth Mesh prevede ca un dispozitiv căruia i se termină numerele să pornească singur această actualizare; nu se știe încă dacă dispozitivele JUNG HOME fac acest lucru. Home Assistant urmează un IV Update. Confirmă pentru a-l face să pornească unul acum, așa cum face acțiunea `junghome_ble.start_iv_update`: nu poate fi anulat și este refuzat fără conexiune la rețeaua mesh, în timpul reînnoirii cheii de rețea și în cele 96 de ore de la ultimul IV Update. Neverificat încă în funcționare reală. Fiecare repornire a unui dispozitiv (o pană de curent, o siguranță declanșată) îi mută numerele de secvență mult înainte, așa că un dispozitiv care rămâne des fără curent este primul care rămâne fără numere. Problema dispare de la sine după actualizare."
+          }
+        },
+        "abort": {
+          "entry_gone": "Intrarea JUNG HOME căreia îi aparține această problemă nu mai este configurată.",
+          "not_loaded": "Intrarea JUNG HOME căreia îi aparține această problemă nu rulează în acest moment. Încearcă din nou după ce este configurată.",
+          "start_failed": "IV Update nu a fost pornit: {error} Problema rămâne cât timp unui expeditor i se termină numerele; repar-o din nou după ce cauza a dispărut."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "Rețeaua mesh JUNG HOME nu a preluat IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Client",
           "description": "Numele sub care clientul cere acces, exact cum este listat sub `waiting`. Lăsat gol, nu se aprobă nimic."
+        },
+        "config_entry_id": {
+          "name": "Rețea mesh",
+          "description": "Rețeaua JUNG HOME vizată, când sunt configurate mai multe."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Pornește IV Update",
+      "description": "Face ca Home Assistant să pornească un IV Update al rețelei mesh: rețeaua trece la următorul index IV, ceea ce dă fiecărui expeditor un spațiu nou de numere de secvență. Bluetooth Mesh prevede ca un dispozitiv căruia i se termină numerele de secvență să pornească singur unul; repararea problemei *Numerele de secvență ale rețelei mesh JUNG HOME sunt pe terminate* pornește unul în același fel. Nu poate fi anulat (indexul IV doar crește), iar rețeaua revine la funcționarea normală după 96 până la 144 de ore. Refuzat dacă niciun expeditor nu a folosit trei sferturi din numerele sale de secvență (în afară de cazul în care *Chiar dacă nu e nevoie* este activat), fără conexiune la rețeaua mesh, în timpul reînnoirii cheii de rețea și în cele 96 de ore de la ultimul început sau sfârșit al unui IV Update. Doar pentru administratori. Neverificat încă în funcționare reală.",
+      "fields": {
+        "confirm": {
+          "name": "Confirmare",
+          "description": "Necesar pentru executare: un IV Update nu poate fi anulat."
+        },
+        "force": {
+          "name": "Chiar dacă nu e nevoie",
+          "description": "Pornește-l chiar dacă niciun expeditor nu a folosit încă trei sferturi din numerele sale de secvență."
         },
         "config_entry_id": {
           "name": "Rețea mesh",

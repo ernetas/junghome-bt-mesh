@@ -22,13 +22,15 @@ import voluptuous as vol
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.components.http.const import KEY_HASS_REFRESH_TOKEN_ID, KEY_HASS_USER
 from homeassistant.components.websocket_api.connection import current_connection
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.http import current_request
 
+from custom_components.junghome_ble.const import CONF_CDB_PATH, DOMAIN
 from custom_components.junghome_ble.export_view import export_path
 
-from .common import _ENTRY_FIELD, ATTR_CONFIG_ENTRY, ATTR_DEVICE, _hub, _validation
-from .resolve import _entry_for_hub_services, _registry_device
+from .common import _ENTRY_FIELD, ATTR_CONFIG_ENTRY, ATTR_DEVICE, _validation
+from .resolve import _registry_device
 
 if TYPE_CHECKING:
     from homeassistant.auth.models import User
@@ -69,17 +71,41 @@ def _session_of(user_id: str | None) -> tuple[str, User] | None:
     return None
 
 
+def _entry_with_export(hass: HomeAssistant, entry_id: str | None) -> str:
+    """Return the entry whose export to hand over: `entry_id`'s, else the only loaded one, else the only one.
+
+    Loaded or not: an entry in setup retry, or one that failed to set up, still has its export on the host
+    (`export_view.async_export_bytes`), and a copy of it is wanted most then. An ignored discovery has none.
+    """
+    if entry_id is not None:
+        entry = hass.config_entries.async_get_entry(entry_id)
+        if entry is None or entry.domain != DOMAIN or CONF_CDB_PATH not in entry.data:
+            raise _validation("service_unknown_entry", id=entry_id)
+        return entry_id
+    entries = [
+        e for e in hass.config_entries.async_entries(DOMAIN) if CONF_CDB_PATH in e.data
+    ]
+    loaded = [e for e in entries if e.state is ConfigEntryState.LOADED]
+    candidates = loaded or entries
+    if not candidates:
+        raise _validation("service_entry_not_loaded")
+    if len(candidates) > 1:
+        raise _validation("service_entry_ambiguous")
+    return candidates[0].entry_id
+
+
 async def _download_export(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:
     """Answer `{"url", "expires_in"}`: the entry's export, signed for five minutes (admin only).
 
-    The entry is `config_entry_id`'s, `device`'s (any device of the entry), or the only one loaded. The URL is a
-    path on Home Assistant's own address. Unverified with the app: no app has been seen importing the file.
+    The entry is `config_entry_id`'s, `device`'s (any device of the entry), or the only one loaded (the only one
+    at all when none is), loaded or not (`_entry_with_export`). The URL is a path on Home Assistant's own address. Unverified with the app: no app has been seen importing the file.
     """
     if (device_id := call.data.get(ATTR_DEVICE)) is not None:
         _device, entry_id = _registry_device(hass, device_id)
     else:
-        entry_id = _entry_for_hub_services(hass, call.data)
-    entry = _hub(hass, entry_id).entry
+        entry_id = _entry_with_export(hass, call.data.get(ATTR_CONFIG_ENTRY))
+    entry = hass.config_entries.async_get_entry(entry_id)
+    assert entry is not None  # resolved just above
     if (session := _session_of(call.context.user_id)) is None:
         raise _validation("download_export_no_session")
     token, user = session

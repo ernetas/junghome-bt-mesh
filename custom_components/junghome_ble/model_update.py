@@ -35,7 +35,7 @@ cache, the property reader and the link survive an in-place apply: no entity pas
 from __future__ import annotations
 
 import logging
-from functools import cache
+from functools import cache, cached_property
 from typing import TYPE_CHECKING, Any, Final, cast
 
 from homeassistant.config_entries import ConfigEntryState
@@ -43,6 +43,7 @@ from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
+from propcache.api import cached_property as fast_cached_property
 
 from .areas import async_move_devices
 from .const import (
@@ -88,6 +89,8 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 _MISSING: Final = object()
+# `functools`' and the faster one Home Assistant's entities use (`propcache`): both keep the value in the instance
+_CACHED_PROPERTY_TYPES: Final = (cached_property, fast_cached_property)
 _PRIVATE_ATTR: Final = (
     "__attr_"  # where Home Assistant's cached `_attr_` properties keep their values
 )
@@ -299,10 +302,20 @@ def _follow_device(
 
 @cache
 def _cached_properties(cls: type) -> frozenset[str]:
-    """Return the names of Home Assistant's cached properties on `cls` (`CachedProperties`), worked out once per class."""
+    """Return the names of every cached property on `cls`, worked out once per class.
+
+    Home Assistant's `CachedProperties` (the `_attr_`-backed ones such as `name` or `device_info`), and every
+    `cached_property` besides, which keeps its value in the instance under its own name: among them the entity's
+    `_name_translation_key` and `_device_class_name`, which a changed `translation_key` must not outlive.
+    """
     names: set[str] = set()
     for klass in cls.__mro__:
         names |= klass.__dict__.get("_CachedProperties__cached_properties", set())
+        names.update(
+            name
+            for name, value in vars(klass).items()
+            if isinstance(value, _CACHED_PROPERTY_TYPES)
+        )
     return frozenset(names)
 
 
@@ -353,6 +366,8 @@ def _rebind(kept: Entity, built: dict[str, Any], fresh: Entity) -> dict[str, Any
             del after[key]
     for name in cached:
         held.pop(name, None)
+    # Home Assistant warns once per entity about placeholders its name does not use: a name that changed may again
+    held.pop("_name_translation_placeholders_reported", None)
     return after
 
 
@@ -418,9 +433,7 @@ def remove_stale_devices(
             _LOGGER.info(
                 "Removing device %s, no longer in the mesh export", device.name
             )
-            registry.async_update_device(
-                device.id, remove_config_entry_id=entry.entry_id
-            )
+            registry.async_remove_device(device.id)
     # a room's central entities sit on the mesh device, which stays: a room deleted, or left without loads of a
     # kind, takes its own with it here
     entities = er.async_get(hass)

@@ -2028,6 +2028,35 @@ async def test_unloading_stops_the_wait_for_the_phones_quiet(
     assert follower._unsub_periodic is None
 
 
+async def test_the_follow_options_apply_without_a_reload(
+    hass: HomeAssistant, gateway_entry: MockConfigEntry, answering_link: FakeProxyLink
+) -> None:
+    """Review-5 U5-7: the periodic check stops and starts again with its option, the phone is no longer followed
+    without one; the hub stays."""
+    hub = hub_of(gateway_entry)
+    follower = hub.app_follow
+    assert follower is not None
+    assert follower._unsub_periodic is not None
+    hass.config_entries.async_update_entry(
+        gateway_entry, options={OPTION_GATEWAY_CHECK: False, OPTION_FOLLOW_APP: False}
+    )
+    await hass.async_block_till_done()
+    assert hub_of(gateway_entry) is hub
+    assert (follower.periodic, follower.follow) == (False, False)
+    assert follower._unsub_periodic is None
+    answering_link.inject(PHONE, LIGHT_SWITCH, PHONE_GET)
+    await settle(hass)
+    assert follower._unsub_quiet is None
+    hass.config_entries.async_update_entry(gateway_entry, options={})
+    await hass.async_block_till_done()
+    assert follower._unsub_periodic is not None
+    hass.config_entries.async_update_entry(
+        gateway_entry, options={OPTION_FOLLOW_APP: True}
+    )  # the same as the defaults: nothing to start or stop
+    await hass.async_block_till_done()
+    assert hub_of(gateway_entry) is hub
+
+
 def test_what_counts_as_the_phone_and_as_a_change() -> None:
     """Home Assistant's own address and a device are not the phone; a vendor message or a Config Get no change."""
     hub = SimpleNamespace(

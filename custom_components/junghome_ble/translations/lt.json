@@ -179,6 +179,7 @@
       "invalid_address": "Adresas turi būti šešioliktainis, nuo 0001 iki 7FFF.",
       "address_in_use": "Šis adresas priklauso tinklo mazgui; pasirinkite nenaudojamą.",
       "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli bent vieno iš elektros tinklo maitinamo JUNG įrenginio.",
+      "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
       "export_keys_stale": "Šio tinklo įrenginiai matomi per Bluetooth, tačiau nė vienas neskelbia šiame eksporte esančio tinklo rakto: tinklo raktai buvo atnaujinti („JUNG HOME“ programėlėje atliktas raktų atnaujinimas) jau po eksporto sukūrimo. Iš naujo eksportuokite tinklą „JUNG HOME“ programėlėje arba dar kartą gaukite jį iš sietuvo ir naudokite naują failą.",
       "network_mismatch": "Eksportas priklauso kitam tinklui nei aptiktasis.",
       "mesh_already_configured": "Šis tinklas jau nustatytas kaip kitas įrašas (tikriausiai jo tinklo raktas buvo atnaujintas po to, kai Home Assistant jį matė paskutinį kartą). Užuot pridėję naują įrašą, naudokite to įrašo meniu „Perkonfigūruoti“.",
@@ -229,7 +230,7 @@
           "sync_areas": "Perkelti įrenginius, kai pasikeičia jų JUNG patalpa"
         },
         "data_description": {
-          "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`. Tai taikoma visiems mygtukams; jei norite laukti tik kai kurių, palikite išjungtą ir pasirinkite juos sąraše žemiau.",
+          "click_delay": "Įvykis `click` sulaikomas pusę sekundės ir atmetamas, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`. Išjungus kiekvienas paspaudimas iš karto sukelia `click`, o antrasis dvigubo paspaudimo spustelėjimas – dar ir `double_click`. Tai taikoma visiems mygtukams; jei norite laukti tik kai kurių, palikite išjungtą ir pasirinkite juos lauke *Mygtukai, laukiantys dvigubo spustelėjimo*, kuris rodomas, kai ši parinktis išjungta ir integracija veikia.",
           "double_click_keys": "Tik šie mygtukai sulaiko savo `click` pusę sekundės ir jį atmeta, jei po jo seka antras spustelėjimas, todėl dvigubas paspaudimas sukelia tik `double_click`; bet kuris kitas mygtukas `click` sukelia iš karto. Pasirinkite mygtukus, kuriems sukurta dvigubo spustelėjimo automatizacija. Rodomi tik mygtukai, galintys spustelėti. Dar nepatikrinta su tikrais įrenginiais.",
           "heartbeats": "Kiekvieno iš elektros tinklo maitinamo įrenginio prašoma kas 64 sekundes siųsti Home Assistant gyvybingumo signalą (tai standartinis Bluetooth Mesh nustatymas, kurio JUNG programėlė neįjungia). Jei įrenginys apie tris su puse minutės nieko nesiunčia, jo objektai pažymimi kaip nepasiekiami, kol jis vėl atsilieps. Išjungus šią parinktį, įrenginiams nurodoma signalų nebesiųsti (jei visiems iš karto pranešti nepavyko, tai pakartojama kito prisijungimo metu); išjunkite ją prieš šalindami integraciją, nes vėliau įrenginiams to nurodyti nebus galima.",
           "allow_provisioning": "Leidžia veiksmui `junghome_ble.add_device` įtraukti naują JUNG įrenginį į tinklą ir sukonfigūruoti jį taip, kaip tai darytų programėlė, pagal tinkle jau esantį to paties gaminio įrenginį, o veiksmui `junghome_ble.remove_device` – atkurti įrenginio gamyklinius nustatymus ir pašalinti jį iš tinklo. Su tikrais įrenginiais dar neišbandyta: pirmiausia išbandykite su atsarginiu įrenginiu. Pridedant įrenginiui perduodami tinklo raktai; pašalinimo atšaukti neįmanoma.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Neišsiųsta: {node} į {message} atsakė {found}, bet tinklo eksporte nurodyta {expected} (kitų skirtumų: {others}). Po tinklo eksporto sukūrimo instaliacija pasikeitė („JUNG HOME“ programėlėje, atkūrus įrenginį arba dėl ankstesnio veiksmo, kuris sustojo pusiaukelėje), ir planas perrašytų tai, ko eksportas nebeaprašo. Iš naujo eksportuokite projektą programėlėje arba leiskite Home Assistant perimti sietuvo eksportą ir paleiskite veiksmą dar kartą; su `force` jis vykdomas be šio patikrinimo. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update negalima atšaukti: norėdami jį pradėti, prie iškvietimo pridėkite \"confirm: true\"."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Nė vienas tinklo siuntėjas dar nėra išnaudojęs trijų ketvirtadalių savo IV indekso sekos numerių, todėl IV Update nereikia; norėdami vis tiek jį pradėti, pridėkite \"force: true\"."
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV Update į IV indeksą {iv_index} jau vyksta."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Tinklo raktas šiuo metu atnaujinamas (key refresh): pradėkite IV Update, kai tai baigsis."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant dar negavo tinklo IV indekso iš įrenginio, per kurį yra prisijungęs; netrukus bandykite dar kartą. Paskutinis tinklo IV būsenos pasikeitimas, kurį Home Assistant matė švyturyje: {mesh_changed}. Įrenginys atmeta IV Update per 96 valandas nuo savo paskutinio."
     },
     "start_iv_update_too_early": {
       "message": "IV Update tinkle prasidėjo arba baigėsi mažiau nei prieš 96 valandas (IV indeksas yra {iv_index}): naują galima pradėti nuo {not_before}. Paskutinis tinklo IV būsenos pasikeitimas, kurį Home Assistant matė švyturyje: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Tinklo IV indeksas pasiekė didžiausią reikšmę ({iv_index}): toliau jis didėti negali."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant nepavyko įrašyti naujo IV indekso į savo sekos numerių saugyklą, todėl IV Update nepradėtas; žr. žurnalą."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Nutraukus IV Update, Home Assistant grįžta prie IV indekso, kuriame yra tinklas: norėdami tai atlikti, prie iškvietimo pridėkite \"confirm: true\"."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
           "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
           "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
           "not_a_directory": "Metaduomenų kelias nėra katalogas.",
           "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
           "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
           "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
           "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
           "not_a_directory": "Metaduomenų kelias nėra katalogas.",
           "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
           "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
           "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
           "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
           "not_a_directory": "Metaduomenų kelias nėra katalogas.",
           "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
           "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
           "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
           "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
           "not_a_directory": "Metaduomenų kelias nėra katalogas.",
           "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
           "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Metaduomenų kataloge nėra tinkamo formato programėlės failų device_metadata.json ir scene_metadata.json.",
           "no_project": "Sietuve nėra tinklo eksporto. Bent kartą atidarykite „JUNG HOME“ programėlę, kai ji prisijungusi prie sietuvo (ji automatiškai įkelia projektą), ir įsitikinkite, kad sietuvo programinės aparatinės įrangos versija yra 2.1 ar naujesnė.",
           "no_proxy_visible": "Šiuo metu per Bluetooth nematyti nė vieno šio tinklo mazgo. Įsitikinkite, kad Bluetooth adapteris arba ESPHome Bluetooth tarpinis serveris yra netoli iš elektros tinklo maitinamo JUNG įrenginio.",
+          "no_connectable_scanner": "Home Assistant neturi nei Bluetooth adapterio, nei tarpinio serverio (proxy), galinčio prisijungti prie įrenginio. Pridėkite Bluetooth adapterį arba ESPHome Bluetooth proxy su aktyviais ryšiais (`bluetooth_proxy: active: true` jo konfigūracijoje): proxy be jų tik klausosi.",
           "not_a_directory": "Metaduomenų kelias nėra katalogas.",
           "not_approved": "Prieigos užklausa programėlėje nebuvo laiku patvirtinta. Pateikite dar kartą ir patvirtinkite ją skiltyje Nustatymai → Sietuvas → Prieigos teisės → Atviros užklausos.",
           "token_rejected": "Sietuvas nebepriima išsaugotos prieigos. Pateikite dar kartą, kad prieigos būtų paprašyta iš naujo.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Baigiasi „JUNG HOME“ tinklo sekos numeriai",
-      "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Siuntėjas negali peržengti šios srities galo, kol tinklas nepereis prie kito IV indekso (IV Update). Bluetooth Mesh numato, kad įrenginys, kuriam baigiasi numeriai, šį atnaujinimą pradėtų pats; ar „JUNG HOME“ įrenginiai taip daro, kol kas nežinoma. Home Assistant seka IV Update, o administratorius gali jį paleisti veiksmu `junghome_ble.start_iv_update` (to negalima atšaukti; realiame tinkle dar nepatikrinta). Kiekvienas įrenginio paleidimas iš naujo (nutrūkus elektros tiekimui, suveikus automatiniam jungikliui) nustumia jo sekos numerius toli į priekį, todėl įrenginiui, kuris dažnai netenka maitinimo, numeriai baigiasi pirmiausia. Problema išnyks savaime po atnaujinimo."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Pradėti IV Update",
+            "description": "Tinkle {title} {source} išnaudojo {percent} % IV indekso {iv_index} sekos numerių. Siuntėjas negali peržengti šios srities galo, kol tinklas nepereis prie kito IV indekso (IV Update). Bluetooth Mesh numato, kad įrenginys, kuriam baigiasi numeriai, šį atnaujinimą pradėtų pats; ar „JUNG HOME“ įrenginiai taip daro, kol kas nežinoma. Home Assistant seka IV Update. Patvirtinkite, kad jis pradėtų jį dabar, kaip tai daro veiksmas `junghome_ble.start_iv_update`: to negalima atšaukti, ir tai atmetama nesant ryšio su tinklu, atnaujinant tinklo raktą ir per 96 valandas nuo paskutinio IV Update. Realiame tinkle dar nepatikrinta. Kiekvienas įrenginio paleidimas iš naujo (nutrūkus elektros tiekimui, suveikus automatiniam jungikliui) nustumia jo sekos numerius toli į priekį, todėl įrenginiui, kuris dažnai netenka maitinimo, numeriai baigiasi pirmiausia. Problema išnyks savaime po atnaujinimo."
+          }
+        },
+        "abort": {
+          "entry_gone": "„JUNG HOME“ įrašo, kuriam priklauso ši problema, nebėra.",
+          "not_loaded": "„JUNG HOME“ įrašas, kuriam priklauso ši problema, šiuo metu neveikia. Bandykite dar kartą, kai jis bus paleistas.",
+          "start_failed": "IV Update nepradėtas: {error} Problema lieka, kol siuntėjui baigiasi numeriai; ištaisykite ją dar kartą, kai priežastis išnyks."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "„JUNG HOME“ tinklas nepriėmė IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Klientas",
           "description": "Pavadinimas, kuriuo klientas prašo prieigos, tiksliai toks, koks nurodytas sąraše `waiting`. Palikus tuščią, nieko netvirtinama."
+        },
+        "config_entry_id": {
+          "name": "Tinklas",
+          "description": "Kuris „JUNG HOME“ tinklas, jei sukonfigūruoti keli."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Pradėti IV Update",
+      "description": "Liepia Home Assistant pradėti tinklo IV Update: tinklas pereina prie kito IV indekso, todėl kiekvienas siuntėjas gauna naują sekos numerių sritį. Bluetooth Mesh numato, kad įrenginys, kuriam baigiasi sekos numeriai, jį pradėtų pats; problemos *Baigiasi „JUNG HOME“ tinklo sekos numeriai* taisymas jį pradeda taip pat. To negalima atšaukti (IV indeksas tik didėja), o tinklas grįžta į įprastą veikimą po 96–144 valandų. Atmetama, jei nė vienas siuntėjas nėra išnaudojęs trijų ketvirtadalių savo sekos numerių (nebent įjungta *Net jei nereikia*), nesant ryšio su tinklu, atnaujinant tinklo raktą ir per 96 valandas nuo paskutinės IV Update pradžios ar pabaigos. Tik administratoriams. Realiame tinkle dar nepatikrinta.",
+      "fields": {
+        "confirm": {
+          "name": "Patvirtinti",
+          "description": "Reikalinga vykdymui: IV Update negalima atšaukti."
+        },
+        "force": {
+          "name": "Net jei nereikia",
+          "description": "Pradėti, nors nė vienas siuntėjas dar nėra išnaudojęs trijų ketvirtadalių savo sekos numerių."
         },
         "config_entry_id": {
           "name": "Tinklas",

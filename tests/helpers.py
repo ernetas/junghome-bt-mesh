@@ -65,6 +65,7 @@ MAC_LIGHT_SWITCH = mac_of(
     NODE_LIGHT_SWITCH
 )  # the fake proxy link's address (`conftest.PROXY_ADDRESS`)
 MAC_LIGHT_CTL = mac_of(NODE_LIGHT_CTL)
+MAC_GATEWAY = mac_of(NODE_GATEWAY)  # the gateway's mesh node
 
 # elements of the synthetic export
 GATEWAY = 0x00DC  # the gateway node

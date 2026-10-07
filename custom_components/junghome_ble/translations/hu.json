@@ -179,6 +179,7 @@
       "invalid_address": "A címnek 0001 és 7FFF közötti hexadecimális értéknek kell lennie.",
       "address_in_use": "Ez a cím a mesh hálózat egyik csomópontjáé; válasszon egy szabad címet.",
       "no_proxy_visible": "Ennek a mesh hálózatnak jelenleg egyetlen csomópontja sem látható Bluetooth-on. Győződjön meg arról, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+      "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
       "export_keys_stale": "Ennek a mesh hálózatnak az eszközei láthatók Bluetooth-on, de egyik sem az ebben az exportban szereplő hálózati kulccsal hirdeti magát: a hálózat kulcsai az export elkészítése után megújultak (kulcsfrissítés a JUNG HOME alkalmazásban). Exportálja újra a hálózatot a JUNG HOME alkalmazásból, vagy kérje le újra az átjáróról, és azt a fájlt használja.",
       "network_mismatch": "Az export egy másik mesh hálózathoz tartozik, mint a felderített.",
       "mesh_already_configured": "Ez a mesh hálózat már be van állítva egy másik bejegyzésként (a hálózati kulcsa valószínűleg megújult, mióta a Home Assistant utoljára látta). Új bejegyzés hozzáadása helyett használja annak a bejegyzésnek az Újrakonfigurálás funkcióját.",
@@ -229,7 +230,7 @@
           "sync_areas": "Az eszközök áthelyezése, ha megváltozik a JUNG helyiségük"
         },
         "data_description": {
-          "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is. Ez minden gombra vonatkozik; ha csak néhány gombnál szeretnél várni, hagyd kikapcsolva, és válaszd ki őket az alábbi listában.",
+          "click_delay": "A `click` eseményt a rendszer fél másodpercig visszatartja, és elveti, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki. Kikapcsolva: minden gombnyomás azonnal `click` eseményt vált ki, a dupla gombnyomás második nyomása pedig ezenfelül `double_click` eseményt is. Ez minden gombra vonatkozik; ha csak néhány gombnál szeretnél várni, hagyd kikapcsolva, és válaszd ki őket itt: *Dupla kattintásra váró gombok*, amely akkor látható, ha ez ki van kapcsolva és az integráció fut.",
           "double_click_keys": "Csak ezek a gombok tartják vissza fél másodpercig a `click` eseményüket, és vetik el, ha egy második kattintás követi, így a dupla gombnyomás csak `double_click` eseményt vált ki; minden más gomb azonnal `click` eseményt vált ki. Válaszd ki azokat a gombokat, amelyekhez dupla kattintásos automatizálás tartozik. Csak a kattintani képes gombok szerepelnek a listában. Valós eszközökön még nem ellenőrzött.",
           "heartbeats": "A rendszer minden hálózati tápellátású eszközt arra kér, hogy 64 másodpercenként küldjön életjelet (heartbeat) a Home Assistantnak (ez egy szabványos Bluetooth Mesh beállítás, amelyet a JUNG alkalmazás kikapcsolva hagy). Annak az eszköznek az entitásai, amely körülbelül három és fél percig semmit sem küld, nem elérhetőként lesznek megjelölve, amíg újra nem hallható. A kikapcsolás leállítja az eszközök életjelküldését (a következő kapcsolódáskor ismét megpróbálja, ha nem sikerült egyszerre mindegyiket elérni); kapcsolja ki az integráció eltávolítása előtt, mert utána az integráció már nem tudja értesíteni őket.",
           "allow_provisioning": "Lehetővé teszi, hogy a `junghome_ble.add_device` művelet hálózatba léptessen egy új JUNG eszközt, és az alkalmazáshoz hasonlóan konfigurálja a hálózatban már meglévő, azonos termékű eszköz mintájára, a `junghome_ble.remove_device` pedig visszaállítson egy eszközt, és eltávolítsa a hálózatból. Valós eszközön még nem próbálták ki: először egy tartalék eszközzel próbálja ki. Hozzáadáskor az eszköz megkapja a hálózat kulcsait; az eltávolítás nem vonható vissza.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Nincs elküldve: {node} a(z) {message} üzenetre ezt válaszolta: {found}, de a mesh-export szerint {expected} (további eltérések: {others}). A telepítés a mesh-export elkészülte után megváltozott (a JUNG HOME alkalmazásban, egy eszköz visszaállításával vagy egy korábbi, félúton leállt művelet miatt), és a terv felülírná azt, amit az export már nem ír le. Exportálja újra a projektet az alkalmazásból, vagy hagyja, hogy a Home Assistant átvegye az átjáró exportját, majd futtassa újra a műveletet; a `force` beállítással ellenőrzés nélkül fut. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "Egy IV Update nem vonható vissza: az indításhoz add hozzá a hívásához a \"confirm: true\" értéket."
+    },
+    "start_iv_update_not_needed": {
+      "message": "A mesh hálózat egyik küldője sem használta még fel IV-indexe sorszámainak háromnegyedét, ezért nincs szükség IV Update-re; ha mégis indítanál egyet, add hozzá a \"force: true\" értéket."
+    },
+    "start_iv_update_in_progress": {
+      "message": "Már folyamatban van egy IV Update a(z) {iv_index} IV-indexre."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "A mesh hálózat hálózati kulcsa éppen megújul (key refresh): az IV Update-et ennek befejezése után indítsd el."
+    },
     "start_iv_update_iv_unknown": {
       "message": "A Home Assistant még nem hallotta a mesh hálózat IV-indexét attól az eszköztől, amelyen keresztül csatlakozik; próbálja újra egy pillanat múlva. A mesh hálózat IV-állapotának utolsó változása, amelyet a Home Assistant beaconben látott: {mesh_changed}. Egy eszköz a saját utolsó IV Update-je után 96 órán belül elutasít egy újat."
     },
     "start_iv_update_too_early": {
       "message": "Egy IV Update kevesebb mint 96 órája kezdődött vagy ért véget a mesh hálózatban (az IV-index {iv_index}): új indítható ettől: {not_before}. A mesh hálózat IV-állapotának utolsó változása, amelyet a Home Assistant beaconben látott: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "A mesh hálózat IV-indexe elérte legnagyobb értékét ({iv_index}): tovább nem nőhet."
+    },
+    "start_iv_update_not_stored": {
+      "message": "A Home Assistant nem tudta beírni az új IV-indexet a sorszámtárolójába, ezért nem indította el az IV Update-et; lásd a naplót."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Az IV Update megszakítása visszaviszi a Home Assistantot arra az IV-indexre, amelyen a mesh hálózat van: ehhez adja hozzá a hívához a \"confirm: true\" értéket."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
           "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
           "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
           "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
           "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
           "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
           "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
           "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
           "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
           "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
           "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
           "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
           "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
           "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
           "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
           "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
           "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
           "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
           "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
           "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
           "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "A metaadat-könyvtár nem a várt formában tartalmazza az alkalmazás device_metadata.json és scene_metadata.json fájlját.",
           "no_project": "Az átjáró nem tárol hálózati exportot. Nyissa meg egyszer a JUNG HOME alkalmazást, miközben az az átjáróhoz csatlakozik (automatikusan feltölti a projektet), és győződjön meg róla, hogy az átjáró firmware-verziója 2.1 vagy újabb.",
           "no_proxy_visible": "A mesh hálózat egyetlen csomópontja sem látható jelenleg Bluetoothon. Győződjön meg róla, hogy egy Bluetooth-adapter vagy ESPHome Bluetooth-proxy egy hálózati tápellátású JUNG eszköz hatótávolságán belül van.",
+          "no_connectable_scanner": "A Home Assistantnak nincs olyan Bluetooth-adaptere vagy proxyja, amely csatlakozni tudna egy eszközhöz. Adj hozzá egy Bluetooth-adaptert vagy aktív kapcsolatokkal rendelkező ESPHome Bluetooth-proxyt (`bluetooth_proxy: active: true` a konfigurációjában): az ezek nélküli proxy csak figyel.",
           "not_a_directory": "A metaadatok elérési útja nem könyvtár.",
           "not_approved": "A hozzáférési kérelmet nem hagyták jóvá időben az alkalmazásban. Küldje el újra, és hagyja jóvá a Beállítások → Átjáró → Hozzáférési jogosultságok → Nyitott kérelmek menüpontban.",
           "token_rejected": "Az átjáró már nem fogadja el a tárolt hozzáférést. Küldje el újra, hogy új hozzáférést kérjen.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Fogynak a JUNG HOME mesh hálózat sorszámai",
-      "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Egy küldő nem léphet túl e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update). A Bluetooth Mesh elvárja, hogy az az eszköz, amelynek fogynak a sorszámai, maga indítsa el ezt a frissítést; hogy a JUNG HOME eszközök ezt megteszik-e, egyelőre nem ismert. A Home Assistant követi az IV Update-et, és egy rendszergazda a(z) `junghome_ble.start_iv_update` művelettel el is indíttathat vele egyet (nem vonható vissza; éles üzemben még nem ellenőrzött). Egy eszköz minden újraindítása (áramszünet, leoldott kismegszakító) messze előre ugratja a sorszámait, így elsőként annak az eszköznek fogynak el a sorszámai, amely gyakran veszíti el a tápellátását. A probléma magától megszűnik a frissítés után."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "IV Update indítása",
+            "description": "A(z) {title} mesh hálózatban a(z) {source} már felhasználta a(z) {iv_index} IV-index sorszámainak {percent} %-át. Egy küldő nem léphet túl e tartomány végén, amíg a mesh hálózat át nem lép a következő IV-indexre (IV Update). A Bluetooth Mesh elvárja, hogy az az eszköz, amelynek fogynak a sorszámai, maga indítsa el ezt a frissítést; hogy a JUNG HOME eszközök ezt megteszik-e, egyelőre nem ismert. A Home Assistant követi az IV Update-et. Erősítsd meg, és most elindít egyet, ahogy a(z) `junghome_ble.start_iv_update` művelet teszi: nem vonható vissza, és el lesz utasítva, ha nincs kapcsolat a mesh hálózattal, a hálózati kulcs megújítása közben, valamint a legutóbbi IV Update utáni 96 órán belül. Éles üzemben még nem ellenőrzött. Egy eszköz minden újraindítása (áramszünet, leoldott kismegszakító) messze előre ugratja a sorszámait, így elsőként annak az eszköznek fogynak el a sorszámai, amely gyakran veszíti el a tápellátását. A probléma magától megszűnik a frissítés után."
+          }
+        },
+        "abort": {
+          "entry_gone": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, már nincs beállítva.",
+          "not_loaded": "Az a JUNG HOME bejegyzés, amelyhez ez a probléma tartozik, jelenleg nem fut. Próbálja újra, amint be van állítva.",
+          "start_failed": "Az IV Update nem indult el: {error} A probléma megmarad, amíg egy küldő sorszámai fogynak; javítsd újra, ha az ok megszűnt."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "A JUNG HOME mesh hálózat nem vette át az IV Update-et",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Kliens",
           "description": "A név, amelyen a kliens hozzáférést kér, pontosan úgy, ahogyan a `waiting` alatt szerepel. Üresen hagyva semmit nem hagy jóvá."
+        },
+        "config_entry_id": {
+          "name": "Mesh hálózat",
+          "description": "Melyik JUNG HOME hálózat, ha több is be van állítva."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "IV Update indítása",
+      "description": "A Home Assistanttal elindíttat egy IV Update-et a mesh hálózatban: a mesh hálózat a következő IV-indexre lép, így minden küldő új sorszámtartományt kap. A Bluetooth Mesh elvárja, hogy az az eszköz, amelynek fogynak a sorszámai, maga indítson egyet; a(z) *Fogynak a JUNG HOME mesh hálózat sorszámai* probléma javítása ugyanígy elindít egyet. Nem vonható vissza (az IV-index csak nő), és a mesh hálózat 96–144 órával később tér vissza a normál működéshez. Elutasítva, ha egyik küldő sem használta még fel sorszámai háromnegyedét (és a(z) *Akkor is, ha nem szükséges* nincs bekapcsolva), ha nincs kapcsolat a mesh hálózattal, a hálózati kulcs megújítása közben, valamint egy IV Update legutóbbi kezdete vagy vége utáni 96 órán belül. Csak rendszergazdáknak. Éles üzemben még nem ellenőrzött.",
+      "fields": {
+        "confirm": {
+          "name": "Megerősítés",
+          "description": "A végrehajtáshoz szükséges: egy IV Update nem vonható vissza."
+        },
+        "force": {
+          "name": "Akkor is, ha nem szükséges",
+          "description": "Elindítja akkor is, ha még egyik küldő sem használta fel sorszámai háromnegyedét."
         },
         "config_entry_id": {
           "name": "Mesh hálózat",

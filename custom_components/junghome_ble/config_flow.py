@@ -59,6 +59,7 @@ import asyncio
 import json
 import logging
 from collections.abc import Mapping
+from ipaddress import ip_address
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
@@ -100,6 +101,7 @@ from .const import (
     CONF_GATEWAY_HOST,
     CONF_GATEWAY_PASSWORD,
     CONF_GATEWAY_PIN_SOURCE,
+    CONF_GATEWAY_SERIAL,
     CONF_GATEWAY_SYNCED,
     CONF_GATEWAY_TOKEN,
     CONF_MESH_UUID,
@@ -320,6 +322,35 @@ def _normalize_host(raw: str) -> str:
     return host.rstrip("/").lower()
 
 
+def _follow_gateway(
+    hass: HomeAssistant, entry: ConfigEntry, serial: str, host: str
+) -> None:
+    """Have an entry set up from this gateway record its serial and follow it to the address it announced.
+
+    Only an entry whose export comes from the gateway, and only from an IP address (the gateway's DHCP lease
+    changed): a host name resolves by itself. The certificate stays pinned, so an announcement from another
+    device at that address gets nothing from the entry (`gateway_certificate_changed`). Neither reloads the
+    entry (not hub data). Unverified on air.
+    """
+    if entry.data.get(CONF_SOURCE) != SOURCE_GATEWAY:
+        return
+    data = {**entry.data, CONF_GATEWAY_SERIAL: serial}
+    stored = _normalize_host(str(entry.data.get(CONF_GATEWAY_HOST) or ""))
+    if _is_ip_address(stored) and stored != host:
+        _LOGGER.info("%s: the gateway announced a new address", entry.title)
+        data[CONF_GATEWAY_HOST] = host
+    if data != entry.data:
+        hass.config_entries.async_update_entry(entry, data=data)
+
+
+def _is_ip_address(host: str) -> bool:
+    try:
+        ip_address(host)
+    except ValueError:
+        return False
+    return True
+
+
 def _parse_unicast(raw: str) -> int | None:
     """Parse our own address as typed: hexadecimal, 0001-7FFF; None when it is not."""
     try:
@@ -367,9 +398,12 @@ def _offered_keys(choices: list[SelectOptionDict], selected: Any) -> list[str]:
 def _options_schema(
     options: dict[str, Any], keys: list[SelectOptionDict] | None = None
 ) -> vol.Schema:
-    """Return the options form; the keys that wait for a double click only with something to choose (`keys`)."""
+    """Return the options form; the keys that wait for a double click only with something to choose (`keys`).
+
+    Not while `click_delay` is on either: every key waits then, and a list of some would read as if it counted.
+    """
     wait: dict[Any, Any] = {}
-    if keys:
+    if keys and not options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY):
         wait[
             vol.Optional(
                 OPTION_DOUBLE_CLICK_KEYS,
@@ -689,11 +723,14 @@ async def validate_input(
         # proxies advertise its new key
         await async_apply_followed_key_refresh(hass, cdb, unicast)
     if not errors and not proxy_in_range(hass, cdb):
-        errors["base"] = (
-            "export_keys_stale"
-            if mesh_proxies_without_match(hass, cdb)
-            else "no_proxy_visible"
-        )
+        # no scanner that can connect at all is no question of range: an adapter missing, or ESPHome proxies
+        # without active connections (`bluetooth_proxy: active: true`), which only listen
+        if bluetooth.async_scanner_count(hass, connectable=True) == 0:
+            errors["base"] = "no_connectable_scanner"
+        elif mesh_proxies_without_match(hass, cdb):
+            errors["base"] = "export_keys_stale"
+        else:
+            errors["base"] = "no_proxy_visible"
     return cdb, errors
 
 
@@ -1035,6 +1072,8 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered_network_id: bytes | None = None
         # the address the gateway announced over mDNS: the gateway form's default, nothing more
         self._discovered_host: str | None = None
+        # its serial number: recorded in the entry the card sets up (`CONF_GATEWAY_SERIAL`)
+        self._discovered_serial: str | None = None
         self._host: str | None = None
         self._token: str | None = None
         # SHA-256 of the certificate every request to `_host` is pinned to; None until `_async_pin` decided it
@@ -1119,10 +1158,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the JUNG HOME Gateway's mDNS announcement: one flow per gateway serial, none for a configured one.
 
         The manifest matches the service type `_junghome._tcp.local.`; a TXT `manufacturer` other than JUNG, or no
-        `serial`, is not the gateway. A gateway an entry already names by this address (or the announced host name)
-        aborts. Nothing is sent to the address: it only prefills the gateway form, and the certificate is pinned
-        there as for a typed address (`_async_pin`). The entry's own unique id is the mesh UUID, set when the export
-        is loaded (`_async_finish_checked`); this flow's `gateway-<serial>` only collapses the announcements.
+        `serial`, is not the gateway. A gateway an entry already knows aborts (`_configured_gateway`), and the entry
+        follows it to a new address. Nothing is sent to the address: it only prefills the gateway form, and the
+        certificate is pinned there as for a typed address (`_async_pin`). The entry's own unique id is the mesh
+        UUID, set when the export is loaded (`_async_finish_checked`); this flow's `gateway-<serial>` only collapses
+        the announcements.
         """
         properties = discovery_info.properties
         manufacturer = properties.get("manufacturer")
@@ -1138,15 +1178,37 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
         host = discovery_info.host
         names = {host, discovery_info.hostname.rstrip(".").lower()}
+        mac = str(properties.get("mac") or "").strip().upper()
         for entry in self._async_current_entries(include_ignore=False):
-            if _normalize_host(str(entry.data.get(CONF_GATEWAY_HOST) or "")) in names:
+            if await self._configured_gateway(entry, serial, names, mac):
+                _follow_gateway(self.hass, entry, serial, host)
                 return self.async_abort(reason="already_configured")
         self._discovered_host = host
+        self._discovered_serial = serial
         self.context["title_placeholders"] = {
             "name": f"JUNG HOME Gateway {host}",
             "host": host,
         }
         return await self.async_step_zeroconf_confirm()
+
+    async def _configured_gateway(
+        self, entry: ConfigEntry, serial: str, names: set[str], mac: str
+    ) -> bool:
+        """Whether `entry` knows the announced gateway: by its serial, its address or host name, or its mesh.
+
+        The serial is the one the entry recorded (`CONF_GATEWAY_SERIAL`); the address one the entry names in any
+        spelling. The mesh: the announced `mac` is one of the entry's nodes (`KnownMesh.macs`), which covers an entry
+        set up from a file or an upload, and one naming the gateway `junghome.local`. Whether the gateway announces
+        the MAC its mesh node advertises from is unverified on air.
+        """
+        if entry.data.get(CONF_GATEWAY_SERIAL) == serial:
+            return True
+        if _normalize_host(str(entry.data.get(CONF_GATEWAY_HOST) or "")) in names:
+            return True
+        return bool(mac) and (
+            (known := await async_known_mesh_of(self.hass, entry)) is not None
+            and mac in known.macs
+        )
 
     async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
@@ -1885,6 +1947,11 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             abort_discovery_flows(
                 self.hass, key.network_id.hex(), keep_flow=self.flow_id
             )
+        if (
+            self._discovered_serial is not None
+            and data.get(CONF_SOURCE) == SOURCE_GATEWAY
+        ):
+            data[CONF_GATEWAY_SERIAL] = self._discovered_serial
         return self.async_create_entry(
             title=f"JUNG HOME mesh {cdb.mesh_uuid[:8]}",
             data=data,

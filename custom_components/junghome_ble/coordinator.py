@@ -50,10 +50,12 @@ from .const import (
     ISSUE_UNKNOWN_NODES,
     ISSUE_VAULT_KEY_REFRESH,
     LINK_SEARCHING,
+    LIVE_OPTIONS,
     NODE_DIAGNOSTICS_INTERVAL,
     NODE_INFO,
     NODE_INFO_TIME_ROLE,
     OPTION_HEARTBEATS,
+    REBUILD_OPTION_DEFAULTS,
     REFRESH_CHUNK,
     REQUEST_ATTEMPTS,
     SEQ_SKIP_AHEAD,
@@ -530,6 +532,17 @@ def hub_data(data: Mapping[str, Any]) -> dict[str, Any]:
     return {key: data.get(key) for key in HUB_DATA_KEYS}
 
 
+def hub_options(options: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the options a hub is built from: all but `LIVE_OPTIONS`, a default standing for an option not stored.
+
+    The update listener reloads the entry when they changed; a change to the others applies in place.
+    """
+    return {
+        **REBUILD_OPTION_DEFAULTS,
+        **{key: value for key, value in options.items() if key not in LIVE_OPTIONS},
+    }
+
+
 # a config entry of this integration: its `runtime_data` is the entry's hub
 type JungHomeConfigEntry = ConfigEntry[JungHomeHub]
 
@@ -658,7 +671,9 @@ class JungHomeHub:
             False  # `async_begin_rebuild` ran: a reload replaces this hub
         )
         # what this hub was built from; `needs_rebuild` tells the update listener whether the entry moved away from it
-        self._built_from = (hub_data(entry.data), dict(entry.options))
+        self._built_from = (hub_data(entry.data), hub_options(entry.options))
+        # the `LIVE_OPTIONS` as `async_options_updated` last applied them
+        self._live_options = {key: entry.options.get(key) for key in LIVE_OPTIONS}
         # the keys' gestures: clicks held back (`click_delay`, `double_click_keys`, read from the entry here), holds, repeat
         # suppression and the event listeners (`hub/gestures.py`); it ends its holds on link loss
         self.gestures = ButtonGestures(self)
@@ -942,8 +957,28 @@ class JungHomeHub:
 
     @property
     def needs_rebuild(self) -> bool:
-        """Whether the entry's options or the data the hub was built from (`hub_data`) changed since it started."""
-        return self._built_from != (hub_data(self.entry.data), dict(self.entry.options))
+        """Whether the data or the options the hub was built from (`hub_data`, `hub_options`) changed since it started."""
+        return self._built_from != (
+            hub_data(self.entry.data),
+            hub_options(self.entry.options),
+        )
+
+    @callback
+    def async_options_updated(self) -> None:
+        """Apply a change of `LIVE_OPTIONS` in place: the gestures read theirs as they go, the app follower is told.
+
+        The keys' event entities write their state again (their `waits_for_double_click`). Unverified on air.
+        """
+        live = {key: self.entry.options.get(key) for key in LIVE_OPTIONS}
+        if live == self._live_options:
+            return  # a new title, the gateway's address: nothing of the hub's
+        self._live_options = live
+        if self.app_follow is not None:
+            self.app_follow.apply_options()
+        event = self.platforms.get("event")
+        for entity in () if event is None else event.entities.values():
+            if entity.hass is not None:
+                entity.async_write_ha_state()
 
     async def async_begin_rebuild(self) -> bool:
         """Prepare this hub's replacement by a reload; False when a rebuild already started.

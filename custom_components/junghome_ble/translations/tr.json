@@ -179,6 +179,7 @@
       "invalid_address": "Adres, 0001 ile 7FFF arasında onaltılık bir değer olmalıdır.",
       "address_in_use": "Bu adres mesh ağındaki bir düğüme ait; kullanılmayan bir adres seçin.",
       "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+      "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
       "export_keys_stale": "Bu mesh ağının cihazları Bluetooth üzerinden görünüyor, ancak hiçbiri bu dışa aktarımdaki ağ anahtarıyla yayın paketi göndermiyor: ağın anahtarları, dışa aktarım yapıldıktan sonra yenilendi (JUNG HOME uygulamasında bir anahtar yenileme). Ağı JUNG HOME uygulamasından yeniden dışa aktarın veya ağ geçidinden yeniden alın ve o dosyayı kullanın.",
       "network_mismatch": "Dışa aktarım, bulunan mesh ağından farklı bir mesh ağına ait.",
       "mesh_already_configured": "Bu mesh ağı zaten başka bir giriş olarak kurulu (ağ anahtarı muhtemelen Home Assistant onu son gördüğünden beri yenilendi). Yeni bir giriş eklemek yerine o girişin Yeniden yapılandır seçeneğini kullanın.",
@@ -229,7 +230,7 @@
           "sync_areas": "JUNG odası değiştiğinde cihazları da taşı"
         },
         "data_description": {
-          "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler. Bu, her düğme için geçerlidir; yalnızca bazı düğmelerde beklemek için kapalı bırakın ve onları aşağıdaki listeden seçin.",
+          "click_delay": "Bir `click` olayı yarım saniye bekletilir ve ardından ikinci bir tıklama gelirse atılır; böylece çift basış yalnızca `double_click` tetikler. Kapalı: her basış hemen `click` tetikler ve çift basışın ikinci basışı ayrıca `double_click` tetikler. Bu, her düğme için geçerlidir; yalnızca bazı düğmelerde beklemek için kapalı bırakın ve onları *Çift tıklamayı bekleyen düğmeler* altında seçin; bu liste, bu seçenek kapalıyken ve entegrasyon çalışırken gösterilir.",
           "double_click_keys": "Yalnızca bu düğmeler `click` olaylarını yarım saniye bekletir ve ardından ikinci bir tıklama gelirse atar; böylece çift basış yalnızca `double_click` tetikler. Diğer tüm düğmeler `click` olayını hemen tetikler. Çift tıklama otomasyonu olan düğmeleri seçin. Yalnızca tıklayabilen düğmeler listelenir. Gerçek cihazlarda henüz doğrulanmadı.",
           "heartbeats": "Şebekeden beslenen her cihazdan Home Assistant'a 64 saniyede bir heartbeat göndermesi istenir (JUNG uygulamasının kapalı bıraktığı standart bir Bluetooth Mesh ayarı). Yaklaşık üç buçuk dakika boyunca hiçbir şey göndermeyen bir cihazın varlıkları, yeniden duyulana kadar kullanılamaz olarak işaretlenir. Bunu kapatmak cihazlara durmalarını söyler (hepsine bir kerede söylenemediyse bir sonraki bağlantıda yeniden); entegrasyonu kaldırmadan önce kapatın, çünkü entegrasyon bunu sonradan onlara söyleyemez.",
           "allow_provisioning": "`junghome_ble.add_device` eyleminin yeni bir JUNG cihazını ağa katmasına (provisioning) ve ağda zaten bulunan aynı ürünün bir cihazını örnek alarak uygulamanın yapacağı gibi yapılandırmasına, `junghome_ble.remove_device` eyleminin ise bir cihazı sıfırlayıp ağdan çıkarmasına izin verir. Henüz gerçek cihazlarda denenmedi: önce yedek bir cihazla deneyin. Ekleme, cihaza ağın anahtarlarını verir; kaldırma geri alınamaz.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Gönderilmedi: {node}, {message} iletisine {found} yanıtını verdi, ancak mesh dışa aktarımı {expected} diyor ({others} fark daha). Kurulum, mesh dışa aktarımı yapıldıktan sonra değişti (JUNG HOME uygulamasında, bir cihazın sıfırlanmasıyla veya yarıda kalan önceki bir eylemle) ve plan, dışa aktarımın artık tanımlamadığı şeylerin üzerine yazardı. Projeyi uygulamadan yeniden dışa aktarın veya Home Assistant'ın ağ geçidinin dışa aktarımını devralmasına izin verin ve eylemi yeniden çalıştırın; `force` ile bu denetim yapılmadan çalışır. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "Bir IV Update geri alınamaz: başlatmak için çağrıya \"confirm: true\" ekleyin."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Mesh ağındaki hiçbir gönderici henüz IV dizininin sıra numaralarının dörtte üçünü kullanmadı, bu yüzden IV Update gerekmiyor; yine de başlatmak için \"force: true\" ekleyin."
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV dizini {iv_index} için bir IV Update zaten sürüyor."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Mesh ağının ağ anahtarı şu anda yenileniyor (key refresh): bu tamamlandığında IV Update'i başlatın."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant, bağlı olduğu cihazdan mesh ağının IV dizinini henüz duymadı; birazdan yeniden deneyin. Home Assistant'ın bir beacon'da gördüğü mesh ağı IV durumunun son değişikliği: {mesh_changed}. Bir cihaz, kendi son IV Update'inden sonraki 96 saat içinde bir IV Update'i reddeder."
     },
     "start_iv_update_too_early": {
       "message": "Mesh ağında bir IV Update 96 saatten kısa bir süre önce başladı veya bitti (IV dizini {iv_index}): yenisi {not_before} itibarıyla başlatılabilir. Home Assistant'ın bir beacon'da gördüğü mesh ağı IV durumunun son değişikliği: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Mesh ağının IV dizini en yüksek değerinde ({iv_index}): daha ileri gidemez."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant yeni IV dizinini sıra numarası deposuna yazamadığı için IV Update'i başlatmadı; günlüğe bakın."
     },
     "abort_iv_update_needs_confirm": {
       "message": "IV Update'i iptal etmek Home Assistant'ı mesh ağının bulunduğu IV dizinine geri götürür: bunu yapmak için çağrıya \"confirm: true\" ekleyin."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
           "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
           "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
           "not_a_directory": "Meta veri yolu bir dizin değil.",
           "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
           "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
           "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
           "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
           "not_a_directory": "Meta veri yolu bir dizin değil.",
           "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
           "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
           "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
           "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
           "not_a_directory": "Meta veri yolu bir dizin değil.",
           "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
           "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
           "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
           "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
           "not_a_directory": "Meta veri yolu bir dizin değil.",
           "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
           "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Meta veri dizini, uygulamanın device_metadata.json ve scene_metadata.json dosyalarını beklenen biçimde içermiyor.",
           "no_project": "Ağ geçidinde ağ dışa aktarımı yok. JUNG HOME uygulamasını ağ geçidine bağlıyken bir kez açın (proje otomatik olarak yüklenir) ve ağ geçidi donanım yazılımının 2.1 veya daha yeni olduğundan emin olun.",
           "no_proxy_visible": "Bu mesh ağının hiçbir düğümü şu anda Bluetooth üzerinden görünmüyor. Bir Bluetooth adaptörünün veya ESPHome Bluetooth proxy'sinin şebekeden beslenen bir JUNG cihazının menzilinde olduğundan emin olun.",
+          "no_connectable_scanner": "Home Assistant'ın bir cihaza bağlanabilecek Bluetooth adaptörü veya proxy'si yok. Bir Bluetooth adaptörü ya da etkin bağlantıları olan bir ESPHome Bluetooth proxy'si (yapılandırmasında `bluetooth_proxy: active: true`) ekleyin: etkin bağlantıları olmayan bir proxy yalnızca dinler.",
           "not_a_directory": "Meta veri yolu bir dizin değil.",
           "not_approved": "Erişim isteği uygulamada zamanında onaylanmadı. Tekrar gönderin ve Ayarlar → Ağ Geçidi → Erişim İzinleri → Açık İstekler altında onaylayın.",
           "token_rejected": "Ağ geçidi kayıtlı erişimi artık kabul etmiyor. Yeniden erişim istemek için tekrar gönderin.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh ağının sıra numaraları azalıyor",
-      "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Bir gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunu aşamaz. Bluetooth Mesh, numaraları azalan bir cihazın bu güncellemeyi kendisinin başlatmasını bekler; JUNG HOME cihazlarının bunu yapıp yapmadığı henüz bilinmiyor. Home Assistant bir IV Update'i takip eder; bir yönetici `junghome_ble.start_iv_update` eylemiyle Home Assistant'ın bir tane başlatmasını sağlayabilir (geri alınamaz; gerçek ağda henüz doğrulanmadı). Bir cihazın her yeniden başlatılması (bir elektrik kesintisi, atan bir sigorta) sıra numaralarını çok ileriye atlatır; bu yüzden elektriği sık sık kesilen bir cihazın numaraları ilk önce azalır. Güncellemeden sonra sorun kendiliğinden kaybolur."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Bir IV Update başlat",
+            "description": "{title} adlı mesh ağında {source}, IV dizini {iv_index} için sıra numaralarının %{percent} kadarını kullandı. Bir gönderici, mesh ağı bir sonraki IV dizinine geçene (IV Update) kadar bu aralığın sonunu aşamaz. Bluetooth Mesh, numaraları azalan bir cihazın bu güncellemeyi kendisinin başlatmasını bekler; JUNG HOME cihazlarının bunu yapıp yapmadığı henüz bilinmiyor. Home Assistant bir IV Update'i takip eder. `junghome_ble.start_iv_update` eyleminin yaptığı gibi şimdi bir tane başlatması için onaylayın: geri alınamaz; mesh ağına bağlantı yokken, ağ anahtarı yenilenirken ve son IV Update'ten sonraki 96 saat içinde reddedilir. Gerçek ağda henüz doğrulanmadı. Bir cihazın her yeniden başlatılması (bir elektrik kesintisi, atan bir sigorta) sıra numaralarını çok ileriye atlatır; bu yüzden elektriği sık sık kesilen bir cihazın numaraları ilk önce azalır. Güncellemeden sonra sorun kendiliğinden kaybolur."
+          }
+        },
+        "abort": {
+          "entry_gone": "Bu sorunun ait olduğu JUNG HOME girişi artık kurulu değil.",
+          "not_loaded": "Bu sorunun ait olduğu JUNG HOME girişi şu anda çalışmıyor. Giriş kurulduktan sonra tekrar deneyin.",
+          "start_failed": "IV Update başlatılmadı: {error} Bir göndericinin numaraları azaldığı sürece sorun kalır; neden ortadan kalktığında yeniden onarın."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME mesh ağı IV Update'i kabul etmedi",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "İstemci",
           "description": "İstemcinin erişim istediği ad; `waiting` altında listelendiği şekliyle. Boş bırakılırsa hiçbir şey onaylanmaz."
+        },
+        "config_entry_id": {
+          "name": "Mesh ağı",
+          "description": "Birden fazla ağ yapılandırılmışsa hangi JUNG HOME ağı."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "IV Update başlat",
+      "description": "Home Assistant'ın mesh ağında bir IV Update başlatmasını sağlar: mesh ağı bir sonraki IV dizinine geçer ve her gönderici yeni bir sıra numarası aralığı alır. Bluetooth Mesh, sıra numaraları azalan bir cihazın bunu kendisinin başlatmasını bekler; *JUNG HOME mesh ağının sıra numaraları azalıyor* sorununu onarmak da aynı şekilde bir tane başlatır. Geri alınamaz (IV dizini yalnızca artar) ve mesh ağı 96 ila 144 saat sonra normal çalışmaya döner. Hiçbir gönderici sıra numaralarının dörtte üçünü kullanmadıysa (*Gerekmese bile* açık değilse), mesh ağına bağlantı yokken, ağ anahtarı yenilenirken ve bir IV Update'in son başlangıcından veya bitişinden sonraki 96 saat içinde reddedilir. Yalnızca yöneticiler için. Gerçek ağda henüz doğrulanmadı.",
+      "fields": {
+        "confirm": {
+          "name": "Onayla",
+          "description": "Gerçekleştirmek için gereklidir: bir IV Update geri alınamaz."
+        },
+        "force": {
+          "name": "Gerekmese bile",
+          "description": "Henüz hiçbir gönderici sıra numaralarının dörtte üçünü kullanmamış olsa da başlatır."
         },
         "config_entry_id": {
           "name": "Mesh ağı",

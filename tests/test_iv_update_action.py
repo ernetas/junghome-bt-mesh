@@ -25,6 +25,7 @@ from pytest_homeassistant_custom_component.components.diagnostics import (
     get_diagnostics_for_config_entry,
 )
 
+from custom_components.junghome_ble import repairs
 from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_IV_UPDATE_NOT_TAKEN,
@@ -170,6 +171,52 @@ async def test_start_sends_the_beacon_and_answers_the_new_index(
     assert refused.value.translation_placeholders["iv_index"] == "1"
     await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()
+
+
+async def start_by_repair(hass: HomeAssistant, issue: Any) -> Any:
+    """Confirm the issue's fix flow, bound as Home Assistant's repairs flow manager binds it."""
+    flow = await repairs.async_create_fix_flow(hass, issue.issue_id, issue.data)
+    flow.hass, flow.issue_id, flow.flow_id = hass, issue.issue_id, "flow"
+    form = await flow.async_step_init()
+    assert form["step_id"] == "confirm"
+    return form, await flow.async_step_confirm({})
+
+
+async def test_the_repair_starts_it_with_the_actions_guards(
+    hass: HomeAssistant,
+    clock: list[float],
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Review-5 (improvement): `sequence_space_low` is fixable — no action and `confirm: true` to compose in
+    Developer tools. Its confirmation starts the IV Update as the action does, and a guard's refusal (here: one
+    started already) aborts with the action's words; the started update clears the issue."""
+    hub = hub_of(init_integration)
+    running_low(hub)
+    issue = find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW)
+    assert issue is not None
+    assert issue.is_fixable
+    assert issue.data == {"entry_id": init_integration.entry_id}
+    form, result = await start_by_repair(hass, issue)
+    assert form["description_placeholders"]["percent"] == "75"
+    assert result["type"] == "create_entry"
+    assert fake_link.beacons_in == [(1, True)]
+    assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is None
+    running_low(hub)  # in the new index: raised again, but an update runs
+    _form, result = await start_by_repair(
+        hass, find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW)
+    )
+    assert result["type"] == "abort"
+    assert result["reason"] == "start_failed"
+    assert result["description_placeholders"]["error"]
+    assert fake_link.beacons_in == [(1, True)]
+    await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    _form, result = await start_by_repair(hass, issue)
+    assert result["reason"] == "not_loaded"
+    await hass.config_entries.async_remove(init_integration.entry_id)
+    _form, result = await start_by_repair(hass, issue)
+    assert result["reason"] == "entry_gone"
 
 
 async def test_it_needs_confirm(
@@ -318,11 +365,12 @@ async def test_a_superseded_state_writes_nothing_and_says_so(
 
 
 def test_the_repair_names_the_action_and_keeps_its_placeholders() -> None:
-    """Every language's `sequence_space_low` text mentions the action and keeps the placeholders it had."""
+    """Every language's `sequence_space_low` text (its repair's confirmation since it is fixable) mentions the action
+    and keeps the placeholders it had."""
     texts = {
         path.name: json.loads(path.read_text(encoding="utf-8"))["issues"][
             "sequence_space_low"
-        ]["description"]
+        ]["fix_flow"]["step"]["confirm"]["description"]
         for path in [
             COMPONENT / "strings.json",
             *sorted((COMPONENT / "translations").glob("*.json")),

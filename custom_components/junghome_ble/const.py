@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from .jhmesh.properties import (
     SIG_HARDWARE_REVISION,
@@ -35,6 +35,11 @@ CONF_GATEWAY_FINGERPRINT: Final = (
 # Only a pin the mesh vouched for is used at runtime (`JungHomeHub.async_gateway_distrust`) and it cannot be
 # overridden by one click in the flow. Not in HUB_DATA_KEYS: recording it never reloads.
 CONF_GATEWAY_PIN_SOURCE: Final = "gateway_pin_source"
+# the serial number the gateway announces over mDNS (TXT `serial`, lower case): what a later announcement is matched
+# with when the address changed or the entry names the gateway otherwise (`ConfigFlow.async_step_zeroconf`).
+# Recorded by an entry set up from the discovery card, or by an announcement from the address the entry uses. A
+# stable, unique id of the user's gateway: redacted in the diagnostics. Not in HUB_DATA_KEYS: recording it never reloads.
+CONF_GATEWAY_SERIAL: Final = "gateway_serial"
 PIN_FROM_MESH: Final = "mesh"
 PIN_FROM_USER: Final = "user"
 CONF_GATEWAY_TOKEN: Final = "gateway_token"  # noqa: S105 - the gateway's API token: it hands out the export with every mesh key, so it is redacted like the keys
@@ -61,7 +66,8 @@ HUB_DATA_KEYS: Final = (
     CONF_SOURCE,
 )
 
-# Options (entry.options, set through the options flow; a change reloads the entry through the update listener).
+# Options (entry.options, set through the options flow; a change reloads the entry through the update listener, but
+# for `LIVE_OPTIONS`).
 OPTION_CLICK_DELAY: Final = "click_delay"  # hold every `click` back for DOUBLE_CLICK_WINDOW so a double press reports no click
 DEFAULT_CLICK_DELAY: Final = False
 # the keys (`Button.unique_id`) whose clicks are held back like that, the others' reported at once (review-4 U4-19);
@@ -96,6 +102,28 @@ DEFAULT_ASSIGN_AREAS: Final = True
 # after an export adoption or a room action, move the devices whose room changed, unless the user placed them by hand
 OPTION_SYNC_AREAS: Final = "sync_areas"
 DEFAULT_SYNC_AREAS: Final = False
+# The options the running hub reads where it uses them (the gestures, the app follower, the actions, the area sync):
+# a change applies without a reload (`JungHomeHub.async_options_updated`). Every other option is read when the hub
+# is built, and a change to it reloads the entry (`JungHomeHub.needs_rebuild`).
+LIVE_OPTIONS: Final = frozenset(
+    {
+        OPTION_CLICK_DELAY,
+        OPTION_DOUBLE_CLICK_KEYS,
+        OPTION_ALLOW_PROVISIONING,
+        OPTION_FOLLOW_APP,
+        OPTION_GATEWAY_CHECK,
+        OPTION_SYNC_AREAS,
+    }
+)
+# the defaults of the others, for that comparison: the options form writes every switch it shows, so a first save
+# of an unchanged form records a default the entry did not hold, and changes nothing the hub was built from
+REBUILD_OPTION_DEFAULTS: Final[Mapping[str, Any]] = MappingProxyType(
+    {
+        OPTION_HEARTBEATS: DEFAULT_HEARTBEATS,
+        OPTION_PROVISIONER_IDENTITY: DEFAULT_PROVISIONER_IDENTITY,
+        OPTION_ASSIGN_AREAS: DEFAULT_ASSIGN_AREAS,
+    }
+)
 
 
 # What a node tells about itself and the hub keeps (`node_info.NODE_VERSIONS`), under the property catalogue's

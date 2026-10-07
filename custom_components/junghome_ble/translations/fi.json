@@ -179,6 +179,7 @@
       "invalid_address": "Osoitteen on oltava heksadesimaaliluku väliltä 0001–7FFF.",
       "address_in_use": "Osoite kuuluu mesh-verkon solmulle; valitse käyttämätön osoite.",
       "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+      "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
       "export_keys_stale": "Tämän mesh-verkon laitteet näkyvät Bluetoothin kautta, mutta yksikään ei mainosta tämän viennin verkkoavainta: verkon avaimet uusittiin (avainten päivitys JUNG HOME -sovelluksessa) viennin tekemisen jälkeen. Vie verkko uudelleen JUNG HOME -sovelluksesta tai hae se uudelleen yhdyskäytävältä ja käytä sitä tiedostoa.",
       "network_mismatch": "Vienti kuuluu eri mesh-verkkoon kuin löydetty verkko.",
       "mesh_already_configured": "Tämä mesh-verkko on jo määritetty toisena merkintänä (sen verkkoavain on todennäköisesti päivitetty sen jälkeen, kun Home Assistant viimeksi näki sen). Käytä kyseisen merkinnän Määritä uudelleen -toimintoa uuden lisäämisen sijaan.",
@@ -229,7 +230,7 @@
           "sync_areas": "Siirrä laitteet mukana, kun niiden JUNG-huone vaihtuu"
         },
         "data_description": {
-          "click_delay": "`click`-tapahtumaa pidätetään puoli sekuntia, ja se hylätään, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman. Pois päältä: jokainen painallus laukaisee `click`-tapahtuman heti, ja kaksoispainalluksen toinen painallus laukaisee lisäksi `double_click`-tapahtuman. Tämä koskee kaikkia painikkeita; jos haluat odottaa vain joillakin, jätä tämä pois päältä ja valitse ne alla olevasta luettelosta.",
+          "click_delay": "`click`-tapahtumaa pidätetään puoli sekuntia, ja se hylätään, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman. Pois päältä: jokainen painallus laukaisee `click`-tapahtuman heti, ja kaksoispainalluksen toinen painallus laukaisee lisäksi `double_click`-tapahtuman. Tämä koskee kaikkia painikkeita; jos haluat odottaa vain joillakin, jätä tämä pois päältä ja valitse ne kohdassa *Painikkeet, jotka odottavat kaksoisnapsautusta*, joka näkyy, kun tämä on pois päältä ja integraatio on käynnissä.",
           "double_click_keys": "Vain nämä painikkeet pidättävät `click`-tapahtumaansa puoli sekuntia ja hylkäävät sen, jos toinen napsautus seuraa, joten kaksoispainallus laukaisee vain `double_click`-tapahtuman; muut painikkeet laukaisevat `click`-tapahtuman heti. Valitse painikkeet, joilla on kaksoisnapsautuksen automaatio. Vain napsauttaa osaavat painikkeet näytetään. Ei vielä varmistettu oikeilla laitteilla.",
           "heartbeats": "Jokaista verkkovirtakäyttöistä laitetta pyydetään lähettämään Home Assistantille heartbeat-viesti 64 sekunnin välein (Bluetooth Mesh -standardin asetus, jonka JUNG-sovellus jättää pois päältä). Jos laite ei lähetä mitään noin kolmeen ja puoleen minuuttiin, sen entiteetit merkitään ei käytettävissä oleviksi, kunnes se kuuluu taas. Kun tämä kytketään pois, laitteita pyydetään lopettamaan (uudelleen seuraavalla yhteydellä, jos kaikille ei voitu kertoa kerralla); kytke tämä pois ennen integraation poistamista, koska sen jälkeen laitteille ei voi enää kertoa.",
           "allow_provisioning": "Sallii toiminnon `junghome_ble.add_device` ottaa uuden JUNG-laitteen käyttöön verkossa ja määrittää sen kuten sovellus, verkossa jo olevan saman tuotteen laitteen mukaan, sekä toiminnon `junghome_ble.remove_device` palauttaa laitteen tehdasasetuksiin ja poistaa sen verkosta. Ei vielä kokeiltu oikeilla laitteilla: kokeile ensin varalaitteella. Lisääminen antaa laitteelle verkon avaimet; poistoa ei voi perua.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Ei lähetetty: {node} vastasi viestiin {message} arvolla {found}, mutta mesh-verkon viennissä on {expected} (muita eroja: {others}). Asennusta on muutettu mesh-verkon viennin jälkeen (JUNG HOME -sovelluksessa, laitteen nollauksella tai aiemmalla toiminnolla, joka pysähtyi kesken), ja suunnitelma korvaisi sen, mitä vienti ei enää kuvaa. Vie projekti sovelluksesta uudelleen tai anna Home Assistantin ottaa yhdyskäytävän vienti käyttöön ja suorita toiminto uudelleen; asetuksella `force` se suoritetaan ilman tätä tarkistusta. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update -päivitystä ei voi perua: lisää kutsuun \"confirm: true\" aloittaaksesi sen."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Mikään mesh-verkon lähettäjä ei ole vielä käyttänyt kolmea neljäsosaa IV-indeksinsä järjestysnumeroista, joten IV Update ei ole tarpeen; lisää \"force: true\" aloittaaksesi sen silti."
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV Update IV-indeksiin {iv_index} on jo käynnissä."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Mesh-verkon verkkoavainta uusitaan parhaillaan (key refresh): aloita IV Update, kun se on valmis."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant ei ole vielä kuullut mesh-verkon IV-indeksiä laitteelta, jonka kautta se on yhdistetty; yritä hetken kuluttua uudelleen. Mesh-verkon IV-tilan viimeisin muutos, jonka Home Assistant näki majakassa: {mesh_changed}. Laite hylkää IV Updaten 96 tunnin kuluessa omasta viimeisimmästään."
     },
     "start_iv_update_too_early": {
       "message": "IV Update alkoi tai päättyi mesh-verkossa alle 96 tuntia sitten (IV-indeksi on {iv_index}): uuden voi aloittaa {not_before} alkaen. Mesh-verkon IV-tilan viimeisin muutos, jonka Home Assistant näki majakassa: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Mesh-verkon IV-indeksi on suurimmassa arvossaan ({iv_index}): se ei voi kasvaa enempää."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant ei voinut kirjoittaa uutta IV-indeksiä järjestysnumerovarastoonsa, joten se ei aloittanut IV Update -päivitystä; katso loki."
     },
     "abort_iv_update_needs_confirm": {
       "message": "IV Updaten keskeyttäminen palauttaa Home Assistantin IV-indeksiin, jossa mesh-verkko on: lisää kutsuun \"confirm: true\" tehdäksesi sen."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
           "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
           "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
           "not_a_directory": "Metatietopolku ei ole kansio.",
           "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
           "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
           "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
           "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
           "not_a_directory": "Metatietopolku ei ole kansio.",
           "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
           "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
           "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
           "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
           "not_a_directory": "Metatietopolku ei ole kansio.",
           "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
           "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
           "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
           "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
           "not_a_directory": "Metatietopolku ei ole kansio.",
           "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
           "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Metatietokansiossa ei ole sovelluksen tiedostoja device_metadata.json ja scene_metadata.json odotetussa muodossa.",
           "no_project": "Yhdyskäytävällä ei ole verkon vientiä. Avaa JUNG HOME -sovellus kerran, kun se on yhteydessä yhdyskäytävään (se lataa projektin automaattisesti), ja varmista, että yhdyskäytävän laiteohjelmisto on versio 2.1 tai uudempi.",
           "no_proxy_visible": "Mikään tämän mesh-verkon solmu ei näy tällä hetkellä Bluetoothin kautta. Varmista, että Bluetooth-sovitin tai ESPHome Bluetooth proxy on verkkovirtakäyttöisen JUNG-laitteen kantaman sisällä.",
+          "no_connectable_scanner": "Home Assistantilla ei ole Bluetooth-sovitinta eikä välityspalvelinta (proxy), joka voisi muodostaa yhteyden laitteeseen. Lisää Bluetooth-sovitin tai ESPHome Bluetooth -proxy, jossa on aktiiviset yhteydet (`bluetooth_proxy: active: true` sen asetuksissa): proxy ilman niitä vain kuuntelee.",
           "not_a_directory": "Metatietopolku ei ole kansio.",
           "not_approved": "Käyttöoikeuspyyntöä ei hyväksytty sovelluksessa ajoissa. Lähetä uudelleen ja hyväksy pyyntö kohdassa Asetukset → Yhdyskäytävä → Käyttöoikeudet → Avoimet pyynnöt.",
           "token_rejected": "Yhdyskäytävä ei enää hyväksy tallennettua käyttöoikeutta. Lähetä uudelleen pyytääksesi käyttöoikeutta uudestaan.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME -mesh-verkon järjestysnumerot vähissä",
-      "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Lähettäjä ei pääse tämän alueen lopun yli, ennen kuin mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update). Bluetooth Mesh edellyttää, että laite, jonka numerot käyvät vähiin, aloittaa tämän päivityksen itse; vielä ei tiedetä, tekevätkö JUNG HOME -laitteet niin. Home Assistant seuraa IV Update -päivitystä, ja ylläpitäjä voi antaa sen aloittaa sellaisen toiminnolla `junghome_ble.start_iv_update` (sitä ei voi perua; ei vielä kokeiltu käytössä). Jokainen laitteen uudelleenkäynnistys (sähkökatko, lauennut sulake) siirtää sen järjestysnumerot kauas eteenpäin, joten laite, joka menettää usein virtansa, käyttää numeronsa vähiin ensimmäisenä. Ongelma poistuu itsestään päivityksen jälkeen."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Aloita IV Update",
+            "description": "Mesh-verkossa {title} {source} on käyttänyt {percent} % IV-indeksin {iv_index} järjestysnumeroista. Lähettäjä ei pääse tämän alueen lopun yli, ennen kuin mesh-verkko siirtyy seuraavaan IV-indeksiin (IV Update). Bluetooth Mesh edellyttää, että laite, jonka numerot käyvät vähiin, aloittaa tämän päivityksen itse; vielä ei tiedetä, tekevätkö JUNG HOME -laitteet niin. Home Assistant seuraa IV Update -päivitystä. Vahvista, niin se aloittaa sellaisen nyt, kuten toiminto `junghome_ble.start_iv_update` tekee: sitä ei voi perua, ja se hylätään ilman yhteyttä mesh-verkkoon, verkkoavaimen uusimisen aikana ja 96 tunnin kuluessa edellisestä IV Update -päivityksestä. Ei vielä kokeiltu käytössä. Jokainen laitteen uudelleenkäynnistys (sähkökatko, lauennut sulake) siirtää sen järjestysnumerot kauas eteenpäin, joten laite, joka menettää usein virtansa, käyttää numeronsa vähiin ensimmäisenä. Ongelma poistuu itsestään päivityksen jälkeen."
+          }
+        },
+        "abort": {
+          "entry_gone": "JUNG HOME -merkintää, johon tämä ongelma kuuluu, ei ole enää määritetty.",
+          "not_loaded": "JUNG HOME -merkintä, johon tämä ongelma kuuluu, ei ole juuri nyt käynnissä. Yritä uudelleen, kun se on määritetty.",
+          "start_failed": "IV Update -päivitystä ei aloitettu: {error} Ongelma säilyy niin kauan kuin jonkin lähettäjän numerot ovat vähissä; korjaa se uudelleen, kun syy on poistunut."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME -mesh-verkko ei ottanut IV Updatea",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Asiakas",
           "description": "Nimi, jolla asiakas pyytää käyttöoikeutta, täsmälleen kuten se näkyy kohdassa `waiting`. Tyhjänä mitään ei hyväksytä."
+        },
+        "config_entry_id": {
+          "name": "Verkko",
+          "description": "Mikä JUNG HOME -verkko, jos niitä on määritetty useampi."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Aloita IV Update",
+      "description": "Antaa Home Assistantin aloittaa mesh-verkon IV Update -päivityksen: mesh-verkko siirtyy seuraavaan IV-indeksiin, jolloin jokainen lähettäjä saa uuden järjestysnumeroalueen. Bluetooth Mesh edellyttää, että laite, jonka järjestysnumerot käyvät vähiin, aloittaa sellaisen itse; ongelman *JUNG HOME -mesh-verkon järjestysnumerot vähissä* korjaaminen aloittaa sen samalla tavalla. Sitä ei voi perua (IV-indeksi vain kasvaa), ja mesh-verkko palaa normaaliin toimintaan 96–144 tunnin kuluttua. Hylätään, ellei jokin lähettäjä ole käyttänyt kolmea neljäsosaa järjestysnumeroistaan (tai *Vaikka ei tarvita* ole käytössä), ilman yhteyttä mesh-verkkoon, verkkoavaimen uusimisen aikana ja 96 tunnin kuluessa edellisen IV Update -päivityksen alkamisesta tai päättymisestä. Vain järjestelmänvalvojille. Ei vielä kokeiltu käytössä.",
+      "fields": {
+        "confirm": {
+          "name": "Vahvista",
+          "description": "Tarvitaan toteuttamiseen: IV Update -päivitystä ei voi perua."
+        },
+        "force": {
+          "name": "Vaikka ei tarvita",
+          "description": "Aloita se, vaikka mikään lähettäjä ei ole vielä käyttänyt kolmea neljäsosaa järjestysnumeroistaan."
         },
         "config_entry_id": {
           "name": "Verkko",

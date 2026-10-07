@@ -179,6 +179,7 @@
       "invalid_address": "L'adreça ha de ser hexadecimal, entre 0001 i 7FFF.",
       "address_in_use": "Aquesta adreça pertany a un node del mesh; tria'n una que no es faci servir.",
       "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+      "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
       "export_keys_stale": "Es veuen per Bluetooth dispositius d'aquest mesh, però cap no anuncia la clau de xarxa d'aquesta exportació: les claus de la xarxa es van renovar (un Key Refresh a l'aplicació JUNG HOME) després de fer l'exportació. Torna a exportar la xarxa des de l'aplicació JUNG HOME, o torna a obtenir-la de la passarel·la, i fes servir aquest fitxer.",
       "network_mismatch": "L'exportació pertany a una xarxa mesh diferent de la que s'ha descobert.",
       "mesh_already_configured": "Aquest mesh ja està configurat com una altra entrada (probablement la seva clau de xarxa s'ha renovat des que Home Assistant la va veure per última vegada). Fes servir Reconfigura en aquella entrada en lloc d'afegir-ne una de nova.",
@@ -229,7 +230,7 @@
           "sync_areas": "Mou els dispositius quan canvia la seva habitació JUNG"
         },
         "data_description": {
-          "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`. Això s'aplica a totes les tecles; per esperar només en algunes, deixa-ho desactivat i tria-les a la llista de sota.",
+          "click_delay": "Un esdeveniment `click` es reté mig segon i es descarta si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`. Desactivat: cada pulsació genera `click` immediatament i la segona pulsació d'una doble pulsació genera també `double_click`. Això s'aplica a totes les tecles; per esperar només en algunes, deixa-ho desactivat i tria-les a *Tecles que esperen un doble clic*, que es mostra mentre això està desactivat i la integració funciona.",
           "double_click_keys": "Només aquestes tecles retenen el seu `click` mig segon i el descarten si el segueix un segon clic, de manera que una doble pulsació només genera `double_click`; qualsevol altra tecla genera `click` immediatament. Tria les tecles que tenen una automatització de doble clic. Només es mostren les tecles que poden fer clic. No verificat en dispositius reals.",
           "heartbeats": "A cada dispositiu alimentat per la xarxa elèctrica se li demana que enviï un heartbeat a Home Assistant cada 64 segons (un paràmetre estàndard de Bluetooth Mesh que l'aplicació JUNG deixa desactivat). Si un dispositiu no envia res durant uns tres minuts i mig, les seves entitats es marquen com a no disponibles fins que se'l torna a sentir. Desactivar-ho indica als dispositius que s'aturin (de nou a la connexió següent si no s'ha pogut avisar-los tots alhora); desactiva-ho abans d'eliminar la integració, que després ja no els ho pot indicar.",
           "allow_provisioning": "Permet que l'acció `junghome_ble.add_device` posi en servei un dispositiu JUNG nou i el configuri com ho faria l'aplicació, a partir d'un dispositiu del mateix producte que ja és a la xarxa, i que `junghome_ble.remove_device` restableixi un dispositiu i el tregui de la xarxa. Encara no s'ha provat en dispositius reals: prova-ho primer amb un dispositiu de recanvi. En afegir un dispositiu se li lliuren les claus de la xarxa; l'eliminació no es pot desfer.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "No s'ha enviat: {node} ha respost a {message} amb {found}, però l'exportació del mesh diu {expected} ({others} diferències més). La instal·lació ha canviat després de fer l'exportació del mesh (a l'aplicació JUNG HOME, per un restabliment d'un dispositiu o per una acció anterior que es va aturar a mitges), i el pla sobreescriuria el que l'exportació ja no descriu. Torna a exportar el projecte des de l'aplicació, o deixa que Home Assistant adopti l'exportació de la passarel·la, i torna a executar l'acció; amb `force` s'executa sense aquesta comprovació. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "Una IV Update no es pot desfer: afegeix \"confirm: true\" a la crida per iniciar-la."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Cap emissor del mesh no ha fet servir encara tres quartes parts dels números de seqüència del seu índex IV, així que no cal cap IV Update; afegeix \"force: true\" per iniciar-ne una igualment."
+    },
+    "start_iv_update_in_progress": {
+      "message": "Ja hi ha en curs una IV Update a l'índex IV {iv_index}."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "S'està renovant la clau de xarxa del mesh (una renovació de claus): inicia la IV Update quan hagi acabat."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant encara no ha sentit l'índex IV del mesh des del dispositiu a través del qual està connectat; torna-ho a provar d'aquí a un moment. L'últim canvi de l'estat IV del mesh que Home Assistant ha vist en una balisa: {mesh_changed}. Un dispositiu rebutja una IV Update dins de les 96 hores posteriors a la seva última."
     },
     "start_iv_update_too_early": {
       "message": "Fa menys de 96 hores que una IV Update va començar o acabar al mesh (l'índex IV és {iv_index}): se'n pot iniciar una de nova a partir de {not_before}. L'últim canvi de l'estat IV del mesh que Home Assistant ha vist en una balisa: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "L'índex IV del mesh és al seu valor màxim ({iv_index}): no pot anar més enllà."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant no ha pogut escriure el nou índex IV al seu magatzem de números de seqüència, així que no ha iniciat la IV Update; consulta el registre."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Avortar la IV Update fa tornar Home Assistant a l'índex IV en què és el mesh: afegeix \"confirm: true\" a la crida per fer-ho."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
           "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
           "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
           "not_a_directory": "El camí de les metadades no és un directori.",
           "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
           "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
           "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
           "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
           "not_a_directory": "El camí de les metadades no és un directori.",
           "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
           "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
           "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
           "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
           "not_a_directory": "El camí de les metadades no és un directori.",
           "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
           "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
           "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
           "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
           "not_a_directory": "El camí de les metadades no és un directori.",
           "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
           "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "El directori de metadades no conté els fitxers device_metadata.json i scene_metadata.json de l'aplicació en la forma esperada.",
           "no_project": "La passarel·la no conté cap exportació de xarxa. Obre una vegada l'aplicació JUNG HOME mentre està connectada a la passarel·la (hi carrega el projecte automàticament) i assegura't que el microprogramari de la passarel·la sigui la versió 2.1 o posterior.",
           "no_proxy_visible": "Ara mateix no es veu per Bluetooth cap node d'aquesta xarxa mesh. Assegura't que hi hagi un adaptador Bluetooth o un proxy Bluetooth d'ESPHome a l'abast d'un dispositiu JUNG alimentat per la xarxa elèctrica.",
+          "no_connectable_scanner": "Home Assistant no té cap adaptador Bluetooth ni cap proxy que pugui connectar-se a un dispositiu. Afegeix un adaptador Bluetooth, o un proxy Bluetooth d'ESPHome amb connexions actives (`bluetooth_proxy: active: true` a la seva configuració): un proxy sense connexions actives només escolta.",
           "not_a_directory": "El camí de les metadades no és un directori.",
           "not_approved": "La sol·licitud d'accés no s'ha aprovat a temps a l'aplicació. Torna a enviar i aprova-la a Configuració → Passarel·la → Permisos d'accés → Sol·licituds obertes.",
           "token_rejected": "La passarel·la ja no accepta l'accés desat. Torna a enviar per sol·licitar l'accés de nou.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Els números de seqüència del mesh JUNG HOME s'estan esgotant",
-      "description": "Al mesh {title}, {source} ha fet servir el {percent} % dels números de seqüència de l'índex IV {iv_index}. Un emissor no pot passar del final d'aquest espai fins que el mesh passa a l'índex IV següent (una IV Update). Bluetooth Mesh espera que un dispositiu que s'està quedant sense números iniciï ell mateix aquesta actualització; encara no se sap si els dispositius JUNG HOME ho fan. Home Assistant segueix una IV Update, i un administrador pot fer que n'iniciï una amb l'acció `junghome_ble.start_iv_update` (no es pot desfer; no verificat en funcionament real). Cada reinici d'un dispositiu (un tall de corrent, un magnetotèrmic que salta) fa avançar molt els seus números de seqüència, de manera que un dispositiu que es queda sovint sense corrent és el primer a esgotar-los. El problema desapareix tot sol després de l'actualització."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Inicia una IV Update",
+            "description": "Al mesh {title}, {source} ha fet servir el {percent} % dels números de seqüència de l'índex IV {iv_index}. Un emissor no pot passar del final d'aquest espai fins que el mesh passa a l'índex IV següent (una IV Update). Bluetooth Mesh espera que un dispositiu que s'està quedant sense números iniciï ell mateix aquesta actualització; encara no se sap si els dispositius JUNG HOME ho fan. Home Assistant segueix una IV Update. Confirma per fer que n'iniciï una ara, com fa l'acció `junghome_ble.start_iv_update`: no es pot desfer, i es rebutja sense connexió amb el mesh, durant una renovació de la clau de xarxa i dins de les 96 hores posteriors a l'última IV Update. No verificat en funcionament real. Cada reinici d'un dispositiu (un tall de corrent, un magnetotèrmic que salta) fa avançar molt els seus números de seqüència, de manera que un dispositiu que es queda sovint sense corrent és el primer a esgotar-los. El problema desapareix tot sol després de l'actualització."
+          }
+        },
+        "abort": {
+          "entry_gone": "L'entrada JUNG HOME a la qual pertany aquest problema ja no està configurada.",
+          "not_loaded": "L'entrada JUNG HOME a la qual pertany aquest problema no s'està executant ara mateix. Torna-ho a provar quan estigui configurada.",
+          "start_failed": "La IV Update no s'ha iniciat: {error} El problema es manté mentre un emissor s'estigui quedant sense números; torna a reparar-lo quan hagi desaparegut la causa."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "El mesh JUNG HOME no ha acceptat la IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Client",
           "description": "El nom amb què el client demana accés, exactament com apareix a `waiting`. Si es deixa buit, no s'aprova res."
+        },
+        "config_entry_id": {
+          "name": "Xarxa mesh",
+          "description": "Quina xarxa JUNG HOME, quan n'hi ha més d'una de configurada."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Inicia una IV Update",
+      "description": "Fa que Home Assistant iniciï una IV Update del mesh: el mesh passa a l'índex IV següent, cosa que dona a cada emissor un espai nou de números de seqüència. Bluetooth Mesh espera que un dispositiu que s'està quedant sense números de seqüència n'iniciï una ell mateix; reparar el problema *Els números de seqüència del mesh JUNG HOME s'estan esgotant* n'inicia una de la mateixa manera. No es pot desfer (l'índex IV només augmenta), i el mesh torna al funcionament normal entre 96 i 144 hores després. Es rebutja tret que un emissor hagi fet servir tres quartes parts dels seus números de seqüència (o que *Encara que no calgui* estigui activat), sense connexió amb el mesh, durant una renovació de la clau de xarxa i dins de les 96 hores posteriors a l'últim inici o final d'una IV Update. Només per a administradors. No verificat en funcionament real.",
+      "fields": {
+        "confirm": {
+          "name": "Confirma",
+          "description": "Cal per dur-la a terme: una IV Update no es pot desfer."
+        },
+        "force": {
+          "name": "Encara que no calgui",
+          "description": "Inicia-la encara que cap emissor no hagi fet servir tres quartes parts dels seus números de seqüència."
         },
         "config_entry_id": {
           "name": "Xarxa mesh",

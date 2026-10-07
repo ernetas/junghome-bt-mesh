@@ -42,6 +42,9 @@ the app makes it report. Event entities stay *unknown* until their first key pre
 
 The messages the setup dialog can show, and what to do:
 
+- **"Home Assistant has no Bluetooth adapter or proxy that can connect to a device"** — there is no Bluetooth
+  adapter, and every ESPHome proxy only listens: add `bluetooth_proxy: active: true` to the proxy's configuration (or
+  plug in an adapter) and try again. Moving the proxy does not help.
 - **"No node of this mesh network is currently visible over Bluetooth"** — no device of the installation is in
   reach, or the ESPHome proxy lacks `active: true`, or the export is from another installation. Wait a minute after
   a restart and try again.
@@ -225,8 +228,9 @@ Free up space or repair the storage. [Details](../ha-integration.md#repair-issue
 
 A device of the installation has used most of its numbers. The mesh moves on to new ones with an IV Update, which
 Bluetooth Mesh expects the device running low to start itself; that JUNG HOME devices do is unverified on air. Home
-Assistant follows the update, and if the repair stays open an administrator can have Home Assistant start one with
-the action `junghome_ble.start_iv_update` (*Developer tools → Actions*, with `confirm: true`). It cannot be undone:
+Assistant follows the update, and if the repair stays open an administrator can have Home Assistant start one: open
+the repair and confirm (or use the action `junghome_ble.start_iv_update`, *Developer tools → Actions*, with
+`confirm: true`; both refuse in the same cases and say why). It cannot be undone:
 the IV index only goes up, and the mesh is back in normal operation 96 to 144 hours later. That a JUNG device takes
 an IV Update from Home Assistant is unverified on air. Every restart of a device (a power cut, a tripped breaker)
 skips its numbers far ahead, so a device that often loses power runs low first.
@@ -326,7 +330,8 @@ connections, names). To import it into the JUNG HOME app — which otherwise nev
 entry hands them over — or to keep a copy, an administrator can download it:
 
 1. *Developer tools → Actions*, choose **Download export** (`junghome_ble.download_export`), switch on *Return
-   response* and run it. With several JUNG HOME networks, pick the network (or any of its devices).
+   response* and run it. With several JUNG HOME networks, pick the network (or any of its devices). It also works
+   while the integration is not running (retrying, or failed to set up).
 2. The answer has a `url` such as `/api/junghome_ble/export/…?authSig=…`. Put it after your Home Assistant address in
    the same browser, for example `https://homeassistant.local:8123/api/junghome_ble/export/…`, **within five
    minutes**: then the link stops working. It only works for the administrator who asked for it.

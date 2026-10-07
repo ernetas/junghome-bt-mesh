@@ -762,6 +762,7 @@ async def test_the_name_repair_aborts(
         (ISSUE_DEVICE_NAME, repairs.DeviceNameFlow),
         (const.ISSUE_PDUS_DROPPED, repairs.SkipAheadFlow),
         (const.ISSUE_NODE_CLOCK_WRONG, repairs.SendTimeFlow),
+        (const.ISSUE_SEQUENCE_SPACE_LOW, repairs.StartIVUpdateFlow),
     ],
 )
 async def test_each_fixable_issue_gets_its_flow(

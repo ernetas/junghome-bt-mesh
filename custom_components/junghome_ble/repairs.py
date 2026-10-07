@@ -17,7 +17,8 @@ The fixes a user would otherwise look up the way to: `gateway_sync_failed` runs 
 entry set up from a file only) load a new export — fetched again from the gateway with the access the entry holds, or
 uploaded for an entry set up from a file (`NewExportFlow`, with the config flow's own steps:
 `config_flow.async_fetch_to_store`, `async_take_upload`, `async_replace_export`);
-`device_name_rejected` asks for a name the app accepts (`DeviceNameFlow`). Each changes something only once
+`device_name_rejected` asks for a name the app accepts (`DeviceNameFlow`); `sequence_space_low` starts an IV Update
+with the action's guards (`StartIVUpdateFlow`). Each changes something only once
 confirmed, and none touches the sequence numbers: a new address starts its own record by the store's rules.
 Unverified on air.
 """
@@ -45,6 +46,7 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 
+from .actions.iv_update import async_start_iv_update
 from .config_flow import (
     LOAD_ERRORS,
     SOURCE_GATEWAY,
@@ -82,6 +84,7 @@ from .const import (
     ISSUE_PDUS_DROPPED,
     ISSUE_PLAN_INTERRUPTED,
     ISSUE_SEQ_STORE_LOST,
+    ISSUE_SEQUENCE_SPACE_LOW,
     ISSUE_UNKNOWN_NODES,
 )
 from .coordinator import async_skip_seq_store_ahead, forget_known_mesh
@@ -548,6 +551,44 @@ class DeviceNameFlow(_IssueFlow):
         )
 
 
+class StartIVUpdateFlow(_IssueFlow):
+    """`sequence_space_low`: confirm, then start the IV Update as the action `start_iv_update` would.
+
+    `actions.iv_update.async_start_iv_update`, with the action's guards: refused while no sender is past three
+    quarters any more, without a link, during a key refresh, while an update runs or within 96 hours of the last
+    one; the abort says which. The started update clears the issue. Unverified on air.
+    """
+
+    async def async_step_init(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Show the confirmation."""
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, str] | None = None
+    ) -> RepairsFlowResult:
+        """Start once confirmed; abort when the entry is gone or not running, or with the guard's refusal."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="confirm",
+                data_schema=vol.Schema({}),
+                description_placeholders=self._placeholders(),
+            )
+        entry = self._entry()
+        if entry is None:
+            return self.async_abort(reason="entry_gone")
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="not_loaded")
+        try:
+            await async_start_iv_update(self.hass, entry.entry_id)
+        except HomeAssistantError as err:
+            return self.async_abort(
+                reason="start_failed", description_placeholders={"error": str(err)}
+            )
+        return self.async_create_entry(data={})
+
+
 # the fix flow of each fixable issue, by the issue id's prefix (`<ISSUE_*>_<entry id>`)
 FIX_FLOWS: dict[str, type[_IssueFlow]] = {
     ISSUE_GATEWAY_SYNC: GatewaySyncFlow,
@@ -557,6 +598,7 @@ FIX_FLOWS: dict[str, type[_IssueFlow]] = {
     ISSUE_EXPORT_STALE: NewExportFlow,
     ISSUE_KEY_REFRESH: NewExportFlow,
     ISSUE_DEVICE_NAME: DeviceNameFlow,
+    ISSUE_SEQUENCE_SPACE_LOW: StartIVUpdateFlow,
 }
 
 

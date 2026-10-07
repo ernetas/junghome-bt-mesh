@@ -179,6 +179,7 @@
       "invalid_address": "地址必须是 0001 到 7FFF 之间的十六进制数。",
       "address_in_use": "该地址属于 Mesh 中的某个节点；请选择一个未使用的地址。",
       "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保有蓝牙适配器或 ESPHome Bluetooth 代理位于某个市电供电的 JUNG 设备的范围内。",
+      "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
       "export_keys_stale": "可以通过蓝牙看到此 Mesh 的设备，但没有任何设备广播此导出文件中的网络密钥：网络的密钥在导出之后已被更新（在 JUNG HOME 应用中进行了密钥刷新）。请从 JUNG HOME 应用重新导出网络，或重新从网关获取，然后使用该文件。",
       "network_mismatch": "该导出文件属于另一个 Mesh 网络，而非已发现的网络。",
       "mesh_already_configured": "此 Mesh 已设置为另一个条目（自 Home Assistant 上次看到它以来，其网络密钥可能已被刷新）。请使用该条目的“重新配置”，而不要添加新条目。",
@@ -229,7 +230,7 @@
           "sync_areas": "设备的 JUNG 房间更改时随之移动设备"
         },
         "data_description": {
-          "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。此设置适用于所有按钮；若只想让部分按钮等待，请保持关闭，并在下方列表中选择这些按钮。",
+          "click_delay": "`click` 事件会延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`。关闭：每次按下都会立即触发 `click`，双击的第二次按下还会额外触发 `double_click`。此设置适用于所有按钮；若只想让部分按钮等待，请保持关闭，并在“等待双击的按钮”中选择这些按钮；该列表在此选项关闭且集成运行时显示。",
           "double_click_keys": "只有这些按钮会将其 `click` 延迟半秒，若随后出现第二次点击则将其丢弃，因此双击只会触发 `double_click`；其他按钮会立即触发 `click`。请选择设有双击自动化的按钮。仅列出能够点击的按钮。尚未在真实设备上验证。",
           "heartbeats": "会要求每个市电供电的设备每 64 秒向 Home Assistant 发送一次心跳（这是 JUNG 应用未开启的一项标准 Bluetooth Mesh 设置）。若某设备约三分半钟没有发送任何内容，其实体会被标记为不可用，直到再次收到它的消息。关闭此选项会通知设备停止发送（如果无法一次性通知所有设备，会在下次连接时再次通知）；请在移除集成之前将其关闭，因为移除之后就无法再通知设备。",
           "allow_provisioning": "允许 `junghome_ble.add_device` 动作对新的 JUNG 设备进行配网，并参照网络中已有的同款产品设备，像应用那样对其进行配置；也允许 `junghome_ble.remove_device` 重置设备并将其移出网络。尚未在真实设备上测试：请先用一台备用设备试用。添加会将网络密钥交给该设备；移除无法撤销。",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "未发送：{node} 对 {message} 的应答为 {found}，但 Mesh 导出文件中为 {expected}（另有 {others} 处差异）。Mesh 导出文件生成后，安装已发生更改（在 JUNG HOME 应用中、因设备重置，或因之前中途停止的操作），该计划将覆盖导出文件已不再描述的内容。请从应用重新导出项目，或让 Home Assistant 接管网关的导出文件，然后再次运行该操作；使用 `force` 时将不进行此检查。{applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update 不可撤销：请在调用中添加 \"confirm: true\" 以启动它。"
+    },
+    "start_iv_update_not_needed": {
+      "message": "Mesh 中还没有发送方用掉其 IV index 序列号的四分之三，因此不需要 IV Update；如仍要启动，请添加 \"force: true\"。"
+    },
+    "start_iv_update_in_progress": {
+      "message": "到 IV index {iv_index} 的 IV Update 已在进行中。"
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Mesh 的网络密钥正在更新（密钥刷新）：请在其完成后再启动 IV Update。"
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant 尚未从其连接所经的设备收到 Mesh 的 IV index；请稍后重试。Home Assistant 在信标中看到的 Mesh IV 状态的最近一次变化：{mesh_changed}。设备在其自身上一次 IV Update 后的 96 小时内会拒绝新的 IV Update。"
     },
     "start_iv_update_too_early": {
       "message": "Mesh 中的一次 IV Update 在不到 96 小时前开始或结束（IV index 为 {iv_index}）：从 {not_before} 起可以发起新的。Home Assistant 在信标中看到的 Mesh IV 状态的最近一次变化：{mesh_changed}。"
+    },
+    "start_iv_update_iv_max": {
+      "message": "Mesh 的 IV index 已达最大值（{iv_index}）：无法再增加。"
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant 无法将新的 IV index 写入其序列号存储，因此未启动 IV Update；请查看日志。"
     },
     "abort_iv_update_needs_confirm": {
       "message": "中止 IV Update 会让 Home Assistant 回到 Mesh 当前所在的 IV index：如需执行，请在调用中添加 \"confirm: true\"。"
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
           "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
           "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
           "not_a_directory": "元数据路径不是目录。",
           "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
           "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
           "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
           "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
           "not_a_directory": "元数据路径不是目录。",
           "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
           "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
           "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
           "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
           "not_a_directory": "元数据路径不是目录。",
           "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
           "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
           "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
           "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
           "not_a_directory": "元数据路径不是目录。",
           "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
           "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "元数据目录中没有符合预期格式的应用文件 device_metadata.json 和 scene_metadata.json。",
           "no_project": "网关中没有网络导出文件。请在 JUNG HOME 应用连接到网关时打开一次该应用（应用会自动上传项目），并确保网关固件为 2.1 或更高版本。",
           "no_proxy_visible": "当前无法通过蓝牙看到此 Mesh 网络的任何节点。请确保蓝牙适配器或 ESPHome 蓝牙代理位于市电供电的 JUNG 设备的覆盖范围内。",
+          "no_connectable_scanner": "Home Assistant 没有可以连接设备的蓝牙适配器或代理。请添加蓝牙适配器，或启用主动连接的 ESPHome 蓝牙代理（其配置中的 `bluetooth_proxy: active: true`）：没有主动连接的代理只会监听。",
           "not_a_directory": "元数据路径不是目录。",
           "not_approved": "未能及时在应用中批准访问请求。请再次提交，并在“设置 → 网关 → 访问权限 → 待处理请求”下批准该请求。",
           "token_rejected": "网关不再接受已存储的访问权限。请再次提交以重新申请访问权限。",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME Mesh 序列号即将用尽",
-      "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。在 Mesh 切换到下一个 IV index（即 IV Update）之前，发送方无法越过该空间的末尾。Bluetooth Mesh 要求序列号即将用尽的设备自行发起此更新；JUNG HOME 设备是否会这样做目前尚不清楚。Home Assistant 会跟随 IV Update，管理员也可以通过操作 `junghome_ble.start_iv_update` 让 Home Assistant 发起一次（此操作不可撤销；尚未在实际网络中验证）。设备每次重启（停电、断路器跳闸）都会使其序列号大幅向前跳跃，因此经常断电的设备会最先面临序列号不足。更新完成后，此问题即会自动清除。"
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "启动 IV Update",
+            "description": "在 Mesh {title} 中，{source} 已用掉 IV index {iv_index} 下 {percent} % 的序列号。在 Mesh 切换到下一个 IV index（即 IV Update）之前，发送方无法越过该空间的末尾。Bluetooth Mesh 要求序列号即将用尽的设备自行发起此更新；JUNG HOME 设备是否会这样做目前尚不清楚。Home Assistant 会跟随 IV Update。确认后，Home Assistant 会像操作 `junghome_ble.start_iv_update` 一样立即发起一次：此操作不可撤销，并且在未连接到 Mesh、正在更新网络密钥或距上次 IV Update 不足 96 小时时会被拒绝。尚未在实际网络中验证。设备每次重启（停电、断路器跳闸）都会使其序列号大幅向前跳跃，因此经常断电的设备会最先面临序列号不足。更新完成后，此问题即会自动清除。"
+          }
+        },
+        "abort": {
+          "entry_gone": "此问题所属的 JUNG HOME 条目已不再存在。",
+          "not_loaded": "此问题所属的 JUNG HOME 条目当前未运行。请在其设置完成后重试。",
+          "start_failed": "IV Update 未启动：{error} 只要仍有发送方的序列号即将用尽，此问题就会保留；原因消除后请再次修复。"
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME Mesh 未接受 IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "客户端",
           "description": "客户端请求访问时使用的名称，须与 `waiting` 下列出的完全一致。留空时，不会批准任何客户端。"
+        },
+        "config_entry_id": {
+          "name": "Mesh 网络",
+          "description": "配置了多个 JUNG HOME 网络时，指定使用哪一个。"
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "启动 IV Update",
+      "description": "让 Home Assistant 启动 Mesh 的 IV Update：Mesh 切换到下一个 IV index，每个发送方都会获得新的序列号空间。Bluetooth Mesh 要求序列号即将用尽的设备自行发起；修复问题“JUNG HOME Mesh 序列号即将用尽”也会以同样方式启动。此操作不可撤销（IV index 只会增加），Mesh 会在 96 到 144 小时后恢复正常运行。若没有任何发送方用掉其序列号的四分之三（且未开启“即使不需要”）、未连接到 Mesh、正在更新网络密钥，或距上次 IV Update 开始或结束不足 96 小时，则会被拒绝。仅限管理员。尚未在实际网络中验证。",
+      "fields": {
+        "confirm": {
+          "name": "确认",
+          "description": "执行时必需：IV Update 不可撤销。"
+        },
+        "force": {
+          "name": "即使不需要",
+          "description": "即使还没有发送方用掉其序列号的四分之三，也启动它。"
         },
         "config_entry_id": {
           "name": "Mesh 网络",

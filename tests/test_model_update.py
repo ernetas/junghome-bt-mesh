@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
@@ -319,6 +320,34 @@ async def test_every_entity_follows_in_place(
     assert "reloading to follow the export" not in caplog.text
 
 
+@pytest.mark.unavailable_ok  # the reload that stands for a fresh setup
+@pytest.mark.usefixtures("entity_registry_enabled_by_default")
+async def test_a_key_that_loses_its_letter_is_named_as_after_a_restart(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Review-5 H5-1: rocker key A wired to a room splits the 2-gang, so its LED settings lose their key letter (a
+    new `translation_key`, no placeholders). Followed in place, every entity is named as a fresh setup names it —
+    not `Status LED {key}` from the old translation key Home Assistant had cached (`no_home_assistant_complaints`
+    fails on its placeholder warning too)."""
+    hub = env.hub
+    await call(
+        hass,
+        "assign_key",
+        {
+            "key_entity": entity_id(hass, "event", UID_ROCKER_A),
+            "room": "WC",
+        },
+    )
+    assert env.hub is hub
+    assert runs_the_export(env)
+    in_place = {s.entity_id: s.name for s in hass.states.async_all()}
+    assert "Push-button 2-gang 0232 buttons Status LED" in in_place.values()
+    assert not [name for name in in_place.values() if "{" in name]
+    await hass.config_entries.async_reload(env.entry.entry_id)
+    await services_env.settled(hass, env)
+    assert {s.entity_id: s.name for s in hass.states.async_all()} == in_place
+
+
 async def follow_twice(hass: HomeAssistant, env: Env) -> None:
     """Two actions in a row on the same hub: the second carries over what the first carried over already."""
     hub = env.hub
@@ -533,6 +562,29 @@ def test_an_entity_takes_the_model_over_and_keeps_what_it_learnt() -> None:
     # the snapshot now holds what the entity took over; a second model is carried over the same way
     model_update._rebind(old, built, Probe(["c"], name="New"))
     assert (old.members, old.name, old.learnt) == (["c"], "New", "a value read")
+
+
+class NamedProbe(Probe):
+    """A name worked out from the translation key and cached by `functools` (as `Entity._name_translation_key` is)."""
+
+    @cached_property
+    def label(self) -> str:
+        return f"name of {self.translation_key}"
+
+
+def test_every_cached_property_is_worked_out_anew() -> None:
+    """Review-5 H5-1: not only Home Assistant's `CachedProperties`, also a plain `cached_property`; and the warning
+    about placeholders a name does not use may come again for the new name."""
+    old = NamedProbe([])
+    old._attr_translation_key = "status_led_key"
+    built = dict(vars(old))
+    assert old.label == "name of status_led_key"
+    old._name_translation_placeholders_reported = True
+    fresh = NamedProbe([])
+    fresh._attr_translation_key = "status_led"
+    model_update._rebind(old, built, fresh)
+    assert old.label == "name of status_led"
+    assert old._name_translation_placeholders_reported is False  # the class default
 
 
 def test_an_entity_of_another_class_or_element_is_refused() -> None:

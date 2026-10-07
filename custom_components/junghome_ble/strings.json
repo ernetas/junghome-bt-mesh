@@ -179,6 +179,7 @@
       "invalid_address": "The address must be hexadecimal between 0001 and 7FFF.",
       "address_in_use": "That address belongs to a node in the mesh; pick an unused one.",
       "no_proxy_visible": "No node of this mesh network is currently visible over Bluetooth. Make sure a Bluetooth adapter or ESPHome Bluetooth proxy is within range of a mains-powered JUNG device.",
+      "no_connectable_scanner": "Home Assistant has no Bluetooth adapter or proxy that can connect to a device. Add a Bluetooth adapter, or an ESPHome Bluetooth proxy with active connections (`bluetooth_proxy: active: true` in its configuration): a proxy without them only listens.",
       "export_keys_stale": "Devices of this mesh are visible over Bluetooth, but none advertises the network key in this export: the network's keys were renewed (a key refresh in the JUNG HOME app) after the export was made. Export the network again from the JUNG HOME app, or fetch it from the gateway again, and use that file.",
       "network_mismatch": "The export belongs to a different mesh network than the one that was discovered.",
       "mesh_already_configured": "This mesh is already set up as another entry (its network key has probably been refreshed since Home Assistant last saw it). Use that entry's Reconfigure instead of adding a new one.",
@@ -229,7 +230,7 @@
           "sync_areas": "Move devices along when their JUNG room changes"
         },
         "data_description": {
-          "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well. This applies to every key; to wait on some keys only, leave it off and pick them in the list below.",
+          "click_delay": "A `click` event is held back for half a second and dropped when a second click follows, so a double press fires only `double_click`. Off: every press fires `click` at once and the second press of a double press fires `double_click` as well. This applies to every key; to wait on some keys only, leave it off and pick them under *Keys that wait for a double click*, listed while this is off and the integration runs.",
           "double_click_keys": "Only these keys hold their `click` back for half a second and drop it when a second click follows, so a double press fires only `double_click`; every other key fires `click` at once. Pick the keys that have a double-click automation. Only keys that can click are listed. Unverified on air.",
           "heartbeats": "Every mains-powered device is asked to send a heartbeat to Home Assistant every 64 seconds (a standard Bluetooth Mesh setting the JUNG app leaves off). A device that sends nothing for about three and a half minutes has its entities marked unavailable until it is heard again. Switching this off tells the devices to stop (again on the next connection if they could not all be told at once); switch it off before removing the integration, which cannot tell them afterwards.",
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
@@ -1766,6 +1767,7 @@
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
           "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
           "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "no_connectable_scanner": "[%key:component::junghome_ble::config::error::no_connectable_scanner%]",
           "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
           "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
           "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
@@ -1813,6 +1815,7 @@
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
           "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
           "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "no_connectable_scanner": "[%key:component::junghome_ble::config::error::no_connectable_scanner%]",
           "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
           "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
           "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
@@ -1860,6 +1863,7 @@
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
           "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
           "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "no_connectable_scanner": "[%key:component::junghome_ble::config::error::no_connectable_scanner%]",
           "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
           "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
           "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
@@ -1926,6 +1930,7 @@
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
           "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
           "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "no_connectable_scanner": "[%key:component::junghome_ble::config::error::no_connectable_scanner%]",
           "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
           "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
           "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
@@ -2027,6 +2032,7 @@
           "invalid_metadata": "[%key:component::junghome_ble::config::error::invalid_metadata%]",
           "no_project": "[%key:component::junghome_ble::config::error::no_project%]",
           "no_proxy_visible": "[%key:component::junghome_ble::config::error::no_proxy_visible%]",
+          "no_connectable_scanner": "[%key:component::junghome_ble::config::error::no_connectable_scanner%]",
           "not_a_directory": "[%key:component::junghome_ble::config::error::not_a_directory%]",
           "not_approved": "[%key:component::junghome_ble::config::error::not_approved%]",
           "token_rejected": "[%key:component::junghome_ble::config::error::token_rejected%]",
@@ -2171,7 +2177,19 @@
     },
     "sequence_space_low": {
       "title": "JUNG HOME mesh sequence numbers running low",
-      "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update, and an administrator can have it start one with the action `junghome_ble.start_iv_update` (it cannot be undone; unverified on air). Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Start an IV Update",
+            "description": "In the mesh {title}, {source} has used {percent} % of the sequence numbers of IV index {iv_index}. A sender cannot go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh expects a device that runs low to start that update itself; whether JUNG HOME devices do is not yet known. Home Assistant follows an IV Update. Confirm to have it start one now, as the action `junghome_ble.start_iv_update` does: it cannot be undone, and it is refused without a connection to the mesh, during a renewal of the network key and within 96 hours of the last IV Update. Unverified on air. Every restart of a device (a power cut, a tripped breaker) skips its sequence numbers far ahead, so a device that often loses power runs low first. The issue clears itself after the update."
+          }
+        },
+        "abort": {
+          "entry_gone": "[%key:component::junghome_ble::issues::gateway_sync_failed::fix_flow::abort::entry_gone%]",
+          "not_loaded": "[%key:component::junghome_ble::issues::gateway_sync_failed::fix_flow::abort::not_loaded%]",
+          "start_failed": "The IV Update was not started: {error} The issue stays while a sender is running low; repair it again once the cause is gone."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "JUNG HOME mesh did not take the IV Update",
@@ -2945,7 +2963,7 @@
     },
     "start_iv_update": {
       "name": "Start IV Update",
-      "description": "Has Home Assistant start an IV Update of the mesh: the mesh moves to the next IV index, which gives every sender a fresh sequence-number space. Bluetooth Mesh expects a device that is running out of sequence numbers to start one itself; use this when the repair *JUNG HOME mesh sequence numbers running low* stays open. It cannot be undone (the IV index only goes up), and the mesh returns to normal operation 96 to 144 hours later. Refused unless a sender has used three quarters of its sequence numbers (or *Even if not needed* is on), without a connection to the mesh, during a renewal of the network key and within 96 hours of the last start or end of an IV Update. Administrators only. Unverified on air.",
+      "description": "Has Home Assistant start an IV Update of the mesh: the mesh moves to the next IV index, which gives every sender a fresh sequence-number space. Bluetooth Mesh expects a device that is running out of sequence numbers to start one itself; repairing the issue *JUNG HOME mesh sequence numbers running low* starts one the same way. It cannot be undone (the IV index only goes up), and the mesh returns to normal operation 96 to 144 hours later. Refused unless a sender has used three quarters of its sequence numbers (or *Even if not needed* is on), without a connection to the mesh, during a renewal of the network key and within 96 hours of the last start or end of an IV Update. Administrators only. Unverified on air.",
       "fields": {
         "confirm": {
           "name": "Confirm",

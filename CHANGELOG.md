@@ -52,6 +52,24 @@
   counts now. Unverified on air.
 - **The topology picture says why the hops are not known.** With *Node heartbeats* off (the default) every device sat
   under *Hops: not known*; the band's heading now says the option is off (a new text, in all 26 languages).
+- **Options apply without a reload.** *Report clicks only once a double click is ruled out*, *Keys that wait for a
+  double click*, adding and removing devices, following the app, the gateway check and moving devices along are read
+  where they are used: saving them keeps the link up and every entity's state, and the keys' event entities show the
+  new `waits_for_double_click` at once. Picking one key for a double-click automation used to reload the whole entry
+  (every entity unavailable, then read again; an action running at that moment cut off). Node heartbeats and Home
+  Assistant as a provisioner still reload, and saving the form as it opened — which records the defaults the entry
+  did not hold yet — reloads nothing. Unverified on air.
+- **The *JUNG HOME mesh sequence numbers running low* repair can be fixed.** Confirming it has Home Assistant start
+  the IV Update, as the action `junghome_ble.start_iv_update` does and with the same refusals (no link, a key
+  refresh, an update running or too recent); a refusal ends the repair with its message. No action and
+  `confirm: true` to compose in *Developer tools* any more. Unverified on air.
+- **`download_export` works for an entry that is not running.** An entry retrying its setup, or one that failed to
+  set up, is when a copy of its export is wanted most; the action refused it as *not loaded*. It is now named by
+  `config_entry_id`, or taken as the only entry.
+- **The options form hides *Keys that wait for a double click* while every key waits** (*Report clicks only once a
+  double click is ruled out* on), and the click option's text says where the list is and when it shows.
+- **A `junghome_ble:` key in `configuration.yaml` gets Home Assistant's "does not support YAML" error** and repair,
+  instead of being accepted without a word.
 
 ### Fixed
 
@@ -142,6 +160,33 @@
 - **Dropping a link never ends a newer one.** A link dropped by another task woke the watchdog after its detach,
   whichever link was current by then: one the connection loop had taken meanwhile was ended as closed by the
   transport and counted as a short link.
+- **A key that loses or gains its letter is named right after an in-place change.** Following an export in place
+  (an `assign_key` that splits a 2-gang, say) carried the new translation key over to a kept entity, but Home
+  Assistant's own cached name lookups stayed: the LED settings read *Status LED {key}* with literal braces until the
+  next restart, and Home Assistant logged a placeholder warning asking for a bug report (on a beta channel the in-place
+  apply failed and fell back to a reload).
+- **Removing a device no longer uses a deprecated device-registry call.** A device the export lost was detached with
+  `remove_config_entry_id`, which Home Assistant reports as deprecated (it breaks in 2027.8) with a request to file a
+  bug report; it is removed with `async_remove_device` now. The test suite fails on such reports, and on entity
+  placeholder warnings, from now on.
+- **`start_iv_update` is translated.** Its name, description, fields and eight refusals were English in all 25 other
+  languages; the translation test now fails on a key a language lacks instead of printing a share.
+- **The *app overrode a change* repair goes with its entry.** `carry_over_conflict` stayed in *Settings → Repairs*
+  after the entry was removed (or disabled), naming a mesh that was gone; removing an entry now deletes every repair
+  issue the entry can have, whoever raised it.
+- **A double-click key whose device left the export is redacted in the diagnostics.** Its unique id holds the device's
+  MAC, which every other place masks; the loaded entry's diagnostics showed it in clear.
+- **The gateway's discovery card no longer reappears for a configured mesh.** It was suppressed only when an entry
+  named the gateway by exactly the announced address: an entry set up from a file, one naming the gateway
+  `junghome.local`, and one whose gateway changed its IP address all got a card that could only end at *already
+  configured* — after requesting a new access permission on the gateway. The gateway is now recognised by its serial
+  number (recorded by the entry), or by the mesh it serves (the announced MAC is a node of the export), and a gateway
+  entry follows its gateway to a new IP address. Unverified on air.
+- **No Bluetooth scanner that can connect gets its own setup error.** Without an adapter, or with only ESPHome proxies
+  lacking `bluetooth_proxy: active: true`, setup said no device was within range, which sends people moving the proxy
+  around; it now says what is missing and names the `active: true` line.
+- **A logbook line whose text no longer fits its stored placeholders is skipped, not an error** (a row stored by an
+  older version, of a text that gained a placeholder since).
 
 ## 1.4.1 (unreleased)
 

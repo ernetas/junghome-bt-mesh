@@ -109,11 +109,12 @@ class AppFollower:
     """Watch the mesh for the app and fetch the gateway's export after it, or raise `app_changed` for a file entry."""
 
     def __init__(self, hub: JungHomeHub) -> None:
-        """Bind to `hub`; read the options (a change reloads the entry). Nothing runs until `start`."""
+        """Bind to `hub`; read the options (a change is applied in place, `apply_options`). Nothing runs until `start`."""
         self.hub = hub
         options = hub.entry.options
         self.follow = bool(options.get(OPTION_FOLLOW_APP, DEFAULT_FOLLOW_APP))
         self.periodic = bool(options.get(OPTION_GATEWAY_CHECK, DEFAULT_GATEWAY_CHECK))
+        self._started = False
         self.issue = issue_id(hub.entry, ISSUE_APP_CHANGED)
         # the fetch once the phone is quiet, and the periodic one
         self._unsub_quiet: CALLBACK_TYPE | None = None
@@ -127,6 +128,7 @@ class AppFollower:
     @callback
     def start(self) -> None:
         """Start the periodic check of an entry set up from the gateway, when the option asks for it."""
+        self._started = True
         if self.periodic and self.hub.follows_gateway:
             self._unsub_periodic = async_track_time_interval(
                 self.hub.hass, self._periodic, timedelta(seconds=GATEWAY_SYNC_PERIOD)
@@ -139,6 +141,24 @@ class AppFollower:
             if unsub is not None:
                 unsub()
         self._unsub_quiet = self._unsub_periodic = None
+
+    @callback
+    def apply_options(self) -> None:
+        """Follow the options as they are now: the phone's next message, the periodic check started or stopped.
+
+        A fetch already waiting for the phone's quiet runs as it would have; one in flight finishes.
+        """
+        options = self.hub.entry.options
+        self.follow = bool(options.get(OPTION_FOLLOW_APP, DEFAULT_FOLLOW_APP))
+        periodic = bool(options.get(OPTION_GATEWAY_CHECK, DEFAULT_GATEWAY_CHECK))
+        if periodic == self.periodic:
+            return
+        self.periodic = periodic
+        if self._unsub_periodic is not None:
+            self._unsub_periodic()
+            self._unsub_periodic = None
+        if self._started:
+            self.start()
 
     def from_phone(self, m: AccessMessage) -> bool:
         """Whether `m` comes from the phone (or another client): not Home Assistant's address, and no device's."""

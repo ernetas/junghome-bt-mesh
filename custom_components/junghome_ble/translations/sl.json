@@ -179,6 +179,7 @@
       "invalid_address": "Naslov mora biti šestnajstiški med 0001 in 7FFF.",
       "address_in_use": "Ta naslov pripada vozlišču v omrežju mesh; izberite neuporabljenega.",
       "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+      "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
       "export_keys_stale": "Naprave tega omrežja mesh so vidne prek Bluetootha, vendar nobena ne oglašuje omrežnega ključa iz tega izvoza: ključi omrežja so bili obnovljeni (osvežitev ključev v aplikaciji JUNG HOME), potem ko je bil izvoz ustvarjen. Omrežje znova izvozite iz aplikacije JUNG HOME ali ga znova pridobite s prehoda in uporabite to datoteko.",
       "network_mismatch": "Izvoz pripada drugemu omrežju mesh kot tistemu, ki je bilo odkrito.",
       "mesh_already_configured": "To omrežje mesh je že nastavljeno kot drug vnos (njegov omrežni ključ je bil verjetno osvežen, odkar ga je Home Assistant nazadnje videl). Namesto dodajanja novega vnosa uporabite Znova konfiguriraj pri tem vnosu.",
@@ -229,7 +230,7 @@
           "sync_areas": "Premakni naprave, ko se spremeni njihov prostor JUNG"
         },
         "data_description": {
-          "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`. To velja za vse gumbe; če želite čakati le pri nekaterih, pustite izklopljeno in jih izberite na spodnjem seznamu.",
+          "click_delay": "Dogodek `click` se zadrži za pol sekunde in zavrže, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`. Izklopljeno: vsak pritisk takoj sproži `click`, drugi pritisk dvojnega pritiska pa sproži še `double_click`. To velja za vse gumbe; če želite čakati le pri nekaterih, pustite izklopljeno in jih izberite v polju *Gumbi, ki čakajo na dvojni klik*, ki je prikazano, dokler je to izklopljeno in integracija deluje.",
           "double_click_keys": "Samo ti gumbi zadržijo svoj `click` za pol sekunde in ga zavržejo, če mu sledi drugi klik, tako da dvojni pritisk sproži le `double_click`; vsak drug gumb sproži `click` takoj. Izberite gumbe, ki imajo avtomatizacijo za dvojni klik. Prikazani so le gumbi, ki lahko klikajo. Še ni preverjeno na resničnih napravah.",
           "heartbeats": "Vsaka naprava z omrežnim napajanjem je pozvana, naj Home Assistantu vsakih 64 sekund pošlje srčni utrip (standardna nastavitev Bluetooth Mesh, ki jo aplikacija JUNG pusti izklopljeno). Napravi, ki približno tri minute in pol ne pošlje ničesar, se entitete označijo kot nedosegljive, dokler je spet ne zaznamo. Izklop te možnosti napravam sporoči, naj prenehajo (ob naslednji povezavi znova, če jim tega ni bilo mogoče sporočiti vsem naenkrat); izklopite jo pred odstranitvijo integracije, ki jim tega pozneje ne more več sporočiti.",
           "allow_provisioning": "Dejanju `junghome_ble.add_device` dovoli, da novo napravo JUNG pripravi (provisioning) in jo konfigurira, kot bi to storila aplikacija, po vzoru naprave istega izdelka, ki je že v omrežju, dejanju `junghome_ble.remove_device` pa, da napravo ponastavi in jo odstrani iz omrežja. Na resničnih napravah še ni preizkušeno: najprej poskusite z rezervno napravo. Dodajanje napravi preda ključe omrežja; odstranitve ni mogoče razveljaviti.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Ni poslano: {node} je na {message} odgovoril z {found}, izvoz mesh pa navaja {expected} (drugih razlik: {others}). Namestitev se je po izdelavi izvoza mesh spremenila (v aplikaciji JUNG HOME, s ponastavitvijo naprave ali s prejšnjim dejanjem, ki se je ustavilo na pol poti), in načrt bi prepisal tisto, česar izvoz ne opisuje več. Projekt znova izvozite iz aplikacije ali pustite, da Home Assistant prevzame izvoz prehoda, in dejanje znova zaženite; z `force` se izvede brez tega preverjanja. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update ni mogoče razveljaviti: za zagon klicu dodajte \"confirm: true\"."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Noben pošiljatelj v omrežju mesh še ni porabil treh četrtin zaporednih številk svojega indeksa IV, zato IV Update ni potreben; če ga želite vseeno sprožiti, dodajte \"force: true\"."
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV Update na indeks IV {iv_index} že poteka."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Omrežni ključ omrežja mesh se ravno obnavlja (key refresh): IV Update sprožite, ko se obnova konča."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant še ni slišal indeksa IV omrežja mesh od naprave, prek katere je povezan; poskusite znova čez trenutek. Zadnja sprememba stanja IV omrežja mesh, ki jo je Home Assistant videl v svetilniku: {mesh_changed}. Naprava zavrne IV Update v 96 urah po svoji zadnji."
     },
     "start_iv_update_too_early": {
       "message": "IV Update se je v omrežju mesh začela ali končala pred manj kot 96 urami (indeks IV je {iv_index}): novo je mogoče začeti od {not_before}. Zadnja sprememba stanja IV omrežja mesh, ki jo je Home Assistant videl v svetilniku: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "Indeks IV omrežja mesh je na največji vrednosti ({iv_index}): naprej ne more."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant novega indeksa IV ni mogel zapisati v svojo shrambo zaporednih številk, zato IV Update ni sprožil; oglejte si dnevnik."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Prekinitev IV Update vrne Home Assistant na indeks IV, na katerem je omrežje mesh: za izvedbo dodajte klicu \"confirm: true\"."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
           "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
           "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
           "not_a_directory": "Pot do metapodatkov ni mapa.",
           "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
           "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
           "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
           "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
           "not_a_directory": "Pot do metapodatkov ni mapa.",
           "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
           "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
           "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
           "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
           "not_a_directory": "Pot do metapodatkov ni mapa.",
           "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
           "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
           "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
           "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
           "not_a_directory": "Pot do metapodatkov ni mapa.",
           "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
           "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Mapa z metapodatki ne vsebuje datotek aplikacije device_metadata.json in scene_metadata.json v pričakovani obliki.",
           "no_project": "Prehod nima izvoza omrežja. Enkrat odprite aplikacijo JUNG HOME, medtem ko je povezana s prehodom (projekt naloži samodejno), in poskrbite, da je strojna programska oprema prehoda različice 2.1 ali novejša.",
           "no_proxy_visible": "Prek Bluetootha trenutno ni vidno nobeno vozlišče tega omrežja mesh. Poskrbite, da je adapter Bluetooth ali proxy Bluetooth ESPHome v dosegu naprave JUNG z omrežnim napajanjem.",
+          "no_connectable_scanner": "Home Assistant nima nobenega Bluetooth vmesnika ali proxyja, ki bi se lahko povezal z napravo. Dodajte Bluetooth vmesnik ali ESPHome Bluetooth proxy z aktivnimi povezavami (`bluetooth_proxy: active: true` v njegovi konfiguraciji): proxy brez njih samo posluša.",
           "not_a_directory": "Pot do metapodatkov ni mapa.",
           "not_approved": "Zahteva za dostop v aplikaciji ni bila pravočasno odobrena. Pošljite znova in jo odobrite pod Nastavitve → Prehod → Dovoljenja za dostop → Odprte zahteve.",
           "token_rejected": "Prehod ne sprejema več shranjenega dostopa. Pošljite znova, da znova zahtevate dostop.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Zaporedne številke omrežja mesh JUNG HOME pohajajo",
-      "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Pošiljatelj ne more čez konec tega prostora, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update). Bluetooth Mesh pričakuje, da naprava, ki ji zmanjkuje številk, to posodobitev sproži sama; ali naprave JUNG HOME to počnejo, še ni znano. Home Assistant IV Update sledi, skrbnik pa ga lahko sproži z dejanjem `junghome_ble.start_iv_update` (tega ni mogoče razveljaviti; v delovanju še ni preverjeno). Vsak ponovni zagon naprave (izpad elektrike, sprožen varovalni odklopnik) prestavi njene zaporedne številke daleč naprej, zato številk najprej zmanjka napravi, ki pogosto ostane brez napajanja. Težava po posodobitvi izgine sama."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Sproži IV Update",
+            "description": "V omrežju mesh {title} je {source} porabil {percent} % zaporednih številk indeksa IV {iv_index}. Pošiljatelj ne more čez konec tega prostora, dokler omrežje mesh ne preide na naslednji indeks IV (IV Update). Bluetooth Mesh pričakuje, da naprava, ki ji zmanjkuje številk, to posodobitev sproži sama; ali naprave JUNG HOME to počnejo, še ni znano. Home Assistant IV Update sledi. Potrdite, da ga sproži zdaj, tako kot dejanje `junghome_ble.start_iv_update`: tega ni mogoče razveljaviti, zavrnjeno pa je brez povezave z omrežjem mesh, med obnovo omrežnega ključa in v 96 urah od zadnjega IV Update. V delovanju še ni preverjeno. Vsak ponovni zagon naprave (izpad elektrike, sprožen varovalni odklopnik) prestavi njene zaporedne številke daleč naprej, zato številk najprej zmanjka napravi, ki pogosto ostane brez napajanja. Težava po posodobitvi izgine sama."
+          }
+        },
+        "abort": {
+          "entry_gone": "Vnos JUNG HOME, ki mu pripada ta težava, ni več nastavljen.",
+          "not_loaded": "Vnos JUNG HOME, ki mu pripada ta težava, trenutno ne teče. Poskusite znova, ko bo nastavljen.",
+          "start_failed": "IV Update ni bil sprožen: {error} Težava ostane, dokler pošiljatelju zmanjkuje številk; popravite jo znova, ko vzrok izgine."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "Omrežje mesh JUNG HOME ni prevzelo IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Odjemalec",
           "description": "Ime, pod katerim odjemalec prosi za dostop, natanko kot je navedeno pod `waiting`. Če ostane prazno, se nič ne odobri."
+        },
+        "config_entry_id": {
+          "name": "Omrežje mesh",
+          "description": "Katero omrežje JUNG HOME, če jih je nastavljenih več."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Sproži IV Update",
+      "description": "Naroči Home Assistantu, naj sproži IV Update omrežja mesh: omrežje preide na naslednji indeks IV, s čimer vsak pošiljatelj dobi nov prostor zaporednih številk. Bluetooth Mesh pričakuje, da ga naprava, ki ji zmanjkuje zaporednih številk, sproži sama; popravilo težave *Zaporedne številke omrežja mesh JUNG HOME pohajajo* ga sproži na enak način. Tega ni mogoče razveljaviti (indeks IV samo narašča), omrežje pa se v običajno delovanje vrne 96 do 144 ur pozneje. Zavrnjeno, če noben pošiljatelj ni porabil treh četrtin svojih zaporednih številk (razen če je vklopljeno *Tudi če ni potrebno*), brez povezave z omrežjem mesh, med obnovo omrežnega ključa in v 96 urah od zadnjega začetka ali konca IV Update. Samo za skrbnike. V delovanju še ni preverjeno.",
+      "fields": {
+        "confirm": {
+          "name": "Potrdi",
+          "description": "Potrebno za izvedbo: IV Update ni mogoče razveljaviti."
+        },
+        "force": {
+          "name": "Tudi če ni potrebno",
+          "description": "Sproži ga, čeprav noben pošiljatelj še ni porabil treh četrtin svojih zaporednih številk."
         },
         "config_entry_id": {
           "name": "Omrežje mesh",

@@ -227,6 +227,9 @@ class AppFollowView(Protocol):
     async def async_fetch(self, *, raise_errors: bool = False) -> bool:
         """Adopt the gateway's export when it changed, and have the hub follow it; True when it was adopted."""
 
+    def apply_options(self) -> None:
+        """Follow the entry's `follow_app` and `gateway_check` options as they are now."""
+
 
 class GatewayPollsView(Protocol):
     """What the hub keeps up to date in the gateway's REST status polls (`gateway_status.GatewayPolls`)."""

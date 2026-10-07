@@ -8,6 +8,8 @@ checks below are the only automated guard:
 
 - same leaf keys, and equal values once `[%key:...%]` references in `strings.json` are resolved,
 - the same `{placeholder}` set per key,
+- every other language has exactly English's keys (none missing unless listed in `UNTRANSLATED`), with the same
+  placeholders and `literal` spans,
 - every `icons.json` entry points at an entity translation key or an action, and every action has an icon,
 - every translation key the code uses (literal or a `CONSTANT` reference, per-property config entity, service
   error, repair issue, event type, device trigger, select option) exists in `strings.json`,
@@ -266,22 +268,36 @@ GATEWAY_INTEGRATION_LANGUAGES = [
 ]
 
 
+# English keys a translation may lack for now, each with why (none: every language is complete). A merge that adds
+# English strings lists them here until they are translated, rather than leaving the gap to be noticed by a user.
+UNTRANSLATED: dict[str, str] = {}
+
+
+def test_untranslated_keys_are_english_ones(en_leaves: dict[str, str]) -> None:
+    """An entry of `UNTRANSLATED` names a key English has, and says why it waits."""
+    assert set(UNTRANSLATED) <= set(en_leaves)
+    assert all(UNTRANSLATED.values())
+
+
 def test_every_language_of_the_gateway_integration() -> None:
     assert {p.stem for p in TRANSLATED} >= set(GATEWAY_INTEGRATION_LANGUAGES)
 
 
 @pytest.mark.parametrize("path", TRANSLATED, ids=lambda p: p.name)
 def test_translation_follows_english(path: Path, en_leaves: dict[str, str]) -> None:
-    """Review-4 U4-1: another language holds only keys English has, as text, with the same `{placeholder}` set and
-    `literal` spans, and no `[%key:…%]` reference.
+    """Review-4 U4-1: another language holds the keys English has and only those, as text, with the same
+    `{placeholder}` set and `literal` spans, and no `[%key:…%]` reference.
 
-    A key it lacks falls back to English (Home Assistant fills a language from English, and drops a text whose
-    placeholders differ from the English one, with an error in the log), so the translated share per section is
-    printed, not asserted: rerun this after a merge that added English strings.
+    A key it lacks falls back to English (Home Assistant fills a language from English), which a German
+    administrator would meet as an English form or refusal: review-5 H5-3 found the 16 keys of `start_iv_update`
+    missing from every language a release after they were written, while this test only printed a share. A key may
+    stay untranslated only while it is listed in `UNTRANSLATED` with the reason.
     """
     leaves = _leaves(_load(path))
     extra = sorted(set(leaves) - set(en_leaves))
     assert not extra, f"{path.name} has {len(extra)} keys en.json lacks: {extra}"
+    missing = sorted(set(en_leaves) - set(leaves) - set(UNTRANSLATED))
+    assert not missing, f"{path.name} lacks {len(missing)} keys en.json has: {missing}"
     not_text = sorted(
         key for key, value in leaves.items() if not isinstance(value, str)
     )
@@ -303,11 +319,6 @@ def test_translation_follows_english(path: Path, en_leaves: dict[str, str]) -> N
     assert not literals, f"{path.name}: `literal` spans differ from English: {literals}"
     references = sorted(key for key, value in leaves.items() if "[%key:" in value)
     assert not references, f"{path.name}: references in {references}"
-    for section in sorted({key.split(".")[0] for key in en_leaves}):
-        english = [key for key in en_leaves if key.split(".")[0] == section]
-        done = sum(key in leaves for key in english)
-        share = f"{done}/{len(english)} ({done / len(english):.0%})"
-        print(f"{path.name} {section}: {share}")  # noqa: T201 - a report (`pytest -s`), not a failure
 
 
 def test_model_names_are_the_english_strings(strings: dict[str, Any]) -> None:

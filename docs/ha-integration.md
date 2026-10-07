@@ -1054,9 +1054,14 @@ the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
      the rest is the gateway source as below, the certificate pinned at first contact exactly as for a typed address
      (the announcement itself is not trusted: it only prefills the form). One card per gateway serial number,
      however often it announces itself; none for an announcement whose `manufacturer` is not JUNG or that carries no
-     serial, and none for a gateway an entry already names by the announced address or host name. An entry that
-     names it `junghome.local` is not recognised: its card is offered, and finishing it ends with *already
-     configured* (the mesh UUID of the fetched export). Setting up from the card is unverified on air.
+     serial, and none for a gateway an entry already knows: by the serial number it recorded (an entry set up from
+     the card records it, and so does a gateway entry the gateway announces itself to from the entry's address), by
+     the announced address or host name, or by the mesh it serves — the announced `mac` is a node of the entry's
+     export, which also covers an entry set up from a file or an upload and one naming the gateway `junghome.local`.
+     A gateway entry whose gateway announces itself from another IP address (its DHCP lease changed) follows it to the
+     new address; one naming a host name keeps it, and the certificate stays pinned either way. Setting up from the
+     card, the address follow and whether the announced `mac` is the one the gateway's mesh node advertises from are
+     unverified on air.
    - **Manually.** Go to **Settings → Devices & services → Add integration**, search for *JUNG HOME Bluetooth Mesh*,
      choose where the export comes from (gateway, upload, or a path on the host) and fill in the
      [configuration parameters](#configuration-parameters). The discovery card leads to the same choice.
@@ -1082,13 +1087,16 @@ All three settings are entered in the configuration dialog and can be changed la
 
 ## Options
 
-Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure** (the entry's options). Saving reloads
-the integration when something changed.
+Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure** (the entry's options). The two click
+options, adding and removing devices, following the app, the gateway check and moving devices along apply at once,
+without a reload: the link stays up and no entity goes unavailable. Node heartbeats and Home Assistant as a
+provisioner reload the integration when they changed. Saving the form as it opened changes nothing. Applying
+options without a reload is unverified on air.
 
 | Option | Default | Description |
 |---|---|---|
 | Report clicks only once a double click is ruled out | off | Off: a press fires `click` at once and the second press of a double press fires `double_click` as well, so an automation on `click` also runs on every double press. On: every `click` of **every key** is held back for 0.5 s (the double-click window) and dropped when a second click arrives, so a double press fires only `double_click` — at the price of a 0.5 s delay on single clicks. A hold that follows a click within the window ends the wait early: the `click` is fired first, then `hold_start`. |
-| Keys that wait for a double click | none | The same wait, for the keys picked here only: a key with a double-click automation gets the clean `click` / `double_click` distinction, every other key keeps reporting its `click` at once. Offered while the integration runs, for the keys that can click (linked to the gateway, or of unknown wiring), by their event entity's name; a key picked before and no longer offered (removed, or wired elsewhere) is dropped when the options are saved. Has no effect while the option above is on. **Unverified on air.** |
+| Keys that wait for a double click | none | The same wait, for the keys picked here only: a key with a double-click automation gets the clean `click` / `double_click` distinction, every other key keeps reporting its `click` at once. Offered while the integration runs, for the keys that can click (linked to the gateway, or of unknown wiring), by their event entity's name; a key picked before and no longer offered (removed, or wired elsewhere) is dropped when the options are saved. Has no effect while the option above is on, and is not shown then (what it holds stays for when that option is off again). **Unverified on air.** |
 | Allow Home Assistant to add and remove devices (experimental) | off | Enables `add_device` and `remove_device`, see [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental). |
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
 | Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
@@ -2054,7 +2062,9 @@ data: {}   # optional: config_entry_id, or any device of the entry as device
   any, has written it: the download waits for the configurator's lock, which a plan holds until the write that records
   it. With the [provisioner identity](#home-assistant-as-a-provisioner-experimental) option on, the file holds Home
   Assistant's provisioner entry as of its last write. An entry set up from the gateway serves the export it last
-  fetched or adopted, with its own changes carried over. An entry that is not loaded is served as it is on disk.
+  fetched or adopted, with its own changes carried over. An entry that is not loaded — retrying its setup, or
+  failed to set up, when a copy is wanted most — gets its link too, named by `config_entry_id` or as the only entry
+  (the only loaded one wins when there are several), and is served as it is on disk.
 - **Who.** The link is made with Home Assistant's own `async_sign_path` for the session of the administrator who asked
   (the browser's connection, or the token of a REST API call) and expires after five minutes; the view behind it,
   `GET /api/junghome_ble/export/<entry id>` (authenticated), answers an administrator only — 403 to any other user,
@@ -2126,6 +2136,9 @@ response_variable: update  # {iv_index: 1, transmit_iv_index: 0, started_by: hom
 - **Where to see it:** the answer (when asked for), the [diagnostics](#diagnostics) (`local.iv_update`), the *IV
   index* sensor and the log (`IV Update started …`, `IV Update completed …`, `IV Update … given up`, `IV Update
   aborted …`).
+
+The repair issue *JUNG HOME mesh sequence numbers running low* starts it the same way once confirmed (without
+`force`: it is offered only while a sender runs low).
 
 Unverified on air: no JUNG device has been seen taking an IV Update from a proxy client. The
 [on-air sweep](on-air-sweep.md) has the check (E6), to run only when an update is wanted anyway.
@@ -2456,6 +2469,15 @@ the time (*devices with a wrong clock*), and — new in 1.1, unverified on air �
 (*devices missing from the export*, *mesh keys have changed*, *mesh keys are changing*) or takes another device name
 (*device name not passed on*). Each changes something only once confirmed.
 
+### "Home Assistant has no Bluetooth adapter or proxy that can connect to a device"
+
+Shown in the configuration dialog when Home Assistant has no scanner that can connect at all: no Bluetooth adapter,
+and no ESPHome Bluetooth proxy with active connections. A proxy without `bluetooth_proxy: active: true` only listens,
+so it does not count: moving it closer to the devices does not help. Add the line to the proxy's configuration and
+install it again, or plug in a Bluetooth adapter, then try again. An entry already set up retries its setup in that
+situation, and a running one raises the repair issue
+[*No Bluetooth for the JUNG HOME mesh*](#repair-issue-no-bluetooth-for-the-jung-home-mesh).
+
 ### "No node of this mesh network is currently visible over Bluetooth"
 
 Shown in the configuration dialog, or the entry stays in *Retrying setup*. The Network ID derived from the export's
@@ -2759,8 +2781,9 @@ sequence numbers of the current IV index (the *Mesh sequence numbers used* senso
 go past the end of that space until the mesh moves to the next IV index (an IV Update). Bluetooth Mesh (Mesh Protocol
 1.1 §3.11.5, Mesh Profile §3.10.5) expects a node at risk of running out to start that update itself; that JUNG HOME devices do is unverified on
 air, and nothing captured so far shows the JUNG HOME Gateway starting one. Home Assistant follows an IV Update, and an
-administrator can have it start one with [`start_iv_update`](#actions-iv-update): it cannot be undone, and it is
-unverified on air. Steady traffic uses few numbers; what moves a device far ahead is a restart: after a power cut or a
+administrator can have it start one by repairing the issue (confirm, and it starts as
+[`start_iv_update`](#actions-iv-update) does, with the same refusals; a refusal ends the repair with its message and the
+issue stays) or with the action: it cannot be undone, and it is unverified on air. Steady traffic uses few numbers; what moves a device far ahead is a restart: after a power cut or a
 tripped breaker it continues a whole persisted block (roughly 180 000 to 260 000 numbers on the installation it was
 seen on) past where it was (the *Last restart* sensor). So the sender furthest along is usually a mains device that
 often loses power, not the gateway or the app. The issue clears itself after the update.
@@ -3021,8 +3044,9 @@ left unanswered (`request_timeouts`), proxy configuration PDUs dropped (`proxy_c
 (`proxy_config_replays`) — with the number of links (`links`), and the last 20 links, newest first — the proxy node
 by its mesh address, how long ago it ended, how long it lasted, why it ended (`the proxy disconnected`, `the proxy
 went silent`, `sequence numbers skipped ahead`, …), how long its connect-time state refresh took (`null`: the link went
-first) and how long sends were held back for the sequence-number store during it —, the entry's options, the open
-repair issues, the derived device list, the last known state of every element, each node's last
+first) and how long sends were held back for the sequence-number store during it —, the entry's options (a key that
+waits for a double click with its node UUID masked like every other, redacted when its node has left the export),
+the open repair issues, the derived device list, the last known state of every element, each node's last
 [network audit](#actions-network-audit) result and the followed key refresh (its phase, how far it is proven, and the
 phase each device Home Assistant added confirmed, with the new key's Network ID), under `added_devices` each device
 Home Assistant added (recorded or pending) with what it offered for its provisioning and the method used (algorithm and

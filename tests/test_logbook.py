@@ -318,3 +318,24 @@ def test_without_cached_translations_the_line_shows_what_it_has(
             Event(EVENT_BUTTON_ACTION, {"key": "A", "type": "scene", "scene": 2})
         ) == {"name": "A", "message": "2"}
         assert scene(Event(EVENT_SCENE_RECALLED, {})) == {"name": "", "message": ""}
+
+
+def test_a_text_the_placeholders_do_not_fit_is_passed_over(hass: HomeAssistant) -> None:
+    """A row an older version stored, of a text that gained a placeholder since: the server's language's text does
+    not fit, so the English one is tried, then none — never an exception for every such row of the logbook."""
+    path = "component.junghome_ble.exceptions.x.message"
+    cached = {
+        "de": {path: "{neu} von {alt}"},
+        "en": {path: "{old} only"},
+    }
+    hass.config.language = "de"
+    with patch(
+        f"{texts.__name__}.async_get_cached_translations",
+        side_effect=lambda _hass, language, _category, _domain: cached[language],
+    ):
+        assert (
+            texts.cached_text(hass, "exceptions", "x.message", {"old": "1"}) == "1 only"
+        )
+        assert texts.cached_text(hass, "exceptions", "x.message", {}) is None
+        cached["en"][path] = "{0} {bad"
+        assert texts.cached_text(hass, "exceptions", "x.message", {"old": "1"}) is None

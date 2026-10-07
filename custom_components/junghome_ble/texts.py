@@ -25,13 +25,18 @@ def cached_text(
     """Return the integration's text `<category>.<key>` in the server's language (English without), filled in.
 
     None when neither has it: the integration's translations are cached when Home Assistant sets it up, so only a
-    key no version wrote lacks one.
+    key no version wrote lacks one. A text the placeholders do not fit (a logbook row an older version stored, of a
+    text that gained a placeholder since) is passed over as one it lacks, as `topology_svg._say` does: a describer
+    that raised would fail every such row of the logbook.
     """
     path = f"component.{DOMAIN}.{category}.{key}"
     for language in (hass.config.language, "en"):
         text = async_get_cached_translations(hass, language, category, DOMAIN)
         if path in text:
-            return text[path].format_map(placeholders or {})
+            try:
+                return text[path].format_map(placeholders or {})
+            except (KeyError, IndexError, ValueError):
+                continue
     return None
 
 

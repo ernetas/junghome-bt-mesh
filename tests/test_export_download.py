@@ -359,6 +359,58 @@ async def test_any_device_of_the_entry_names_it(
         )
 
 
+async def test_an_entry_not_loaded_still_hands_over_its_export(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    export_file: Path,
+    hass_ws_client: WebSocketGenerator,
+    hass_client_no_auth: ClientSessionGenerator,
+) -> None:
+    """An entry in setup retry, or one whose setup failed, is when a copy of its export is wanted most: named or
+    the only one, it gets its link (the view serves it from disk). An ignored discovery has no export to offer."""
+    assert await hass.config_entries.async_unload(init_integration.entry_id)
+    await hass.async_block_till_done()
+    for data in ({}, {"config_entry_id": init_integration.entry_id}):
+        answer = await ws_download(hass, hass_ws_client, **data)
+        assert answer["url"].startswith(f"{export_path(init_integration.entry_id)}?")
+        download = await (await hass_client_no_auth()).get(answer["url"])
+        assert await download.read() == read(export_file)
+    ignored = MockConfigEntry(
+        domain=DOMAIN, source="ignore", unique_id="other", data={}
+    )
+    ignored.add_to_hass(hass)
+    answer = await ws_download(
+        hass, hass_ws_client
+    )  # still the only one with an export
+    assert answer["url"].startswith(f"{export_path(init_integration.entry_id)}?")
+    for data, key in (
+        ({"config_entry_id": ignored.entry_id}, "service_unknown_entry"),
+        ({"config_entry_id": "no-such-entry"}, "service_unknown_entry"),
+    ):
+        with pytest.raises(ServiceValidationError) as err:
+            await hass.services.async_call(
+                DOMAIN, "download_export", data, blocking=True, return_response=True
+            )
+        assert err.value.translation_key == key
+    second = MockConfigEntry(
+        domain=DOMAIN, unique_id="second", data={CONF_CDB_PATH: str(export_file)}
+    )
+    second.add_to_hass(hass)
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            DOMAIN, "download_export", {}, blocking=True, return_response=True
+        )
+    assert err.value.translation_key == "service_entry_ambiguous"
+    for entry in (init_integration, second):
+        await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    with pytest.raises(ServiceValidationError) as err:
+        await hass.services.async_call(
+            DOMAIN, "download_export", {}, blocking=True, return_response=True
+        )
+    assert err.value.translation_key == "service_entry_not_loaded"
+
+
 async def test_a_call_without_a_session_to_sign_for_is_refused(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,

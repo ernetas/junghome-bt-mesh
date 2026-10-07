@@ -92,10 +92,20 @@ async def _start_iv_update(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
     if not call.data[ATTR_CONFIRM]:
         raise _validation("start_iv_update_needs_confirm")
     entry_id = _entry_for_hub_services(hass, call.data)
-    if (
-        not call.data[ATTR_FORCE]
-        and _hub(hass, entry_id).issues.sequence_space_low() is None
-    ):
+    response = await async_start_iv_update(hass, entry_id, force=call.data[ATTR_FORCE])
+    return response if call.return_response else None
+
+
+async def async_start_iv_update(
+    hass: HomeAssistant, entry_id: str, *, force: bool = False
+) -> dict[str, Any]:
+    """Start an IV Update of the entry's mesh with the action's guards; answer the new IV index and its timing.
+
+    The action's work after its `confirm`, and the confirmed `sequence_space_low` repair's
+    (`repairs.StartIVUpdateFlow`). Refused with the action's errors: not needed unless `force`, no link, a key
+    refresh, an update in progress or too recent, the highest index. Unverified on air.
+    """
+    if not force and _hub(hass, entry_id).issues.sequence_space_low() is None:
         raise _validation("start_iv_update_not_needed")
     response: dict[str, Any] = {}
 
@@ -125,7 +135,7 @@ async def _start_iv_update(hass: HomeAssistant, call: ServiceCall) -> ServiceRes
         return False  # the export did not change
 
     await _run(hass, entry_id, operation)
-    return response if call.return_response else None
+    return response
 
 
 async def _abort_iv_update(hass: HomeAssistant, call: ServiceCall) -> ServiceResponse:

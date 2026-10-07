@@ -186,7 +186,8 @@ class Issues:
         index until an IV Update resets it. Mesh Protocol 1.1 §3.11.5 (Mesh Profile §3.10.5) expects a node at risk
         of running out to start that update itself; that JUNG HOME nodes do is unverified on air (nothing captured
         shows the gateway starting one either). Home Assistant follows one, and an administrator can start one with
-        the `start_iv_update` action (`actions/iv_update.py`; unverified on air). Steady traffic uses few numbers; a
+        the `start_iv_update` action or by repairing the issue, with the same guards (`actions/iv_update.py`,
+        `repairs.StartIVUpdateFlow`; unverified on air). Steady traffic uses few numbers; a
         node's restart skips it a whole persisted block ahead, so a mains node that often loses power runs low
         first. The numbers are those the replay protection accepted, so they are what the mesh really used. Cleared
         once the IV index moves on (an update in progress counts: its index is the new one) — in the mesh: one Home
@@ -210,7 +211,9 @@ class Issues:
             self.hub.hass,
             DOMAIN,
             key,
-            is_fixable=False,
+            # its repair starts the IV Update, with `start_iv_update`'s guards (`repairs.StartIVUpdateFlow`)
+            is_fixable=True,
+            data={"entry_id": self.hub.entry.entry_id},
             severity=ir.IssueSeverity.WARNING,
             translation_key=ISSUE_SEQUENCE_SPACE_LOW,
             learn_more_url=learn_more_url(ISSUE_SEQUENCE_SPACE_LOW),

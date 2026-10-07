@@ -179,6 +179,7 @@
       "invalid_address": "Adresa musí být šestnáctková v rozsahu 0001 až 7FFF.",
       "address_in_use": "Tato adresa patří uzlu v síti mesh; zvolte nepoužitou.",
       "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+      "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
       "export_keys_stale": "Zařízení této sítě mesh jsou viditelná přes Bluetooth, ale žádné neinzeruje síťový klíč z tohoto exportu: klíče sítě byly obnoveny (Key Refresh v aplikaci JUNG HOME) až po vytvoření exportu. Exportujte síť znovu z aplikace JUNG HOME nebo ji znovu načtěte z brány a použijte tento soubor.",
       "network_mismatch": "Export patří k jiné síti mesh, než která byla nalezena.",
       "mesh_already_configured": "Tato síť mesh je již nastavena jako jiný záznam (její síťový klíč byl pravděpodobně obnoven od chvíle, kdy ji Home Assistant viděl naposledy). Místo přidání nového záznamu použijte Překonfigurovat u tohoto záznamu.",
@@ -229,7 +230,7 @@
           "sync_areas": "Přesouvat zařízení, když se změní jejich místnost JUNG"
         },
         "data_description": {
-          "click_delay": "Událost `click` se na půl sekundy zadrží a zahodí, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`. Vypnuto: každé stisknutí vyvolá `click` okamžitě a druhé stisknutí dvojitého stisknutí navíc vyvolá `double_click`. Platí pro všechna tlačítka; chcete-li čekat jen u některých, nechte to vypnuté a vyberte je v seznamu níže.",
+          "click_delay": "Událost `click` se na půl sekundy zadrží a zahodí, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`. Vypnuto: každé stisknutí vyvolá `click` okamžitě a druhé stisknutí dvojitého stisknutí navíc vyvolá `double_click`. Platí pro všechna tlačítka; chcete-li čekat jen u některých, nechte to vypnuté a vyberte je v poli *Tlačítka, která čekají na dvojklik*, které se zobrazí, když je tato volba vypnutá a integrace běží.",
           "double_click_keys": "Pouze tato tlačítka zadrží svůj `click` na půl sekundy a zahodí ho, pokud následuje druhé kliknutí, takže dvojité stisknutí vyvolá pouze `double_click`; každé jiné tlačítko vyvolá `click` okamžitě. Vyberte tlačítka, která mají automatizaci na dvojklik. Uvedena jsou jen tlačítka, která umí kliknout. Zatím neověřeno na skutečných zařízeních.",
           "heartbeats": "Každé zařízení napájené ze sítě je požádáno, aby Home Assistantu každých 64 sekund poslalo heartbeat (standardní nastavení Bluetooth Mesh, které aplikace JUNG nechává vypnuté). U zařízení, které zhruba tři a půl minuty nic nepošle, se jeho entity označí jako nedostupné, dokud se znovu neozve. Vypnutím se zařízením řekne, aby přestala (při dalším připojení znovu, pokud nešlo informovat všechna najednou); vypněte to před odebráním integrace, která jim to potom už říct nemůže.",
           "allow_provisioning": "Umožní akci `junghome_ble.add_device` provést provisioning nového zařízení JUNG a nakonfigurovat je jako aplikace, podle zařízení stejného produktu, které už v síti je, a akci `junghome_ble.remove_device` resetovat zařízení a vyjmout je ze sítě. Zatím nevyzkoušeno na skutečných zařízeních: nejprve to zkuste s náhradním zařízením. Přidání předá zařízení klíče sítě; odebrání nelze vrátit zpět.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Neodesláno: {node} odpověděl na {message} hodnotou {found}, ale export mesh uvádí {expected} (dalších rozdílů: {others}). Instalace se po vytvoření exportu mesh změnila (v aplikaci JUNG HOME, resetem zařízení nebo dřívější akcí, která se zastavila v polovině) a plán by přepsal to, co export už nepopisuje. Exportujte projekt z aplikace znovu, nebo nechte Home Assistant převzít export z brány, a spusťte akci znovu; s `force` proběhne bez této kontroly. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "IV Update nelze vrátit zpět: pro jeho spuštění přidejte k volání \"confirm: true\"."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Žádný odesílatel v síti mesh zatím nevyužil tři čtvrtiny sekvenčních čísel svého IV indexu, takže IV Update není potřeba; chcete-li jej přesto spustit, přidejte \"force: true\"."
+    },
+    "start_iv_update_in_progress": {
+      "message": "IV Update na IV index {iv_index} už probíhá."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "Síťový klíč sítě mesh se právě obnovuje (key refresh): spusťte IV Update, až obnova skončí."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant zatím neslyšel IV index sítě mesh od zařízení, přes které je připojen; zkuste to za chvíli znovu. Poslední změna stavu IV sítě mesh, kterou Home Assistant viděl v majáku: {mesh_changed}. Zařízení odmítne IV Update do 96 hodin od své poslední."
     },
     "start_iv_update_too_early": {
       "message": "IV Update v síti mesh začala nebo skončila před méně než 96 hodinami (IV index je {iv_index}): novou lze spustit od {not_before}. Poslední změna stavu IV sítě mesh, kterou Home Assistant viděl v majáku: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "IV index sítě mesh je na své nejvyšší hodnotě ({iv_index}): dál jít nemůže."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant nemohl zapsat nový IV index do svého úložiště sekvenčních čísel, a proto IV Update nespustil; podívejte se do protokolu."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Zrušení IV Update vrátí Home Assistant na IV index, na kterém je síť mesh: přidejte k volání \"confirm: true\", chcete-li to provést."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "Adresář metadat neobsahuje soubory device_metadata.json a scene_metadata.json aplikace v očekávané podobě.",
           "no_project": "Brána nemá žádný export sítě. Otevřete jednou aplikaci JUNG HOME, zatímco je připojena k bráně (projekt nahraje automaticky), a ujistěte se, že firmware brány je verze 2.1 nebo novější.",
           "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+          "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
           "not_a_directory": "Cesta k metadatům není adresář.",
           "not_approved": "Žádost o přístup nebyla v aplikaci včas schválena. Odešlete znovu a schvalte ji v Nastavení → Brána → Přístupová oprávnění → Otevřené žádosti.",
           "token_rejected": "Brána už nepřijímá uložený přístup. Odešlete znovu a požádejte o nový přístup.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "Adresář metadat neobsahuje soubory device_metadata.json a scene_metadata.json aplikace v očekávané podobě.",
           "no_project": "Brána nemá žádný export sítě. Otevřete jednou aplikaci JUNG HOME, zatímco je připojena k bráně (projekt nahraje automaticky), a ujistěte se, že firmware brány je verze 2.1 nebo novější.",
           "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+          "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
           "not_a_directory": "Cesta k metadatům není adresář.",
           "not_approved": "Žádost o přístup nebyla v aplikaci včas schválena. Odešlete znovu a schvalte ji v Nastavení → Brána → Přístupová oprávnění → Otevřené žádosti.",
           "token_rejected": "Brána už nepřijímá uložený přístup. Odešlete znovu a požádejte o nový přístup.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "Adresář metadat neobsahuje soubory device_metadata.json a scene_metadata.json aplikace v očekávané podobě.",
           "no_project": "Brána nemá žádný export sítě. Otevřete jednou aplikaci JUNG HOME, zatímco je připojena k bráně (projekt nahraje automaticky), a ujistěte se, že firmware brány je verze 2.1 nebo novější.",
           "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+          "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
           "not_a_directory": "Cesta k metadatům není adresář.",
           "not_approved": "Žádost o přístup nebyla v aplikaci včas schválena. Odešlete znovu a schvalte ji v Nastavení → Brána → Přístupová oprávnění → Otevřené žádosti.",
           "token_rejected": "Brána už nepřijímá uložený přístup. Odešlete znovu a požádejte o nový přístup.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "Adresář metadat neobsahuje soubory device_metadata.json a scene_metadata.json aplikace v očekávané podobě.",
           "no_project": "Brána nemá žádný export sítě. Otevřete jednou aplikaci JUNG HOME, zatímco je připojena k bráně (projekt nahraje automaticky), a ujistěte se, že firmware brány je verze 2.1 nebo novější.",
           "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+          "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
           "not_a_directory": "Cesta k metadatům není adresář.",
           "not_approved": "Žádost o přístup nebyla v aplikaci včas schválena. Odešlete znovu a schvalte ji v Nastavení → Brána → Přístupová oprávnění → Otevřené žádosti.",
           "token_rejected": "Brána už nepřijímá uložený přístup. Odešlete znovu a požádejte o nový přístup.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "Adresář metadat neobsahuje soubory device_metadata.json a scene_metadata.json aplikace v očekávané podobě.",
           "no_project": "Brána nemá žádný export sítě. Otevřete jednou aplikaci JUNG HOME, zatímco je připojena k bráně (projekt nahraje automaticky), a ujistěte se, že firmware brány je verze 2.1 nebo novější.",
           "no_proxy_visible": "Žádný uzel této sítě mesh není právě viditelný přes Bluetooth. Ujistěte se, že je adaptér Bluetooth nebo ESPHome Bluetooth proxy v dosahu zařízení JUNG napájeného ze sítě.",
+          "no_connectable_scanner": "Home Assistant nemá žádný Bluetooth adaptér ani proxy, které by se mohly připojit k zařízení. Přidejte Bluetooth adaptér nebo ESPHome Bluetooth proxy s aktivními připojeními (`bluetooth_proxy: active: true` v jeho konfiguraci): proxy bez nich jen naslouchá.",
           "not_a_directory": "Cesta k metadatům není adresář.",
           "not_approved": "Žádost o přístup nebyla v aplikaci včas schválena. Odešlete znovu a schvalte ji v Nastavení → Brána → Přístupová oprávnění → Otevřené žádosti.",
           "token_rejected": "Brána už nepřijímá uložený přístup. Odešlete znovu a požádejte o nový přístup.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Sekvenční čísla sítě mesh JUNG HOME docházejí",
-      "description": "V síti mesh {title} spotřeboval odesílatel {source} {percent} % sekvenčních čísel IV indexu {iv_index}. Odesílatel se za konec tohoto prostoru nedostane, dokud síť mesh nepřejde na další IV index (IV Update). Bluetooth Mesh očekává, že zařízení, kterému čísla docházejí, tuto aktualizaci spustí samo; zda to zařízení JUNG HOME dělají, zatím není známo. Home Assistant IV Update sleduje a správce jej může nechat spustit akcí `junghome_ble.start_iv_update` (nelze vrátit zpět; v provozu zatím neověřeno). Každý restart zařízení (výpadek proudu, vypnutý jistič) posune jeho sekvenční čísla daleko dopředu, takže zařízení, které často ztrácí napájení, dojdou čísla jako prvnímu. Problém zmizí sám po aktualizaci."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Spustit IV Update",
+            "description": "V síti mesh {title} spotřeboval odesílatel {source} {percent} % sekvenčních čísel IV indexu {iv_index}. Odesílatel se za konec tohoto prostoru nedostane, dokud síť mesh nepřejde na další IV index (IV Update). Bluetooth Mesh očekává, že zařízení, kterému čísla docházejí, tuto aktualizaci spustí samo; zda to zařízení JUNG HOME dělají, zatím není známo. Home Assistant IV Update sleduje. Potvrzením jej necháte spustit IV Update hned teď, stejně jako akce `junghome_ble.start_iv_update`: nelze jej vrátit zpět a je odmítnut bez spojení se sítí mesh, během obnovy síťového klíče a do 96 hodin od posledního IV Update. V provozu zatím neověřeno. Každý restart zařízení (výpadek proudu, vypnutý jistič) posune jeho sekvenční čísla daleko dopředu, takže zařízení, které často ztrácí napájení, dojdou čísla jako prvnímu. Problém zmizí sám po aktualizaci."
+          }
+        },
+        "abort": {
+          "entry_gone": "Záznam JUNG HOME, ke kterému tento problém patří, už není nastaven.",
+          "not_loaded": "Záznam JUNG HOME, ke kterému tento problém patří, nyní neběží. Zkuste to znovu, až bude nastaven.",
+          "start_failed": "IV Update nebyl spuštěn: {error} Problém zůstává, dokud některému odesílateli docházejí čísla; opravte jej znovu, až příčina pomine."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "Síť mesh JUNG HOME nepřevzala IV Update",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Klient",
           "description": "Název, pod kterým klient žádá o přístup, přesně jak je uveden pod `waiting`. Je-li prázdné, nic se neschválí."
+        },
+        "config_entry_id": {
+          "name": "Síť mesh",
+          "description": "Která síť JUNG HOME, pokud je jich nastaveno více."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "Spustit IV Update",
+      "description": "Nechá Home Assistant spustit IV Update sítě mesh: síť přejde na další IV index, čímž každý odesílatel získá nový prostor sekvenčních čísel. Bluetooth Mesh očekává, že zařízení, kterému docházejí sekvenční čísla, jej spustí samo; oprava problému *Sekvenční čísla sítě mesh JUNG HOME docházejí* jej spustí stejným způsobem. Nelze vrátit zpět (IV index jen roste) a síť se vrátí do normálního provozu za 96 až 144 hodin. Odmítnuto, pokud žádný odesílatel nevyužil tři čtvrtiny svých sekvenčních čísel (a není zapnuto *I když není potřeba*), bez spojení se sítí mesh, během obnovy síťového klíče a do 96 hodin od posledního začátku nebo konce IV Update. Pouze pro správce. V provozu zatím neověřeno.",
+      "fields": {
+        "confirm": {
+          "name": "Potvrdit",
+          "description": "Nutné k provedení: IV Update nelze vrátit zpět."
+        },
+        "force": {
+          "name": "I když není potřeba",
+          "description": "Spustit jej, i když zatím žádný odesílatel nevyužil tři čtvrtiny svých sekvenčních čísel."
         },
         "config_entry_id": {
           "name": "Síť mesh",

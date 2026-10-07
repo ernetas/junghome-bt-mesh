@@ -25,6 +25,7 @@ from custom_components.junghome_ble.const import (
     CONF_CDB_PATH,
     CONF_GATEWAY_FINGERPRINT,
     CONF_GATEWAY_HOST,
+    CONF_GATEWAY_SERIAL,
     CONF_GATEWAY_TOKEN,
     CONF_MESH_UUID,
     CONF_METADATA_DIR,
@@ -463,6 +464,7 @@ async def test_gateway_entry_data_is_redacted(
             CONF_GATEWAY_HOST: "junghome-1234.local",
             CONF_GATEWAY_TOKEN: "gw-token-0123456789abcdef",
             CONF_GATEWAY_FINGERPRINT: "ab" * 32,
+            CONF_GATEWAY_SERIAL: "00000000a1b2c3d4",
         },
     )
     await setup_entry(hass, entry)
@@ -481,12 +483,14 @@ async def test_gateway_entry_data_is_redacted(
             CONF_GATEWAY_HOST: REDACTED,
             CONF_GATEWAY_TOKEN: REDACTED,
             CONF_GATEWAY_FINGERPRINT: REDACTED,  # PLT-08: a stable, unique id of the user's gateway
+            CONF_GATEWAY_SERIAL: REDACTED,  # the same (review-5 U5-2 records it)
         }
     )
     dump = json.dumps(result)
     assert "ab" * 32 not in dump
     assert "junghome-1234" not in dump
     assert "gw-token" not in dump
+    assert "a1b2c3d4" not in dump
     assert str(tmp_path) not in dump
     assert_no_secrets(result)
 
@@ -541,6 +545,27 @@ async def test_diagnostics_include_the_options_and_the_open_repairs(
     assert masked[0].startswith("xxxxxxxx-xxxx-")
     assert masked[0].endswith("-0040")
     assert result["issues"] == [issue]
+
+
+async def test_a_double_click_key_whose_node_left_the_export_is_redacted(
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    no_time_keeper_check: None,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Review-5 H5-5: a key kept in the option after its push-button left the export has no mask (its node is not
+    in the export any more): it is redacted, not shown with its MAC. A key of the export stays masked."""
+    gone = "00005eff-fe00-5399-0000-000000000000-0040"  # a documentation-range MAC no node of the fixture has
+    hass.config_entries.async_update_entry(
+        init_integration,
+        options={OPTION_DOUBLE_CLICK_KEYS: [UID_BUTTON_WC, gone, 7]},
+    )
+    await hass.async_block_till_done()
+    result = await get_diagnostics_for_config_entry(hass, hass_client, init_integration)
+    kept, *others = result["options"][OPTION_DOUBLE_CLICK_KEYS]
+    assert kept.startswith("xxxxxxxx-xxxx-")
+    assert others == [REDACTED, REDACTED]
+    assert "5399" not in json.dumps(result)
 
 
 async def test_diagnostics_show_the_node_clocks_but_not_their_location(

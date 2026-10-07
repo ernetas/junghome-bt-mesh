@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Final
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
@@ -22,7 +23,6 @@ from .config_flow import (
     SOURCE_GATEWAY,
     SOURCE_UPLOAD,
     async_migrate_unique_id,
-    certificate_issue_id,
     forget_stored_export,
     infer_source,
     mesh_proxies_without_match,
@@ -35,24 +35,8 @@ from .const import (
     CONF_SOURCE,
     CONF_UNICAST,
     DOMAIN,
-    ISSUE_ADDRESS_IN_USE,
-    ISSUE_ADDRESS_RESERVED,
-    ISSUE_APP_CHANGED,
-    ISSUE_DEVICE_NAME,
-    ISSUE_DUPLICATE_MESH,
-    ISSUE_EXPORT_STALE,
-    ISSUE_GATEWAY_SYNC,
-    ISSUE_GATEWAY_TOKEN,
-    ISSUE_KEY_REFRESH,
-    ISSUE_PDUS_DROPPED,
-    ISSUE_PENDING_DEVICE,
-    ISSUE_PLAN_INTERRUPTED,
-    ISSUE_RESTORE_TOO_OLD,
-    ISSUE_SCENE_HELD,
-    ISSUE_SEQ_STORE_LOST,
-    ISSUE_UNKNOWN_NODES,
-    ISSUE_VAULT_KEY_REFRESH,
-    ISSUE_VAULT_UNWRITABLE,
+    ISSUE_CARRY_OVER_CONFLICT,
+    ISSUE_LEARN_MORE,
     PLATFORMS,
     STORAGE_DIR,
 )
@@ -89,7 +73,6 @@ from .migration import (
     drop_retired_entities,
     enable_now_default,
 )
-from .migration import issue_id as gateway_import_issue_id
 from .model_update import (
     async_follow_export,
     async_sync_areas,
@@ -109,6 +92,10 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+
+# set up from the UI only: a `junghome_ble:` key in configuration.yaml gets Home Assistant's "does not support YAML"
+# error and repair instead of being accepted without a word (the integration has `async_setup`, for its actions)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 INCOMING_MAX_AGE: Final = (
     3600.0  # seconds; an `.incoming-*` file older than this belongs to no flow any more
@@ -281,7 +268,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
     if token_rejected_open(hass, entry):
         entry.async_start_reauth(hass)
     # a device Home Assistant provisioned but never recorded (onboard.py)
-    await _async_pending_devices(hass, entry, hub)
+    async_update_pending_issue(hass, entry, hub.vault)
     # the vault could not be written while a device was added: the next save that lands clears it
     entry.async_on_unload(
         hub.vault.async_add_listener(
@@ -289,19 +276,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) -> 
         )
     )
     return True
-
-
-async def _async_pending_devices(
-    hass: HomeAssistant, entry: JungHomeConfigEntry, hub: JungHomeHub
-) -> None:
-    """Raise or clear the `pending_device` repair, once the export's records were noted in the vault.
-
-    A device recorded in the export whose vault write did not land (`vault_unwritable_recorded`) is no pending
-    device: the vault marks it recorded first (`MeshConfigurator.async_note_recorded_nodes`).
-    """
-    assert hub.configurator is not None  # registered before the setup gets here
-    await hub.configurator.async_note_recorded_nodes()
-    async_update_pending_issue(hass, entry, hub.vault)
 
 
 def _reload_once_loaded(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None:
@@ -327,17 +301,18 @@ def _reload_once_loaded(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None
 
 
 async def _async_entry_updated(hass: HomeAssistant, entry: JungHomeConfigEntry) -> None:
-    """Reload the entry when its options or the data the running hub was built from changed.
+    """Reload the entry when the data or the options the running hub was built from changed; else apply the rest.
 
     Home Assistant wants the update listener to do the reloading (a flow that reloads next to a listener is
     deprecated): the reconfigure flow only updates a loaded entry. A new title or gateway token / fingerprint is
-    not what the hub was built from (`JungHomeHub.needs_rebuild`) and changes nothing.
+    not what the hub was built from (`JungHomeHub.needs_rebuild`) and changes nothing; neither does a change of
+    `LIVE_OPTIONS` (the keys that wait for a double click, say), which the hub applies in place.
     """
-    if (
-        entry.state is ConfigEntryState.LOADED
-        and entry.runtime_data.needs_rebuild
-        and await entry.runtime_data.async_begin_rebuild()  # once: the listener runs again during it
-    ):
+    hub = entry.runtime_data if entry.state is ConfigEntryState.LOADED else None
+    if hub is not None and not hub.needs_rebuild:
+        hub.async_options_updated()
+    # a rebuild begins once: the listener runs again while the reload it starts is pending
+    elif hub is not None and await hub.async_begin_rebuild():
         await hass.config_entries.async_reload(entry.entry_id)
 
 
@@ -346,6 +321,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: JungHomeConfigEntry) ->
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         async_unregister_configurator(hass, entry)
+        if entry.disabled_by is not None:
+            # the configurator's repair outlives a reload on purpose (the adopt it reports is often followed by
+            # one), not an entry disabled: nothing sets it up again to keep it current
+            ir.async_delete_issue(
+                hass, DOMAIN, issue_id(entry, ISSUE_CARRY_OVER_CONFLICT)
+            )
     return unloaded
 
 
@@ -406,35 +387,11 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         for flow in hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
     await hass.async_add_executor_job(sweep_incoming, store, 0.0, in_progress)
-    # every repair issue of the entry: the unload cleared the hub's (a removed entry may never have loaded)
-    for issue in (
-        certificate_issue_id(entry.entry_id),
-        gateway_import_issue_id(entry),
-        *(
-            issue_id(entry, key)
-            for key in (
-                ISSUE_KEY_REFRESH,
-                ISSUE_PDUS_DROPPED,
-                ISSUE_EXPORT_STALE,
-                ISSUE_UNKNOWN_NODES,
-                ISSUE_APP_CHANGED,
-                ISSUE_DUPLICATE_MESH,
-                ISSUE_GATEWAY_SYNC,
-                ISSUE_GATEWAY_TOKEN,
-                ISSUE_SEQ_STORE_LOST,
-                ISSUE_RESTORE_TOO_OLD,
-                ISSUE_ADDRESS_IN_USE,
-                ISSUE_ADDRESS_RESERVED,
-                ISSUE_DEVICE_NAME,
-                ISSUE_PENDING_DEVICE,
-                ISSUE_VAULT_UNWRITABLE,
-                ISSUE_PLAN_INTERRUPTED,
-                ISSUE_SCENE_HELD,
-                ISSUE_VAULT_KEY_REFRESH,
-            )
-        ),
-    ):
-        ir.async_delete_issue(hass, DOMAIN, issue)
+    # every repair issue of the entry, whoever raised it — the hub, the configurator (`carry_over_conflict`), a
+    # flow: the unload cleared only the hub's, and a removed entry may never have loaded. Every issue has a *Learn
+    # more* link, so `ISSUE_LEARN_MORE` names them all; each one's id is its key and the entry's id (`issue_id`)
+    for key in ISSUE_LEARN_MORE:
+        ir.async_delete_issue(hass, DOMAIN, issue_id(entry, key))
 
 
 async def async_remove_config_entry_device(

@@ -154,17 +154,8 @@ class ButtonGestures:
     """The button gestures of one hub (module docstring): their state, timers and listeners."""
 
     def __init__(self, hub: GesturesHub) -> None:
-        """Bind to `hub` (its `hass`, devices and link-loss listeners); nothing pending, the option read from its entry."""
+        """Bind to `hub` (its `hass`, devices, entry and link-loss listeners); nothing pending."""
         self.hub = hub
-        # Options: report a `click` only once a second click can no longer turn it into a double click — of every
-        # key (`click_delay`), or of the keys listed (`double_click_keys`, unique ids; one no longer in the model
-        # matches nothing)
-        self.click_delay = bool(
-            hub.entry.options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY)
-        )
-        self.double_click_keys = frozenset(
-            hub.entry.options.get(OPTION_DOUBLE_CLICK_KEYS, ())
-        )
         self._delayed_clicks: dict[
             int, tuple[Callable[[], None], int, str | None]
         ] = {}  # element → (cancel the timer, counter and side of the click held back)
@@ -186,6 +177,19 @@ class ButtonGestures:
         ] = {}  # (src, opcode, params) → when
         self._event_listeners: dict[int, list[EventListener]] = {}
         hub.async_on_link_loss(self._end_holds_on_link_loss)
+
+    # Options: report a `click` only once a second click can no longer turn it into a double click — of every key
+    # (`click_delay`), or of the keys listed (`double_click_keys`, unique ids; one no longer in the model matches
+    # nothing). Read from the entry as they are now: a change applies without a reload (`LIVE_OPTIONS`).
+    @property
+    def click_delay(self) -> bool:
+        """Whether every key's click waits (the `click_delay` option)."""
+        return bool(self.hub.entry.options.get(OPTION_CLICK_DELAY, DEFAULT_CLICK_DELAY))
+
+    @property
+    def double_click_keys(self) -> frozenset[str]:
+        """The keys whose clicks wait (the `double_click_keys` option)."""
+        return frozenset(self.hub.entry.options.get(OPTION_DOUBLE_CLICK_KEYS, ()))
 
     def cancel_all(self) -> None:
         """Drop the clicks held back and end every hold (`HOLD_END_STOPPED`): the hub stops (`JungHomeHub.async_stop`).

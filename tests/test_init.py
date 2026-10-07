@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import shutil
 import time
@@ -13,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
-from homeassistant.config_entries import ConfigEntryState
+from homeassistant.config_entries import ConfigEntryDisabler, ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
@@ -48,7 +49,9 @@ from custom_components.junghome_ble.const import (
     DOMAIN,
     ISSUE_ADDRESS_IN_USE,
     ISSUE_ADDRESS_RESERVED,
+    ISSUE_CARRY_OVER_CONFLICT,
     ISSUE_KEY_REFRESH,
+    ISSUE_LEARN_MORE,
     SEQ_SKIP_AHEAD,
     STORAGE_DIR,
 )
@@ -57,6 +60,7 @@ from custom_components.junghome_ble.entity import product_name
 from custom_components.junghome_ble.jhmesh.advert import mac_from_uuid
 from custom_components.junghome_ble.jhmesh.client import MESH_PROXY_SERVICE
 
+from . import conftest
 from .conftest import (
     CDB_PATH,
     SHARE_EXPORT_PATH,
@@ -547,7 +551,9 @@ async def test_stale_devices_removed_on_setup(
     fast_sleep: list[float],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """Devices of a previous export that are no longer in the file are detached from the entry on setup."""
+    """Devices of a previous export that are no longer in the file are removed on setup — through the device
+    registry's current call (review-5 H5-2): the deprecated `remove_config_entry_id` made Home Assistant report the
+    integration, which `no_home_assistant_complaints` fails on."""
     mock_config_entry.add_to_hass(hass)
     devices = dr.async_get(hass)
     stale = devices.async_get_or_create(
@@ -696,6 +702,53 @@ def test_mac_from_uuid() -> None:
     assert mac_from_uuid("not-a-uuid") is None
 
 
+async def test_a_yaml_key_is_refused_with_home_assistants_repair(
+    hass: HomeAssistant, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The integration is set up from the UI only: a `junghome_ble:` key in YAML is said to be unsupported (an
+    error and Home Assistant's repair) rather than accepted silently; the actions are registered all the same."""
+    assert await async_setup_component(hass, DOMAIN, {DOMAIN: {"anything": 1}})
+    assert "The junghome_ble integration does not support YAML setup" in caplog.text
+    assert ir.async_get(hass).async_get_issue(
+        "homeassistant", f"config_entry_only_{DOMAIN}"
+    )
+    assert hass.services.has_service(DOMAIN, "download_export")
+
+
+def test_home_assistant_complaints_are_collected() -> None:
+    """The records `no_home_assistant_complaints` fails a test on, and only those."""
+    handler = conftest._Complaints()
+
+    def record(name: str, message: str) -> logging.LogRecord:
+        return logging.LogRecord(name, logging.WARNING, __file__, 1, message, (), None)
+
+    handler.emit(
+        record(
+            "homeassistant.helpers.frame",
+            "Detected that custom integration 'x' calls y",
+        )
+    )
+    handler.emit(
+        record(
+            "homeassistant.helpers.entity",
+            "Entity e has translation placeholders '{}' which …",
+        )
+    )
+    handler.emit(
+        record("homeassistant.helpers.entity", "Updating state for e took 0.5 seconds")
+    )
+    handler.emit(
+        record(
+            "homeassistant.loader",
+            "Detected that custom integration … (not the frame helper)",
+        )
+    )
+    assert [line.split(":")[0] for line in handler.seen] == [
+        "homeassistant.helpers.frame",
+        "homeassistant.helpers.entity",
+    ]
+
+
 async def test_remove_config_entry_device(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
@@ -717,8 +770,7 @@ async def test_remove_config_entry_device(
     client = await hass_ws_client(hass)
     await client.send_json_auto_id(
         {
-            "type": "config/device_registry/remove_config_entry",
-            "config_entry_id": entry.entry_id,
+            "type": "config/device_registry/remove",
             "device_id": stale.id,
         }
     )
@@ -728,8 +780,7 @@ async def test_remove_config_entry_device(
 
     await client.send_json_auto_id(
         {
-            "type": "config/device_registry/remove_config_entry",
-            "config_entry_id": entry.entry_id,
+            "type": "config/device_registry/remove",
             "device_id": light.id,
         }
     )
@@ -1028,6 +1079,61 @@ async def test_removing_the_entry_takes_the_backup_and_orphaned_incoming_files(
     for issue_id in issue_ids:
         assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
     hass.config_entries.flow.async_abort(flow["flow_id"])
+
+
+async def test_removing_the_entry_leaves_none_of_its_repair_issues(
+    hass: HomeAssistant, mock_bluetooth_env: dict[str, Any]
+) -> None:
+    """Review-5 H5-4: every issue the entry can have goes with it, the configurator's `carry_over_conflict` too —
+    whoever raised it, loaded or not. Another entry's stay."""
+    mock_bluetooth_env["infos"] = []  # no proxy to offer to discovery again
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="removable",
+        data={CONF_CDB_PATH: CDB_PATH, CONF_UNICAST: "0D00", CONF_SOURCE: "file"},
+    )
+    entry.add_to_hass(hass)
+    issues = ir.async_get(hass)
+    for owner in (entry.entry_id, "another"):
+        for key in ISSUE_LEARN_MORE:
+            ir.async_create_issue(
+                hass,
+                DOMAIN,
+                f"{key}_{owner}",
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key=key,
+            )
+    await hass.config_entries.async_remove(entry.entry_id)
+    await hass.async_block_till_done()
+    left = {issue_id for domain, issue_id in issues.issues if domain == DOMAIN}
+    assert not {i for i in left if i.endswith(entry.entry_id)}
+    assert f"{ISSUE_CARRY_OVER_CONFLICT}_another" in left
+
+
+async def test_a_carry_over_conflict_outlives_a_reload_not_a_disabled_entry(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Review-5 H5-4: the adopt the repair reports is often followed by a reload, which keeps it; an entry disabled
+    is never set up again to keep it current, so its unload takes it."""
+    entry = init_integration
+    issue = f"{ISSUE_CARRY_OVER_CONFLICT}_{entry.entry_id}"
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        issue,
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key=ISSUE_CARRY_OVER_CONFLICT,
+    )
+    assert await hass.config_entries.async_reload(entry.entry_id)
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue) is not None
+    await hass.config_entries.async_set_disabled_by(
+        entry.entry_id, ConfigEntryDisabler.USER
+    )
+    await hass.async_block_till_done()
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue) is None
 
 
 async def test_setup_sweeps_stale_incoming_files(

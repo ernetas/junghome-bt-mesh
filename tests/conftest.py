@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Final
 from unittest.mock import patch
 
 import pytest
@@ -230,6 +231,43 @@ def no_bluetooth_manager_of_an_earlier_test() -> None:
     a test alone, turned into a failure.
     """
     CentralBluetoothManager.manager = None
+
+
+# Home Assistant's own complaints about the integration, which it logs rather than warns (so the suite's
+# `error::DeprecationWarning` filter never sees them): the frame helper's "Detected that custom integration …" for
+# a deprecated call, and an entity whose name has placeholders its translation does not use. Each asks the user to
+# file a bug report, and a later Home Assistant (or a beta channel) raises instead.
+HA_COMPLAINTS: Final = {
+    "homeassistant.helpers.frame": "Detected that ",
+    "homeassistant.helpers.entity": "translation placeholders",
+}
+
+
+class _Complaints(logging.Handler):
+    """Collects the records of `HA_COMPLAINTS`, whatever level the test set on the root logger."""
+
+    def __init__(self) -> None:
+        super().__init__(logging.WARNING)
+        self.seen: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if HA_COMPLAINTS.get(record.name, "\0") in (message := record.getMessage()):
+            self.seen.append(f"{record.name}: {message}")
+
+
+@pytest.fixture(autouse=True)
+def no_home_assistant_complaints() -> Generator[None]:
+    """Fail a test during which Home Assistant complained about the integration (`HA_COMPLAINTS`)."""
+    handler = _Complaints()
+    loggers = [logging.getLogger(name) for name in HA_COMPLAINTS]
+    for logger in loggers:
+        logger.addHandler(handler)
+    try:
+        yield
+    finally:
+        for logger in loggers:
+            logger.removeHandler(handler)
+    assert not handler.seen, "Home Assistant complained:\n" + "\n".join(handler.seen)
 
 
 @pytest.fixture

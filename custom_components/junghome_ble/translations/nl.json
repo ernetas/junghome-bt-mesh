@@ -179,6 +179,7 @@
       "invalid_address": "Het adres moet hexadecimaal zijn, tussen 0001 en 7FFF.",
       "address_in_use": "Dat adres hoort bij een node in de mesh; kies een ongebruikt adres.",
       "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+      "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
       "export_keys_stale": "Apparaten van deze mesh zijn zichtbaar via Bluetooth, maar geen enkele adverteert de netwerksleutel uit deze export: de sleutels van het netwerk zijn vernieuwd (een key refresh in de JUNG HOME-app) nadat de export is gemaakt. Exporteer het netwerk opnieuw vanuit de JUNG HOME-app, of haal het opnieuw op van de gateway, en gebruik dat bestand.",
       "network_mismatch": "De export hoort bij een ander mesh-netwerk dan het gevonden netwerk.",
       "mesh_already_configured": "Deze mesh is al ingesteld als een ander item (de netwerksleutel is waarschijnlijk vernieuwd sinds Home Assistant hem het laatst zag). Gebruik Herconfigureren van dat item in plaats van een nieuw item toe te voegen.",
@@ -229,7 +230,7 @@
           "sync_areas": "Apparaten mee verplaatsen als hun JUNG-kamer verandert"
         },
         "data_description": {
-          "click_delay": "Een `click`-gebeurtenis wordt een halve seconde vastgehouden en vervalt als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt. Uit: elke druk vuurt meteen `click` af en de tweede druk van een dubbele druk vuurt ook `double_click` af. Dit geldt voor elke knop; om alleen bij sommige knoppen te wachten, laat je dit uit en kies je ze in de lijst hieronder.",
+          "click_delay": "Een `click`-gebeurtenis wordt een halve seconde vastgehouden en vervalt als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt. Uit: elke druk vuurt meteen `click` af en de tweede druk van een dubbele druk vuurt ook `double_click` af. Dit geldt voor elke knop; om alleen bij sommige knoppen te wachten, laat je dit uit en kies je ze onder *Knoppen die op een dubbelklik wachten*, dat wordt getoond zolang dit uit staat en de integratie draait.",
           "double_click_keys": "Alleen deze knoppen houden hun `click` een halve seconde vast en laten die vervallen als er een tweede klik volgt, zodat een dubbele druk alleen `double_click` afvuurt; elke andere knop vuurt `click` meteen af. Kies de knoppen die een dubbelklik-automatisering hebben. Alleen knoppen die kunnen klikken worden getoond. Nog niet op echte apparaten geverifieerd.",
           "heartbeats": "Elk apparaat op netstroom wordt gevraagd om elke 64 seconden een heartbeat naar Home Assistant te sturen (een standaard Bluetooth Mesh-instelling die de JUNG-app uit laat). Van een apparaat dat ongeveer drieënhalve minuut niets stuurt, worden de entiteiten als niet beschikbaar gemarkeerd tot het weer wordt gehoord. Uitschakelen vertelt de apparaten te stoppen (opnieuw bij de volgende verbinding als ze niet allemaal tegelijk bereikt konden worden); schakel het uit voordat je de integratie verwijdert, want daarna kan die het ze niet meer vertellen.",
           "allow_provisioning": "Laat de actie `junghome_ble.add_device` een nieuw JUNG-apparaat inleren en het configureren zoals de app zou doen, naar het voorbeeld van een apparaat van hetzelfde product dat al in het netwerk zit, en `junghome_ble.remove_device` een apparaat resetten en uit het netwerk halen. Nog niet op echte apparaten geprobeerd: probeer het eerst met een reserveapparaat. Toevoegen geeft het apparaat de sleutels van het netwerk; verwijderen kan niet ongedaan worden gemaakt.",
@@ -1627,11 +1628,29 @@
     "service_preflight_differs": {
       "message": "Niet verzonden: {node} antwoordde op {message} met {found}, maar de mesh-export zegt {expected} ({others} andere verschillen). De installatie is gewijzigd nadat de mesh-export is gemaakt (in de JUNG HOME-app, door een reset van een apparaat of door een eerdere actie die halverwege stopte), en het plan zou overschrijven wat de export niet meer beschrijft. Exporteer het project opnieuw vanuit de app, of laat Home Assistant de export van de gateway overnemen, en voer de actie opnieuw uit; met `force` loopt ze zonder deze controle. {applied}"
     },
+    "start_iv_update_needs_confirm": {
+      "message": "Een IV Update kan niet ongedaan worden gemaakt: voeg \"confirm: true\" toe aan de aanroep om hem te starten."
+    },
+    "start_iv_update_not_needed": {
+      "message": "Nog geen zender van de mesh heeft driekwart van de volgnummers van zijn IV-index gebruikt, dus een IV Update is niet nodig; voeg \"force: true\" toe om er toch een te starten."
+    },
+    "start_iv_update_in_progress": {
+      "message": "Er loopt al een IV Update naar IV-index {iv_index}."
+    },
+    "start_iv_update_key_refresh": {
+      "message": "De netwerksleutel van de mesh wordt vernieuwd (een key refresh): start de IV Update zodra dat klaar is."
+    },
     "start_iv_update_iv_unknown": {
       "message": "Home Assistant heeft de IV-index van de mesh nog niet gehoord van het apparaat waarmee het verbonden is; probeer het zo opnieuw. De laatste wijziging van de IV-toestand van de mesh die Home Assistant in een beacon zag: {mesh_changed}. Een apparaat weigert een IV Update binnen 96 uur na zijn eigen laatste."
     },
     "start_iv_update_too_early": {
       "message": "Een IV Update is minder dan 96 uur geleden in de mesh begonnen of geëindigd (de IV-index is {iv_index}): een nieuwe kan vanaf {not_before} worden gestart. De laatste wijziging van de IV-toestand van de mesh die Home Assistant in een beacon zag: {mesh_changed}."
+    },
+    "start_iv_update_iv_max": {
+      "message": "De IV-index van de mesh staat op zijn hoogste waarde ({iv_index}): verder kan hij niet."
+    },
+    "start_iv_update_not_stored": {
+      "message": "Home Assistant kon de nieuwe IV-index niet naar zijn opslag van volgnummers schrijven en heeft de IV Update daarom niet gestart; zie het logboek."
     },
     "abort_iv_update_needs_confirm": {
       "message": "Het afbreken van de IV Update brengt Home Assistant terug naar de IV-index waarop de mesh staat: voeg \"confirm: true\" aan de aanroep toe om het te doen."
@@ -1739,6 +1758,7 @@
           "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
           "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
           "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
           "not_a_directory": "Het metadatapad is geen map.",
           "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
           "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
@@ -1786,6 +1806,7 @@
           "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
           "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
           "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
           "not_a_directory": "Het metadatapad is geen map.",
           "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
           "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
@@ -1833,6 +1854,7 @@
           "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
           "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
           "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
           "not_a_directory": "Het metadatapad is geen map.",
           "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
           "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
@@ -1899,6 +1921,7 @@
           "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
           "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
           "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
           "not_a_directory": "Het metadatapad is geen map.",
           "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
           "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
@@ -2000,6 +2023,7 @@
           "invalid_metadata": "De metadatamap bevat device_metadata.json en scene_metadata.json van de app niet in de verwachte vorm.",
           "no_project": "De gateway heeft geen netwerkexport. Open de JUNG HOME-app één keer terwijl die met de gateway verbonden is (de app uploadt het project automatisch), en zorg dat de gateway-firmware versie 2.1 of nieuwer is.",
           "no_proxy_visible": "Er is momenteel geen node van dit mesh-netwerk zichtbaar via Bluetooth. Zorg dat een Bluetooth-adapter of ESPHome Bluetooth-proxy binnen bereik is van een JUNG-apparaat op netstroom.",
+          "no_connectable_scanner": "Home Assistant heeft geen Bluetooth-adapter of proxy die verbinding kan maken met een apparaat. Voeg een Bluetooth-adapter toe, of een ESPHome Bluetooth-proxy met actieve verbindingen (`bluetooth_proxy: active: true` in de configuratie): een proxy zonder actieve verbindingen luistert alleen.",
           "not_a_directory": "Het metadatapad is geen map.",
           "not_approved": "Het toegangsverzoek is niet op tijd goedgekeurd in de app. Verzend opnieuw en keur het goed onder Instellingen → Gateway → Toegangsrechten → Openstaande verzoeken.",
           "token_rejected": "De gateway accepteert de opgeslagen toegang niet meer. Verzend opnieuw om opnieuw toegang aan te vragen.",
@@ -2136,7 +2160,19 @@
     },
     "sequence_space_low": {
       "title": "Volgnummers van de JUNG HOME-mesh raken op",
-      "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Een zender kan niet voorbij het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update). Bluetooth Mesh verwacht dat een apparaat waarvan de nummers opraken die update zelf start; of JUNG HOME-apparaten dat doen, is nog niet bekend. Home Assistant volgt een IV Update, en een beheerder kan er een laten starten met de actie `junghome_ble.start_iv_update` (kan niet ongedaan worden gemaakt; nog niet in de praktijk getest). Elke herstart van een apparaat (een stroomstoring, een uitgeschakelde automaat) laat zijn volgnummers ver vooruit springen, zodat een apparaat dat vaak zonder stroom valt als eerste zonder nummers raakt. Het probleem verdwijnt vanzelf na de update."
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Een IV Update starten",
+            "description": "In de mesh {title} heeft {source} {percent} % van de volgnummers van IV-index {iv_index} gebruikt. Een zender kan niet voorbij het einde van die reeks tot de mesh naar de volgende IV-index gaat (een IV Update). Bluetooth Mesh verwacht dat een apparaat waarvan de nummers opraken die update zelf start; of JUNG HOME-apparaten dat doen, is nog niet bekend. Home Assistant volgt een IV Update. Bevestig om het er nu een te laten starten, zoals de actie `junghome_ble.start_iv_update` doet: dat kan niet ongedaan worden gemaakt en wordt geweigerd zonder verbinding met de mesh, terwijl de netwerksleutel wordt vernieuwd en binnen 96 uur na de laatste IV Update. Nog niet in de praktijk getest. Elke herstart van een apparaat (een stroomstoring, een uitgeschakelde automaat) laat zijn volgnummers ver vooruit springen, zodat een apparaat dat vaak zonder stroom valt als eerste zonder nummers raakt. Het probleem verdwijnt vanzelf na de update."
+          }
+        },
+        "abort": {
+          "entry_gone": "Het JUNG HOME-item waar dit probleem bij hoort, is niet meer ingesteld.",
+          "not_loaded": "Het JUNG HOME-item waar dit probleem bij hoort, draait op dit moment niet. Probeer het opnieuw zodra het is ingesteld.",
+          "start_failed": "De IV Update is niet gestart: {error} Het probleem blijft zolang de nummers van een zender opraken; repareer het opnieuw zodra de oorzaak weg is."
+        }
+      }
     },
     "iv_update_not_taken": {
       "title": "De JUNG HOME-mesh heeft de IV Update niet overgenomen",
@@ -2889,6 +2925,24 @@
         "client": {
           "name": "Client",
           "description": "De naam waaronder de client toegang vraagt, precies zoals vermeld onder `waiting`. Leeg gelaten wordt niets goedgekeurd."
+        },
+        "config_entry_id": {
+          "name": "Mesh-netwerk",
+          "description": "Welk JUNG HOME-netwerk, als er meer dan één is geconfigureerd."
+        }
+      }
+    },
+    "start_iv_update": {
+      "name": "IV Update starten",
+      "description": "Laat Home Assistant een IV Update van de mesh starten: de mesh gaat naar de volgende IV-index, wat elke zender een nieuwe reeks volgnummers geeft. Bluetooth Mesh verwacht dat een apparaat waarvan de volgnummers opraken er zelf een start; het probleem *Volgnummers van de JUNG HOME-mesh raken op* repareren start er op dezelfde manier een. Kan niet ongedaan worden gemaakt (de IV-index gaat alleen omhoog), en de mesh keert 96 tot 144 uur later terug naar normaal bedrijf. Geweigerd tenzij een zender driekwart van zijn volgnummers heeft gebruikt (of *Ook als het niet nodig is* aan staat), zonder verbinding met de mesh, terwijl de netwerksleutel wordt vernieuwd en binnen 96 uur na de laatste start of het laatste einde van een IV Update. Alleen voor beheerders. Nog niet in de praktijk getest.",
+      "fields": {
+        "confirm": {
+          "name": "Bevestigen",
+          "description": "Nodig om het uit te voeren: een IV Update kan niet ongedaan worden gemaakt."
+        },
+        "force": {
+          "name": "Ook als het niet nodig is",
+          "description": "Start het, ook al heeft nog geen zender driekwart van zijn volgnummers gebruikt."
         },
         "config_entry_id": {
           "name": "Mesh-netwerk",
