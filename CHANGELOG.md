@@ -96,6 +96,24 @@
   `stale` is `true` while *The JUNG HOME app changed the installation* or *JUNG HOME devices missing from the export*
   is open: imported into the app, the file would take those changes out of its project again, so load the app's
   export into Home Assistant first.
+- **`tools/privacy_scan.py --history` scans what every commit added.** It counted only session trailers and personal
+  e-mail addresses, so a value scrubbed from the tree after a release was public stayed in that release's history
+  unseen. Now every line a commit of the branch or a tag added, every commit message and every annotated tag (tagger
+  and message) is scanned like the tree, counted per kind and never printed; `--where` names the commit and the file
+  of each, `--all` takes every ref. The scan also reports a MAC without separators next to `mac` / `address`, and a
+  host name ending in three octets of a MAC (`<name>-xxxxxx`, ESPHome's naming) on a line about hosts or Bluetooth.
+  Three such host names of proxies are gone from the docs, which name them by role now.
+- **`scripts/package_ha.sh` zips only the files git tracks** under `custom_components/junghome_ble/`: an export saved
+  in that folder, which holds every key, no longer lands in a locally built zip.
+- Internal: `settle` in the tests waits for the hub's own work of its link (the connect-time refresh, an energy poll)
+  while it waits on a timer due within milliseconds, rather than returning on an idle loop while that work goes on in
+  the middle of the test's next lines; a loop that never goes idle fails the test (`busy_ok` opts out) instead of
+  burning its turn cap unseen; the IV Update beacon loop no longer spins under `fast_sleep` (the likeliest source of
+  the rare `over the 5 s budget` failure). The relayed-copies test waits until the simulated air is quiet instead of
+  a real 0.2 s. Coverage's per-worker data files are ignored by git and no longer race the in-suite privacy scan.
+  Renovate holds the Python of the workflow jobs, which follows Home Assistant's. The nightly run against the newest
+  Home Assistant test stack states which one pip installed and annotates when it is not PyPI's newest. Review and
+  brief citations are gone from the code's docstrings and comments, and a test keeps them out.
 
 ### Fixed
 

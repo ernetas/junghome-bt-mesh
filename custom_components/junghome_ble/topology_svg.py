@@ -1,4 +1,4 @@
-"""The mesh's shape as a picture: a topology snapshot rendered as SVG (review-4 U4-14), without Home Assistant.
+"""The mesh's shape as a picture: a topology snapshot rendered as SVG, without Home Assistant.
 
 A snapshot (`Topology`) is what the *Mesh topology* image shows and the diagnostics' `topology` lists: Home
 Assistant (its own address, whether it has a link), the node it is connected through (the link's proxy) and every

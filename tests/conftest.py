@@ -43,6 +43,7 @@ from custom_components.junghome_ble.jhmesh.client import (
     MESH_PROXY_DATA_IN,
     MESH_PROXY_DATA_OUT,
     MESH_PROXY_SERVICE,
+    ProxyClient,
 )
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial, aes_cmac
 from custom_components.junghome_ble.jhmesh.export import raw_model
@@ -1379,13 +1380,20 @@ def mock_config_entry() -> MockConfigEntry:
 @pytest.fixture
 def fast_sleep() -> Generator[list[float]]:
     """Make every `asyncio.sleep` (the connection loop's back-off, the proxy client's filter/refresh pauses)
-    return after a single loop iteration; the requested non-zero delays are recorded for assertions."""
+    return after a single loop iteration; the requested non-zero delays are recorded for assertions.
+
+    Except the pauses of the IV Update beacon loop (`ProxyClient._run_iv_update`): made instant, that loop beacons
+    on every turn and the loop never goes idle. They stay on the loop's clock (seconds to minutes: never within a
+    test here); the beacon pacing is tested in `tests/jhmesh` on a clock of its own.
+    """
     delays: list[float] = []
     real_sleep = asyncio.sleep
 
     async def fake_sleep(delay: float, result: Any = None) -> Any:
         if delay > 0:
             delays.append(delay)
+            if _in_iv_beacon_loop():
+                return await real_sleep(delay, result)
         await real_sleep(0)
         return result
 
@@ -1393,12 +1401,29 @@ def fast_sleep() -> Generator[list[float]]:
         yield delays
 
 
+def _in_iv_beacon_loop() -> bool:
+    """The running task is a proxy client's IV Update beacon loop."""
+    task = asyncio.current_task()
+    return task is not None and getattr(task.get_coro(), "__qualname__", "") == (
+        f"{ProxyClient.__name__}._run_iv_update"
+    )
+
+
 # `wait_until` measures its timeout on the real clock: the `freezer` fixture swaps every module attribute that *is*
 # `time.monotonic` (and the loop's clock) for a frozen one, so the function is kept where that scan does not look.
 _REAL_CLOCK = (time.monotonic,)
 _real_sleep = asyncio.sleep  # `fast_sleep` and some tests patch `asyncio.sleep`; the loop is spun with the real one
 WAIT_TIMEOUT = 10.0  # real seconds a condition may take: milliseconds under `fast_sleep`, so this only bounds a failure
-SETTLE_MAX_TURNS = 5000  # loop turns `settle` spends at most on a loop that never goes idle (a connection loop retrying under `fast_sleep`)
+SETTLE_MAX_TURNS = 5000  # loop turns `settle` spends at most on a loop that never goes idle; more fails the test
+# a timer due within this much loop time that the hub's own work waits on (a request timed out in milliseconds,
+# `fast_requests`) is waited for by `settle`: that work goes on by itself, whether the test is fast or not
+SETTLE_TIMER_HORIZON = 0.05
+# real seconds after which a loop clock that has not moved is taken as frozen
+_FROZEN_AFTER = 0.002
+# the hub's background tasks of a link that `settle` waits for (`hub/lifecycle.py`)
+_HUB_WORK = ("refresh", "energy")
+# whether the running test is marked `busy_ok` (`busy_ok_marker`)
+_BUSY_OK: list[bool] = [False]
 CALL_BUDGET = 5.0  # real seconds a test's call phase may take, unless marked `slow_ok`
 
 
@@ -1462,25 +1487,84 @@ async def wait_until(
     await hass.async_block_till_done()
 
 
+@pytest.fixture(autouse=True)
+def busy_ok_marker(request: pytest.FixtureRequest) -> Generator[None]:
+    """Let `settle` know whether the test is marked `busy_ok` (a loop that never goes idle is its point)."""
+    _BUSY_OK[0] = request.node.get_closest_marker("busy_ok") is not None
+    yield
+    _BUSY_OK[0] = False
+
+
+async def _run_until_idle(hass: HomeAssistant, loop: asyncio.AbstractEventLoop) -> None:
+    """Spin the loop until nothing is ready and no executor job a background task started is running.
+
+    Fails the test when the loop is still busy after `SETTLE_MAX_TURNS` turns: something runs again on every turn
+    (a loop whose `asyncio.sleep` `fast_sleep` makes instant), and would only burn the call's time budget unseen.
+    """
+    for _ in range(SETTLE_MAX_TURNS):
+        await _real_sleep(0)
+        if _loop_idle(loop):
+            if not (jobs := _running_executor_jobs(hass)):
+                return
+            # the worker threads' results wake their callers: spin on until they are through too
+            await asyncio.wait(jobs)
+    if not _BUSY_OK[0]:
+        pytest.fail(
+            f"the loop was still busy after {SETTLE_MAX_TURNS} turns: a task that never waits (a loop over "
+            "`asyncio.sleep` under `fast_sleep`?); mark the test `busy_ok` if that is its point",
+            pytrace=False,
+        )
+
+
+def _hub_work_running(hass: HomeAssistant) -> bool:
+    """A loaded entry's hub is still at the work of its link (the connect-time refresh, an energy poll)."""
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        lifecycle = getattr(getattr(entry, "runtime_data", None), "lifecycle", None)
+        if lifecycle is not None and any(
+            (task := lifecycle.task(name)) is not None and not task.done()
+            for name in _HUB_WORK
+        ):
+            return True
+    return False
+
+
+async def _wait_for_timer_due(loop: asyncio.AbstractEventLoop) -> bool:
+    """Let the loop's next timer fire when it is due within `SETTLE_TIMER_HORIZON`; False when there is none.
+
+    False as well when the loop's clock stands still (`freezer`): the test moves time itself.
+    """
+    timers = [t.when() for t in getattr(loop, "_scheduled", ()) if not t.cancelled()]
+    if not timers or (due := min(timers)) - loop.time() > SETTLE_TIMER_HORIZON:
+        return False
+    start, started = loop.time(), _REAL_CLOCK[0]()
+    while loop.time() < due:
+        waited = _REAL_CLOCK[0]() - started
+        if waited > 2 * SETTLE_TIMER_HORIZON or (
+            waited > _FROZEN_AFTER and loop.time() == start
+        ):
+            return False
+        await _real_sleep(0)
+    return True
+
+
 async def settle(hass: HomeAssistant, cycles: int | None = None) -> None:
-    """Run the loop until nothing is left that can run without time passing, then flush HA's tasks.
+    """Run the loop until nothing is left that can run without the test moving time, then flush HA's tasks.
 
     Every ready callback runs, every `fast_sleep` sleep returns and every executor job a background task started
-    finishes before this comes back, so the connect-time refresh, the chunked property reads and a reconnect are
-    through — whatever a test set up just before. Timers (`freezer` + `async_fire_time_changed`) and I/O are left
-    alone. `cycles` is accepted for the older call sites and ignored: the loop, not a count, says when it is idle.
+    finishes before this comes back. So does the hub's own work of its link (the connect-time refresh, an energy
+    poll) as far as it waits on timers due within `SETTLE_TIMER_HORIZON` (requests that time out in milliseconds):
+    an idle loop alone is not the end of it, since that work would go on in the middle of the test's next lines.
+    Longer timers (a request's 3 s, `freezer` + `async_fire_time_changed`) and I/O are left alone. A loop that never
+    goes idle fails the test (`_run_until_idle`; `@pytest.mark.busy_ok` opts out). `cycles` is accepted for the
+    older call sites and ignored: the loop, not a count, says when it is idle.
     """
     loop = asyncio.get_running_loop()
     for _ in range(
         2
     ):  # HA's flush can schedule more callbacks; one more round catches them
-        for _ in range(SETTLE_MAX_TURNS):
-            await _real_sleep(0)
-            if _loop_idle(loop):
-                if not (jobs := _running_executor_jobs(hass)):
-                    break
-                # the worker threads' results wake their callers: spin on until they are through too
-                await asyncio.wait(jobs)
+        await _run_until_idle(hass, loop)
+        while _hub_work_running(hass) and await _wait_for_timer_due(loop):
+            await _run_until_idle(hass, loop)
         await hass.async_block_till_done()
 
 

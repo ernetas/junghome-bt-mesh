@@ -3,11 +3,15 @@
 
     tools/privacy_scan.py              # every file git tracks or would track (untracked but not ignored)
     tools/privacy_scan.py FILE ...     # these files only (the pre-commit hook)
-    tools/privacy_scan.py --history    # the commit history: session trailers and personal e-mail addresses
+    tools/privacy_scan.py --history    # the history: what every commit and tag added, trailers, e-mail addresses
+    tools/privacy_scan.py --history --where    # ... and which commit and file each finding is in
+    tools/privacy_scan.py --history --all      # every ref's commits, not only HEAD's and the tags'
 
 What it looks for, by *kind*:
 
-    mac        a six-octet MAC address (`:` or `-` between the octets)
+    mac        a six-octet MAC address (`:` or `-` between the octets, or none next to `mac` / `address`)
+    half-mac   the last three octets of a MAC as a host name's suffix (`<name>-xxxxxx`, ESPHome's naming) on a line
+               about hosts or Bluetooth (a proxy, a scanner, `.local`)
     uuid       a UUID in its dashed form
     ip         a dotted IPv4 address
     hex128     32 hex digits in a row (a key, or a UUID without its dashes)
@@ -25,8 +29,11 @@ must be in `tools/privacy_allowlist.txt` (documented pseudonyms, Mesh Profile sa
 fixtures' fixed values), which is not scanned itself.
 
 The output names the file, the line and the kind of every finding, never the value: a CI log is public too.
-`--history` prints counts per kind only. It looks at `git log` (author, committer, message), which no change to the
-tree can fix; it is a check to run by hand before publishing, not part of CI.
+`--history` prints counts per kind only (with `--where`, the commit and the file of each, still no value). It looks at
+every commit a push of the branch and its tags publishes (with `--all`, of every ref): its author, committer and
+message, and the lines it added, scanned like the tree (merges add nothing of their own here); and at every annotated
+tag: its tagger and message. No change to the tree can fix
+what it finds; it is a check to run by hand before publishing, not part of CI.
 """
 
 from __future__ import annotations
@@ -61,7 +68,22 @@ PATTERNS = {
         r"(?<![\w.~/\\-])(?:/home/|/Users/|[A-Za-z]:\\+Users\\+)[\w.-]+|(?<![\w/~])~/[\w.-]+"
     ),
 }
-KINDS = tuple(PATTERNS)
+# twelve hex digits without separators, next to what names them a MAC (`mac=`, `"address": "…"`, `MAC 0x…`)
+MAC_PLAIN = re.compile(
+    r"(?i)(?<![a-z])(?:mac|address)[\w\"' ]{0,12}?[:=]?\s*[\"']?(?:0x|(?<![0-9a-z]))([0-9a-f]{12})(?![0-9a-z])"
+)
+# a host name ending in three octets of its MAC (`<room>-proxy-1a2b3c`), counted only on a line about hosts or Bluetooth
+HALF_MAC = re.compile(r"(?<![\w.-])[A-Za-z][\w-]*-([0-9A-Fa-f]{6})(?![\w-])")
+HOST_CONTEXT = re.compile(
+    r"(?i)esphome|esp32|prox(?:y|ies)|bluetooth|\bble\b|scanner|host|\.local\b|mdns"
+)
+KINDS = (*PATTERNS, "half-mac")
+# every pattern, with the kind it reports: the dotted / dashed MAC and its plain form are one kind
+MATCHERS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    *PATTERNS.items(),
+    ("mac", MAC_PLAIN),
+    ("half-mac", HALF_MAC),
+)
 # the domain starts with a letter: `icon@2x.png` is a file name
 EMAIL = re.compile(r"[\w.+-]+@[A-Za-z][\w-]*(?:\.[\w-]+)+")
 NOREPLY = re.compile(r"(?i)^(?:no-?reply@|.*@users\.noreply\.github\.com$)")
@@ -146,8 +168,11 @@ class Allowlist:
 def normalise(kind: str, value: str) -> str:
     """The form values of `kind` are compared in."""
     if kind == "mac":
-        return value.upper().replace("-", ":")
-    if kind in {"uuid", "hex128"}:
+        mac = value.upper().replace("-", ":")
+        return (
+            ":".join(mac[i : i + 2] for i in range(0, 12, 2)) if ":" not in mac else mac
+        )
+    if kind in {"uuid", "hex128", "half-mac"}:
         return value.lower()
     return value
 
@@ -194,7 +219,9 @@ def allowed(kind: str, match: re.Match[str], allow: Allowlist) -> bool:
     """Whether the match of `kind` is let through (see the module docstring)."""
     text = match[0]
     if kind == "mac":
-        return _mac_allowed(text, allow)
+        return _mac_allowed(match[1] if match.re is MAC_PLAIN else text, allow)
+    if kind == "half-mac":
+        return _even(match[1].lower()) or (kind, match[1]) in allow
     if kind == "uuid":
         return _uuid_allowed(text, allow)
     if kind == "hex128":
@@ -208,11 +235,18 @@ def scan_text(text: str, path: str, allow: Allowlist) -> list[Finding]:
     """Every finding in `text`, reported as lines of `path`."""
     findings = {
         Finding(path, text.count("\n", 0, match.start()) + 1, kind)
-        for kind, pattern in PATTERNS.items()
+        for kind, pattern in MATCHERS
         for match in pattern.finditer(text)
-        if not allowed(kind, match, allow)
+        if (kind != "half-mac" or HOST_CONTEXT.search(_line_of(text, match.start())))
+        and not allowed(kind, match, allow)
     }
     return sorted(findings, key=lambda f: (f.path, f.line, KINDS.index(f.kind)))
+
+
+def _line_of(text: str, at: int) -> str:
+    """The line of `text` that position `at` is on."""
+    end = text.find("\n", at)
+    return text[text.rfind("\n", 0, at) + 1 : None if end < 0 else end]
 
 
 def tree_files(root: Path) -> list[str]:
@@ -237,7 +271,12 @@ def scan_files(root: Path, names: list[str], allow: Allowlist) -> list[Finding]:
             or not path.is_file()
         ):
             continue
-        data = path.read_bytes()
+        try:
+            data = path.read_bytes()
+        except (
+            FileNotFoundError
+        ):  # listed, then removed (a coverage worker's data file): nothing to scan
+            continue
         if b"\0" in data:  # binary: an image, an archive
             continue
         findings += scan_text(
@@ -246,22 +285,119 @@ def scan_files(root: Path, names: list[str], allow: Allowlist) -> list[Finding]:
     return findings
 
 
-def scan_history(root: Path) -> Counter[str]:
-    """Count, per kind, the commits of `git log` that carry a session trailer or a personal e-mail address."""
-    log = subprocess.run(  # fixed arguments, no shell
-        ["git", "log", "--format=%ae%x1f%ce%x1f%B%x1e"],  # noqa: S607
+# what `--history` counts besides the kinds: commits (or tags) with a trailer or a personal address, in this order
+HISTORY_METADATA = (
+    ("commit", "session-trailer"),
+    ("commit", "author-email"),
+    ("commit", "committer-email"),
+    ("commit", "message-email"),
+    ("tag", "tagger-email"),
+    ("tag", "message-email"),
+)
+
+
+@dataclass
+class History:
+    """What `scan_history` found: per kind, the commits (or tags) carrying it, and where (never the value)."""
+
+    commits: Counter[str]
+    tags: Counter[str]
+    where: set[tuple[str, str, str]]  # (commit or tag, file or `message`, kind)
+
+
+def _git(root: Path, *args: str) -> str:
+    return subprocess.run(  # noqa: S603  # fixed arguments, no shell
+        ["git", "-c", "core.quotePath=false", *args],  # noqa: S607
         cwd=root,
         check=True,
         capture_output=True,
     ).stdout.decode("utf-8", errors="replace")
-    counts: Counter[str] = Counter()
+
+
+def added_lines(diff: str) -> list[tuple[str, str]]:
+    """(file, line) of every line a `git log -p -U0` diff adds; the allowlist's own lines are not scanned."""
+    added: list[tuple[str, str]] = []
+    path: str | None = None
+    in_hunk = False
+    for line in diff.splitlines():
+        if line.startswith("diff --git "):
+            path, in_hunk = None, False
+        elif not in_hunk and line.startswith("+++ "):
+            name = line[4:]
+            path = (
+                name[2:] if name.startswith("b/") else None
+            )  # `/dev/null`: a deletion
+        elif line.startswith("@@"):
+            in_hunk = True
+        elif in_hunk and line.startswith("+") and path not in (None, ALLOWLIST):
+            added.append((path, line[1:]))
+    return added
+
+
+def scan_history(root: Path, allow: Allowlist, *, all_refs: bool = False) -> History:
+    """Count what the commits and the annotated tags carry, per kind (module docstring).
+
+    The commits are those a push of the branch and its tags publishes (`HEAD`, every tag), or with `all_refs` those of
+    every ref: other branches and remote-tracking ones, which a clone with a private remote holds too.
+    """
+    found = History(Counter(), Counter(), set())
+    log = _git(
+        root,
+        "log",
+        *(["--all"] if all_refs else ["HEAD", "--tags"]),
+        "--root",
+        "-p",
+        "-U0",
+        "--no-color",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--format=%x1e%H%x1f%ae%x1f%ce%x1f%B%x1f",
+    )
     for commit in filter(str.strip, log.split("\x1e")):
-        author, committer, message = commit.strip("\n").split("\x1f", 2)
-        counts["session-trailer"] += TRAILER.search(message) is not None
-        counts["author-email"] += _personal(author)
-        counts["committer-email"] += _personal(committer)
-        counts["message-email"] += any(_personal(m[0]) for m in EMAIL.finditer(message))
-    return counts
+        sha, author, committer, message, diff = commit.split("\x1f", 4)
+        kinds = {
+            "session-trailer": TRAILER.search(message) is not None,
+            "author-email": _personal(author),
+            "committer-email": _personal(committer),
+            "message-email": any(_personal(m[0]) for m in EMAIL.finditer(message)),
+        }
+        places = {(f.path, f.kind) for f in scan_text(message, "message", allow)}
+        places |= {
+            (path, f.kind)
+            for path, line in added_lines(diff)
+            for f in scan_text(line, path, allow)
+        }
+        _count(found, found.commits, sha[:12], kinds, places)
+    tags = _git(
+        root,
+        "for-each-ref",
+        "refs/tags",
+        "--format=%(refname:short)%1f%(objecttype)%1f%(taggeremail:trim)%1f%(contents)%1e",
+    )
+    for tag in filter(str.strip, tags.split("\x1e")):
+        name, kind, tagger, message = tag.strip("\n").split("\x1f", 3)
+        if kind != "tag":  # a lightweight tag: a commit, scanned above
+            continue
+        kinds = {
+            "tagger-email": _personal(tagger),
+            "message-email": any(_personal(m[0]) for m in EMAIL.finditer(message)),
+        }
+        places = {(f.path, f.kind) for f in scan_text(message, "message", allow)}
+        _count(found, found.tags, name, kinds, places)
+    return found
+
+
+def _count(
+    found: History,
+    counts: Counter[str],
+    ref: str,
+    kinds: dict[str, bool],
+    places: set[tuple[str, str]],
+) -> None:
+    counts.update(kind for kind, hit in kinds.items() if hit)
+    counts.update({kind for _, kind in places})
+    found.where |= {(ref, path, kind) for path, kind in places}
+    found.where |= {(ref, "metadata", kind) for kind, hit in kinds.items() if hit}
 
 
 def _personal(address: str) -> bool:
@@ -280,7 +416,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--history",
         action="store_true",
-        help="count session trailers and personal e-mail addresses in `git log` instead",
+        help="count what every commit and tag added, session trailers and personal e-mail addresses instead",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="all_refs",
+        help="with --history: the commits of every ref, not only HEAD and the tags",
+    )
+    parser.add_argument(
+        "--where",
+        action="store_true",
+        help="with --history: also name the commit (or tag) and the file of each finding, never the value",
     )
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
     return parser
@@ -289,17 +436,20 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root: Path = args.root
-    if args.history:
-        counts = scan_history(root)
-        for kind in (
-            "session-trailer",
-            "author-email",
-            "committer-email",
-            "message-email",
-        ):
-            print(f"history: {counts[kind]} commit(s) with {kind}")
-        return 1 if sum(counts.values()) else 0
     allow = Allowlist.load(root / ALLOWLIST)
+    if args.history:
+        history = scan_history(root, allow, all_refs=args.all_refs)
+        for what, kind in HISTORY_METADATA:
+            counts = history.commits if what == "commit" else history.tags
+            print(f"history: {counts[kind]} {what}(s) with {kind}")
+        for kind in KINDS:
+            print(
+                f"history: {history.commits[kind]} commit(s) and {history.tags[kind]} tag(s) with {kind}"
+            )
+        if args.where:
+            for ref, path, kind in sorted(history.where):
+                print(f"{ref} {path}: {kind}")
+        return 1 if history.where else 0
     findings = scan_files(root, args.paths or tree_files(root), allow)
     for finding in findings:
         print(finding)

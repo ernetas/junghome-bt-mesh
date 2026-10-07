@@ -1,4 +1,4 @@
-"""The IV Update actions: Home Assistant starts an IV Update of its mesh, or aborts one (review-4 P I-11; unverified on air).
+"""The IV Update actions: Home Assistant starts an IV Update of its mesh, or aborts one (unverified on air).
 
 Every sender of a mesh stops at the end of the 24-bit sequence space of the current IV index until an IV Update moves
 the mesh to the next one (Mesh Protocol 1.1 §3.11.5). A node at risk of running out is expected to start it; whether

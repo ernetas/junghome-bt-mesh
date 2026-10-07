@@ -330,6 +330,21 @@ class Mesh:
             if isinstance(node, ProxyNode):
                 node.state_changed()
 
+    def quiet(self) -> bool:
+        """Nothing is left on the air, in a proxy's queue to its client, or in a node's hands (a reply, a relay).
+
+        From here on only the client, a beacon timer or the test makes anything happen: a check that something did
+        *not* happen holds once the mesh is quiet and the loop settled, whatever the latencies and the machine.
+        """
+        return (
+            not self._arrivals
+            and not any(
+                isinstance(node, ProxyNode) and node.queued
+                for node in self.nodes.values()
+            )
+            and not any(node.busy for node in self.nodes.values())
+        )
+
     async def settle(self, seconds: float = 5.0) -> None:
         """Let what is in flight land (virtual time)."""
         await asyncio.sleep(seconds)

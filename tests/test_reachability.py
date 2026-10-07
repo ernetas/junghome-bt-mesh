@@ -269,9 +269,9 @@ async def test_a_link_lost_during_the_probe_charges_no_node(
     await settle(hass)
     fake_link.sets_silent.add(SOCKET)
 
+    # runs in the hub's connection loop: a `settle` here would wait on itself
     async def lost() -> bool:
         fake_link.drop_link()
-        await settle(hass)
         return False
 
     keep_alive = AsyncMock(side_effect=lost)
@@ -794,4 +794,6 @@ async def test_an_unreachable_load_logs_one_line_and_no_library_warning(
         r for r in caplog.records if "did not answer a request" in r.getMessage()
     ]
     assert {r.levelno for r in verdicts} == {logging.WARNING}
-    assert len(verdicts) == len(hub.unreachable)  # one line per node
+    back = [r for r in caplog.records if r.getMessage().endswith("is reachable again")]
+    # one line per node that went unreachable (a node the rest of the refresh heard from again is back already)
+    assert len(verdicts) == len(hub.unreachable) + len(back)

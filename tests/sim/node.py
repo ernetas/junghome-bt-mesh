@@ -225,6 +225,11 @@ class SimNode:
         self._tasks.clear()
         return tasks
 
+    @property
+    def busy(self) -> bool:
+        """A task of this node still runs (an answer, a segmented send)."""
+        return bool(self._tasks)
+
     def spawn(self, coro: Any) -> None:
         task = asyncio.get_running_loop().create_task(coro)
         self._tasks.add(task)

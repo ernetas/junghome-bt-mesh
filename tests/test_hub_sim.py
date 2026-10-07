@@ -27,7 +27,7 @@ from homeassistant.const import (
 from custom_components.junghome_ble.const import CONF_CDB_PATH, DOMAIN
 from custom_components.junghome_ble.jhmesh import messages as M
 
-from .conftest import CDB_PATH, setup_entry, wait_for_link, wait_until
+from .conftest import CDB_PATH, settle, setup_entry, wait_for_link, wait_until
 from .helpers import (
     LIGHT_OUT1,
     LIGHT_SWITCH,
@@ -38,7 +38,6 @@ from .helpers import (
     UID_ROCKER_A,
     entity_id,
 )
-from .property_helpers import real_wait
 from .sim import Quirks
 
 if TYPE_CHECKING:
@@ -160,7 +159,9 @@ async def test_every_relayed_copy_the_proxy_forwards_is_handled_once(
         LIGHT_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: eid}, blocking=True
     )
     await wait_until(hass, lambda: hass.states.get(eid).state == STATE_ON)
-    await real_wait(0.2)  # the last copies land
+    # the copies the relays and retransmissions still have on the air land (seconds after the first one here)
+    await wait_until(hass, sim_mesh.quiet, what="the last copies landed")
+    await settle(hass)
     assert len(changes) == 1
     assert len(got(sim_mesh.node(LIGHT_SWITCH), M.GEN_ONOFF_SET)) == 1
     assert sim_mesh.proxy(LIGHT_SWITCH).repeats_forwarded  # copies did reach the hub

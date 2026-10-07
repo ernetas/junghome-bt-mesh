@@ -41,6 +41,7 @@ markers = [
     "link_loss_grace: keep the hub's link-loss grace (every other test sees entities go unavailable at once)",
     "refresh_first: keep the property reads' wait for the link's state refresh (every other test reads beside it)",
     "slow_ok: exempt from the 5 s per-test budget of `tests/conftest.py` (`CALL_BUDGET`)",
+    "busy_ok: `settle` may find the loop still busy after its turn cap (`SETTLE_MAX_TURNS` in `tests/conftest.py`)",
     "sim: the hub over the simulated mesh on virtual time (`tests/soak`): seconds by default, minutes with SIM_SOAK=long",
     "trace: replays a trace of on-air traffic converted to the fixture network (`tests/traces`, `tools/trace_to_fixture.py`)",
     "unavailable_ok: the test reloads or unloads the entry, or drops the link, on purpose; every other `tests/test_services.py` test checks no entity passes through unavailable / unknown",

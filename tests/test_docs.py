@@ -8,6 +8,9 @@ an explicit `<a id>`. No network access: URLs are not followed.
 
 The reference's headings are also pinned: links from other pages, the repair issues' *learn more* links and readers'
 bookmarks point at them, so renaming one is a deliberate change of this list.
+
+The code's docstrings and comments cite no review finding, brief or decision (`review-4 U4-14`, `decision M9`): the
+numbering is the maintainer's working notes, which a reader of the code, or of `jhmesh` on PyPI, cannot follow.
 """
 
 from __future__ import annotations
@@ -375,3 +378,50 @@ def test_no_page_sends_the_owner_to_this_integration_by_the_gateway_integrations
         and OLD_NAME_PATH.search(re.sub(r"\s+", " ", page.read_text(encoding="utf-8")))
     ]
     assert offending == []
+
+
+# a review's finding (`U4-14`, `P I-11`, `Q T8`), the review itself, a brief, a wave or a decision of the plan
+CITATION = re.compile(
+    r"review-?\d|\b[APSRWHFQUD]\d-\d+\b|\b[PSRWHQ] [IT]-?\d+|decision M\d+|\bbriefs? \d{2}\b|\bwave \d+"
+)
+# (file, line text) the one citation that is meant: a runtime string, the gap the commissioning plan names
+CITATIONS_KEPT = {
+    (
+        "custom_components/junghome_ble/jhmesh/commission.py",
+        "\"review-3 N1 (HA's own provisioner entry); the plan takes the export's first range unless told\",",
+    ),
+}
+
+
+def citations(root: Path) -> list[tuple[str, str]]:
+    """(file, line) of every citation in the code under `root`: the integration, the tools, the scripts."""
+    return [
+        (path.relative_to(root).as_posix(), line.strip())
+        for folder in ("custom_components", "tools", "scripts")
+        for path in sorted((root / folder).rglob("*"))
+        if path.is_file() and path.suffix in {".py", ".sh", ".json", ".yaml"}
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if CITATION.search(line)
+    ]
+
+
+def test_citations_are_found(tmp_path: Path) -> None:
+    for name, text in {
+        "custom_components/a.py": '"""The picture (review-4 U4-14)."""',
+        "tools/b.py": "# see P I-11 and Q T8",
+        "scripts/c.sh": "# decision M9, brief 85, wave 24",
+        "tools/d.py": "x = 1  # A5-4",
+        "tools/fine.py": "# version 4-1, Mesh Protocol 3.4, ruff F401, a review of the plan",
+    }.items():
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text + "\n", encoding="utf-8")
+    assert sorted(path for path, _ in citations(tmp_path)) == [
+        "custom_components/a.py",
+        "scripts/c.sh",
+        "tools/b.py",
+        "tools/d.py",
+    ]
+
+
+def test_the_code_cites_no_review() -> None:
+    assert set(citations(ROOT)) == CITATIONS_KEPT

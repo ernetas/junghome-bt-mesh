@@ -1027,9 +1027,10 @@ self-contained: the `jhmesh` mesh library is a regular package inside it (`custo
 the repository's top-level `jhmesh` is only a symlink to it, for the CLI tools).
 
 1. For a manual install take `junghome_ble.zip` from the release, or build it on a computer with this repository
-   checked out: `./scripts/package_ha.sh` creates `dist/junghome_ble.zip`, a copy of `custom_components/junghome_ble/`
-   under a top-level `junghome_ble/` folder. Copying `custom_components/junghome_ble/` from a checkout by hand works
-   as well.
+   checked out: `./scripts/package_ha.sh` creates `dist/junghome_ble.zip`, a copy of the files git tracks in
+   `custom_components/junghome_ble/` under a top-level `junghome_ble/` folder (anything else saved there, an export
+   with every key above all, stays out). Copying `custom_components/junghome_ble/` from a checkout by hand works as
+   well.
 2. Unpack it so that the files end up in `<config>/custom_components/junghome_ble/` (for example
    `unzip junghome_ble.zip -d /config/custom_components/`).
 3. Restart Home Assistant.

@@ -1,4 +1,4 @@
-"""Time the per-message hot paths against a synthetic large mesh (review-4 R4-8, R4-9).
+"""Time the per-message hot paths against a synthetic large mesh.
 
 Run from the repository root with the development venv:
 

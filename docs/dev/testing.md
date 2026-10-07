@@ -19,7 +19,7 @@ and every line and branch of the installed `jhmesh` wheel from `tests/jhmesh` al
 
 Lint and formatting: `.venv/bin/python -m ruff check .` and `.venv/bin/python -m ruff format .` (the ruff that
 `requirements-lint.txt` pins, as CI's `lint` job installs it: `.venv/bin/pip install -r requirements-lint.txt`;
-configured in `pyproject.toml`; the `lint` job gates the others).
+configured in `pyproject.toml`; CI runs it in its `lint` job, beside the others: only `package` waits for them all).
 
 `noxfile.py` runs the CI jobs locally from the same pins, one session each: `lint` (with actionlint, shellcheck
 and zizmor from ci.yml's images when Docker is there), `types`, `tests`, `tests-library-<oldest Python>`, `build`,
@@ -37,15 +37,18 @@ pseudonymised too: every MAC keeps its vendor OUI with the other 24 bits replace
 UUIDs are replaced, and room, scene and device names are generic stand-ins; `docs/hop-matrix.md` names nodes by
 unicast address only.
 
-`tools/privacy_scan.py` (CI's `lint` job, the pre-commit hook) keeps the whole tree that way: a MAC, a UUID, an
-IPv4 address, 32 hex digits or a home-directory path fails the scan unless it lies in a documentation range (MACs
+`tools/privacy_scan.py` (CI's `lint` job, the pre-commit hook) keeps the whole tree that way: a MAC (also without
+separators, next to `mac` / `address`), a UUID, an IPv4 address, 32 hex digits, a home-directory path, or a host name
+ending in three octets of a MAC (`<name>-xxxxxx`, ESPHome's naming) on a line about hosts or Bluetooth fails the scan unless it lies in a documentation range (MACs
 `00:00:5E:00:53:xx`, addresses in `192.0.2.0/24`, `198.51.100.0/24` and `203.0.113.0/24`), has a made-up shape
 (`11:22:33:44:55:66`, `00112233…`, mostly zeros) or is in `tools/privacy_allowlist.txt`: the pseudonyms above, Mesh
 Profile sample data, vendor GATT UUIDs, each with its reason. It names the file, the line and the kind, never the
 value. A new test takes a documentation-range or made-up identifier; only a value that has to be what it is goes on
 the allowlist. Docs name the maintainer's machines by role (`<workspace>`, the capture host), not by path.
-`tools/privacy_scan.py --history` counts the commits of `git log` with an assistant session trailer or a personal
-e-mail address (counts only): a check to run by hand before publishing, since no change to the tree can fix them.
+`tools/privacy_scan.py --history` scans what a push of the branch and its tags publishes (`--all`: every ref): every
+line each commit added, its message, author and committer, and every annotated tag's tagger and message, and prints
+the commits and tags carrying each kind, counts only (`--where` adds the commit and the file of each, still no
+value). A check to run by hand before publishing: no change to the tree can fix what it finds.
 
 ## Test infrastructure
 
@@ -68,10 +71,16 @@ e-mail address (counts only): a check to run by hand before publishing, since no
   `test_registry_identity` in `tests/test_snapshots.py` pins, for every fixture network (base, blinds, RTR, detectors,
   puck, Android share export), each entity's unique id, platform, translation key, category and `disabled_by` and each
   device's identifiers, connections and `via_device`, one line each; the base network's full state is pinned per
-  platform as before. No test waits on the real clock: a test whose call takes more than 5 s fails
+  platform as before. No test waits out a real timeout: a test whose call takes more than 5 s fails
   (`CALL_BUDGET` in `tests/conftest.py`; `@pytest.mark.slow_ok` opts out, the `thorough` Hypothesis profile as a
-  whole), the property timeouts are read from `const` when a Get or Set is sent so `fast_timeouts` shortens all of
-  them in one place, and a check that something did *not* happen settles the loop instead of sleeping. Key material
+  whole), and the property timeouts are read from `const` when a Get or Set is sent so `fast_timeouts` shortens all of
+  them in one place. A check that something did *not* happen settles the loop instead of sleeping: `settle` returns
+  once nothing can run without the test moving time *and* the hub's own work of its link (the connect-time refresh,
+  an energy poll) no longer waits on a timer due within `SETTLE_TIMER_HORIZON` (a request shortened to milliseconds
+  by `fast_requests`), so that work cannot go on in the middle of the test's next lines; a loop that is still busy
+  after `SETTLE_MAX_TURNS` turns fails the test (`@pytest.mark.busy_ok` opts out). Over the simulated mesh the test
+  waits for `Mesh.quiet()` (nothing left on the air, in a proxy's queue or in a node's hands) first. Real-clock
+  waits are left only in positive polls with a deadline (`wait_until`). Key material
   is looked for in every encoding (hex either case, Base64, `list(bytes)`, `repr(bytes)`; `tests/key_scan.py`): in
   every diagnostics download, and, after a followed key refresh, in every file, store, log record and diagnostics
   dump (`tests/test_key_leaks.py`, where only the sequence-number store and its copy may hold the new NetKey).

@@ -163,6 +163,11 @@ class ProxyNode(SimNode):
             self._schedule_beacon()
 
     @property
+    def queued(self) -> bool:
+        """PDUs wait for the link latency before they reach the client."""
+        return self._drain is not None
+
+    @property
     def _live(self) -> bool:
         link = self.link
         return link is not None and link.is_connected and link.notify is not None

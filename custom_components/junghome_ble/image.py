@@ -1,4 +1,4 @@
-"""Image: the *Mesh topology* picture on the mesh network device (review-4 U4-14).
+"""Image: the *Mesh topology* picture on the mesh network device.
 
 The mesh's shape for any dashboard, with the stock picture-entity card and no frontend resource to install: Home
 Assistant, the node it is connected through, the other nodes by heartbeat hops, which relay, which are proxies, which
@@ -69,8 +69,8 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     (heartbeat hops and a sleeping node's last message arrive in between); `image_last_updated` moves only when it
     differs from the one shown, and at most once per interval — a change within it is shown when it is over — but a
     change of the link at once (`_link_changed`): the picture said "connected" through a proxy already gone for up
-    to a whole interval. A heartbeat that changes nothing changes nothing. Always available: without a link the picture says so. Diagnostic,
-    on by default (decision M9 hides configuration entities only). Unverified on air.
+    to a whole interval. A heartbeat that changes nothing changes nothing. Always available: without a link the
+    picture says so. Diagnostic, on by default (only configuration entities are off by default). Unverified on air.
 
     Its words follow the server's language: a new one is loaded and drawn at once when it is chosen, and any look
     finding other words than those shown redraws too.

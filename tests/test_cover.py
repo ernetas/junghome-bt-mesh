@@ -1449,7 +1449,7 @@ async def test_blind_sensors_unknown_until_read(
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr("custom_components.junghome_ble.const.PROPERTY_READ_TIMEOUT", 0.01)
         await start(hass, mock_config_entry)
-        await wait_until(hass, lambda: mesh.gets.count((BLIND, PID_REFERENCE_RUN)) == 2)
+        await wait_until(hass, lambda: mesh.gets.count((BLIND, PID_REFERENCE_RUN)) >= 2)
     assert (
         hass.states.get(entity_id(hass, "binary_sensor", UID_WIND_ALARM)).state
         == STATE_UNKNOWN

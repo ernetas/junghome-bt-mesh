@@ -212,9 +212,9 @@ What the full sweep of every Bluetooth layer could not do, or left half-done —
   a spare / unpaired insert, or a neighbour's?
 
 **Infrastructure to check (HA side):**
-- [x] ESPHome proxy **`livingroom-msr2-c80da4` ("Living room Apollo") registered as a Bluetooth scanner but never
+- [x] The living-room ESPHome proxy **registered as a Bluetooth scanner but never
   scanned** (`scanning: False`, no detections since HA start). A power cycle changed nothing; the cause was the
-  Apollo firmware's own *Bluetooth Proxy* switch in HA (`switch.living_room_living_room_apollo_bluetooth_proxy`),
+  proxy firmware's own *Bluetooth Proxy* switch in HA (the device's `bluetooth_proxy` switch entity),
   off — switched on, scanning within seconds (52 devices in the first half minute).
 
 **Tooling not finished:**

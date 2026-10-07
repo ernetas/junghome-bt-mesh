@@ -254,6 +254,24 @@ def test_copies_the_proxy_forwards_are_handed_out_once() -> None:
     assert any("handed out" in p for p in mesh.violations())
 
 
+def test_the_mesh_is_quiet_only_once_every_copy_landed() -> None:
+    """`Mesh.quiet`: what a check that nothing more happened waits for; copies still on the air keep it False."""
+    quirks = Quirks(proxy_forwards_every_copy=True)
+    seen: list[bool] = []
+
+    async def body(s: Session) -> None:
+        assert s.mesh.quiet()
+        await s.onoff(FAR, True)
+        seen.append(
+            s.mesh.quiet()
+        )  # the answer came; its relayed and retransmitted copies have not all landed
+        await s.mesh.settle()
+        seen.append(s.mesh.quiet())
+
+    simulate(body, Mesh(quirks=quirks, retransmissions=True))
+    assert seen == [False, True]
+
+
 def test_our_own_pdus_handed_back_by_the_proxy_are_not_another_client() -> None:
     """A proxy that forwards every copy hands the client its own PDUs back as the relays repeat them: each carries a
     number the client handed out, so none is taken for another client on its address (review-4 S I2)."""

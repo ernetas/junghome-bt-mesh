@@ -19,7 +19,7 @@ tools/mesh_report.py                     renders docs/network-topology.md from t
 tools/on_air.py                          lists every "unverified on air" marker with the symbol holding it
 tools/parity.py                          keeps the parity ledger (docs/parity/) closed
 tools/gen_entity_reference.py            generates docs/user/entities.md from strings.json and the registry snapshot
-tools/privacy_scan.py                    fails on a MAC, UUID, IP, 128-bit value or home path outside its allowlist, see testing.md
+tools/privacy_scan.py                    fails on a MAC (or a MAC-suffixed host name), UUID, IP, 128-bit value or home path outside its allowlist, see testing.md
 noxfile.py, .pre-commit-config.yaml      the CI jobs as nox sessions; the commit and push hooks, see testing.md
 tests/                                   HA integration + mesh library test-suites (synthetic keys and identities), see testing.md
 docs/user/                               the user guide (task-based, for Home Assistant users)

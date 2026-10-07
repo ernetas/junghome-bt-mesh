@@ -66,6 +66,16 @@
         "astral-sh/ruff-pre-commit"
       ],
       "groupName": "ruff"
+    },
+    {
+      "description": "The Python every workflow job but `library` sets up (ci.yml lint, tests, floor; nightly.yml) is the one Home Assistant runs on, not the newest release: the github-actions manager would move setup-python's `python-version` to a Python the Home Assistant test stack has no wheels for, or, merged green, test the integration only on a Python no Home Assistant release runs. It is moved by hand, with noxfile.py `PYTHON`, when Home Assistant moves (tests/test_renovate.py holds them equal). The `library` job reads its Python from pyproject.toml `requires-python`.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepNames": [
+        "python"
+      ],
+      "enabled": false
     }
   ]
 }

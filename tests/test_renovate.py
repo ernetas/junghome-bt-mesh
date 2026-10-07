@@ -82,3 +82,32 @@ def test_ruff_hook_matches_the_lint_pin() -> None:
         and "ruff" in rule["matchPackageNames"]
         for rule in _config()["packageRules"]
     )
+
+
+def test_the_python_of_the_workflow_jobs_is_held() -> None:
+    """Renovate's github-actions manager moves `setup-python`'s `python-version` (it proposed one such update before):
+    every job sets up Home Assistant's Python, not the newest one, so that update is off. The jobs and
+    `noxfile.py` then name the same version, moved by hand when Home Assistant moves."""
+    held = [
+        rule
+        for rule in _config()["packageRules"]
+        if rule.get("matchManagers") == ["github-actions"]
+        and rule.get("matchDepNames") == ["python"]
+    ]
+    assert len(held) == 1
+    assert held[0].get("enabled") is False
+    nox = re.search(
+        r'^PYTHON = "(\S+)"', (ROOT / "noxfile.py").read_text("utf-8"), re.MULTILINE
+    )
+    assert nox is not None
+    versions = {
+        (workflow.name, name): step["with"]["python-version"]
+        for workflow in sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+        for name, job in yaml.safe_load(workflow.read_text("utf-8"))["jobs"].items()
+        for step in job.get("steps", [])
+        if str(step.get("uses", "")).startswith("actions/setup-python@")
+        and "${{"
+        not in str(step["with"]["python-version"])  # `library`: requires-python
+    }
+    assert len(versions) >= 6, versions
+    assert set(versions.values()) == {nox[1]}, versions

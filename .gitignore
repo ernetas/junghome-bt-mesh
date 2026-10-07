@@ -7,6 +7,9 @@ __pycache__/
 dist/
 build/
 .coverage
+# pytest-cov's per-worker data files (`--cov -n auto`) and the report CI's coverage step writes
+.coverage.*
+coverage-integration.json
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/

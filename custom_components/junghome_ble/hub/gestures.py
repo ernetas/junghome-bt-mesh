@@ -10,7 +10,7 @@ when it stops (`cancel_all`).
 
 A key that waits for a double click holds its `click` back for `DOUBLE_CLICK_WINDOW`, so a double press reports only
 `double_click`; every other key reports its `click` at once, and a double press `click` for the first press and
-`double_click` for the second (review-4 U4-19). Which keys wait is the entry's choice: every key with the `click_delay` option (as before), else
+`double_click` for the second. Which keys wait is the entry's choice: every key with the `click_delay` option (as before), else
 the keys of `double_click_keys` (the options flow's *Keys that wait for a double click*, by `Button.unique_id`).
 It is not derived from what listens, because Home Assistant gives no reliable way to know: a device trigger's
 attach would be seen here, but an automation on the key's event entity (`event.received`, a state trigger), on the

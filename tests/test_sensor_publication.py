@@ -230,6 +230,7 @@ def serve_publications(env: Env, publications: dict[int, bytes]) -> None:
 
 
 @pytest.mark.unavailable_ok  # each answer is read by a reload of its own
+@pytest.mark.slow_ok  # five reloads, each settling its link's refresh: every silent Get waits `REPLY_TIMEOUT`
 async def test_sensor_publication_is_read_from_the_node(
     hass: HomeAssistant,
     env: Env,

@@ -7,7 +7,7 @@ integration's `HAState` overrides `load` / `persist` / `persist_now` / `persist_
 `ProxyClient` (`client.py`) takes its numbers from it; `client` re-exports every public name defined here, so imports
 from there keep working.
 
-Starting an IV Update (`start_iv_update`, review-4 P I-11) as a GATT Proxy Client is what Mesh Protocol 1.1 provides
+Starting an IV Update (`start_iv_update`) as a GATT Proxy Client is what Mesh Protocol 1.1 provides
 for. §6.7 (Proxy Server behavior): upon receiving a Secure Network beacon from the Proxy Client, the Proxy Server
 processes it as defined in §3.10.3.1 (Secure Network beacon behavior), as one from any other bearer, and upon
 processing a beacon with a new IV Index or new Flags it sends a beacon to the Proxy Client. §3.10.3.1: a node that

@@ -164,7 +164,22 @@ jobs:
           manifest = pathlib.Path(homeassistant.__file__).parent / "components" / "usb" / "manifest.json"
           print(" ".join(json.loads(manifest.read_text())["requirements"]))
           ')
-          python -c 'from homeassistant.const import __version__; print(f"Home Assistant {__version__}")' \
-            >> "$GITHUB_STEP_SUMMARY"
+      - name: State the stack installed, against the newest on PyPI
+        # pip installs the newest release this job's Python can run: one that needs a newer Python leaves an older
+        # stack here, and the job would stay green on it. The summary says which; a mismatch is annotated.
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          from importlib.metadata import version
+          from homeassistant.const import __version__ as home_assistant
+          name = "pytest-homeassistant-custom-component"
+          installed = version(name)
+          with urllib.request.urlopen(f"https://pypi.org/pypi/{name}/json", timeout=30) as answer:
+              newest = json.load(answer)["info"]["version"]
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(f"Home Assistant {home_assistant} ({name} {installed}; newest on PyPI {newest})\n")
+          if installed != newest:
+              print(f"::warning::{name} {installed} installed, not the newest {newest}: it needs another Python?")
+          PY
       - name: Tests
         run: python -m pytest tests -q -n auto -p no:cacheprovider --durations=20

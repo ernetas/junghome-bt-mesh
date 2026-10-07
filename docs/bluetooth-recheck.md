@@ -66,7 +66,7 @@ Legend: ✅ verified on air · 📄 from firmware / app code only · ❌ could n
 
 | Item | Status | Finding |
 |---|---|---|
-| Proxies HA hears the mesh through | ✅ | `livingroom-door-msr2-365f74` (24 nodes best, −39…−80 dBm) and `room-b-dk-msr2-5eac9d` (6 nodes); **`livingroom-msr2-c80da4` ("Living room Apollo 2") is registered as a scanner but `scanning: False`, never detected anything since HA started** — check that device. |
+| Proxies HA hears the mesh through | ✅ | the living-room door proxy (24 nodes best, −39…−80 dBm) and the second room's proxy (6 nodes); **the living-room proxy is registered as a scanner but `scanning: False`, never detected anything since HA started** — check that device. |
 | What HA merges per node | ✅ | `service_data 1828` + `manufacturer_data 1319` on the same address (so `jhmesh.advert` works from HA's data), no name (passive). 30 JUNG devices in HA's history = 29 nodes + gateway; the stray push-button above too. |
 | Discovery matcher | ✅ | `service_uuid 1828` finds every JUNG node (the gateway included); the flow checks the Network ID. Narrowing to `manufacturer_id 1319` considered and not needed. |
 
