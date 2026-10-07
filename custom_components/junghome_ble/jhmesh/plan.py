@@ -25,8 +25,8 @@ from .export import ModelChange, ProjectFile, raw_model
 from .pdu import ALL_PROXIES, decode_opcode
 
 if TYPE_CHECKING:
+    from .access import AccessMessage
     from .cdb import Element
-    from .client import AccessMessage
 
 __all__ = [
     "APP_KEY_INDEX",

@@ -109,7 +109,7 @@ Layout of `custom_components/junghome_ble/`:
 The public modules, as `README-pypi.md` lists them for the PyPI page: `cdb` (parse an export, the keys and the
 node list), `devices` (what each node is), `messages` / `config_messages` / `vendor_models` (build and decode access
 messages), `client` (`ProxyClient`: connect through a node's GATT proxy, send, receive, request / response with
-acks), `state` (`LocalState`: our address, sequence numbers, IV index state and replay list, persisted to a locked file
+acks; the received `AccessMessage` is `access`, which `client` re-exports), `state` (`LocalState`: our address, sequence numbers, IV index state and replay list, persisted to a locked file
 or, subclassed, to Home Assistant's store — `HAState`; `client` re-exports it), `standalone` (the same over a plain
 `bleak` scanner, for scripts), `provisioning` (PB-GATT), `commission` (the JUNG app's post-provisioning
 configuration, planned as data), `plan` (the plan model of `commission` and of the integration's configurator:

@@ -33,8 +33,8 @@ from jhmesh.pdu import ALL_NODES
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from jhmesh.access import AccessMessage
     from jhmesh.audit import Finding, ModelAudit, NodeAudit
-    from jhmesh.client import AccessMessage
     from jhmesh.provisioning import ProvisioningResult, UnprovisionedDevice
 
 VendorServer = Literal["admin", "manufacturer", "user"]

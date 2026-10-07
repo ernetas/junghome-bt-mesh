@@ -17,7 +17,7 @@ from .coordinator import STATUS_HANDLERS, register_status_handler
 
 if TYPE_CHECKING:
     from .coordinator import JungHomeHub, StatusHandler
-    from .jhmesh.client import AccessMessage
+    from .jhmesh.access import AccessMessage
 
 
 def chain_status_handler(

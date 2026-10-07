@@ -159,8 +159,8 @@ if TYPE_CHECKING:
     from .config_entities import ValueTarget
     from .element_state import ElementState
     from .entity import UpdateRead
+    from .jhmesh.access import AccessMessage
     from .jhmesh.cdb import Node
-    from .jhmesh.client import AccessMessage
     from .jhmesh.devices import Button, Detector, MeteredLoad
     from .jhmesh.properties import PropertySpec
 

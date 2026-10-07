@@ -19,6 +19,7 @@ from jhmesh import client, state
 
 API: dict[str, list[str]] = {
     "jhmesh": [],
+    "jhmesh.access": ["AccessMessage"],
     "jhmesh.advert": [
         "JUNG_COMPANY_ID",
         "JungAdvertisement",

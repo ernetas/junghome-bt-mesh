@@ -94,7 +94,7 @@ if TYPE_CHECKING:
     from .config_entities import PropertyReader
     from .coordinator import JungHomeHub
     from .entity import UpdateRead
-    from .jhmesh.client import AccessMessage
+    from .jhmesh.access import AccessMessage
     from .jhmesh.devices import Device
 
 _LOGGER = logging.getLogger(__name__)

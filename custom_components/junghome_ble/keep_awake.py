@@ -39,8 +39,8 @@ from .jhmesh import messages as M
 from .jhmesh.devices import BATTERY_PIDS
 
 if TYPE_CHECKING:
+    from .jhmesh.access import AccessMessage
     from .jhmesh.cdb import CDB
-    from .jhmesh.client import AccessMessage
     from .protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)

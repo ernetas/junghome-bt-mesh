@@ -52,7 +52,7 @@ from custom_components.junghome_ble.protocols import HubPort
 if TYPE_CHECKING:
     from homeassistant.core import CALLBACK_TYPE
 
-    from custom_components.junghome_ble.jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.jhmesh.access import AccessMessage
 
     from .link import LinkEnd
 

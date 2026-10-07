@@ -294,6 +294,8 @@
   `jhmesh.vaultrefresh` logs under that name inside Home Assistant too, not its module path (A5-7), so the
   documented `jhmesh` logger setting covers it; a test keeps every `jhmesh` logger named under `jhmesh`.
   *Mesh overview* and *Mesh topology* read the hub's nodes once, the same way (`mesh_topology.node_rows`).
+  `jhmesh.access` holds `AccessMessage` (`jhmesh.client` still exports it): the sniffer, the audit and the plan
+  model no longer load the proxy client for it.
 
 ## 1.4.1 (unreleased)
 

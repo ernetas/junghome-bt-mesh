@@ -40,8 +40,9 @@ from .vault import RefreshProgress
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from .access import AccessMessage
     from .cdb import Node
-    from .client import AccessMessage, ProxyClient
+    from .client import ProxyClient
     from .vault import VaultNode
 
 __all__ = [

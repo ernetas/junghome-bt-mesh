@@ -74,8 +74,8 @@ from .targets import (
 if TYPE_CHECKING:
     from datetime import datetime
 
+    from custom_components.junghome_ble.jhmesh.access import AccessMessage
     from custom_components.junghome_ble.jhmesh.cdb import Node
-    from custom_components.junghome_ble.jhmesh.client import AccessMessage
     from custom_components.junghome_ble.jhmesh.properties import PropertySpec
 
 _LOGGER = logging.getLogger(__name__)

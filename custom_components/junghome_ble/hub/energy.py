@@ -31,8 +31,8 @@ from custom_components.junghome_ble.jhmesh.devices import MeteredLoad, Socket
 from custom_components.junghome_ble.jhmesh.properties import SIG_PROPERTIES
 
 if TYPE_CHECKING:
+    from custom_components.junghome_ble.jhmesh.access import AccessMessage
     from custom_components.junghome_ble.jhmesh.cdb import CDB
-    from custom_components.junghome_ble.jhmesh.client import AccessMessage
     from custom_components.junghome_ble.protocols import HubPort
 
 _LOGGER = logging.getLogger(__name__)

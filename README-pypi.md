@@ -18,7 +18,8 @@ pip install jhmesh
 The public surface is the package's modules: `jhmesh.cdb` (parse an export, the keys and the node list),
 `jhmesh.devices` (what each node is: light, socket, blind, thermostat, detector, button), `jhmesh.messages` /
 `jhmesh.config_messages` / `jhmesh.vendor_models` (build and decode access messages), `jhmesh.client` (`ProxyClient`:
-connect through any node's GATT proxy, send, receive, request/response with acks), `jhmesh.state` (`LocalState`: our
+connect through any node's GATT proxy, send, receive, request/response with acks; the messages it delivers are
+`jhmesh.access.AccessMessage`, which it exports too), `jhmesh.state` (`LocalState`: our
 unicast address, sequence numbers, IV index and replay list, kept in a locked file; `jhmesh.client` exports it too),
 `jhmesh.standalone` (the same over a plain `bleak` scanner for scripts outside Home Assistant), `jhmesh.provisioning`
 (provision a new node over PB-GATT with P-256: No OOB, or Static OOB and the HMAC-SHA256 algorithm when the device

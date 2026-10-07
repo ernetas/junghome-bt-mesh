@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from datetime import datetime
 
     from .coordinator import JungHomeHub
-    from .jhmesh.client import AccessMessage
+    from .jhmesh.access import AccessMessage
 
 _LOGGER = logging.getLogger(__name__)
 

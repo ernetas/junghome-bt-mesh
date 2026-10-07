@@ -39,8 +39,9 @@ if TYPE_CHECKING:
     from .element_state import ElementState
     from .hub.lifecycle import Lifecycle
     from .identity import VaultKeeper
+    from .jhmesh.access import AccessMessage
     from .jhmesh.cdb import CDB, Node
-    from .jhmesh.client import AccessMessage, ProxyClient
+    from .jhmesh.client import ProxyClient
     from .jhmesh.devices import Devices
     from .seq_store import HAState
 

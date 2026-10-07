@@ -87,13 +87,13 @@ from .inserts import NodeInserts
 from .jhmesh import config_messages as C
 from .jhmesh import messages as M
 from .jhmesh import vendor_models as V
+from .jhmesh.access import AccessMessage
 from .jhmesh.advert import JungAdvertisement, mac_from_uuid
 from .jhmesh.audit import NodeAudit, audit_node, client_exchange
 from .jhmesh.cdb import CDB, Node
 from .jhmesh.client import (
     MESH_PROXY_SERVICE,
     NET_KEY_INDEX,
-    AccessMessage,
     Heartbeat,
     ProxyClient,
     SequenceStalled,

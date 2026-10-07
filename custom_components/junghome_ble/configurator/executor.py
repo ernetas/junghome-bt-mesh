@@ -54,7 +54,7 @@ from .wiring import _confirms_property, _confirms_scene_action, record_room_link
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.coordinator import JungHomeHub
-    from custom_components.junghome_ble.jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.jhmesh.access import AccessMessage
     from custom_components.junghome_ble.jhmesh.export import ProjectFile
 
 _LOGGER = logging.getLogger(__name__)

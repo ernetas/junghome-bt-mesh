@@ -22,7 +22,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Literal
 
-from .client import AccessMessage
+from .access import AccessMessage
 from .pdu import (
     BEACON_PRIVATE,
     NONCE_APP,

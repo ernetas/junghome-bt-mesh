@@ -29,7 +29,7 @@ from custom_components.junghome_ble.protocols import HubPort
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.inserts import NodeInserts
-    from custom_components.junghome_ble.jhmesh.client import AccessMessage
+    from custom_components.junghome_ble.jhmesh.access import AccessMessage
     from custom_components.junghome_ble.protocols import LinkView
 
     from .clock import Clock

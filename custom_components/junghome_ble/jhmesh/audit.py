@@ -42,8 +42,9 @@ from . import config_messages as C
 from .cdb import model_publication, model_subscriptions
 
 if TYPE_CHECKING:
+    from .access import AccessMessage
     from .cdb import Node
-    from .client import AccessMessage, ProxyClient
+    from .client import ProxyClient
 
 __all__ = [
     "CLIENT_MODELS",

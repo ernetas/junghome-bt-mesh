@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 
     from .config_entities import Page
     from .coordinator import JungHomeHub
-    from .jhmesh.client import AccessMessage
+    from .jhmesh.access import AccessMessage
     from .jhmesh.devices import Device
     from .jhmesh.properties import PropertySpec
 

@@ -129,8 +129,8 @@ if TYPE_CHECKING:
 
     from . import JungHomeConfigEntry
     from .config_entities import ValueTarget
+    from .jhmesh.access import AccessMessage
     from .jhmesh.cdb import Node
-    from .jhmesh.client import AccessMessage
 
 _LOGGER = logging.getLogger(__name__)
 
