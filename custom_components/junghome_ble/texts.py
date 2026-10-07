@@ -3,7 +3,8 @@
 A logbook line (`logbook.py`) and what a stopped plan applied (`configurator.store.applied_message`, a placeholder's
 value) are worded in the backend: Home Assistant translates a message by its key, never a placeholder's value nor a
 describer's return. Both come from the translations Home Assistant cached for the server's language when it set the
-integration up, English where that language has none.
+integration up, English where that language has none. So do the words of the *Mesh topology* picture
+(`common.topology_*`, `cached_texts`), drawn in the backend as an SVG.
 """
 
 from __future__ import annotations
@@ -32,3 +33,24 @@ def cached_text(
         if path in text:
             return text[path].format_map(placeholders or {})
     return None
+
+
+@callback
+def cached_texts(hass: HomeAssistant, category: str, prefix: str) -> dict[str, str]:
+    """Return the integration's texts `<category>.<prefix>…` by the rest of their key, as written (not filled in).
+
+    English, the server's language over it: a language whose translations are not cached yet (just chosen) reads as
+    English until they are.
+    """
+    start = f"component.{DOMAIN}.{category}.{prefix}"
+    found: dict[str, str] = {}
+    for language in ("en", hass.config.language):
+        text = async_get_cached_translations(hass, language, category, DOMAIN)
+        found.update(
+            {
+                path.removeprefix(start): value
+                for path, value in text.items()
+                if path.startswith(start)
+            }
+        )
+    return found

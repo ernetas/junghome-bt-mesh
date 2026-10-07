@@ -62,6 +62,7 @@ from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.properties import BLIND_MODE
 from custom_components.junghome_ble.select import UNKNOWN_OPTION
+from custom_components.junghome_ble.topology_svg import TEXTS as TOPOLOGY_TEXTS
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / DOMAIN
 STRINGS = COMPONENT / "strings.json"
@@ -506,6 +507,17 @@ def test_plan_logbook_keys_exist(strings: dict[str, Any]) -> None:
     assert {"plan_finished", "plan_stopped", "plan_cancelled", "plan_key_room"} <= found
     unknown = sorted(found - set(strings["exceptions"]))
     assert not unknown, f"plan lines without an exception string: {unknown}"
+
+
+def test_topology_texts_are_the_pictures(strings: dict[str, Any]) -> None:
+    """The *Mesh topology* picture's words: `common.topology_<key>` for each of its `TEXTS`, the same English.
+
+    `common` holds them because the picture is drawn in the backend, where nothing translates by entity or key: the
+    image reads them from the translation cache (`texts.cached_texts`), and `render_svg` keeps English defaults.
+    """
+    assert strings["common"] == {
+        f"topology_{key}": text for key, text in TOPOLOGY_TEXTS.items()
+    }
 
 
 def test_logbook_keys_exist(strings: dict[str, Any]) -> None:

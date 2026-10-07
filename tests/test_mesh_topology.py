@@ -2,7 +2,8 @@
 
 The image sits on the mesh network device, diagnostic and enabled; it serves an SVG of the hub's topology snapshot,
 and its state (`image_last_updated`) moves only when the snapshot changed — at most once a minute, a change within
-the minute shown when it is over. The picture itself is `tests/test_topology_svg.py`'s.
+the minute shown when it is over. Its words are the server's language's, redrawn when that changes. The picture
+itself is `tests/test_topology_svg.py`'s.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util import dt as dt_util
 
 from custom_components.junghome_ble.const import (
@@ -25,8 +27,11 @@ from custom_components.junghome_ble.const import (
 from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
-from custom_components.junghome_ble.mesh_topology import topology_snapshot
-from custom_components.junghome_ble.topology_svg import render_svg
+from custom_components.junghome_ble.mesh_topology import (
+    topology_snapshot,
+    topology_texts,
+)
+from custom_components.junghome_ble.topology_svg import TEXTS, render_svg
 
 from .helpers import (
     LIGHT_DIMMER,
@@ -111,7 +116,7 @@ async def test_redrawn_only_when_the_snapshot_changes(
     assert {"unicast": f"{SOCKET:04X}", "hops": hops}.items() <= _node(
         topology_snapshot(hub).as_dict(), SOCKET
     ).items()
-    assert f"{hops} hop" in await picture(hass)
+    assert f"Hops: {hops}" in await picture(hass)
 
     fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=4)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
@@ -247,3 +252,37 @@ async def test_the_documented_card_shows_the_image(
     card = documented_cards()["picture-entity"]
     assert card["entity"] == image_id(hass).replace("_mesh_test_", "_mesh_")
     assert card["entity"] == "image.jung_home_mesh_mesh_topology"
+
+
+async def test_the_picture_speaks_the_server_language(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Its words are the server's language's: a language chosen is drawn at once, one found at a look then."""
+    hub = hub_of(init_integration)
+    image: JungHomeMeshTopology = hub.platforms["image"].entities[UID]  # type: ignore[assignment]
+    assert image._texts == TEXTS
+    english = state(hass)
+    assert "<title>Mesh topology</title>" in await picture(hass)
+
+    freezer.tick(1)
+    await hass.config.async_update(language="de")
+    await hass.async_block_till_done()
+    svg = await picture(hass)
+    assert "<title>Mesh-Topologie</title>" in svg
+    assert ">Legende<" in svg
+    assert state(hass) != english
+    assert svg == render_svg(topology_snapshot(hub), topology_texts(hass))
+
+    german = state(hass)
+    freezer.tick(1)
+    await hass.config.async_update(location_name="Elsewhere")  # not the language
+    await hass.async_block_till_done()
+    assert state(hass) == german
+
+    hass.config.language = "fi"  # set without the event: English until it is cached
+    assert topology_texts(hass) == TEXTS
+    await async_get_translations(hass, "fi", "common", {DOMAIN})
+    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
+    assert "<title>Mesh-verkon topologia</title>" in await picture(hass)

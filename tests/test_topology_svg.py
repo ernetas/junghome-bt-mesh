@@ -6,6 +6,7 @@ and regenerate with `pytest tests/test_topology_svg.py --snapshot-update`.
 
 from __future__ import annotations
 
+import json
 import random
 import re
 from dataclasses import replace
@@ -24,6 +25,8 @@ from custom_components.junghome_ble.topology_svg import (
     MAX_COLUMNS,
     NAME_CHARS,
     PALETTE,
+    TEXTS,
+    WIDE_CHARS,
     Topology,
     TopologyNode,
     clean,
@@ -153,6 +156,17 @@ def texts(svg: str) -> list[str]:
     return out
 
 
+TRANSLATIONS = (
+    Path(__file__).parent.parent / "custom_components" / "junghome_ble" / "translations"
+)
+
+
+def language(code: str) -> dict[str, str]:
+    """The picture's words in the language `code`, as `translations/<code>.json` has them (`common.topology_*`)."""
+    data = json.loads((TRANSLATIONS / f"{code}.json").read_text(encoding="utf-8"))
+    return {key.removeprefix("topology_"): text for key, text in data["common"].items()}
+
+
 @pytest.mark.parametrize("topology", [SMALL, NO_LINK], ids=["small", "no-link"])
 def test_golden(golden: SnapshotAssertion, topology: Topology) -> None:
     svg = render_svg(topology)
@@ -160,12 +174,72 @@ def test_golden(golden: SnapshotAssertion, topology: Topology) -> None:
     assert svg == golden
 
 
+def test_golden_german(golden: SnapshotAssertion) -> None:
+    """Long words: every text cut to the room it has, the footnote on two lines where it needs them."""
+    svg = render_svg(SMALL, language("de"))
+    parse(svg)
+    assert svg == golden
+    words = texts(svg)
+    assert words[:2] == [
+        "Mesh-Topologie",
+        "Geräte: 6 \N{MIDDLE DOT} erreichbar: 4 \N{MIDDLE DOT} nicht erreichbar: 1 \N{MIDDLE DOT} schlafend: 1",
+    ]
+    assert "Proxy-Knoten \N{MIDDLE DOT} erreichbar" in words
+    assert "Relay \N{MIDDLE DOT} Proxy \N{MIDDLE DOT} Friend" in words
+    assert [w for w in words if w.startswith("Hops: ")] == [
+        "Hops: 2",
+        "Hops: 3",
+        "Hops: unbekannt",
+    ]
+    assert "zuletzt 2020-01-01 00:00" in words
+
+
+@pytest.mark.parametrize(
+    "code", sorted(p.stem for p in TRANSLATIONS.glob("*.json")), ids=str
+)
+def test_every_language_draws(code: str) -> None:
+    """Each language's words, well-formed and none wider than the picture: its title, its bands, its legend."""
+    words = language(code)
+    assert words.keys() == TEXTS.keys()
+    svg = render_svg(NO_LINK, words)
+    parse(svg)
+    drawn = texts(svg)
+    assert drawn[0] == words["title"]
+    assert words["band_unknown"] in drawn
+    assert f"{words['badge_relay']} {words['legend_relay']}" in drawn
+    assert all(len(w) <= WIDE_CHARS + 24 for w in drawn)
+
+
+def test_words_that_do_not_fit_are_english() -> None:
+    """A mapping lacking a word, or one whose placeholders differ, draws the English one there."""
+    words = texts(render_svg(SMALL, {"band_hops": "Hops {wrong}", "legend": "Zeichen"}))
+    assert "Hops: 2" in words
+    assert "Zeichen" in words
+    assert "Mesh topology" in words
+
+
+def test_wide_characters_count_twice() -> None:
+    """A CJK character takes the room of two narrow ones: cut at half the count, wrapped where it is full."""
+    assert clean("\u3042" * 20, 10) == "\u3042" * 4 + "\N{HORIZONTAL ELLIPSIS}"
+    assert clean("\u3042" * 5, 10) == "\u3042" * 5
+    wide = texts(render_svg(SMALL, {"footnote": "\u3042" * 60}))
+    assert wide[-2:] == ["\u3042" * (WIDE_CHARS // 2), "\u3042" * 12]
+
+
+def test_a_long_footnote_wraps_once() -> None:
+    """Broken at the last space that fits; what the second line cannot hold is cut."""
+    first, second = texts(render_svg(SMALL, {"footnote": "word " * 50}))[-2:]
+    assert first == " ".join(["word"] * 19)
+    assert second.endswith("\N{HORIZONTAL ELLIPSIS}")
+    assert len(second) <= WIDE_CHARS
+
+
 def test_what_the_small_picture_says() -> None:
     """Every state and feature as a word, the bands in hop order, the proxy next to Home Assistant, a legend."""
     words = texts(render_svg(SMALL))
     assert words[:2] == [
         "Mesh topology",
-        "6 devices \N{MIDDLE DOT} 4 reachable \N{MIDDLE DOT} 1 unreachable \N{MIDDLE DOT} 1 asleep",
+        "Devices: 6 \N{MIDDLE DOT} reachable: 4 \N{MIDDLE DOT} unreachable: 1 \N{MIDDLE DOT} asleep: 1",
     ]
     assert words.index("Home Assistant") < words.index(
         "WC mirror - Push-butto\N{HORIZONTAL ELLIPSIS}"
@@ -175,8 +249,8 @@ def test_what_the_small_picture_says() -> None:
     assert "unreachable" in words
     assert "asleep (battery)" in words
     assert "last heard 2020-01-01 00:00" in words
-    bands = [w for w in words if re.fullmatch(r"\d+ hops?|Hops not known", w)]
-    assert bands == ["2 hops", "3 hops", "Hops not known"]
+    bands = [w for w in words if re.fullmatch(r"Hops: (\d+|not known)", w)]
+    assert bands == ["Hops: 2", "Hops: 3", "Hops: not known"]
     assert words.index("Boiler - Socket (meter\N{HORIZONTAL ELLIPSIS}") < words.index(
         "Gateway 00DC"
     )  # by name within a band
@@ -291,18 +365,9 @@ def test_eighty_nodes_stay_bounded() -> None:
     assert height < 3200
     assert len(svg.encode()) < 160_000
     words = texts(svg)
-    assert f"{HOP_BANDS} or more hops" in words
-    assert (
-        len(
-            [
-                w
-                for w in words
-                if re.fullmatch(r"\d+ (or more )?hops?|Hops not known", w)
-            ]
-        )
-        <= HOP_BANDS + 1
-    )
-    assert words[1].startswith("80 devices")
+    assert f"Hops: {HOP_BANDS} or more" in words
+    assert len([w for w in words if w.startswith("Hops: ")]) <= HOP_BANDS + 1
+    assert words[1].startswith("Devices: 80")
 
 
 def test_one_device_and_nothing_else() -> None:
@@ -311,5 +376,5 @@ def test_one_device_and_nothing_else() -> None:
     words = texts(
         render_svg(Topology(address=HA, connected=True, proxy=None, nodes=(node,)))
     )
-    assert words[1] == "1 device"
-    assert "4 hops" in words
+    assert words[1] == "Devices: 1"
+    assert "Hops: 4" in words

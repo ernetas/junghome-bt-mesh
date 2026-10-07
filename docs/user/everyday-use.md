@@ -135,11 +135,12 @@ Four entities on the mesh network device tell how the installation is doing (**u
   updated at most once a minute, and the list is not kept in the history.
 - **Mesh topology** (a diagnostic image) draws the mesh: Home Assistant at the top with the device it is connected
   through (the *link proxy*, thick border), and every other device in a band by how many hops its last sign of life
-  took (*1 hop*, *2 hops*, …; with the *Node heartbeats* option on — without it, and for battery devices, under
-  *Hops not known*). Each device shows its name, area and address; whether it answers as a shape, a colour and a
+  took (*Hops: 1*, *Hops: 2*, …; with the *Node heartbeats* option on — without it, and for battery devices, under
+  *Hops: not known*). Each device shows its name, area and address; whether it answers as a shape, a colour and a
   word (a dot *reachable*, a cross *unreachable* with when it was last heard, a square *asleep* for a battery
   device); and its roles as letters and words (**R** relay, **P** proxy, **F** friend, **L** low power). The legend
-  under the picture explains them; its words are English. It is redrawn only when something it shows changed, at
+  under the picture explains them; its words are in your Home Assistant's language (the one under *Settings →
+  System → General*). It is redrawn only when something it shows changed, at
   most once a minute. The lines between devices are not drawn: the mesh does not report which device passes on
   whose messages.
 

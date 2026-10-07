@@ -3,7 +3,7 @@
 The mesh's shape for any dashboard, with the stock picture-entity card and no frontend resource to install: Home
 Assistant, the node it is connected through, the other nodes by heartbeat hops, which relay, which are proxies, which
 do not answer (`topology_svg.py` draws it, `mesh_topology.py` takes the snapshot). An SVG, rendered when the snapshot
-changes and served from memory.
+changes and served from memory. Its words are in the server's language (`mesh_topology.topology_texts`).
 """
 
 from __future__ import annotations
@@ -13,19 +13,28 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.components.image import ImageEntity
-from homeassistant.const import EntityCategory
+from homeassistant.const import EVENT_CORE_CONFIG_UPDATE, EntityCategory
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_call_later, async_track_time_interval
+from homeassistant.helpers.translation import async_get_translations
 from homeassistant.util import dt as dt_util
 
-from .const import NODE_DIAGNOSTICS_INTERVAL, SIGNAL_CONNECTION, SIGNAL_REACHABILITY
+from .const import (
+    DOMAIN,
+    NODE_DIAGNOSTICS_INTERVAL,
+    SIGNAL_CONNECTION,
+    SIGNAL_REACHABILITY,
+)
 from .entity import JungHomeEntity, async_setup_platform, hub_device_info
-from .mesh_topology import topology_snapshot
+from .mesh_topology import topology_snapshot, topology_texts
 from .topology_svg import render_svg
 
 if TYPE_CHECKING:
-    from homeassistant.core import HomeAssistant
+    from collections.abc import Mapping
+    from typing import Any
+
+    from homeassistant.core import Event, HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
     from . import JungHomeConfigEntry
@@ -61,12 +70,16 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     differs from the one shown, and at most once per interval — a change within it is shown when it is over. A
     heartbeat that changes nothing changes nothing. Always available: without a link the picture says so. Diagnostic,
     on by default (decision M9 hides configuration entities only). Unverified on air.
+
+    Its words follow the server's language: a new one is loaded and drawn at once when it is chosen, and any look
+    finding other words than those shown redraws too.
     """
 
     _attr_translation_key = "mesh_topology"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_content_type = "image/svg+xml"
     _shown: Topology | None = None  # the snapshot the picture is of
+    _texts: Mapping[str, str] | None = None  # ... and its words
     _svg: bytes | None = None
     _drawn_at = float("-inf")  # when the picture last changed (`time.monotonic()`)
     _pending: CALLBACK_TYPE | None = None  # the look held back by the interval
@@ -105,6 +118,13 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
                 self.hass, self._tick, timedelta(seconds=NODE_DIAGNOSTICS_INTERVAL)
             )
         )
+        self.async_on_remove(
+            self.hass.bus.async_listen(
+                EVENT_CORE_CONFIG_UPDATE,
+                self._language_changed,
+                event_filter=_language_in,
+            )
+        )
         self.async_on_remove(self._cancel_pending)
 
     @callback
@@ -125,8 +145,19 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
         if wait > 0:
             self._pending = async_call_later(self.hass, wait, self._held_back)
             return
+        self._draw_if_changed()
+
+    async def _language_changed(self, _event: Event[Any]) -> None:
+        """Load the server's new language (Home Assistant may not have yet) and draw its words now."""
+        await async_get_translations(
+            self.hass, self.hass.config.language, "common", {DOMAIN}
+        )
+        self._draw_if_changed()
+
+    @callback
+    def _draw_if_changed(self) -> None:
         snapshot = topology_snapshot(self.hub)
-        if snapshot != self._shown:
+        if snapshot != self._shown or topology_texts(self.hass) != self._texts:
             self._draw(snapshot)
             self.async_write_ha_state()
 
@@ -137,7 +168,8 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
 
     def _draw(self, snapshot: Topology) -> None:
         self._shown = snapshot
-        self._svg = render_svg(snapshot).encode()
+        self._texts = topology_texts(self.hass)
+        self._svg = render_svg(snapshot, self._texts).encode()
         self._drawn_at = time.monotonic()
         self._attr_image_last_updated = dt_util.utcnow()
 
@@ -146,3 +178,9 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
         if self._pending is not None:
             self._pending()
             self._pending = None
+
+
+@callback
+def _language_in(data: Mapping[str, Any]) -> bool:
+    """Whether a core configuration update sets the language."""
+    return "language" in data

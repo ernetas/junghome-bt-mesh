@@ -6,6 +6,9 @@ disabled and 2 unsupported are not shown), the hops of its last heartbeat, wheth
 node_alive`; None for a battery node, which sleeps, and for every node without a link), and when it was last heard
 for one that does not answer. Equal snapshots are equal values, so the image can tell a change from a heartbeat that
 changed nothing. Unverified on air: the picture against the installation (the link's proxy, the nodes' hop counts).
+
+The picture's words (`topology_texts`) are the translations of the server's language, `common.topology_<key>` for
+each key of `topology_svg.TEXTS`, English where it has none.
 """
 
 from __future__ import annotations
@@ -17,9 +20,12 @@ from homeassistant.util import dt as dt_util
 
 from .device_info import node_areas, node_label
 from .jhmesh.devices import BATTERY_PIDS
-from .topology_svg import Topology, TopologyNode
+from .texts import cached_texts
+from .topology_svg import TEXTS, Topology, TopologyNode
 
 if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
     from .coordinator import JungHomeHub
     from .jhmesh.cdb import Node
 
@@ -70,3 +76,9 @@ def topology_snapshot(hub: JungHomeHub) -> Topology:
         proxy=hub.proxy_node if link else None,
         nodes=tuple(nodes),
     )
+
+
+def topology_texts(hass: HomeAssistant) -> dict[str, str]:
+    """Return the picture's words in the server's language, English where it has none (a `TEXTS` key each)."""
+    cached = cached_texts(hass, "common", "topology_")
+    return {key: cached.get(key, english) for key, english in TEXTS.items()}
