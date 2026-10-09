@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: Bluetooth 연결을 제공함",
     "topology_legend_friend": "friend: 절전 기기의 메시지를 보관함",
     "topology_legend_low_power": "low power: 절전하며 friend가 있음",
-    "topology_footnote": "행: 각 기기의 마지막 하트비트의 홉 수 (노드 하트비트 옵션)."
+    "topology_footnote": "행: 최근 15분간 각 기기 하트비트의 최소 홉 수 (노드 하트비트 옵션)."
   }
 }

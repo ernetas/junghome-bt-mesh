@@ -8,6 +8,7 @@ itself is `tests/test_topology_svg.py`'s.
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -29,6 +30,8 @@ from custom_components.junghome_ble.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 from custom_components.junghome_ble.hub.link import LinkManager
+from custom_components.junghome_ble.hub.liveness import HOP_WINDOW
+from custom_components.junghome_ble.jhmesh.client import Heartbeat
 from custom_components.junghome_ble.mesh_topology import (
     topology_snapshot,
     topology_texts,
@@ -104,14 +107,14 @@ async def test_redrawn_only_when_the_snapshot_changes(
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """A heartbeat with new hops redraws the picture at the next look; the same heartbeat again changes nothing.
+    """A heartbeat with a new distance redraws the picture at the next look; the same heartbeat again changes nothing.
 
     The mesh answers the refresh: no node turns unreachable meanwhile.
     """
     hub = hub_of(init_integration)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     before = state(hass)
-    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=4)
+    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=3)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     drawn = state(hass)
     assert drawn != before
@@ -121,14 +124,81 @@ async def test_redrawn_only_when_the_snapshot_changes(
     ).items()
     assert f"Hops: {hops}" in await picture(hass)
 
-    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=4)
+    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=3)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     assert state(hass) == drawn  # the same hops: nothing to draw
 
-    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=2)
+    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=4)  # nearer
     await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
     assert state(hass) != drawn
+    assert f"Hops: {hops - 1}" in await picture(hass)
+
+
+async def test_hops_that_jump_about_do_not_move_the_node(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """On-air sweep A12: beats at 1, 3, 2, 4 hops, a minute apart, leave the node in band 1 and the picture as drawn.
+
+    Each beat reaches Home Assistant over whichever relay path delivered it first; the band is the fewest hops of
+    the window (`Liveness.hop_range`). With the last beat's hops every node changed band within six minutes.
+    """
+    hub = hub_of(init_integration)
+    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
+    fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=4)  # 1 hop
+    await tick(hass, freezer, 64)
+    drawn = state(hass)
+    svg = await picture(hass)
+    assert "Hops: 1" in svg
+    for ttl in (2, 3, 1):  # 3, 2, 4 hops
+        fake_link.inject_heartbeat(SOCKET, OUR_ADDRESS, init_ttl=5, ttl=ttl)
+        await tick(hass, freezer, 64)
+        assert state(hass) == drawn
+        assert hub.node_hops(SOCKET) == 1
+        assert _node(topology_snapshot(hub).as_dict(), SOCKET)["hops"] == 1
+    assert hub.heartbeats[SOCKET].hops == 4
+    assert hub.hop_range(SOCKET) == (1, 4)
+    assert await picture(hass) == svg
+    assert "Hops: 4" not in svg
+
+
+async def test_a_real_move_moves_the_node(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Every beat at 3 hops for a whole window (a relay went away): the node moves to band 3 at the next look."""
+    hub = hub_of(init_integration)
+    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
+    start = time.monotonic()
+    hub.liveness.on_heartbeat(_beat(SOCKET, 1, start))
+    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
+    drawn = state(hass)
+    assert _node(topology_snapshot(hub).as_dict(), SOCKET)["hops"] == 1
+    for k in range(1, int(HOP_WINDOW // 64) + 2):
+        hub.liveness.on_heartbeat(_beat(SOCKET, 3, start + k * 64))
+    assert hub.node_hops(SOCKET) == 3
+    await tick(hass, freezer, NODE_DIAGNOSTICS_INTERVAL)
+    assert state(hass) != drawn
+    assert _node(topology_snapshot(hub).as_dict(), SOCKET)["hops"] == 3
+    assert "Hops: 3" in await picture(hass)
+    assert "Hops: 1" not in await picture(hass)
+
+
+def _beat(unicast: int, hops: int, received: float) -> Heartbeat:
+    return Heartbeat(
+        src=unicast,
+        dst=OUR_ADDRESS,
+        init_ttl=5,
+        ttl=5 - hops,
+        features=3,
+        received=received,
+    )
 
 
 async def test_a_change_within_the_minute_waits_for_it(

@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: tilbyr en Bluetooth-tilkobling",
     "topology_legend_friend": "friend: tar vare på meldinger for sovende",
     "topology_legend_low_power": "low power: sover, har en friend",
-    "topology_footnote": "Rader: hoppene i hver enhets siste heartbeat (innstillingen Heartbeats fra noder)."
+    "topology_footnote": "Rader: færrest hopp i hver enhets heartbeats de siste 15 minuttene (innstillingen Heartbeats fra noder)."
   }
 }

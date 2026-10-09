@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "プロキシ：Bluetooth 接続を提供",
     "topology_legend_friend": "フレンド：眠るノードのメッセージを保持",
     "topology_legend_low_power": "低電力：スリープし、フレンドを持つ",
-    "topology_footnote": "段：各デバイスの最後のハートビートのホップ数（オプション「ノードのハートビート」）。"
+    "topology_footnote": "段：過去15分間の各デバイスのハートビートの最小ホップ数（オプション「ノードのハートビート」）。"
   }
 }

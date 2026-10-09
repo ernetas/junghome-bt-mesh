@@ -29,12 +29,13 @@ from custom_components.junghome_ble.hub.liveness import (
     HEARTBEAT_PERIOD_LOG,
     HEARTBEAT_RECONFIGURE_INTERVAL,
     HEARTBEAT_REPROBE_INTERVAL,
+    HOP_WINDOW,
     UNREACHABLE_RECHECK,
     UNREACHABLE_REPROBE,
 )
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
-from custom_components.junghome_ble.jhmesh.client import ProxyClient
+from custom_components.junghome_ble.jhmesh.client import Heartbeat, ProxyClient
 from custom_components.junghome_ble.jhmesh.pdu import (
     decode_opcode,
     encode_opcode,
@@ -305,6 +306,72 @@ async def test_heartbeats_off_by_default(
     assert diagnostics["heartbeats"] == {"enabled": False}
 
 
+def beat(unicast: int, hops: int, received: float) -> Heartbeat:
+    """A Heartbeat from `unicast` that crossed `hops` hops (as `Heartbeat.hops` counts them), received at `received`."""
+    return Heartbeat(
+        src=unicast,
+        dst=OUR_ADDRESS,
+        init_ttl=5,
+        ttl=5 - hops,
+        features=3,
+        received=received,
+    )
+
+
+async def test_a_node_s_distance_is_its_fewest_hops_over_the_window(
+    hass: HomeAssistant, init_answered: MockConfigEntry
+) -> None:
+    """On-air sweep A12: each beat takes whichever relay path delivered it first, so beats at 1, 3, 2, 4 hops are a
+    node 1 hop away; a move is followed once the window holds nothing nearer; a silent node keeps its distance."""
+    hub = hub_of(init_answered)
+    liveness = hub.liveness
+    assert hub.hop_range(SOCKET) is None
+    assert hub.node_hops(SOCKET) is None
+    start = time.monotonic()
+    for i, hops in enumerate((1, 3, 2, 4)):
+        liveness.on_heartbeat(beat(SOCKET, hops, start + i * 64))
+    assert hub.heartbeats[SOCKET].hops == 4  # the last beat's ...
+    assert hub.hop_range(SOCKET) == (1, 4)  # ... but the fewest is the distance
+    assert hub.node_hops(SOCKET) == 1
+
+    # every beat at 3 for a whole window: the node moved (a relay went away); the window ends at its newest beat
+    last = start + 3 * 64
+    beats = (
+        int(HOP_WINDOW // 64) + 1
+    )  # the first beat whose window no longer holds the 4
+    for k in range(1, beats):
+        liveness.on_heartbeat(beat(SOCKET, 3, last + k * 64))
+    assert hub.hop_range(SOCKET) == (3, 4)  # the 1 and the 2 are out, the 4 not yet
+    t = last + beats * 64
+    liveness.on_heartbeat(beat(SOCKET, 3, t))
+    assert hub.hop_range(SOCKET) == (3, 3)
+    assert hub.node_hops(SOCKET) == 3
+
+    # a beat counted through another proxy node starts the window again: its hops are to that one
+    assert hub.proxy_node == LIGHT_SWITCH
+    hub.proxy_node = LIGHT_DIMMER
+    liveness.on_heartbeat(beat(SOCKET, 2, t + 64))
+    assert hub.hop_range(SOCKET) == (2, 2)
+    assert set(liveness._hop_window) == {SOCKET}
+
+
+async def test_a_new_distance_is_told_at_once_a_farther_beat_waits(
+    hass: HomeAssistant, init_answered: MockConfigEntry
+) -> None:
+    """The node's diagnostic entities hear of a new distance at once; a beat that left it as it was is not forced."""
+    hub = hub_of(init_answered)
+    start = time.monotonic()
+    with patch.object(hub, "signal_node") as signal:
+        for i, hops in enumerate((2, 3, 1, 1)):
+            hub.liveness.on_heartbeat(beat(SOCKET, hops, start + i * 64))
+    assert [c.kwargs["force"] for c in signal.call_args_list] == [
+        True,
+        False,
+        True,
+        False,
+    ]
+
+
 async def test_heartbeats_are_configured_once_per_reconfigure_interval(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
@@ -408,7 +475,9 @@ async def test_silent_node_goes_unavailable_until_heard_again(
         assert hub.node_alive(LIGHT_SWITCH)
         assert hass.states.get(light).state == "on"
 
-    # the diagnostics show the per-node picture
+    # the diagnostics show the per-node picture: the last beat's hops, and the fewest and most of the window
+    fake_link.inject_heartbeat(LIGHT_DIMMER, OUR_ADDRESS, init_ttl=5, ttl=1)
+    await hass.async_block_till_done()
     diagnostics = await async_get_config_entry_diagnostics(hass, mock_config_entry)
     beats = diagnostics["heartbeats"]
     assert beats["enabled"] is True
@@ -416,11 +485,15 @@ async def test_silent_node_goes_unavailable_until_heard_again(
     assert beats["timeout"] == HEARTBEAT_TIMEOUT
     assert beats["nodes"]["0148"]["alive"] is True
     assert beats["nodes"]["0148"]["hops"] == 1
-    assert beats["nodes"]["0300"]["hops"] == 2  # the dimmer's node
+    assert {
+        key: beats["nodes"]["0300"][key] for key in ("hops", "min_hops", "max_hops")
+    } == {"hops": 4, "min_hops": 2, "max_hops": 4}  # the dimmer's node
     assert beats["nodes"]["0172"] == {
         "alive": True,
         "last_beat_age": None,
         "hops": None,
+        "min_hops": None,
+        "max_hops": None,
     }
     assert isinstance(beats["nodes"]["0300"]["last_beat_age"], int)
 

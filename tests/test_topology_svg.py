@@ -255,7 +255,8 @@ def test_what_the_small_picture_says() -> None:
         "Gateway 00DC"
     )  # by name within a band
     assert "Legend" in words
-    assert words[-1].startswith("Bands: the hops")
+    assert words[-2].startswith("Bands: the fewest hops")  # the footnote, on two lines
+    assert words[-1] == "heartbeats)."
 
 
 def test_without_a_link() -> None:

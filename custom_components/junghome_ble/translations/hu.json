@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: Bluetooth-kapcsolatot kínál",
     "topology_legend_friend": "friend: üzeneteket őriz az alvóknak",
     "topology_legend_low_power": "low power: alszik, van friendje",
-    "topology_footnote": "Sávok: minden eszköz utolsó életjelének ugrásai (Csomópontok életjele beállítás)."
+    "topology_footnote": "Sávok: minden eszköz életjeleinek legkevesebb ugrása az utolsó 15 percben (Csomópontok életjele beállítás)."
   }
 }

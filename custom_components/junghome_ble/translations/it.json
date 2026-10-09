@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: offre un collegamento Bluetooth",
     "topology_legend_friend": "friend: conserva i messaggi di chi dorme",
     "topology_legend_low_power": "low power: dorme, ha un friend",
-    "topology_footnote": "Righe: i salti dell'ultimo heartbeat di ogni dispositivo (opzione Heartbeat dei nodi)."
+    "topology_footnote": "Righe: il minimo di salti degli heartbeat di ogni dispositivo negli ultimi 15 minuti (opzione Heartbeat dei nodi)."
   }
 }

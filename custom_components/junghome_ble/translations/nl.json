@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: biedt een Bluetooth-verbinding",
     "topology_legend_friend": "friend: bewaart berichten voor slapers",
     "topology_legend_low_power": "low power: slaapt, heeft een friend",
-    "topology_footnote": "Rijen: de hops van de laatste heartbeat van elk apparaat (optie Heartbeats van nodes)."
+    "topology_footnote": "Rijen: het kleinste aantal hops van de heartbeats van elk apparaat in de laatste 15 minuten (optie Heartbeats van nodes)."
   }
 }

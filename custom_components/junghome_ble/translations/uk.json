@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "Proxy: надає з’єднання Bluetooth",
     "topology_legend_friend": "Friend: зберігає повідомлення для сплячих",
     "topology_legend_low_power": "Low Power: спить, має вузол Friend",
-    "topology_footnote": "Ряди: кількість переходів останнього heartbeat-повідомлення кожного пристрою (параметр Heartbeat-повідомлення вузлів)."
+    "topology_footnote": "Ряди: найменша кількість переходів heartbeat-повідомлень кожного пристрою за останні 15 хвилин (параметр Heartbeat-повідомлення вузлів)."
   }
 }

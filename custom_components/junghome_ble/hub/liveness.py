@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections import deque
 from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Final
@@ -52,6 +53,16 @@ HEARTBEAT_PERIOD_LOG: Final = 7  # 64 s
 HEARTBEAT_MISSED_BEATS: Final = 3
 HEARTBEAT_RECONFIGURE_INTERVAL: Final = 6 * 3600.0
 HEARTBEAT_REPROBE_INTERVAL: Final = 120.0  # a node marked dead is asked again for heartbeats this often: a rebooted node lost its publication
+# A node's distance is the fewest hops of its heartbeats over HOP_WINDOW (`hop_range`), not the last beat's: each beat
+# reaches Home Assistant over whichever relay path delivered it first, so one beat's hops are noise (on-air sweep A12:
+# sampled once a minute for six minutes, every one of 30 nodes changed, 1,2,3,3,1 or 4,3,1,3,2). A relay only adds
+# hops, so the fewest is the shortest path heard. Fifteen minutes hold about 14 beats of HEARTBEAT_PERIOD_LOG — the
+# sweep's sequences came back to their low within three to five — and still follow a real change (a relay gone)
+# within a quarter of an hour; a count of beats would stretch with lost beats. The window ends at the node's newest
+# beat, not now: a silent node keeps its distance, and the clock alone moves nothing; a beat counted through another
+# proxy node than the window's starts it again (the hops are to the link's proxy). HOP_WINDOW_BEATS bounds the memory.
+HOP_WINDOW: Final = 15 * 60.0
+HOP_WINDOW_BEATS: Final = 64
 # Per-node reachability, the app's rule (`MeshMessengerImpl$handleError$1`, `docs/gap-analysis/control-and-state.md`
 # §1.2): a node is unreachable as soon as a request it was asked with the full budget (REQUEST_ATTEMPTS x
 # REQUEST_TIMEOUT) goes unanswered — a state Get or a command — unless it was heard from meanwhile, and reachable
@@ -74,6 +85,8 @@ class Liveness:
             hub.entry.options.get(OPTION_HEARTBEATS, DEFAULT_HEARTBEATS)
         )
         self.heartbeats: dict[int, Heartbeat] = {}  # node unicast → its last Heartbeat
+        # node unicast → (received, hops, the link's proxy node) of its beats in the window (`hop_range`)
+        self._hop_window: dict[int, deque[tuple[float, int, int | None]]] = {}
         self._reprobed_at: dict[
             int, float
         ] = {}  # dead node → when it was last asked for heartbeats again
@@ -234,6 +247,33 @@ class Liveness:
             self.unreachable.discard(node.unicast)
             _LOGGER.info("%s is reachable again", node.name)
             self._notify_node(node)
+
+    def hop_range(self, unicast: int) -> tuple[int, int] | None:
+        """Return the fewest and most hops of the node's heartbeats in the window (`HOP_WINDOW`); None before its first.
+
+        The fewest is the node's distance: the topology, the *Mesh overview* and the *Hops* sensor show it. The pair
+        is the spec's Heartbeat Subscription Status min / max hops, each one less: `Heartbeat.hops` counts 0 for the
+        link's proxy node itself and 1 for a node the proxy hears directly.
+        """
+        window = self._hop_window.get(unicast)
+        if not window:
+            return None
+        hops = [h for _received, h, _proxy in window]
+        return min(hops), max(hops)
+
+    def _remember_hops(self, unicast: int, beat: Heartbeat) -> int:
+        """Add the beat to the node's window, dropping the beats before the window and those through another proxy.
+
+        Return the node's distance now: the fewest hops in the window.
+        """
+        proxy = self.hub.proxy_node
+        window = self._hop_window.setdefault(unicast, deque(maxlen=HOP_WINDOW_BEATS))
+        if window and window[-1][2] != proxy:
+            window.clear()  # hops counted to another proxy node: another distance
+        while window and window[0][0] < beat.received - HOP_WINDOW:
+            window.popleft()
+        window.append((beat.received, beat.hops, proxy))
+        return min(h for _received, h, _proxy in window)
 
     def heartbeat_age(self, node: Node) -> float | None:
         """Seconds since the node's last Heartbeat; None when none was seen since the start."""
@@ -402,15 +442,18 @@ class Liveness:
 
     @callback
     def on_heartbeat(self, beat: Heartbeat) -> None:
-        """Remember a node's Heartbeat and mark the node alive."""
+        """Remember a node's Heartbeat and its hops (`hop_range`) and mark the node alive."""
         node = self.hub.cdb.node_by_addr(beat.src)
         if node is None:
             return
+        before = self.hop_range(node.unicast)
         self.heartbeats[node.unicast] = beat
+        distance = self._remember_hops(node.unicast, beat)
         self.mark_alive(beat.src)
+        # the distance changes rarely: a new one is shown at once, a beat that changed nothing waits its turn
         self.hub.signal_node(
-            node.unicast, force=True
-        )  # hops change rarely: show them at once
+            node.unicast, force=before is None or before[0] != distance
+        )
 
     def mark_alive(self, address: int) -> None:
         """Renew the heartbeat deadline of the node owning `address`: a Heartbeat or any message came from it."""

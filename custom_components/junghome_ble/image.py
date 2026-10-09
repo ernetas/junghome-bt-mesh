@@ -1,7 +1,8 @@
 """Image: the *Mesh topology* picture on the mesh network device.
 
 The mesh's shape for any dashboard, with the stock picture-entity card and no frontend resource to install: Home
-Assistant, the node it is connected through, the other nodes by heartbeat hops, which relay, which are proxies, which
+Assistant, the node it is connected through, the other nodes by distance (the fewest hops of their recent heartbeats),
+which relay, which are proxies, which
 do not answer (`topology_svg.py` draws it, `mesh_topology.py` takes the snapshot). An SVG, rendered when the snapshot
 changes and served from memory. Its words are in the server's language (`mesh_topology.topology_texts`).
 """
@@ -66,11 +67,15 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     """The mesh as a picture: an SVG of the topology snapshot, redrawn when the snapshot changes.
 
     The snapshot is taken when the link or a node's reachability changes and once every NODE_DIAGNOSTICS_INTERVAL
-    (heartbeat hops and a sleeping node's last message arrive in between); `image_last_updated` moves only when it
+    (heartbeats and a sleeping node's last message arrive in between); `image_last_updated` moves only when it
     differs from the one shown, and at most once per interval — a change within it is shown when it is over — but a
     change of the link at once (`_link_changed`): the picture said "connected" through a proxy already gone for up
-    to a whole interval. A heartbeat that changes nothing changes nothing. Always available: without a link the
-    picture says so. Diagnostic, on by default (only configuration entities are off by default). Unverified on air.
+    to a whole interval. A heartbeat that changes nothing changes nothing: the bands are each node's fewest hops over
+    the last 15 minutes (`Liveness.hop_range`), which a beat over a longer relay path leaves as they were — with the
+    last beat's hops the picture moved nodes between bands every minute (on-air sweep A12). Always available: without
+    a link the picture says so. Diagnostic, on by default (only configuration entities are off by default). Seen on
+    air (A12): the link's proxy, the bands, the names and areas. Unverified on air: the picture in dark mode, and that
+    it stays put with the fewest hops.
 
     Its words follow the server's language: a new one is loaded and drawn at once when it is chosen, and any look
     finding other words than those shown redraws too.

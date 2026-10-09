@@ -447,7 +447,7 @@ async def async_get_config_entry_diagnostics(
         },
         "heartbeats": _heartbeats(hub),
         # what the *Mesh topology* image shows: Home Assistant, its link and proxy, every node with its room,
-        # features, hops, reachability and, when it does not answer, when it was last heard (`mesh_topology.py`)
+        # features, distance (fewest recent hops), reachability and, when it does not answer, when it was last heard
         "topology": topology_snapshot(hub).as_dict(),
         # each node's last `audit_network` result (settings and findings, no keys) since the entry loaded
         "audit": {
@@ -622,17 +622,24 @@ def _carry_over_conflicts(hass: HomeAssistant, entry: JungHomeConfigEntry) -> li
 
 
 def _heartbeats(hub: JungHomeHub) -> dict[str, Any]:
-    """Describe the heartbeat option: whether it is on and, per node, the age of the last beat, its hops, liveness."""
+    """Describe the heartbeat option: whether it is on and, per node, the age of the last beat, hops, liveness.
+
+    `hops` is the last beat's, `min_hops` / `max_hops` the fewest and most over the window (`Liveness.hop_range`):
+    the fewest is the node's distance, what the topology and the *Hops* sensor show.
+    """
     if not hub.heartbeats_enabled:
         return {"enabled": False}
     nodes: dict[str, Any] = {}
     for node in hub.heartbeat_nodes:
         beat = hub.heartbeats.get(node.unicast)
         age = hub.heartbeat_age(node)
+        hops = hub.hop_range(node.unicast)
         nodes[f"{node.unicast:04X}"] = {
             "alive": hub.node_alive(node.unicast),
             "last_beat_age": None if age is None else round(age),
             "hops": None if beat is None else beat.hops,
+            "min_hops": None if hops is None else hops[0],
+            "max_hops": None if hops is None else hops[1],
         }
     return {
         "enabled": True,

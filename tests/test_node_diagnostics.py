@@ -117,12 +117,25 @@ async def test_signal_strength_comes_from_the_nodes_advertisements(
 
 
 async def test_hops_come_from_heartbeats(
-    hass: HomeAssistant, diagnostics: MockConfigEntry, fake_link: FakeProxyLink
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    diagnostics: MockConfigEntry,
+    fake_link: FakeProxyLink,
 ) -> None:
+    """*Hops* is the node's distance: the fewest hops of its recent heartbeats, not the last one's (sweep A12)."""
     assert value(hass, "hops") == STATE_UNKNOWN
     fake_link.inject_heartbeat(LIGHT_SWITCH, OUR_ADDRESS, init_ttl=5, ttl=3)
     await settle(hass)
     assert value(hass, "hops") == "2"
+    freezer.tick(NODE_DIAGNOSTICS_INTERVAL)  # the next beat is told ...
+    async_fire_time_changed(hass)
+    await settle(hass)
+    fake_link.inject_heartbeat(LIGHT_SWITCH, OUR_ADDRESS, init_ttl=5, ttl=1)
+    await settle(hass)
+    assert value(hass, "hops") == "2"  # ... and 4 hops leave the distance at 2
+    fake_link.inject_heartbeat(LIGHT_SWITCH, OUR_ADDRESS, init_ttl=5, ttl=4)
+    await settle(hass)
+    assert value(hass, "hops") == "1"  # a nearer one is told at once
     fake_link.inject_heartbeat(0x0999, OUR_ADDRESS)  # no node of the export: ignored
     await settle(hass)
 

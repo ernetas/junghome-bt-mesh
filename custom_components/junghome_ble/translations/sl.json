@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: ponuja povezavo Bluetooth",
     "topology_legend_friend": "friend: hrani sporočila za speče",
     "topology_legend_low_power": "low power: spi, ima vozlišče friend",
-    "topology_footnote": "Vrste: skoki zadnjega srčnega utripa vsake naprave (možnost Srčni utripi vozlišč)."
+    "topology_footnote": "Vrste: najmanj skokov srčnih utripov vsake naprave v zadnjih 15 minutah (možnost Srčni utripi vozlišč)."
   }
 }

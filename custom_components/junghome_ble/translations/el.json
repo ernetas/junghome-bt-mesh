@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: προσφέρει σύνδεση Bluetooth",
     "topology_legend_friend": "friend: κρατά μηνύματα για όσους κοιμούνται",
     "topology_legend_low_power": "low power: κοιμάται, έχει friend",
-    "topology_footnote": "Ζώνες: τα άλματα του τελευταίου heartbeat κάθε συσκευής (επιλογή Heartbeat κόμβων)."
+    "topology_footnote": "Ζώνες: τα λιγότερα άλματα των heartbeat κάθε συσκευής στα τελευταία 15 λεπτά (επιλογή Heartbeat κόμβων)."
   }
 }

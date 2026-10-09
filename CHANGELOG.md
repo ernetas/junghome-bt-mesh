@@ -26,6 +26,17 @@
   entities had their values, until `homeassistant.update_entity`. Each
   round now reads every setting queued for its five devices, one after the other; a device that does not answer, or
   a connection that drops, ends its round, so a silent device costs no more than before. Unverified on air.
+- **The topology picture no longer redraws every minute** (on-air sweep A12). It put each device in the band of its
+  last heartbeat's hops, and on a 30-device installation every device's count changed within six minutes (1, 2, 3,
+  3, 1 or 4, 3, 1, 3, 2): each heartbeat arrives over whichever relay path delivered it first, so one count is noise.
+  A device's distance is now the fewest hops of its heartbeats over the last 15 minutes — a relay only adds hops, so
+  the fewest is the shortest path, and a device that really moved (a relay gone) changes band within the 15
+  minutes. The picture's bands, the diagnostics' `topology`, the *Mesh overview*'s `hops` and the *Hops* sensor
+  (same entity, same unique id) show it; the diagnostics' `heartbeats` add `min_hops` and `max_hops` beside the last
+  beat's `hops`. The picture's footnote says so, in every language. The rest of A12 passed on air (the link's proxy,
+  bands equal to the heartbeats, names and areas); dark mode, and the picture staying put with the fix, are still
+  unverified on air. The documentation now says what a count of 0 and 1 is: the proxy node itself, a device the
+  proxy node hears directly.
 
 ## 1.5.0
 

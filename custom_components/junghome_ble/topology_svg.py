@@ -2,8 +2,9 @@
 
 A snapshot (`Topology`) is what the *Mesh topology* image shows and the diagnostics' `topology` lists: Home
 Assistant (its own address, whether it has a link), the node it is connected through (the link's proxy) and every
-node of the export with its name, room, features (relay, proxy, friend, low power, from the export), the hops of its
-last heartbeat, whether it answers and, for one that does not or sleeps, when it was last heard. `mesh_topology.py`
+node of the export with its name, room, features (relay, proxy, friend, low power, from the export), its distance
+(the fewest hops of its heartbeats over the last 15 minutes), whether it answers and, for one that does not or sleeps,
+when it was last heard. `mesh_topology.py`
 takes it from the hub; equal snapshots render the same bytes, so the entity redraws only when it changes.
 
 The picture (`render_svg`) puts Home Assistant at the top with the link's proxy next to it, and the other nodes in
@@ -129,7 +130,7 @@ TEXTS: Final[Mapping[str, str]] = {
     "legend_proxy": "proxy: offers a Bluetooth link",
     "legend_friend": "friend: keeps messages for sleepers",
     "legend_low_power": "low power: sleeps, has a friend",
-    "footnote": "Bands: the hops of each device's last heartbeat (option Node heartbeats).",
+    "footnote": "Bands: the fewest hops of each device's heartbeats in the last 15 minutes (option Node heartbeats).",
 }
 # what XML 1.0 cannot carry at all, not even escaped
 _NOT_XML = re.compile("[^\t\n\r\x20-퟿-�\U00010000-\U0010ffff]")
@@ -139,9 +140,10 @@ _NOT_XML = re.compile("[^\t\n\r\x20-퟿-�\U00010000-\U0010ffff]")
 class TopologyNode:
     """One node as the picture shows it.
 
-    `reachable` is None for a battery node (it sleeps) and for every node without a link; `hops` None while no
-    heartbeat of it was heard; `last_heard` (local time, minutes) only for a node that is not reachable — one that
-    answers is heard all the time, and the picture would change with every message.
+    `reachable` is None for a battery node (it sleeps) and for every node without a link; `hops`, its distance (the
+    fewest of its recent heartbeats), None while no heartbeat of it was heard; `last_heard` (local time, minutes) only
+    for a node that is not reachable — one that answers is heard all the time, and the picture would change with
+    every message.
     """
 
     unicast: int

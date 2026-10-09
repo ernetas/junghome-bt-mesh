@@ -1582,9 +1582,9 @@ NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         mains_only=True,
-        value=lambda hub, unicast: (
-            beat.hops if (beat := hub.heartbeats.get(unicast)) is not None else None
-        ),
+        value=lambda hub, unicast: hub.node_hops(
+            unicast
+        ),  # the fewest of its recent beats
     ),
     NodeDiagnosticDescription(
         key="last_restart",

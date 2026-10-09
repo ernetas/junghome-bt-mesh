@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "Proxy: Bluetooth bağlantısı sunar",
     "topology_legend_friend": "Friend: uyuyanlar için mesaj saklar",
     "topology_legend_low_power": "Low Power: uyur, bir Friend'i vardır",
-    "topology_footnote": "Bantlar: her cihazın son heartbeat'inin atlama sayısı (Düğüm heartbeat'leri seçeneği)."
+    "topology_footnote": "Bantlar: her cihazın son 15 dakikadaki heartbeat'lerinin en az atlama sayısı (Düğüm heartbeat'leri seçeneği)."
   }
 }

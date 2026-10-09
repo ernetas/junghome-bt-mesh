@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: oferuje połączenie Bluetooth",
     "topology_legend_friend": "friend: przechowuje wiadomości śpiących",
     "topology_legend_low_power": "low power: śpi, ma węzeł friend",
-    "topology_footnote": "Rzędy: przeskoki ostatniego heartbeatu każdego urządzenia (opcja Heartbeaty węzłów)."
+    "topology_footnote": "Rzędy: najmniejsza liczba przeskoków heartbeatów każdego urządzenia w ostatnich 15 minutach (opcja Heartbeaty węzłów)."
   }
 }

@@ -416,17 +416,23 @@ says connected and the state refresh is through (a few minutes), then do the lin
 ### A12 · The *Mesh topology* picture (U4-14)
 
 - **Checks:** review-4 brief 75 — the *Mesh topology* image draws the installation as Home Assistant hears it: the
-  node of the link next to Home Assistant, the other nodes in the band of their heartbeat hops, the right state and
-  features per node; it does not redraw for a heartbeat that changed nothing.
+  node of the link next to Home Assistant, the other nodes in the band of their distance (the fewest hops of their
+  heartbeats over the last 15 minutes), the right state and features per node; it does not redraw for a heartbeat
+  that changed nothing.
 - **Needs:** any proxy node; for the hop bands the *Node heartbeats* option on (otherwise every node is under *Hops
   not known*, which is a pass too). **Safety:** read-only.
 - **Do:** put the user guide's picture-entity card on a dashboard (or open the entity); wait a few minutes after the
   link is up; download the diagnostics. Look at it in the browser's light and dark mode.
 - **Capture:** none; the diagnostics' `topology`, `link.proxy_node` and `heartbeats`.
 - **Pass:** the node with the thick border is the *Proxy node* sensor's and `link.proxy_node`; every node sits in the
-  band of its `heartbeats.nodes.<unicast>.hops` (the same as `topology`); the names and areas are the devices'; the
-  relay / proxy letters are the export's features; the picture reads in both modes; the entity's state (when it last
-  changed) stays put over ten minutes with nothing changing on the mesh.
+  band of its `heartbeats.nodes.<unicast>.min_hops` (the same as `topology`, and as its *Hops* sensor); the names and
+  areas are the devices'; the relay / proxy letters are the export's features; the picture reads in both modes; the
+  entity's state (when it last changed) stays put over ten minutes with nothing changing on the mesh, while
+  `heartbeats.nodes.<unicast>.hops` (the last beat's) goes on changing.
+- **Run once** ([Results](#a12-b13-c10-and-d13-from-home-assistant)): everything but the last two passed; the bands
+  then followed the last heartbeat's hops, which change with every beat, and the picture redrew every minute. Fixed
+  (the fewest hops over 15 minutes). **Still open:** the picture in dark mode, and that it stays put on the
+  installation with the fix.
 - **Markers:** `custom_components/junghome_ble/image.py::JungHomeMeshTopology`,
   `custom_components/junghome_ble/mesh_topology.py::<module>`.
 
@@ -1588,14 +1594,15 @@ where Home Assistant's own traffic in the capture settles part of an item, that 
 | E4 | group E, excluded by the maintainer | — | |
 | E5 | group E, excluded by the maintainer | — | |
 
-### B13, C10 and D13, from Home Assistant
+### A12, B13, C10 and D13, from Home Assistant
 
-Run later, by the maintainer at Home Assistant: B13 with a person at the keys and Home Assistant's events, C10 its
-actions on `<tw light>` and the states it showed, D13 its actions through the REST API and their answers; no
-capture. Everything was set back in the same sitting.
+Run later, by the maintainer at Home Assistant: A12 from the image, the diagnostics and the entity states, B13 with a
+person at the keys and Home Assistant's events, C10 its actions on `<tw light>` and the states it showed, D13 its
+actions through the REST API and their answers; no capture. Everything was set back in the same sitting.
 
 | Item | Result (pass / fail / skipped / not checkable) | Session, sequence numbers | Notes |
 |---|---|---|---|
+| A12 | fail: the picture redraws every minute (fixed since, to be seen again); the data passed; dark mode not checked | Home Assistant's image, diagnostics and states, no capture | *Node heartbeats* on, 30 mains nodes. **Data:** the node with the thick border was the *Proxy node* sensor's and `link.proxy_node`; the picture's bands equalled `topology`, and `topology` equalled each `heartbeats.nodes.<unicast>.hops` at that moment; all 30 nodes reachable, relay and proxy as the export has them; names and areas the devices' own (17 nodes have no area in Home Assistant, and show none). **Found:** sampled once a minute for six minutes, **every** node's `heartbeats.nodes.<unicast>.hops` changed, typically `1,2,3,3,1` or `4,3,1,3,2`: each heartbeat reaches Home Assistant over whichever relay path delivered it first, so the last heartbeat's hop count is noise, not distance. The picture redrew every minute with nodes jumping between bands, against "stays put while nothing changes". **Fixed:** a node's distance is the fewest hops of its heartbeats over the last 15 minutes (`Liveness.hop_range`); the bands, `topology`, the *Mesh overview*'s `hops` and the *Hops* sensor show it, the diagnostics the last, fewest and most (`hops`, `min_hops`, `max_hops`). **Open:** dark mode (the maintainer looks), and that the picture now stays put over ten minutes. |
 | B13 | pass: steps 1, 2, 4 and 5; step 3 not applicable (the push-button sends nothing for two keys pressed together) | Home Assistant actions and `junghome_ble_button_action` events, no capture: Home Assistant's own states; a debug trace for step 3 | `<key1>` and `<key2>`: two gateway-mode keys of one 2-gang push-button (two elements). **1:** `double_click_keys = [<key1>]` set in the options flow, applied without a reload of the entry; the event entities showed `waits_for_double_click` `true` for `<key1>`, `false` for `<key2>`. **2:** `<key1>`: a single press one `click`, a double press `double_click` alone; `<key2>`: a single press `click`, a double press `click` and then `double_click` 0.3 s later. **3:** both keys pressed together, twice: no event at all, and with debug logging the trace shows **no message from the push-button** during the presses; a single press of `<key2>` right after gave the usual LBC User Property Set Unack `0x5012` `pushed_up`, sent twice. The push-button sends no key event when two of its rockers are pressed at once (`docs/hidden-features.md` §14): device behaviour, so the step does not apply to keys of one push-button. **4:** `<key2>` four quick presses `click`, `double_click`, `click`, `double_click`; three `click`, `double_click`, `click`; never two `double_click`s in a row (R5-1 holds on air). **5:** the list emptied, logging back to INFO. |
 | C10 | pass on Home Assistant's side: steps 1 and 2, step 3's write (no capture: the bytes on air not seen); the night level's effect not checked | Home Assistant actions, no capture: Home Assistant's own states | **As found:** *Hotel function* off, *Hotel function brightness* 20 %, *Night-light brightness* 20 %; the light on at 255 and 2000 K. **1:** *Hotel function brightness* set to 30 % and *Hotel function* turned on, both read back as written; `light.turn_off` then left the light entity **on at brightness 76/255 (30 %)**, from the light's own status, and the strip stayed lit, dimmed (seen by the maintainer). **2:** *Hotel function* off, then `light.turn_off` switched the light off; the brightness set back to 20 %. **3:** *Night-light brightness* set to 25 % and back to 20 %, both read back; what the night level does in the dark was not checked. Restored: the light on at 255 and 2000 K. No warning, no traceback. **Found on the way:** with the three entities enabled (the entry reloaded), both numbers read their values by themselves; the *Hotel function* switch stayed `unknown` for over 45 s until `homeassistant.update_entity`, which read `off` at once. Cause: a turn of the property reads took one job per element, and the switch platform queues its reads last, so the light's switch waited behind every other read of the installation (a turn of five elements and a pause per read of its element before it). Fixed: a turn takes every job its elements queued; step 0 checks it on air. |
 | D13 | pass: steps 1 and 2 (a key's publication and subscriptions); step 3 not run | Home Assistant actions through the REST API, no capture: the actions' answers and Home Assistant's own states | `<key>`, a 1-gang push-button's key whose element published to its own load's element group, as the export said. **1:** `clear_key` with `dry_run: true` answered `preflight.differences` and `unanswered` empty, and the four Config steps a real run would send (publication `0000` and subscription delete, for models `1001` and `05271015`); nothing written. **2:** in the app, `<key>` connected to another `<light>` without exporting; the same dry run reported four differences on `<key el>`, the publication and the subscription of `1001` and of `05271015`, each expecting the export's group and finding the new one. The real `clear_key` was refused with `service_preflight_differs`, the message naming the device, the Get, both groups and "3 more differences"; nothing was written (the key still switched the other light). Over the plain REST API Home Assistant core answers any `HomeAssistantError` with HTTP 500 and logs a traceback: core's behaviour, not the integration's. Reconnected in the app, the dry run found no differences again. **3** (`force` / `skip_preflight` on `remove_from_room`, `reachability` of an unreachable light) was not run; nor are the Scene Register and threshold reads covered. |

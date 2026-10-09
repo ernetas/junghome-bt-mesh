@@ -3209,6 +3209,6 @@
     "topology_legend_proxy": "Proxy: bietet eine Bluetooth-Verbindung",
     "topology_legend_friend": "Friend: speichert Nachrichten für Schlafende",
     "topology_legend_low_power": "Low Power: schläft, hat einen Friend",
-    "topology_footnote": "Reihen: die Hops des letzten Heartbeats jedes Geräts (Option Heartbeats der Knoten)."
+    "topology_footnote": "Reihen: die wenigsten Hops der Heartbeats jedes Geräts in den letzten 15 Minuten (Option Heartbeats der Knoten)."
   }
 }

@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: nabízí spojení Bluetooth",
     "topology_legend_friend": "friend: uchovává zprávy pro spící",
     "topology_legend_low_power": "low power: spí, má uzel friend",
-    "topology_footnote": "Řady: skoky posledního heartbeatu každého zařízení (volba Heartbeat uzlů)."
+    "topology_footnote": "Řady: nejmenší počet skoků heartbeatů každého zařízení za posledních 15 minut (volba Heartbeat uzlů)."
   }
 }

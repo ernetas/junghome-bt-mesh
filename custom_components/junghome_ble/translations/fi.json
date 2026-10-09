@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: tarjoaa Bluetooth-yhteyden",
     "topology_legend_friend": "friend: säilyttää viestit nukkuville",
     "topology_legend_low_power": "low power: nukkuu, sillä on friend",
-    "topology_footnote": "Rivit: kunkin laitteen viimeisimmän heartbeat-viestin hypyt (asetus Solmujen heartbeat-viestit)."
+    "topology_footnote": "Rivit: kunkin laitteen heartbeat-viestien pienin hyppymäärä viimeisten 15 minuutin ajalta (asetus Solmujen heartbeat-viestit)."
   }
 }

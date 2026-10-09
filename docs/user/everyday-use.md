@@ -132,12 +132,16 @@ Four entities on the mesh network device tell how the installation is doing (**u
 - **Mesh overview** (a diagnostic) shows how many mains-powered devices answer, and has a row per device in its
   attribute `nodes`: `name`, `area`, `product`, `reachable` (`true` / `false`; empty for a battery device, which
   sleeps), `last_seen`, `rssi` (the signal in dBm), `scanner` (the Bluetooth adapter or proxy that hears the device
-  best), `hops` (with *Node heartbeats* on), and `proxy` (the device Home Assistant is connected through). It is
+  best), `hops` (with *Node heartbeats* on: the fewest hops of the device's heartbeats over the last 15 minutes, as
+  the device's *Hops* sensor), and `proxy` (the device Home Assistant is connected through). It is
   updated at most once a minute, and the list is not kept in the history.
 - **Mesh topology** (a diagnostic image) draws the mesh: Home Assistant at the top with the device it is connected
-  through (the *link proxy*, thick border), and every other device in a band by how many hops its last sign of life
-  took (*Hops: 1*, *Hops: 2*, …; with the *Node heartbeats* option on — without it, and for battery devices, under
-  *Hops: not known*, whose heading says so when the option is off). A change of the connection is drawn at once. Each device shows its name, area and address; whether it answers as a shape, a colour and a
+  through (the *link proxy*, thick border), and every other device in a band by how far it is: the fewest hops of
+  its heartbeats over the last 15 minutes (*Hops: 1* a device the link proxy hears directly, *Hops: 2* one relay
+  further, …; with the *Node heartbeats* option on — without it, and for battery devices, under *Hops: not known*,
+  whose heading says so when the option is off). The fewest, because each heartbeat arrives over whichever path
+  delivered it first and its count jumps about; a device that really moved (a relay gone) changes band within the
+  15 minutes. A change of the connection is drawn at once. Each device shows its name, area and address; whether it answers as a shape, a colour and a
   word (a dot *reachable*, a cross *unreachable* with when it was last heard, a square *asleep* for a battery
   device); and its roles as letters and words (**R** relay, **P** proxy, **F** friend, **L** low power). The legend
   under the picture explains them; its words are in your Home Assistant's language (the one under *Settings →

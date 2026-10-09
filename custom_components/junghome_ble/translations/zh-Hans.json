@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "代理：提供蓝牙连接",
     "topology_legend_friend": "Friend：为休眠设备保存消息",
     "topology_legend_low_power": "低功耗：休眠，有 Friend",
-    "topology_footnote": "行：每个设备最后一次心跳的跳数（选项“节点心跳”）。"
+    "topology_footnote": "行：每个设备最近 15 分钟内心跳的最少跳数（选项“节点心跳”）。"
   }
 }

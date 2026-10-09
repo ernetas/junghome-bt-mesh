@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: siūlo Bluetooth ryšį",
     "topology_legend_friend": "friend: saugo pranešimus miegantiems",
     "topology_legend_low_power": "low power: miega, turi friend mazgą",
-    "topology_footnote": "Eilės: kiekvieno įrenginio paskutinio gyvybingumo signalo šuoliai (parinktis Mazgų gyvybingumo signalai)."
+    "topology_footnote": "Eilės: mažiausias kiekvieno įrenginio gyvybingumo signalų šuolių skaičius per paskutines 15 minučių (parinktis Mazgų gyvybingumo signalai)."
   }
 }

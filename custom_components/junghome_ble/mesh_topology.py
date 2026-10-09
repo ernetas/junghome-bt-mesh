@@ -3,10 +3,12 @@
 Its rows come from `node_rows`, the one reading of the hub's nodes the *Mesh overview* sensor's rows come from too.
 Read off the hub as it stands: each node's device name (a rename too) and area (`device_info.node_label`,
 `node_areas`, as the *Mesh overview* shows them), its features from the export (`features`: 1 is enabled; 0
-disabled and 2 unsupported are not shown), the hops of its last heartbeat, whether it answers (`JungHomeHub.
-node_alive`; None for a battery node, which sleeps, and for every node without a link), and when it was last heard
-for one that does not answer. Equal snapshots are equal values, so the image can tell a change from a heartbeat that
-changed nothing. Unverified on air: the picture against the installation (the link's proxy, the nodes' hop counts).
+disabled and 2 unsupported are not shown), its distance (the fewest hops of its heartbeats over the last 15 minutes,
+`JungHomeHub.node_hops`: one beat's hops jump about with the relay path that delivered it first), whether it
+answers (`JungHomeHub.node_alive`; None for a battery node, which sleeps, and for every node without a link), and when
+it was last heard for one that does not answer. Equal snapshots are equal values, so the image can tell a change from
+a heartbeat that changed nothing. Seen on air (sweep A12): the link's proxy, the bands against the heartbeats, names
+and areas. Unverified on air: that the fewest hops stay put on the installation, and the picture in dark mode.
 
 The picture's words (`topology_texts`) are the translations of the server's language, `common.topology_<key>` for
 each key of `topology_svg.TEXTS`, English where it has none.
@@ -65,8 +67,8 @@ class NodeRow:
 def node_rows(hub: JungHomeHub) -> list[NodeRow]:
     """Return a row per provisioned node of the export (a phone, another company's node: none), in export order.
 
-    Name and area as the node's device shows them (`device_info.node_label`, `node_areas`), the hops of its last
-    heartbeat and when it was last heard.
+    Name and area as the node's device shows them (`device_info.node_label`, `node_areas`), its distance (the fewest
+    hops of its recent heartbeats, `JungHomeHub.node_hops`) and when it was last heard.
     """
     registry = dr.async_get(hub.hass)
     areas = node_areas(hub)
@@ -76,7 +78,6 @@ def node_rows(hub: JungHomeHub) -> list[NodeRow]:
         if node.pid is None:
             continue  # a phone, another company's node: no device of ours
         battery = node.pid in BATTERY_PIDS
-        beat = hub.heartbeats.get(node.unicast)
         rows.append(
             NodeRow(
                 node=node,
@@ -84,7 +85,7 @@ def node_rows(hub: JungHomeHub) -> list[NodeRow]:
                 area=areas.get(node.unicast),
                 battery=battery,
                 reachable=None if battery or not link else hub.node_alive(node.unicast),
-                hops=None if beat is None else beat.hops,
+                hops=hub.node_hops(node.unicast),
                 last_seen=hub.last_seen.get(node.unicast),
                 proxy=link and node.unicast == hub.proxy_node,
             )

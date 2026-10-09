@@ -1237,6 +1237,14 @@ class JungHomeHub:
         """Seconds since the node's last Heartbeat (`Liveness.heartbeat_age`)."""
         return self.liveness.heartbeat_age(node)
 
+    def hop_range(self, unicast: int) -> tuple[int, int] | None:
+        """Return the fewest and most hops of the node's recent heartbeats; the fewest is its distance (`Liveness.hop_range`)."""
+        return self.liveness.hop_range(unicast)
+
+    def node_hops(self, unicast: int) -> int | None:
+        """Return the node's distance: the fewest hops of its recent heartbeats, None before its first (`hop_range`)."""
+        return None if (hops := self.hop_range(unicast)) is None else hops[0]
+
     def load_locked(self, address: int) -> bool:
         """Whether the load at `address` last reported a lock that has not run out (`ElementState.locked`)."""
         st = self.states.get(address)

@@ -3208,6 +3208,6 @@
     "topology_legend_proxy": "proxy: oferă o conexiune Bluetooth",
     "topology_legend_friend": "friend: păstrează mesaje pentru cei care dorm",
     "topology_legend_low_power": "low power: doarme, are un friend",
-    "topology_footnote": "Rânduri: salturile ultimului heartbeat al fiecărui dispozitiv (opțiunea Semnale heartbeat ale nodurilor)."
+    "topology_footnote": "Rânduri: cele mai puține salturi ale heartbeat-urilor fiecărui dispozitiv în ultimele 15 minute (opțiunea Semnale heartbeat ale nodurilor)."
   }
 }
