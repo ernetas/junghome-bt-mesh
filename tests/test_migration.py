@@ -455,7 +455,11 @@ async def test_plan_leaves_customised_entities_alone(
     reg = er.async_get(hass)
     renamed = entity_id(hass, "light", UID_LIGHT_SWITCH)
     reg.async_update_entity(renamed, name="My mirror")
-    reg.async_update_entity(entity_id(hass, "switch", UID_SOCKET), area_id="kitchen")
+    # Home Assistant 2026.10 refuses an area of its own on an entity named after its device, so the second
+    # customisation is an icon
+    reg.async_update_entity(
+        entity_id(hass, "switch", UID_SOCKET), icon="mdi:water-boiler"
+    )
     plan = build_import_plan(hass, ours)
     assert {m.ours.unique_id for m in plan.customised} == {UID_LIGHT_SWITCH, UID_SOCKET}
     assert "light.wc_mirror" not in _moves(plan)

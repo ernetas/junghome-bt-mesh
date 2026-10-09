@@ -488,7 +488,7 @@ async def test_blind_devices_survive_a_reload(
     )
     assert after is not None
     assert after.id == before.id
-    assert init_blinds.entry_id in after.config_entries
+    assert after.config_entry_id == init_blinds.entry_id
 
 
 async def test_unknown_mode_is_a_shutter_until_the_device_answers(
