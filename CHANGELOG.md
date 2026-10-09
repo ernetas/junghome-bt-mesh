@@ -37,6 +37,11 @@
   bands equal to the heartbeats, names and areas); dark mode, and the picture staying put with the fix, are still
   unverified on air. The documentation now says what a count of 0 and 1 is: the proxy node itself, a device the
   proxy node hears directly.
+- **A command no longer waits out a read of the same device.** A command (a light, a socket, a blind, a thermostat's
+  set-point, a scene's state) sent while Home Assistant was still waiting for a state read from that device — after
+  a connection, or a thermostat's own read — had its confirmation taken by the read: the device reports the new state
+  once, the command waited its full 3 s, went out a second time and only then counted as done. That report now
+  confirms the command, and the read waits for its own answer. Unverified on air.
 
 ## 1.5.0
 

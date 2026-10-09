@@ -5125,6 +5125,35 @@ async def test_a_status_that_does_not_show_a_lost_set_answers_the_get_out_with_i
     assert (await switch_on).params == b"\x01"
 
 
+async def test_a_status_that_shows_a_set_answers_it_before_an_older_get(
+    attached: ProxyClient, link: FakeBleak
+):
+    """A Get out to an element (a refresh, an entity's read) when an acknowledged Set to it goes: the load publishes
+    the Set's status once, and it confirms the Set rather than the older Get, whose own answer is still to come.
+    Taken by the Get, the Set waited out its timeout and went out again."""
+    access = M.generic_onoff_set(True, transition=0)
+    get = asyncio.create_task(
+        attached.request(
+            PROXY_NODE, M.generic_onoff_get(), M.GEN_ONOFF_STATUS, timeout=1.0
+        )
+    )
+    await settle()
+    switch_on = asyncio.create_task(
+        attached.request(PROXY_NODE, access, M.GEN_ONOFF_STATUS, timeout=1.0)
+    )
+    await settle()
+    link.send_access(
+        PROXY_NODE, ELEMENT_GROUP_148, ONOFF_STATUS_ON
+    )  # the Set's publication
+    await settle()
+    assert switch_on.done()
+    assert (await switch_on).params == b"\x01"
+    assert not get.done()
+    link.send_access(PROXY_NODE, OUR_SRC, ONOFF_STATUS_ON)  # the Get's own answer
+    assert (await get).params == b"\x01"
+    assert [m[4] for m in link.sent_access()] == [M.generic_onoff_get(), access]
+
+
 async def test_a_lost_set_passed_over_is_sent_again(
     attached: ProxyClient, link: FakeBleak
 ):

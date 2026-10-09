@@ -1111,10 +1111,12 @@ class ProxyClient(Segmentation):
 
         `match` narrows the reply further (a predicate over the decoded status — the scene number of a
         Scene Register Status, say) so a late reply to an earlier request to the same element cannot
-        satisfy this one. Only the oldest waiter a status fits is resolved by it — except that an acknowledged
-        load Set's waiter passes over a status that does not show the state it asks for while a later request
-        takes it (`set_shown_by`, `_deliver`): a Get out to the same element answered with the old state while the
-        Set was lost on the air does not confirm the Set, which is sent again on its next attempt.
+        satisfy this one. Only one waiter a status fits is resolved by it (`_deliver`): an acknowledged load Set
+        it shows the requested state of (`set_shown_by`) before any older Get to the same element, whose own
+        answer is still to come while the load publishes the Set's status once; otherwise the oldest. A Set's
+        waiter passes over a status that does not show the state it asks for while a later request takes it: a
+        Get out to the same element answered with the old state while the Set was lost on the air does not confirm
+        the Set, which is sent again on its next attempt.
         """
         extra = match
 
@@ -1863,18 +1865,23 @@ class ProxyClient(Segmentation):
             "RX %s", msg
         )  # per-message traffic stays out of INFO (a token read would show up there)
         # every pending predicate sees it (collect() gathers through its own, never resolving), but one status
-        # answers one request: the oldest waiter it fits, skipping an acknowledged Set's when the status does not
-        # show the state the Set asks for and a later waiter takes it — a Get to the same element answered with the
-        # old state while the Set was lost on the air. With no other waiter it still answers the
-        # oldest: a load that clamped the value answers its Set with a state the Set did not ask for.
+        # answers one request. An acknowledged Set it shows the requested state of comes first: the load publishes
+        # that status once, while a Get out to the same element (a refresh, an entity's read) gets an answer of its
+        # own — taken by the older Get, the Set waited out its timeout and went again. Then the oldest other
+        # waiter it fits, never a Set it does not show — a Get answered with the old state while the Set was lost on
+        # the air. With no other waiter it still answers the oldest: a load that clamped the value answers its Set
+        # with a state the Set did not ask for.
         fits = [
             (fut, shows)
             for match, fut, shows in list(self._waiters)
             if not fut.done() and match(msg)
         ]
         answered = next(
-            (fut for fut, shows in fits if shows is None or shows(msg.params)),
-            fits[0][0] if fits else None,
+            (fut for fut, shows in fits if shows is not None and shows(msg.params)),
+            next(
+                (fut for fut, shows in fits if shows is None),
+                fits[0][0] if fits else None,
+            ),
         )
         if answered is not None:
             answered.set_result(msg)

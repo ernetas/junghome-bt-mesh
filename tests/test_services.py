@@ -367,8 +367,8 @@ async def env(
         await setup_entry(hass, entry)
         await wait_for_link(hass, entry)
         await settle(hass)
-        # the unanswered refresh through: a Get of it still out would take the status a load publishes for a Set
-        # the test sends (the oldest waiter a status fits), and that Set would go out again
+        # the unanswered refresh through: a Get of it still out would take the answer to a Get the test or an action
+        # sends to the same element (the oldest waiter a status fits), and that Get would go out again
         hub = entry.runtime_data
         await wait_until(
             hass,

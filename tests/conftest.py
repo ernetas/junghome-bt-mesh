@@ -185,9 +185,9 @@ def load_sets(link: FakeProxyLink) -> list[tuple[int, bytes]]:
 def answering_mesh(fake_link: FakeProxyLink) -> FakeProxyLink:
     """The fake's loads answer the connect-time refresh's state Gets (list it before `init_integration`).
 
-    A command then never waits behind a refresh Get to the same element that nobody answers: the status the load
-    publishes for the command would answer that older Get first (`ProxyClient.request`: the oldest waiter a status
-    fits), and the command's own wait would run into its retry.
+    No refresh Get that nobody answers is then still out to an element a test commands: it would take the next
+    status of that element that does not show a Set's requested state — the answer to the Get a command's settling
+    sends, say (`ProxyClient.request`: the oldest waiter a status fits) — and that wait would run into its retry.
     """
     fake_link.answer_state_gets = True
     return fake_link

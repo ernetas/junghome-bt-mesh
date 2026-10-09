@@ -104,7 +104,9 @@ value). A check to run by hand before publishing: no change to the tree can fix 
   reached the load (review-4 D32): its Set was lost on the air while the new link's refresh had a Get out to the same
   element, and the Get's Status answered the Set (`ProxyClient.request` matches on element and status opcode). A
   Status now answers an acknowledged load Set only when it shows the requested state, present or target, within
-  the load's step (`messages.set_shown_by`), or nothing else waits for it; the Set is sent again otherwise. The
+  the load's step (`messages.set_shown_by`), or nothing else waits for it; the Set is sent again otherwise. A
+  Status that shows it answers the Set before an older Get out to the element, whose own answer is still to come: a
+  thermostat read the fake left unanswered took the Set's Status, and the Set went out twice. The
   default run takes those seeds as well as 27 and fails on such a command (`confirmed, not applied`);
   `tests/soak/test_lost_set.py` drops the Set on purpose and checks the same in one short run.
   `tests/test_fake_conformance.py` drives `FakeProxyLink`, the library's `FakeBleak` and the simulated proxy through
