@@ -4,17 +4,18 @@ on:
   # Callable so release.yml can gate a tag on exactly these checks, run against the tagged commit.
   workflow_call:
   push:
-    # Every branch, but no tags: a tag runs this workflow through release.yml instead (otherwise it would run twice).
+    # `main` only, and no tags: a tag runs this workflow through release.yml instead (otherwise it would run twice).
+    # Any other branch is checked by its pull request. A push to a branch with an open pull request fires `push` and
+    # `pull_request` for the same commit, and the cancelled one of the two marked the commit failed (every Renovate
+    # pull request showed red with all its checks green), so branches are not built on `push`.
     branches:
-      - "**"
+      - main
   pull_request:
 
-# A push to a branch with an open pull request fires `push` and `pull_request` for the same commit; keying the group
-# on the branch name (head_ref for pull_request, ref_name for push and for a tag through release.yml) makes the later
-# run cancel the earlier one instead of both running to the end. A newer push to the same branch cancels the older
-# run too. The branch is qualified by the repository it lives in (the pull request's head repository, else this one),
-# so a fork's pull request from its own `main` is a group of its own and cannot cancel a run on this repository's
-# `main`; a pull request from a branch of this repository still shares the group of that branch's push.
+# A newer push to a pull request (or to `main`) cancels the run still going for the older commit. The group is the
+# branch name (head_ref for pull_request, ref_name for push and for a tag through release.yml), qualified by the
+# repository it lives in (the pull request's head repository, else this one), so a fork's pull request from its own
+# `main` is a group of its own and cannot cancel a run on this repository's `main`.
 concurrency:
   group: ci-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true

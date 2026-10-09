@@ -4,7 +4,8 @@
     "config:recommended",
     "helpers:pinGitHubActionDigests",
     "docker:pinDigests",
-    ":enablePreCommit"
+    ":enablePreCommit",
+    "group:all"
   ],
   "packageRules": [
     {
@@ -76,6 +77,14 @@
         "python"
       ],
       "enabled": false
+    },
+    {
+      "description": "Every update in one pull request: `group:all` above groups them (majors with the rest, no separate major PR), and this rule, the last one, takes precedence over the groupName of every rule above (a later rule wins), which then only says why the updates it names belong together. One PR has one CI run to read and one merge, instead of a PR per pin each rebased after every merge.",
+      "matchPackageNames": [
+        "*"
+      ],
+      "groupName": "all dependencies",
+      "groupSlug": "all"
     }
   ]
 }
