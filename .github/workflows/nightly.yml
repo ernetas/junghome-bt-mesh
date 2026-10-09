@@ -72,13 +72,30 @@ jobs:
           key: hypothesis-${{ github.run_id }}
 
   mutation:
-    # mutmut (requirements-mutation.txt) over jhmesh's crypto.py, pdu.py, client.py and state.py (SAR, the replay
-    # list, the IV index, the sequence numbers) and the integration's seq_store.py, each mutant run against the
-    # tests that reach the function it changes (pyproject.toml `[tool.mutmut]`). Review 3 found a nonce-reuse
-    # mutant that passed the whole suite; this is where the next one shows up. Survivors are listed in the job
-    # summary (counts per module, then each surviving mutant's diff); they do not fail the job.
+    # mutmut (requirements-mutation.txt) over jhmesh's crypto.py, pdu.py, client.py (the replay list, the IV index),
+    # sar.py (segmentation and reassembly) and state.py (the sequence numbers) and the integration's seq_store.py,
+    # each mutant run against the tests that reach the function it changes (pyproject.toml `[tool.mutmut]`). Review
+    # 3 found a nonce-reuse mutant that passed the whole suite; this is where the next one shows up. One job per
+    # module group (mutmut runs the mutants whose names match the group's patterns), so each stays well inside its
+    # time limit as the tests grow. Survivors are listed in each job's summary (counts per module, then each
+    # surviving mutant's diff); they do not fail the job.
+    name: mutation (${{ matrix.group }})
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: crypto, pdu
+            mutants: "jhmesh.crypto.* jhmesh.pdu.*"
+          - group: client
+            mutants: "jhmesh.client.*"
+          - group: sar
+            mutants: "jhmesh.sar.*"
+          - group: state
+            mutants: "jhmesh.state.*"
+          - group: seq_store
+            mutants: "*seq_store.*"
     permissions:
       contents: read
     steps:
@@ -102,13 +119,20 @@ jobs:
           print(" ".join(json.loads(manifest.read_text())["requirements"]))
           ')
       - name: Mutate
-        run: python -m mutmut run --max-children "$(nproc)"
+        env:
+          MUTANTS: ${{ matrix.mutants }}
+        run: |
+          set -f  # the patterns are mutmut's (fnmatch on mutant names), not the shell's
+          # shellcheck disable=SC2086  # one pattern per word
+          python -m mutmut run --max-children "$(nproc)" $MUTANTS
       - name: Surviving mutants
         if: always()
+        env:
+          GROUP: ${{ matrix.group }}
         run: |
           python -m mutmut export-cicd-stats
           python - >> "$GITHUB_STEP_SUMMARY" <<'PY'
-          import collections, json, pathlib, subprocess, sys
+          import collections, json, os, pathlib, subprocess, sys
 
           stats = json.loads(pathlib.Path("mutants/mutmut-cicd-stats.json").read_text())
           results = subprocess.run(
@@ -117,7 +141,7 @@ jobs:
           survivors = [
               line.split(":")[0].strip() for line in results.splitlines() if line.strip().endswith(": survived")
           ]
-          print("## Mutation testing\n")
+          print(f"## Mutation testing ({os.environ['GROUP']})\n")
           print("| killed | survived | timeout | no tests | suspicious | total |")
           print("|---|---|---|---|---|---|")
           print(

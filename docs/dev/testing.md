@@ -172,9 +172,10 @@ pinned actions and read-only permissions as `ci.yml`:
   (`tests/jhmesh/hypothesis_profiles.py`); the example database is restored from and saved to the Actions cache
   whatever the outcome, so a failing example is retried first every night until it is fixed;
 - `mutation`: mutmut (`requirements-mutation.txt`, configured in `pyproject.toml` `[tool.mutmut]`) over
-  `jhmesh/crypto.py`, `pdu.py`, `client.py`, `state.py` and the integration's `seq_store.py`, each mutant against
-  the library tests and the sequence-store tests that reach it; the job summary counts killed and surviving mutants
-  per module and shows the diff of the first surviving ones. Survivors do not fail the job: each one is a test to
+  `jhmesh/crypto.py`, `pdu.py`, `client.py`, `sar.py`, `state.py` and the integration's `seq_store.py`, each mutant
+  against the library tests and the sequence-store tests that reach it, one job per module group (crypto and PDUs,
+  client, SAR, state, the store) so each stays inside its time limit; each job's summary counts killed and surviving
+  mutants per module and shows the diff of the first surviving ones. One group by hand: `mutmut run 'jhmesh.sar.*'`. Survivors do not fail the job: each one is a test to
   write or an equivalent mutant to accept. By hand: `.venv/bin/pip install -r requirements-mutation.txt`, then
   `.venv/bin/mutmut run`, `mutmut results`, `mutmut show <name>` (it works in `mutants/`, git-ignored);
 - `newest-home-assistant`: the whole suite against the newest `pytest-homeassistant-custom-component`, non-blocking
