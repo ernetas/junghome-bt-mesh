@@ -11,7 +11,6 @@ import asyncio
 from collections.abc import Callable, Coroutine, Mapping
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
@@ -40,6 +39,13 @@ from custom_components.junghome_ble.mesh_config import (
     run_to_end,
 )
 from custom_components.junghome_ble.model_update import async_follow_export
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 if TYPE_CHECKING:
     from custom_components.junghome_ble.coordinator import (

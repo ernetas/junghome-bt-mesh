@@ -84,6 +84,18 @@ explicit_package_bases = true
 module = ["bleak.*", "bleak_retry_connector.*", "habluetooth.*"]
 ignore_missing_imports = true
 
+# Home Assistant 2026.10 moved these platforms' constants and device classes to their `const` modules and imports them
+# back into the package without re-exporting them; the floor release (hacs.json) defines them in the package itself,
+# so the integration imports them from there, the one place both releases have them.
+[[tool.mypy.overrides]]
+module = [
+    "homeassistant.components.binary_sensor",
+    "homeassistant.components.button",
+    "homeassistant.components.light",
+    "homeassistant.components.switch",
+]
+implicit_reexport = true
+
 # Ruff: mirrors the sibling gateway integration's .ruff.toml (itself based on Home Assistant core's pyproject.toml).
 [tool.ruff]
 target-version = "py313"

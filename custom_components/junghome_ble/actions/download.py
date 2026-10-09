@@ -26,7 +26,6 @@ from contextlib import suppress
 from datetime import timedelta
 from typing import TYPE_CHECKING, Final
 
-import voluptuous as vol
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.components.http.const import KEY_HASS_REFRESH_TOKEN_ID, KEY_HASS_USER
 from homeassistant.components.websocket_api.connection import current_connection
@@ -47,6 +46,13 @@ from custom_components.junghome_ble.export_view import export_path
 
 from .common import _ENTRY_FIELD, ATTR_CONFIG_ENTRY, ATTR_DEVICE, _validation
 from .resolve import _registry_device
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 if TYPE_CHECKING:
     from homeassistant.auth.models import User

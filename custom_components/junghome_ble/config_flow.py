@@ -64,7 +64,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final
 
 import aiohttp
-import voluptuous as vol
 from homeassistant.components import bluetooth
 from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.config_entries import (
@@ -187,6 +186,13 @@ from .tls import (
     format_fingerprint,
     normalize_fingerprint,
 )
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 if TYPE_CHECKING:
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak

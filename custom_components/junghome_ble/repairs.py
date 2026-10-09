@@ -29,7 +29,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
 from homeassistant.components.repairs import (
     ConfirmRepairFlow,
     RepairsFlow,
@@ -101,6 +100,13 @@ from .gateway_api import (
 from .jhmesh.cdb import CDB
 from .jhmesh.export import RENAME_MAX_LENGTH, InvalidName, check_name
 from .seq_store import async_skip_seq_store_ahead
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry

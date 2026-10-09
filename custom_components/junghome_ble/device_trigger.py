@@ -23,7 +23,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import voluptuous as vol
 from homeassistant.components.device_automation import DEVICE_TRIGGER_BASE_SCHEMA
 from homeassistant.components.device_automation.exceptions import (
     InvalidDeviceAutomationConfig,
@@ -51,6 +50,13 @@ from .const import (
 from .entity import button_gang, buttons_device_id
 from .jhmesh import properties as P
 from .jhmesh.devices import BUTTON_LETTERS, INPUT_NAMES
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 if TYPE_CHECKING:
     from homeassistant.core import CALLBACK_TYPE, HomeAssistant
