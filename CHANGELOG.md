@@ -9,6 +9,10 @@
   `light.turn_off` left the DALI light lit at the hotel brightness. The documentation now says what that looks like:
   while the function is on, the light entity stays **on** after an off, at the hotel brightness, because that is what
   the device reports. When the device applies the night-light brightness is still unverified on air.
+- **The pre-flight comparison, seen working on a key** (on-air sweep D13). With a key connected to another light in
+  the app and no new export, `clear_key`'s dry run listed the four differences of its publication and subscriptions,
+  and the real call was refused before writing anything; with the key connected back, no difference. The Scene
+  Register reads, a threshold's wiring, `force` / `skip_preflight` and `reachability` remain unverified on air.
 
 ### Fixed
 

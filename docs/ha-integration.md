@@ -1761,7 +1761,12 @@ reset not confirmed), `force` keeps the comparison and `skip_preflight: true` sk
 removing a dead device no longer drops the check of the live ones. `delete_scene` with `force` passes over the
 members it cannot read (out of reach, silent) — they are skipped as before — but a difference still stops it. Like
 every rewiring action, these are for administrators only.
-Unverified on air: a dry run of a destructive action against a node the app changed since the export.
+Seen on air for a key's publication and subscriptions (on-air sweep D13): after the key was connected to another
+light in the app without a new export, `clear_key`'s dry run listed the four differences and the real call was
+refused with *service_preflight_differs*, nothing written; with the key connected back, no difference. Unverified on
+air: the Scene Register reads, a threshold's wiring, `force` / `skip_preflight` and `reachability`. Called through
+Home Assistant's REST API, a refused action answers HTTP 500 with a traceback in the log: that is how Home Assistant
+answers any action error there.
 
 **Areas and scene entities.** Where an action takes a room's name (`room`), `room_area` picks a room by its area
 instead, the way the devices get their areas (review-5 W5-2, `areas.room_in_area`): the room the entry's

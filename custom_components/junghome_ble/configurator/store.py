@@ -485,8 +485,9 @@ class ExportStore:
 
         A plan that removes or overwrites what the export says a node holds reads it from the nodes first, as the
         real run does (`PlanExecutor.preflight`): those Gets go out, and the answer's `preflight` lists the
-        differences and the nodes that did not answer — the real run would stop there. The plan's nodes the real
-        run would find out of reach are listed under `reachability` (`planned`). Unverified on air.
+        differences and the nodes that did not answer — the real run would stop there; seen on air for a key's
+        publication and subscriptions (`docs/on-air-sweep.md` D13). The plan's nodes the real run would find out of
+        reach are listed under `reachability` (`planned`): unverified on air.
         """
         dry = DryRun()
         token = _DRY_RUN.set(dry)

@@ -369,7 +369,9 @@ class PlanExecutor:
         raising; without a link it notes every node as unanswered. Plans that only add (a Subscription Add, a
         Model App Bind, a publication where the export records none) send no Get. What the comparison came to —
         the Gets, the differences, or that it was skipped — goes into the call's history (`PlanOutcome.preflight`).
-        Unverified on air.
+        Seen on air for a key's publication and subscriptions (`docs/on-air-sweep.md` D13: a key the app rewired after
+        the export stopped `clear_key`, its dry run listed the four differences, and nothing was written); the Scene
+        Register reads, a threshold's wiring and `skip_preflight` are unverified on air.
         """
         base = self.store.base
         assert base is not None  # every plan is made on what `ExportStore.load` read
