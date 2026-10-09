@@ -8597,13 +8597,15 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Boiler Schedules',
       'mesh_address': '0172',
+      'schedules': list([
+      ]),
     }),
     'context': <ANY>,
     'entity_id': 'sensor.kitchen_boiler_schedules',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
-    'state': 'unknown',
+    'state': '0',
   })
 # ---
 # name: test_platform_entities[sensor][sensor.kitchen_boiler_socket_metering_clock_offset-entry]
@@ -9835,13 +9837,15 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'Living room DALI Schedules',
       'mesh_address': '0232',
+      'schedules': list([
+      ]),
     }),
     'context': <ANY>,
     'entity_id': 'sensor.living_room_living_room_dali_schedules',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
-    'state': 'unknown',
+    'state': '0',
   })
 # ---
 # name: test_platform_entities[sensor][sensor.living_room_living_room_dali_switches_off_at-entry]
@@ -11190,13 +11194,15 @@
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'WC mirror Schedules',
       'mesh_address': '0148',
+      'schedules': list([
+      ]),
     }),
     'context': <ANY>,
     'entity_id': 'sensor.wc_wc_mirror_schedules',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
-    'state': 'unknown',
+    'state': '0',
   })
 # ---
 # name: test_platform_entities[sensor][sensor.wc_wc_mirror_switches_off_at-entry]

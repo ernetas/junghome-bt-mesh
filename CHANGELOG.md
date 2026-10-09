@@ -10,6 +10,15 @@
   while the function is on, the light entity stays **on** after an off, at the hotel brightness, because that is what
   the device reports. When the device applies the night-light brightness is still unverified on air.
 
+### Fixed
+
+- **A device's settings are read in one go after a connection** (on-air sweep C10). The reads after each connection
+  went five devices at a time but only one setting per device and round, and switches are queued last: a switch
+  just enabled — the DALI light's *Hotel function* — stayed `unknown` for over 45 s after the light's other new
+  entities had their values, until `homeassistant.update_entity`. Each
+  round now reads every setting queued for its five devices, one after the other; a device that does not answer, or
+  a connection that drops, ends its round, so a silent device costs no more than before. Unverified on air.
+
 ## 1.5.0
 
 ### Upgrading

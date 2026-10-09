@@ -9,10 +9,10 @@ Read / write flow, the app's (`docs/gap-analysis/device-settings.md` §1.2): one
 is added or enabled and the link is up (never polled), an acknowledged Set on change followed by the Status
 reply, or a re-read when nothing answered (a change neither answers nor shows is an error, not a success);
 unsolicited Status publications (`C5 / CB / D1 27 05`) are applied as they arrive. Initial reads go through a
-platform-level scheduler, `PROPERTY_READ_CHUNK` at a time, so a large installation does not flood the mesh when
-the link comes up. A battery node sleeps then: its entities are read right after one of its keys reported. A change
-to one keeps it awake the app's way while it runs (`keep_awake.py`), and one it does not answer fails as *asleep*,
-asking for a key press first.
+platform-level scheduler, `PROPERTY_READ_CHUNK` elements at a time, so a large installation does not flood the mesh
+when the link comes up. A battery node sleeps then: its entities are read right after one of its keys reported. A
+change to one keeps it awake the app's way while it runs (`keep_awake.py`), and one it does not answer fails as
+*asleep*, asking for a key press first.
 """
 
 from __future__ import annotations
@@ -275,11 +275,11 @@ class PropertyReader:
 
     `schedule` queues a job (an entity's first read) for an element. The worker waits for each link's connect-time
     state refresh to be through (`_wait_for_refresh`), so the refresh goes first on every link, then works the queue
-    `PROPERTY_READ_CHUNK` jobs at a time (to distinct elements, since exchanges with one element are serialised)
-    with a `PROPERTY_READ_PAUSE` between chunks, like that refresh. `read`, `write` and `write_status` talk to
-    the element, one exchange per element at a time, so a Status is never taken for the answer to another
-    property's Get. A property several entities share (the LED colours and the night mode) is read once: a read
-    that succeeded within `PROPERTY_READ_FRESH` is not repeated.
+    `PROPERTY_READ_CHUNK` elements at a time, every job queued for each in its turn and one after the other (the
+    exchanges with one element are serialised anyway, `_take_chunk`), with a `PROPERTY_READ_PAUSE` between turns,
+    like that refresh. `read`, `write` and `write_status` talk to the element, one exchange per element at a time,
+    so a Status is never taken for the answer to another property's Get. A property several entities share (the LED
+    colours and the night mode) is read once: a read that succeeded within `PROPERTY_READ_FRESH` is not repeated.
 
     A job is queued once: one still waiting is kept in its place and counted for the current link,
     and one queued on a link that went away is dropped when its turn comes — its entity queues it again on the next
@@ -305,6 +305,8 @@ class PropertyReader:
         self._read_at: dict[
             tuple[int, int | str], float
         ] = {}  # (address, property id or setup state name) -> when it last answered
+        # elements whose last Get here went unanswered through every attempt: their turn ends (`_run_element`)
+        self._silent: set[int] = set()
         # node unicast -> `hub.link_count` its version was last queued on (`schedule_version`)
         self._version_link: dict[int, int] = {}
         # node unicast -> when the last read of its node information that got every answer started (`_read_version`)
@@ -355,26 +357,56 @@ class PropertyReader:
                 self.hub.hass, self._run(), f"{DOMAIN} property reads"
             )
 
-    def _take_chunk(self) -> list[Job]:
-        """Dequeue up to `PROPERTY_READ_CHUNK` jobs for distinct elements, oldest first; drop those of lost links.
+    def _take_chunk(self) -> list[list[_Queued]]:
+        """Dequeue every job of up to `PROPERTY_READ_CHUNK` elements, oldest first; drop those of lost links.
+
+        A turn used to take one job per element: an element with many entities needed as many turns, each with a
+        pause, and the switch platform, which queues its reads last, waited behind every other read of the
+        installation — on air the hotel function's switch stayed unknown for over 45 s after its element's numbers
+        were read (`docs/on-air-sweep.md` C10). Now an element's whole queue goes in its turn (`_run_element`), one
+        exchange at a time as before. Unverified on air.
 
         One pass that rebuilds the queue: taking each job out with `deque.remove` cost a scan of the queue per job.
         """
         current = self.hub.link_count
-        chunk: list[Job] = []
-        addrs: set[int] = set()
+        turns: dict[int, list[_Queued]] = {}
         rest: deque[_Queued] = deque()
         for item in self._jobs:
             if item.link is not None and item.link != current:
                 del self._queued[item.addr, item.key]  # queued on a link that is gone
-            elif len(chunk) < PROPERTY_READ_CHUNK and item.addr not in addrs:
+            elif item.addr in turns or len(turns) < PROPERTY_READ_CHUNK:
                 del self._queued[item.addr, item.key]
-                chunk.append(item.job)
-                addrs.add(item.addr)
+                turns.setdefault(item.addr, []).append(item)
             else:
                 rest.append(item)
         self._jobs = rest
-        return chunk
+        return list(turns.values())
+
+    async def _run_element(self, turn: list[_Queued]) -> None:
+        """Run the jobs of one element's turn (`_take_chunk`) one after the other; a failed one is logged and skipped.
+
+        An element that left a job's Get unanswered (`_silent`), or a link that went or changed meanwhile, ends the
+        turn: the rest goes back to the front of the queue. So a silent element costs each turn one read's timeouts,
+        as when a turn took one job, and a new link's reads wait for its state refresh (`_run`). A job queued again
+        meanwhile keeps that copy.
+        """
+        link = self.hub.link_count
+        for index, item in enumerate(turn):
+            if index and (
+                item.addr in self._silent
+                or not self.hub.link_up
+                or self.hub.link_count != link
+            ):
+                rest = [q for q in turn[index:] if (q.addr, q.key) not in self._queued]
+                for q in rest:
+                    self._queued[q.addr, q.key] = q
+                self._jobs.extendleft(reversed(rest))
+                return
+            self._silent.discard(item.addr)
+            try:
+                await item.job()
+            except Exception as err:
+                _LOGGER.debug("property read failed: %r", err)
 
     async def _wait_for_setup(self) -> bool:
         """Hold the first reads until every platform has queued its jobs (the entry is LOADED).
@@ -425,11 +457,9 @@ class PropertyReader:
             return
         while self._jobs:
             await self._wait_for_refresh()
-            for result in await asyncio.gather(
-                *(job() for job in self._take_chunk()), return_exceptions=True
-            ):
-                if isinstance(result, Exception):
-                    _LOGGER.debug("property read failed: %r", result)
+            await asyncio.gather(
+                *(self._run_element(turn) for turn in self._take_chunk())
+            )
             if self._jobs:
                 await asyncio.sleep(PROPERTY_READ_PAUSE)
 
@@ -540,6 +570,7 @@ class PropertyReader:
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer the Get of its %s", addr, what)
+            self._silent.add(addr)
             return None
 
     async def _ask_sig(self, addr: int, pid: int) -> bytes | None:
@@ -669,6 +700,7 @@ class PropertyReader:
             _LOGGER.debug(
                 "%04X did not answer the Get of %s (0x%04X)", addr, spec.name, spec.id
             )
+            self._silent.add(addr)
             return False
         self._read_at[addr, spec.id] = time.monotonic()
         return True
@@ -765,6 +797,7 @@ class PropertyReader:
             )
         except TimeoutError:
             _LOGGER.debug("%04X did not answer the Get of its %s", addr, state.name)
+            self._silent.add(addr)
             return False
         self._read_at[addr, state.name] = time.monotonic()
         return True

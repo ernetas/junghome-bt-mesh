@@ -29,6 +29,7 @@ from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 
 from . import property_helpers as ph
 from . import test_services as services_env
+from .conftest import wait_until
 from .test_services import Env, settled
 
 if TYPE_CHECKING:
@@ -125,12 +126,14 @@ def test_the_switch_only_in_a_project_with_pucks() -> None:
 
 
 async def test_the_switch_sets_the_role_after_the_publication(
-    hass: HomeAssistant, env: Env
+    hass: HomeAssistant, fast_timeouts: None, env: Env
 ) -> None:
     hub = env.hub
     node = hub.cdb.node_by_addr(SOCKET)
     entity = SW.JungHomeTimeKeeper(hub, node)
     entity.hass = hass
+    # the node's role is read with its version, in its turn of the property reads (behind silent elements' Gets)
+    await wait_until(hass, lambda: entity.is_on is not None, what="the time role")
     assert entity.is_on is False  # the fake mesh's nodes answer "client"
     configurator = AsyncMock()
 

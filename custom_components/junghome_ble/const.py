@@ -291,9 +291,8 @@ TIME_SET_INTERVAL: Final = 86400.0  # seconds between Time Set broadcasts; the f
 # short link alone sets no node aside (a node restarting right after we connected is no flapping proxy).
 SHORT_LINK: Final = 60.0
 
-PROPERTY_READ_CHUNK: Final = (
-    5  # initial property reads in flight at once before a pause (like REFRESH_CHUNK)
-)
+# elements whose initial property reads run at once, one Get each in flight, before a pause (like REFRESH_CHUNK)
+PROPERTY_READ_CHUNK: Final = 5
 # A background sender with no link (the property reads, a battery node's keep-alive) waits for one instead of sending
 # into "not connected"; this long per wait (`JungHomeHub.async_wait_connected`) before it looks again.
 LINK_WAIT_STEP: Final = 60.0

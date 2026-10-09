@@ -161,7 +161,8 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
 - Config entities (`config_entities.py`, `properties/targets.py`, `properties/reader.py`): every `PropertySpec` with
   `access` rw/wo and an `app` source is mapped by codec to `number` / `select` / `switch` / `button`; `PropertyReader`
   schedules the initial reads (on every link once its state refresh is through, `LinkManager.refresh_through`, at
-  most `PROPERTY_READ_REFRESH_WAIT` later; 5 distinct elements per round, 0.5 s pause; a job is queued
+  most `PROPERTY_READ_REFRESH_WAIT` later; 5 elements per turn, every job each queued, one at a time, 0.5 s pause; a
+  silent element or a link that changed ends its turn, the rest back at the front — on-air sweep C10; a job is queued
   once per element and key, counted for the link it was last queued on, and dropped when its link is gone — review-4
   R4-5; a node's version read once per hub and again after `hub.restarted` names a restart since), one status handler
   for the three vendor Status opcodes fills `ElementState.properties`. The status LED is written with a User Property

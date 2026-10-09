@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import subprocess
 import sys
+from bisect import bisect_right
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
@@ -709,6 +710,53 @@ async def test_hotel_function_entities_read_and_write(
     assert hass.states.get(function).state == STATE_ON
 
 
+async def test_enabled_entities_are_read_in_their_elements_turn(
+    hass: HomeAssistant, init_with_mesh: MockConfigEntry, mesh: PropertyMesh
+) -> None:
+    """On-air sweep C10: enabled (the entry reloads), both hotel numbers read their values, the switch stayed unknown.
+
+    A turn of the reader took one job per element, and the switch platform queues its reads last: the light's
+    *Hotel function* switch waited behind every other read of the installation, one turn of five elements and a
+    pause per read of its element before it. Now a turn takes every job its elements queued: the light's three
+    hotel entities are read in the same turn.
+    """
+    registry = er.async_get(hass)
+    hotel = {
+        pid: entity_id(hass, platform, f"{UID_LIGHT_CTL}-{spec(pid).name}")
+        for platform, pid in (
+            ("number", HOTEL_VALUE),
+            ("switch", HOTEL_FUNCTION),
+            ("number", NIGHT_VALUE),
+        )
+    }
+    for entity in hotel.values():
+        registry.async_update_entity(entity, disabled_by=None)
+    mesh.values[LIGHT_CTL, HOTEL_VALUE] = mesh.values[LIGHT_CTL, NIGHT_VALUE] = b"\x33"
+    mesh.values[LIGHT_CTL, HOTEL_FUNCTION] = b"\x00"
+    turns: list[int] = []  # where each turn starts in `mesh.gets`
+    take = C.PropertyReader._take_chunk
+
+    def take_and_mark(reader: C.PropertyReader) -> Any:
+        turns.append(len(mesh.gets))
+        return take(reader)
+
+    first = len(mesh.gets)
+    with patch.object(C.PropertyReader, "_take_chunk", take_and_mark):
+        assert await hass.config_entries.async_reload(init_with_mesh.entry_id)
+        await wait_for_link(hass, init_with_mesh)
+        await settle(hass, 200)
+
+    assert hass.states.get(hotel[HOTEL_VALUE]).state == "20"
+    assert hass.states.get(hotel[NIGHT_VALUE]).state == "20"
+    assert hass.states.get(hotel[HOTEL_FUNCTION]).state == STATE_OFF
+    # the turn each hotel Get went out in: how many turns had started by then
+    turn_of = {
+        pid: bisect_right(turns, mesh.gets.index((LIGHT_CTL, pid), first))
+        for pid in hotel
+    }
+    assert len(set(turn_of.values())) == 1, turn_of
+
+
 async def test_hotel_function_entities_start_disabled(
     hass: HomeAssistant, init_with_mesh: MockConfigEntry, mesh: PropertyMesh
 ) -> None:
@@ -1025,19 +1073,19 @@ async def test_initial_reads_are_chunked_delayed_and_deduplicated(
     mesh: PropertyMesh,
     fast_sleep: list[float],
 ) -> None:
-    """After the link is up the enabled entities read their properties, five elements at a time (behind the link's
-    state refresh: `test_property_reads_wait_for_each_links_state_refresh`)."""
-    assert (
-        fast_sleep.count(0.5) >= 2
-    )  # PROPERTY_READ_PAUSE between chunks (and the hub's own refresh)
-    # the first chunk goes to five distinct elements (which five depends on the order the platforms queued their
-    # reads in, which HA does not fix); the nodes' LBC version blocks are asked once each, with the node's version
+    """After the link is up the enabled entities read their properties, five elements at a time, all of an element's
+    in its turn (behind the link's state refresh: `test_property_reads_wait_for_each_links_state_refresh`)."""
+    assert fast_sleep.count(0.5) >= 1  # PROPERTY_READ_PAUSE between turns
+    # the first turn goes to five distinct elements (which five depends on the order the platforms queued their
+    # reads in, which HA does not fix), each with all its reads before the next turn; the nodes' LBC version blocks
+    # are asked once each, with the node's version
     identity = [(addr, pid) for addr, pid in mesh.gets if pid in NODE_INFO_VENDOR]
     assert Counter(identity)[LIGHT_SWITCH, 0x0003] == 1
     assert not any(pid == 0x0005 for _, pid in identity)  # an RTR's only
     mesh.gets = [get for get in mesh.gets if get not in identity]
-    first = {addr for addr, _ in mesh.gets[:5]}
-    assert len(first) == 5
+    first = set(list(dict.fromkeys(addr for addr, _ in mesh.gets))[:5])
+    second_turn = next(n for n, (addr, _) in enumerate(mesh.gets) if addr not in first)
+    assert not {addr for addr, _ in mesh.gets[second_turn:]} & first
     assert first <= {
         LIGHT_SWITCH,
         LIGHT_CTL,
@@ -1232,9 +1280,12 @@ def _queue_reader() -> tuple[C.PropertyReader, SimpleNamespace]:
 
 async def test_a_job_is_queued_once_and_dropped_with_its_link() -> None:
     """Review-4 R4-5: a job still waiting is not queued again but counted for the current link; one of a link that
-    went away is dropped when its turn comes; one queued while no link was up waits for any. A chunk takes one job
-    per element, at most PROPERTY_READ_CHUNK, the rest keeps its order."""
+    went away is dropped when its turn comes; one queued while no link was up waits for any. A chunk is a turn of at
+    most PROPERTY_READ_CHUNK elements, each with every job it queued (on-air sweep C10); the rest keeps its order."""
     reader, hub = _queue_reader()
+
+    def take() -> list[list[Any]]:
+        return [[q.job for q in turn] for turn in reader._take_chunk()]
 
     async def job() -> None:
         pass
@@ -1253,23 +1304,110 @@ async def test_a_job_is_queued_once_and_dropped_with_its_link() -> None:
     ]
     hub.link_count = 2  # a new link: only what its entities queued again is read
     reader.schedule(LIGHT_SWITCH, other)
-    assert reader._take_chunk() == [other]
+    assert take() == [[other]]
     assert not reader._jobs
     assert not reader._queued
 
     hub.connected = False
     reader.schedule(LIGHT_SWITCH, job)  # no link: for the next one
     hub.connected, hub.link_count = True, 3
-    reader.schedule(LIGHT_SWITCH, other)
     reader.schedule(SOCKET, other)
-    assert reader._take_chunk() == [job, other]
-    assert reader._take_chunk() == [other]
+    reader.schedule(LIGHT_SWITCH, other)
+    assert take() == [[job, other], [other]]  # an element's every job in its turn
+    assert take() == []
 
     addrs = range(0x0100, 0x0100 + C.PROPERTY_READ_CHUNK + 1)
     for addr in addrs:
         reader.schedule(addr, job)
-    assert len(reader._take_chunk()) == C.PROPERTY_READ_CHUNK
+    reader.schedule(
+        addrs[0], other
+    )  # behind the last element: still in the first's turn
+    assert take() == [[job, other]] + [[job]] * (C.PROPERTY_READ_CHUNK - 1)
     assert [q.addr for q in reader._jobs] == [addrs[-1]]
+
+
+def _turn_reader() -> tuple[C.PropertyReader, SimpleNamespace]:
+    """`_queue_reader` with a link up for sending: a turn can run."""
+    reader, hub = _queue_reader()
+    hub.link_up = True
+    return reader, hub
+
+
+async def test_a_turn_runs_its_elements_jobs_in_order(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """On-air sweep C10: an element's jobs run one after the other in its turn; one that fails is logged, the next
+    runs all the same."""
+    reader, _hub = _turn_reader()
+    ran: list[str] = []
+
+    async def first() -> None:
+        ran.append("first")
+        raise HomeAssistantError("refused")
+
+    async def second() -> None:
+        ran.append("second")
+
+    reader.schedule(LIGHT_CTL, first)
+    reader.schedule(LIGHT_CTL, second)
+    (turn,) = reader._take_chunk()
+    with caplog.at_level("DEBUG", "custom_components.junghome_ble.properties.reader"):
+        await reader._run_element(turn)
+    assert ran == ["first", "second"]
+    assert "property read failed: HomeAssistantError('refused')" in caplog.text
+    assert not reader._jobs
+    assert not reader._queued
+
+
+@pytest.mark.parametrize("cause", ["silent", "link lost", "new link"])
+async def test_a_turn_ends_at_a_silent_element_or_another_link(cause: str) -> None:
+    """A silent element, or a link that went or changed, ends the turn: the rest goes back to the front, in order.
+
+    So a silent element costs each turn one read's timeouts, as when a turn took one job, and a new link's reads
+    wait for its state refresh. A job queued again meanwhile keeps that copy rather than getting a second.
+    """
+    reader, hub = _turn_reader()
+    ran: list[str] = []
+
+    async def first() -> None:
+        ran.append("first")
+        reader.schedule(LIGHT_CTL, third)  # queued again meanwhile: that copy stays
+        if cause == "silent":
+            reader._silent.add(
+                LIGHT_CTL
+            )  # what `_get` notes when a Get went unanswered
+        elif cause == "link lost":
+            hub.link_up = False
+        else:
+            hub.link_count += 1
+
+    async def second() -> None:
+        ran.append("second")
+
+    async def third() -> None:
+        ran.append("third")
+
+    async def socket() -> None:
+        ran.append("socket")
+
+    for job in (first, second, third):
+        reader.schedule(LIGHT_CTL, job)
+    (turn,) = reader._take_chunk()
+    reader.schedule(SOCKET, socket)
+    await reader._run_element(turn)
+    assert ran == ["first"]
+    assert [(q.addr, q.job) for q in reader._jobs] == [
+        (LIGHT_CTL, second),
+        (SOCKET, socket),
+        (LIGHT_CTL, third),
+    ]
+    assert len(reader._queued) == len(reader._jobs)
+    hub.link_up = True
+    for q in reader._jobs:
+        q.link = hub.link_count
+    for turn in reader._take_chunk():
+        await reader._run_element(turn)
+    assert ran == ["first", "second", "third", "socket"]
 
 
 async def test_quick_drops_leave_one_version_job_per_node(

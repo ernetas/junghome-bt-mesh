@@ -660,8 +660,8 @@ Every key of a push-button also gets a *Status LED*
 switch, driven the way the JUNG HOME Gateway drives it (it only has an effect on keys linked to the gateway and cannot
 be read back, so its state is assumed; it follows the gateway's own writes of the LED too, which the gateway sends to
 the key the same way). Values are read from the device once when the entity is added or enabled — once the
-connection's state refresh is through, on every connection, five devices at a time (a battery device's right after
-one of its keys reported, the moment it is awake) — and read again three hours or more after that, on a later
+connection's state refresh is through, on every connection, five devices at a time, all of a device's values in its
+turn (a battery device's right after one of its keys reported, the moment it is awake) — and read again three hours or more after that, on a later
 connection or on one that has held that long (looked at hourly; a battery device's at its first key event after
 three hours); the wait for the refresh and the re-read on a connection that holds are **unverified on air**: a
 setting changed in the JUNG HOME app is answered to

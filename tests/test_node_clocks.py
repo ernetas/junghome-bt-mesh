@@ -14,7 +14,7 @@ from custom_components.junghome_ble.const import ISSUE_NODE_CLOCK_WRONG, issue_i
 from custom_components.junghome_ble.coordinator import JungHomeHub
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.pdu import ALL_NODES, encode_opcode
-from custom_components.junghome_ble.node_clocks import zone_sent
+from custom_components.junghome_ble.node_clocks import NodeClocks, zone_sent
 from custom_components.junghome_ble.schedules import Slot, build_schedule, scheduler
 
 from .conftest import FakeProxyLink, settle
@@ -129,9 +129,13 @@ async def test_a_time_status_gives_the_offset_and_a_wrong_clock_raises_the_repai
     entity_registry_enabled_by_default: None,
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Any Time Status counts: the answer to the Time Set broadcast, to a Time Get, or a published one."""
     hub = hub_of(init_integration)
+    # every node may run schedules: the *Schedules* sensors, enabled here, may have read their loads' empty slots by
+    # now (`test_nodes_known_to_have_no_schedules_raise_no_repair`)
+    monkeypatch.setattr(NodeClocks, "_may_run_schedules", lambda _self, _node: True)
     assert sensor_value(hass) == STATE_UNKNOWN
     assert placeholders(hass) is None
     fake_link.inject(LIGHT_SWITCH, OUR_ADDRESS, time_status(0.5))

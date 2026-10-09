@@ -963,14 +963,20 @@ Each item writes a device setting and restores the value noted in [0](#note-what
 - **Needs:** the DALI tunable-white light `<tw light>`; the three entities enabled on its device. **Safety:** each
   value goes back to what the entity showed first.
 - **Do:**
+  0. Enable the three entities (or, enabled already, reload the entry): each shows its value by itself, once the
+     link's reads are through, without `homeassistant.update_entity` — the switch included, which the first run saw
+     stay `unknown` for over 45 s (an element's reads now go in one turn).
   1. Note the three entities' states. Set *Hotel function brightness* to 30 %, turn *Hotel function* on, switch
      `<tw light>` off from Home Assistant: it should stay on, dimmed to about 30 %.
   2. Turn *Hotel function* off, switch the light off (it goes off), set the brightness back to its first value.
   3. Set *Night-light brightness* to another value and back (its effect needs the dark and a person; skip if not).
 - **Capture:** `--src <ha>` and `--dst <ha>` over the sitting.
-- **Pass:** each write is a vendor Property Set answered by a Status with the written byte (30 % = `0x4D`), the
-  entity shows the read-back, and step 1's off leaves the light at that level.
-- **Markers:** `prod:unused-string:device_parameter_hotel_function`,
+- **Pass:** step 0's three values within a minute or so of the link (the capture: the Gets to `<tw el0>` of
+  `0x1008`, `0x1009`, `0x1011` close together, not the switch's long after the others); each write is a vendor
+  Property Set answered by a Status with the written byte (30 % = `0x4D`), the entity shows the read-back, and step
+  1's off leaves the light at that level.
+- **Markers:** `custom_components/junghome_ble/properties/reader.py::PropertyReader._take_chunk`,
+  `prod:unused-string:device_parameter_hotel_function`,
   `prod:unused-string:device_parameter_hotel_lightness`,
   `prod:unused-string:device_parameter_night_light_lightness`.
 
@@ -1585,4 +1591,4 @@ Everything was set back in the same sitting.
 
 | Item | Result (pass / fail / skipped / not checkable) | Session, sequence numbers | Notes |
 |---|---|---|---|
-| C10 | pass on Home Assistant's side: steps 1 and 2, step 3's write (no capture: the bytes on air not seen); the night level's effect not checked | Home Assistant actions, no capture: Home Assistant's own states | **As found:** *Hotel function* off, *Hotel function brightness* 20 %, *Night-light brightness* 20 %; the light on at 255 and 2000 K. **1:** *Hotel function brightness* set to 30 % and *Hotel function* turned on, both read back as written; `light.turn_off` then left the light entity **on at brightness 76/255 (30 %)**, from the light's own status, and the strip stayed lit, dimmed (seen by the maintainer). **2:** *Hotel function* off, then `light.turn_off` switched the light off; the brightness set back to 20 %. **3:** *Night-light brightness* set to 25 % and back to 20 %, both read back; what the night level does in the dark was not checked. Restored: the light on at 255 and 2000 K. No warning, no traceback. **Found on the way:** with the three entities enabled (the entry reloaded), both numbers read their values by themselves; the *Hotel function* switch stayed `unknown` for over 45 s until `homeassistant.update_entity`, which read `off` at once. |
+| C10 | pass on Home Assistant's side: steps 1 and 2, step 3's write (no capture: the bytes on air not seen); the night level's effect not checked | Home Assistant actions, no capture: Home Assistant's own states | **As found:** *Hotel function* off, *Hotel function brightness* 20 %, *Night-light brightness* 20 %; the light on at 255 and 2000 K. **1:** *Hotel function brightness* set to 30 % and *Hotel function* turned on, both read back as written; `light.turn_off` then left the light entity **on at brightness 76/255 (30 %)**, from the light's own status, and the strip stayed lit, dimmed (seen by the maintainer). **2:** *Hotel function* off, then `light.turn_off` switched the light off; the brightness set back to 20 %. **3:** *Night-light brightness* set to 25 % and back to 20 %, both read back; what the night level does in the dark was not checked. Restored: the light on at 255 and 2000 K. No warning, no traceback. **Found on the way:** with the three entities enabled (the entry reloaded), both numbers read their values by themselves; the *Hotel function* switch stayed `unknown` for over 45 s until `homeassistant.update_entity`, which read `off` at once. Cause: a turn of the property reads took one job per element, and the switch platform queues its reads last, so the light's switch waited behind every other read of the installation (a turn of five elements and a pause per read of its element before it). Fixed: a turn takes every job its elements queued; step 0 checks it on air. |
