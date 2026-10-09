@@ -111,7 +111,7 @@ files, a half-MAC scanner pattern (85); one node-row snapshot for the overview a
 - **M16 — rewrite the public history again (Q5-4).** The history of 1.0.0 still holds what the tree no longer does,
   among it one real push-button's MAC with its location. A `git filter-repo --replace-text` rewrite moves every tag
   (v1.0.0–v1.4.0; the releases stay attached, as in the first rewrite). **The maintainer's call**; brief 85 builds the
-  scan that lists the values either way.
+  scan that lists the values either way. **Taken: declined by the maintainer: the public history stays as it is.**
 - **M17 — split `force` (U5-8).** Taken by default: `force` keeps the action's own override; a new `skip_preflight`
   skips the comparison; `force` alone no longer skips it on `remove_from_room`, `delete_scene`, `remove_device`
   (an *Upgrading* note in the CHANGELOG).
@@ -145,4 +145,12 @@ files, a half-MAC scanner pattern (85); one node-row snapshot for the overview a
   matching, the `jhmesh` API down from 1161 to 891 names (M18), `jhmesh/sar.py` and `jhmesh/access.py`.
 - **Translations:** every English text changed since 1.4.0 re-translated; `tests/translation_sources.json` and
   `tools/translation_sources.py` keep them in step from now on.
-- **Open:** decision M16 (rewrite the public history again); every new behaviour is unverified on air.
+- **On air, from Home Assistant:** sweep items A12, B13, C10 and D13 run by the maintainer at Home Assistant
+  (`docs/on-air-sweep.md`, Results). B13, C10 and D13 passed as far as they went. C10 found the property reads of a
+  turn going one element at a time, a switch enabled late waiting behind every other read: fixed, a turn reads every
+  job its elements queued. A12's data passed, but the bands followed the last heartbeat's hops, which change with
+  every beat (each takes whichever relay path delivered it first), so the picture redrew every minute: fixed, a
+  node's distance is the fewest hops of its heartbeats over the last 15 minutes, the diagnostics showing the last,
+  fewest and most. Still open on air: the property-read turn and the stable picture after these fixes, A12's dark
+  mode.
+- **Open:** every new behaviour is unverified on air (decision M16 was declined).
