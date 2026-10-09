@@ -33,9 +33,8 @@ This module is the registration table; the handlers and their schemas live in `a
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
-import voluptuous as vol
 from homeassistant.components.light.const import DOMAIN as LIGHT_DOMAIN
 from homeassistant.core import (
     HomeAssistant,
@@ -147,6 +146,13 @@ from .actions.thresholds import (
 from .const import (
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    # Home Assistant validates with probatio from 2026.10 and aliases `voluptuous` to it on import; the floor
+    # release (hacs.json) has no probatio, so the schemas are built with voluptuous and typed as probatio.
+    import probatio as vol
+else:
+    import voluptuous as vol
 
 DIM_DEFAULT_SPEED: Final = 20  # % of the range per second: from off to full in 5 s
 
@@ -260,7 +266,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             Callable[
                 [HomeAssistant, ServiceCall], Coroutine[Any, Any, ServiceResponse]
             ],
-            vol.Schema | vol.All,
+            vol.Schema | vol.All[Any],
         ]
     ] = [
         (SERVICE_SET_ROOM, _set_room, SET_ROOM_SCHEMA),
