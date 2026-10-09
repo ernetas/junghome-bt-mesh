@@ -1017,7 +1017,8 @@ async def test_set_room_by_entity_label_and_entity_area(
     registry.async_update_entity(stale.entity_id, labels={label})
     attic = ar.async_get(hass).async_get_or_create("Attic")
     switch = entity_id(hass, "light", UID_LIGHT_SWITCH)
-    registry.async_update_entity(switch, area_id=attic.id)  # the device stays in WC
+    # the device stays in WC; Home Assistant 2026.10 gives an entity an area of its own only with a name of its own
+    registry.async_update_entity(switch, name="Mirror", area_id=attic.id)
 
     await call(
         hass,
