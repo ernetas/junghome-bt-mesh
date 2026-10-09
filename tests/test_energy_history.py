@@ -63,6 +63,16 @@ def auto_enable_custom_integrations(
     """Start the recorder before `hass` is set up, then load custom_components (overrides conftest's)."""
 
 
+@pytest.fixture
+def recorder_config() -> dict[str, Any]:
+    """Record the Energy sensor's states alone (overrides Home Assistant's fixture).
+
+    The tests read its statistics and nothing else, while writing the states of every other entity the entry adds
+    kept the recorder thread busy for most of a test's second (`CALL_BUDGET`).
+    """
+    return {"include": {"entities": [ENERGY_ID]}}
+
+
 @pytest.fixture(autouse=True)
 def no_property_reads() -> Generator[None]:
     """Keep the config entities' reads and the loads' lock reads out: the mesh here answers the charts only."""

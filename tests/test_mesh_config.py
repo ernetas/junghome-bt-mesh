@@ -2097,6 +2097,7 @@ async def test_room_names_the_mesh_reserves_are_refused(
     assert bench.config_pdus() == []
 
 
+@pytest.mark.slow_ok  # CPU, no wait: some 1600 rooms added one by one, each `add_group` a pass over all of them
 async def test_room_range_exhaustion_is_a_translated_error(bench: Bench) -> None:
     """Every address of the provisioner's group range taken: `service_room_range_full`, nothing written."""
     pf = bench.reload()
@@ -2116,6 +2117,7 @@ async def test_room_range_exhaustion_is_a_translated_error(bench: Bench) -> None
     assert bench.config_pdus() == []
 
 
+@pytest.mark.slow_ok  # CPU, no wait: some 1600 rooms added one by one, each `add_group` a pass over all of them
 async def test_a_crowded_range_is_a_translated_error(bench: Bench) -> None:
     """Review-4 W4-2: Home Assistant's rooms and scenes come from the top of the app's ranges; once fewer than
     `ALLOCATION_MARGIN` free numbers are left below the next one, the app's own next ones would reach it: refused
