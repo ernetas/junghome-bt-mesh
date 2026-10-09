@@ -159,8 +159,9 @@ bundled in the APK (`android/…/assets/updates/`), and that version reads need 
 5. **Hotel / night / presentation dimming** (`1008/1011/1009/1012/1013`) on dimmer/DALI inserts as expert config
    entities once the semantics are known (values suggest a percentage and a duration; the app's unused strings
    `device_parameter_hotel_*`, `night_light_*`, `presentation_mode` describe them, `device-settings.md` §13.10).
-   **Probe pending** (review-4 brief 36, §13): not settled, so not exposed and never written by Home Assistant; the
-   read-only reads are `on-air-sweep.md` A7, the supervised set-and-restore probe C6.
+   **Done for the hotel function** (review-4 briefs 36 and 73, §13): the read-only reads were `on-air-sweep.md` A7,
+   the supervised set-and-restore probe C6, the writes from Home Assistant's entities C10; the presentation mode is
+   still not settled, so not exposed and never written by Home Assistant.
 6. **key_toggle_enable `500C`** and `transmission_settings 0F00` as expert entities after a capture of what the
    app does not do with them — **probe pending** like item 5 (§13; the runtime statistics `0F01/0F02` with them).
    ~~**`5014`**~~ settled: the commissioning moment, the socket's *Installed* sensor (§10); **`1FFF`** is an empty
@@ -478,7 +479,8 @@ Status to the element group should appear as it did for the CLI's lock.
 ## 13. Firmware-only properties (probed in part)
 
 Review-4 brief 36 (F4-3, F4-9, F4-10, F4-11). What is established, from §2, §9, §10 and the on-air sweep's A7 (read
-only) and C6 (set and restored, CLI only, nobody at the keys):
+only), C6 (set and restored, CLI only, nobody at the keys) and C10 (the hotel function's entities, written from Home
+Assistant and restored):
 
 | id | name (gateway firmware) | where it was read | value | settled? |
 |---|---|---|---|---|
@@ -486,8 +488,8 @@ only) and C6 (set and restored, CLI only, nobody at the keys):
 | `0x0F00` | transmission_settings | key elements, mini-actuator inputs, socket meter (LBC Admin) | `0100` | no — on the meter `0000` is answered `0100`, `0101` is answered `0100`, `0200` is kept; with each, over four minutes, the meter kept its rhythm (power, voltage and current about every 65 s, plus statuses on change), so no setting showed an effect |
 | `0x0F01` / `0x0F02` | current / all-time runtime stats | every node's LBC Manufacturer server | the id alone everywhere asked (a push-button, a mini actuator, a socket and its meter, the DALI insert), where listed too | **yes**: nothing counts; no entity |
 | `0x500C` | key_toggle_enable | key elements, mini-actuator inputs (LBC Admin) | `01` | no — whether `00` stops a single key toggling needs a person at the key |
-| `0x1008` / `0x1011` | hotel / night dim value | DALI insert only (a switch insert answers `0x1008` with the id alone) | `33` / `33` | hotel: **yes**, a level in 1/255 (`0x33` = 51 = 20 %, below); night: no — when it applies needs the dark and a person |
-| `0x1009` | basic_light_function_enable | DALI insert only | `00` | **yes**: with `01`, an OnOff Set off leaves the light on at the hotel value (OnOff Status on, CTL Status lightness 13107 = 20 %), and moves its Lightness Last there and its colour temperature to 2700 K |
+| `0x1008` / `0x1011` | hotel / night dim value | DALI insert only (a switch insert answers `0x1008` with the id alone) | `33` / `33` | hotel: **yes**, a level in 1/255 (`0x33` = 51 = 20 %, below; 30 % written from Home Assistant left the light at 76/255); night: the layout yes (written from Home Assistant and read back), not when it applies — that needs the dark and a person |
+| `0x1009` | basic_light_function_enable | DALI insert only | `00` | **yes**: with `01`, an OnOff Set off leaves the light on at the hotel value (OnOff Status on, CTL Status lightness 13107 = 20 %), and moves its Lightness Last there and its colour temperature to 2700 K; from Home Assistant too (C10: the switch on, `light.turn_off` left the light entity on at 76/255, the hotel value 30 %) |
 | `0x1012` / `0x1013` | presentation mode enable / time | DALI insert only | 8 bytes each (`006f002008000000`, `b400002008000000`) | no — layout unknown, left as read; **never enabled unattended** |
 | OnOff Status `[present][target][remaining]` | run-on time `0x1007` | a switch insert, run-on 20 s | the short form | **yes**: the On Set's Status and a Get during the run-on carry no target or remaining time, and the light publishes off by itself at the end; this firmware does not report the time left |
 | `0xA0xx` | LED mode `[r][g][b][mode]`, 0..100 | push-buttons, sockets | on `04640000`, off `641b0000` | in part: `32143c00`, outside the app's palette, is accepted and read back unchanged; whether the LED shows it needs a person |
@@ -496,8 +498,10 @@ What Home Assistant does with them (review-4 brief 73): an allow-list, `properti
 of firmware-only ids a probe settled — only those become config entities, disabled by default, and only with a
 codec. It holds the DALI insert's hotel function, on a push-button's tunable-white load only, named after the
 app's declared but unshown strings: `0x1009` the switch *Hotel function* (`Bool`), `0x1008` the number *Hotel
-function brightness* and `0x1011` the number *Night-light brightness* (`Percent`: one byte in 1/255, shown 0–100 %;
-the night value's effect unverified on air). The rest stay `Raw` and unexposed: `0x0F00` (no effect seen and no
+function brightness* and `0x1011` the number *Night-light brightness* (`Percent`: one byte in 1/255, shown 0–100 %).
+The sweep's C10 wrote all three from those entities and read them back, and with the switch on an off from Home
+Assistant left the light lit at the hotel brightness, the light entity on, as the device reported; the night value's
+effect is unverified on air. The rest stay `Raw` and unexposed: `0x0F00` (no effect seen and no
 meaning in the app's notes), `0x500C` (no such setting in the app; its effect needs a person at the key), `0x1012` /
 `0x1013` (layout unknown). The LED colour outside the palette gets no free-colour entity: the colour select keeps
 the app's palette (and LED 2 following LED 1 while synchronised), and a second entity writing the same property

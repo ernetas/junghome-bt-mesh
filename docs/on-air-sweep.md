@@ -1577,3 +1577,12 @@ where Home Assistant's own traffic in the capture settles part of an item, that 
 | E3 | group E, excluded by the maintainer | — | |
 | E4 | group E, excluded by the maintainer | — | |
 | E5 | group E, excluded by the maintainer | — | |
+
+### C10, from Home Assistant
+
+Run later, by the maintainer at Home Assistant: its actions on `<tw light>` and the states it showed, no capture.
+Everything was set back in the same sitting.
+
+| Item | Result (pass / fail / skipped / not checkable) | Session, sequence numbers | Notes |
+|---|---|---|---|
+| C10 | pass on Home Assistant's side: steps 1 and 2, step 3's write (no capture: the bytes on air not seen); the night level's effect not checked | Home Assistant actions, no capture: Home Assistant's own states | **As found:** *Hotel function* off, *Hotel function brightness* 20 %, *Night-light brightness* 20 %; the light on at 255 and 2000 K. **1:** *Hotel function brightness* set to 30 % and *Hotel function* turned on, both read back as written; `light.turn_off` then left the light entity **on at brightness 76/255 (30 %)**, from the light's own status, and the strip stayed lit, dimmed (seen by the maintainer). **2:** *Hotel function* off, then `light.turn_off` switched the light off; the brightness set back to 20 %. **3:** *Night-light brightness* set to 25 % and back to 20 %, both read back; what the night level does in the dark was not checked. Restored: the light on at 255 and 2000 K. No warning, no traceback. **Found on the way:** with the three entities enabled (the entry reloaded), both numbers read their values by themselves; the *Hotel function* switch stayed `unknown` for over 45 s until `homeassistant.update_entity`, which read `off` at once. |

@@ -1352,9 +1352,10 @@ _VENDOR_SPECS: list[PropertySpec] = [
     # hotel / basic light / night / presentation: listed by the DALI insert's load (its primary element) only, names
     # from the gateway firmware (`hidden-features.md` §2, §13). The on-air sweep (`sweep-cli`) settled three: A7
     # read 0x1008 = 33, 0x1009 = 00, 0x1011 = 33; C6 set 0x1009 to 01 (seq 00ED6D) and an OnOff Set off (00F171)
-    # left the light on at lightness 13107 (CTL Status 190466) — the hotel value 0x33 in 1/255 of full, 20 %. The
-    # night value is the same one byte in 1/255, its effect unseen (it needs the dark). The two presentation
-    # records' 8-byte layouts are unknown: Raw.
+    # left the light on at lightness 13107 (CTL Status 190466) — the hotel value 0x33 in 1/255 of full, 20 %. C10
+    # wrote all three from Home Assistant's entities and read them back; with 0x1009 on, an off left the light at
+    # the 30 % written (76/255). The night value is the same one byte in 1/255, its effect unseen (it needs the
+    # dark). The two presentation records' 8-byte layouts are unknown: Raw.
     _fw(0x1008, "hotel_dimm_value", LOAD_HOSTS, PERCENT, "rw", element="load", unit="%"),
     _fw(0x1009, "basic_light_function_enable", LOAD_HOSTS, BOOL, "rw", element="load"),
     # u32 wear counters, read on the socket's load element (118 / 79, `docs/hidden-features.md` §2)

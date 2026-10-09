@@ -96,6 +96,8 @@ One `light` entity per output. The entity is the device, so its name is the name
   or off, a colour temperature (a CTL or CTL Temperature Set), a switched light and *All lights* never carry one; a
   scene carries it only when every member is a dimmer or DALI light. With the option off a `transition` (from a
   light profile, say) is ignored and the commands are sent exactly as before. **Unverified on air.**
+- A DALI light whose *Hotel function* is on stays **on** after an off, at its hotel brightness: the device reports
+  it on, and so does the entity (see [Device parameters](#device-parameters-number-select-switch-button)).
 - A colour temperature changed elsewhere is followed from the light's *Light CTL Status* and also from a *Light CTL
   Temperature Status* of its temperature element (whether JUNG lights publish the latter is not observed yet).
 - The second output of a two-output insert is a separate light; without app metadata it is named `<node> out 2`.
@@ -708,14 +710,17 @@ insert or a DALI mini actuator has not been tried. Their names are the ones the 
 show:
 
 - **Hotel function** (`switch`, `0x1009`): on, switching the light off leaves it on at the *Hotel function
-  brightness* instead; seen on air (an off with the function on left the light at 20 % and moved its last
-  brightness there and its colour temperature to 2700 K). Writing it through Home Assistant is **unverified on air**
-  (the probe wrote it from the command line).
+  brightness* instead; seen on air, from the command line (an off with the function on left the light at 20 % and
+  moved its last brightness there and its colour temperature to 2700 K) and from Home Assistant (the switch and the
+  brightness written from their entities and read back; `light.turn_off` then left the light lit at 30 %). Home
+  Assistant shows what the device reports: while the function is on, the light entity stays **on** after an off, at
+  the hotel brightness (on at 76/255 after an off with the brightness at 30 %), so an automation waiting for the light
+  to be off waits in vain. With the function off, off switches the light off.
 - **Hotel function brightness** (`number`, `0x1008`, 0–100 %, one byte in 1/255 of full on the wire): the level the
   hotel function leaves the light at; read 20 % on the device here.
-- **Night-light brightness** (`number`, `0x1011`, same layout): a second level beside it, read 20 % here. When the
-  device applies it is **unverified on air** (it needs the dark and a person); nothing in the firmware's list
-  switches a night light on.
+- **Night-light brightness** (`number`, `0x1011`, same layout): a second level beside it, read 20 % here; written
+  from Home Assistant and read back. When the device applies it is **unverified on air** (it needs the dark and a
+  person); nothing in the firmware's list switches a night light on.
 
 Left out, with the reason: *transmission settings* (`0x0F00`, on keys, inputs and the socket's meter — of the
 values tried only `0100` and `0200` are kept, neither changed anything seen in four minutes, and the app names no

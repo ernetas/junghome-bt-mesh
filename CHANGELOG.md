@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.1 (unreleased)
+
+### Changed
+
+- **The hotel function, seen working from Home Assistant** (on-air sweep C10). *Hotel function*, *Hotel function
+  brightness* and *Night-light brightness* were written from their entities and read back, and with the function on
+  `light.turn_off` left the DALI light lit at the hotel brightness. The documentation now says what that looks like:
+  while the function is on, the light entity stays **on** after an off, at the hotel brightness, because that is what
+  the device reports. When the device applies the night-light brightness is still unverified on air.
+
 ## 1.5.0
 
 ### Upgrading

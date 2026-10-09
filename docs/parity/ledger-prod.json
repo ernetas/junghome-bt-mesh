@@ -4713,7 +4713,7 @@
     "tests/test_config_entities.py::test_hotel_function_entities_read_and_write",
     "tests/jhmesh/test_properties.py::test_hotel_function_codecs_round_trip_the_sweeps_bytes"
    ],
-   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's basic_light_function_enable (0x1009) is the function it names: the on-air sweep (docs/on-air-sweep.md A7 / C6, session sweep-cli; docs/hidden-features.md §13) read it on the DALI insert's load and with 01 an OnOff Set off (seq 00F171) left the light on at the hotel value. A switch named after the app's string, disabled by default, on a push-button's DALI (tunable-white) load only. Unverified on air through Home Assistant: the entity's own write (the sweep wrote it with the CLI)."
+   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's basic_light_function_enable (0x1009) is the function it names: the on-air sweep (docs/on-air-sweep.md A7 / C6, session sweep-cli; docs/hidden-features.md §13) read it on the DALI insert's load and with 01 an OnOff Set off (seq 00F171) left the light on at the hotel value. A switch named after the app's string, disabled by default, on a push-button's DALI (tunable-white) load only. Its own write was seen on air too (docs/on-air-sweep.md C10, Home Assistant's own states): turned on from Home Assistant and read back, and light.turn_off then left the light entity on at 76/255, the hotel brightness written (30 %), as the device reported."
   },
   {
    "id": "prod:unused-string:device_parameter_hotel_lightness",
@@ -4735,7 +4735,7 @@
     "tests/test_config_entities.py::test_hotel_function_entities_read_and_write",
     "tests/jhmesh/test_properties.py::test_hotel_function_codecs_round_trip_the_sweeps_bytes"
    ],
-   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's hotel_dimm_value (0x1008) is the level it names: the on-air sweep (docs/on-air-sweep.md A7 / C6, session sweep-cli; docs/hidden-features.md §13) read it on the DALI insert's load and an off with the hotel function on left the light at lightness 13107, the byte 0x33 in 1/255 of full (20 %). A percentage number, disabled by default, on a push-button's DALI load only. Unverified on air through Home Assistant: the entity's own write."
+   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's hotel_dimm_value (0x1008) is the level it names: the on-air sweep (docs/on-air-sweep.md A7 / C6, session sweep-cli; docs/hidden-features.md §13) read it on the DALI insert's load and an off with the hotel function on left the light at lightness 13107, the byte 0x33 in 1/255 of full (20 %). A percentage number, disabled by default, on a push-button's DALI load only. Its own write was seen on air too (docs/on-air-sweep.md C10, Home Assistant's own states): 30 % written and read back, and an off with the hotel function on left the light at 76/255; set back to 20 %."
   },
   {
    "id": "prod:unused-string:device_parameter_label",
@@ -4829,7 +4829,7 @@
     "tests/test_config_entities.py::test_hotel_function_entities_read_and_write",
     "tests/jhmesh/test_properties.py::test_hotel_function_codecs_round_trip_the_sweeps_bytes"
    ],
-   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's night_dimm_value (0x1011) is the level it names, one byte in 1/255 like the hotel value beside it (read 0x33 on the DALI insert's load, docs/on-air-sweep.md A7). A percentage number, disabled by default, on a push-button's DALI load only. Unverified on air: when the night level applies (it needs the dark and a person, docs/hidden-features.md §13), and the entity's own write."
+   "note": "The 2.2.0 app declares the string but shows no such setting; the firmware's night_dimm_value (0x1011) is the level it names, one byte in 1/255 like the hotel value beside it (read 0x33 on the DALI insert's load, docs/on-air-sweep.md A7). A percentage number, disabled by default, on a push-button's DALI load only. Its own write was seen on air (docs/on-air-sweep.md C10, Home Assistant's own states: 25 % written and read back, then 20 % again). Unverified on air: when the night level applies (it needs the dark and a person, docs/hidden-features.md §13)."
   },
   {
    "id": "prod:unused-string:device_parameter_operation_lock",

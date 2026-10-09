@@ -85,9 +85,9 @@ UNSAFE_PROPERTIES: frozenset[int] = frozenset(
 # only these become config entities, and always disabled by default (`config_targets`); an id without a codec
 # stays Raw and unmapped here even when listed. The on-air sweep (`docs/on-air-sweep.md` A7 / C6,
 # `docs/hidden-features.md` §13) settled the DALI insert's hotel function: its enable (0x1009), the level an off
-# leaves the light at (0x1008) and the night level beside it (0x1011, effect unseen). Left out: 0x0F00 (no effect
-# seen and no meaning in the app), 0x500C (the app has no such setting, its effect needs a person at the key) and
-# the presentation records 0x1012 / 0x1013 (layout unknown).
+# leaves the light at (0x1008) and the night level beside it (0x1011, effect unseen); C10 wrote all three from
+# these entities. Left out: 0x0F00 (no effect seen and no meaning in the app), 0x500C (the app has no such setting,
+# its effect needs a person at the key) and the presentation records 0x1012 / 0x1013 (layout unknown).
 PROPERTY_HOTEL_VALUE, PROPERTY_HOTEL_FUNCTION, PROPERTY_NIGHT_VALUE = (
     0x1008,
     0x1009,
