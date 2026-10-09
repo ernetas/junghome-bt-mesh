@@ -520,3 +520,13 @@ and the OnOff Status of a light whose run-on time is set, right after its key sw
 time, an LED colour outside the palette). What is still open: the key toggling, the night value, the presentation
 ids, whether the LED shows a colour outside the palette, and the dimmer insert (none here). The outcomes are here and
 in `android/properties.md` §1.10; the settled ids are entities (above).
+
+## 14. Gateway-mode key events: two rockers at once
+
+On-air sweep B13, two keys linked to the gateway on one 2-gang push-button (two elements), with Home Assistant's debug
+trace on. Pressed one at a time, each key sends its usual LBC User Property Set Unack of `0x5012` (a rocker half
+*pushed_up*, say), twice, as every key event. **Pressed together** — both rockers at once, twice — the push-button sends
+**nothing**: no key event and no other message from it in the trace, while a single press right after was heard as
+usual. So for two keys of one push-button pressed at the same time the firmware sends no key event at all: no click,
+double click or hold reaches the mesh, so neither the gateway nor Home Assistant sees one. Keys of two push-buttons are
+separate devices and were not tried together.

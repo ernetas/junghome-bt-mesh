@@ -7,7 +7,7 @@ messages they send (press_on / press_off / scene / dim). Each entity also says w
 (`connection_attributes`); a key in KeyMode *property* is asked for its 0x5006 / 0x5007 once per link, so a key that
 locks a light or socket says `lock` (`devices.with_key_lock`, unverified on air). `waits_for_double_click` says
 whether its `click` is held back until a double click is ruled out (`ButtonGestures.waits_for_double_click`: the
-options `click_delay` and `double_click_keys`; half a second later on that key, unverified on air per key).
+options `click_delay` and `double_click_keys`; half a second later on that key, seen on air per key).
 
 Every event of a key is also published on the Home Assistant bus as `EVENT_BUTTON_ACTION`, because a device trigger
 (`device_trigger.py`) can only attach to a bus event, not to an entity (this is how HA's own button integrations do

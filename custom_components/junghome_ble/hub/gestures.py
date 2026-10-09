@@ -16,7 +16,9 @@ It is not derived from what listens, because Home Assistant gives no reliable wa
 attach would be seen here, but an automation on the key's event entity (`event.received`, a state trigger), on the
 `junghome_ble_button_action` bus event (the blueprints do that) or a template reading the entity is not — and a key
 whose double-click listener were missed would report a click on the first press of every double press, the one
-thing the delay is there to prevent. Unverified on air: per key, a double press has not been tried on a real key.
+thing the delay is there to prevent. Seen on air per key (`docs/on-air-sweep.md` B13): a key that waits reported a
+single press as one `click` and a double press as `double_click` alone, a key beside it `click` then `double_click`,
+and four quick presses two double clicks.
 """
 
 from __future__ import annotations

@@ -686,7 +686,8 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
 
 - **Checks:** review-4 brief 77 — a key picked under *Keys that wait for a double click* reports a single press as
   one `click` half a second late and a double press as `double_click` only; a key not picked reports its `click` at
-  once and a double press as `click`, then `double_click`; both pressed at the same time keep their own way.
+  once and a double press as `click`, then `double_click`; both pressed at the same time keep their own way (if the
+  push-button sends anything then: the first run found it sends nothing, step 3).
 - **Needs:** two keys linked to the gateway (`connection: gateway`), `<key1>` and `<key2>` (two halves of one rocker
   are one key: take keys of two elements); a person at the keys.
 - **Safety:** nothing changes on the mesh; the option is set back at the end.
@@ -696,13 +697,16 @@ Loads switch or dim and are set back by hand; nothing persists on a device.
      no key wired to a load. `<key1>`'s event entity shows `waits_for_double_click: true`, `<key2>`'s `false`.
   2. Watch the events (*Developer tools → Events*, listen to `junghome_ble_button_action`). Press `<key1>` once,
      then double-press it; the same with `<key2>`.
-  3. Double-press both keys at about the same time (one hand each).
+  3. Double-press both keys at about the same time (one hand each). Not applicable on keys of one push-button: the
+     first run heard nothing from it while two rockers were pressed together (`docs/hidden-features.md` §14); try
+     keys of two push-buttons instead.
   4. Press `<key2>` four times quickly, then, after a pause, three times (review-5 R5-1).
   5. *Configure* again and empty the list (or set back what step 1 found).
 - **Capture:** not needed; the key's vendor gesture messages (`0x5012`) if an event is missing.
 - **Pass:** `<key1>`: one `click` about half a second after the single press, `double_click` alone for the double
-  press; `<key2>`: `click` at once, then `click` + `double_click` for the double press; step 3 gives `<key1>`
-  `double_click` alone and `<key2>` `click` + `double_click`; step 4 gives `click`, `double_click`, `click`,
+  press; `<key2>`: `click` at once, then `click` + `double_click` for the double press; step 3, on keys of two
+  push-buttons, gives `<key1>` `double_click` alone and `<key2>` `click` + `double_click` (on one push-button no
+  event at all, as it sends none); step 4 gives `click`, `double_click`, `click`,
   `double_click` for the four presses and `click`, `double_click`, `click` for the three — never two `double_click`s
   in a row.
 - **Markers:** `custom_components/junghome_ble/hub/gestures.py::<module>`,
@@ -1584,12 +1588,14 @@ where Home Assistant's own traffic in the capture settles part of an item, that 
 | E4 | group E, excluded by the maintainer | — | |
 | E5 | group E, excluded by the maintainer | — | |
 
-### C10 and D13, from Home Assistant
+### B13, C10 and D13, from Home Assistant
 
-Run later, by the maintainer at Home Assistant: C10 its actions on `<tw light>` and the states it showed, D13 its
-actions through the REST API and their answers; no capture. Everything was set back in the same sitting.
+Run later, by the maintainer at Home Assistant: B13 with a person at the keys and Home Assistant's events, C10 its
+actions on `<tw light>` and the states it showed, D13 its actions through the REST API and their answers; no
+capture. Everything was set back in the same sitting.
 
 | Item | Result (pass / fail / skipped / not checkable) | Session, sequence numbers | Notes |
 |---|---|---|---|
+| B13 | pass: steps 1, 2, 4 and 5; step 3 not applicable (the push-button sends nothing for two keys pressed together) | Home Assistant actions and `junghome_ble_button_action` events, no capture: Home Assistant's own states; a debug trace for step 3 | `<key1>` and `<key2>`: two gateway-mode keys of one 2-gang push-button (two elements). **1:** `double_click_keys = [<key1>]` set in the options flow, applied without a reload of the entry; the event entities showed `waits_for_double_click` `true` for `<key1>`, `false` for `<key2>`. **2:** `<key1>`: a single press one `click`, a double press `double_click` alone; `<key2>`: a single press `click`, a double press `click` and then `double_click` 0.3 s later. **3:** both keys pressed together, twice: no event at all, and with debug logging the trace shows **no message from the push-button** during the presses; a single press of `<key2>` right after gave the usual LBC User Property Set Unack `0x5012` `pushed_up`, sent twice. The push-button sends no key event when two of its rockers are pressed at once (`docs/hidden-features.md` §14): device behaviour, so the step does not apply to keys of one push-button. **4:** `<key2>` four quick presses `click`, `double_click`, `click`, `double_click`; three `click`, `double_click`, `click`; never two `double_click`s in a row (R5-1 holds on air). **5:** the list emptied, logging back to INFO. |
 | C10 | pass on Home Assistant's side: steps 1 and 2, step 3's write (no capture: the bytes on air not seen); the night level's effect not checked | Home Assistant actions, no capture: Home Assistant's own states | **As found:** *Hotel function* off, *Hotel function brightness* 20 %, *Night-light brightness* 20 %; the light on at 255 and 2000 K. **1:** *Hotel function brightness* set to 30 % and *Hotel function* turned on, both read back as written; `light.turn_off` then left the light entity **on at brightness 76/255 (30 %)**, from the light's own status, and the strip stayed lit, dimmed (seen by the maintainer). **2:** *Hotel function* off, then `light.turn_off` switched the light off; the brightness set back to 20 %. **3:** *Night-light brightness* set to 25 % and back to 20 %, both read back; what the night level does in the dark was not checked. Restored: the light on at 255 and 2000 K. No warning, no traceback. **Found on the way:** with the three entities enabled (the entry reloaded), both numbers read their values by themselves; the *Hotel function* switch stayed `unknown` for over 45 s until `homeassistant.update_entity`, which read `off` at once. Cause: a turn of the property reads took one job per element, and the switch platform queues its reads last, so the light's switch waited behind every other read of the installation (a turn of five elements and a pause per read of its element before it). Fixed: a turn takes every job its elements queued; step 0 checks it on air. |
 | D13 | pass: steps 1 and 2 (a key's publication and subscriptions); step 3 not run | Home Assistant actions through the REST API, no capture: the actions' answers and Home Assistant's own states | `<key>`, a 1-gang push-button's key whose element published to its own load's element group, as the export said. **1:** `clear_key` with `dry_run: true` answered `preflight.differences` and `unanswered` empty, and the four Config steps a real run would send (publication `0000` and subscription delete, for models `1001` and `05271015`); nothing written. **2:** in the app, `<key>` connected to another `<light>` without exporting; the same dry run reported four differences on `<key el>`, the publication and the subscription of `1001` and of `05271015`, each expecting the export's group and finding the new one. The real `clear_key` was refused with `service_preflight_differs`, the message naming the device, the Get, both groups and "3 more differences"; nothing was written (the key still switched the other light). Over the plain REST API Home Assistant core answers any `HomeAssistantError` with HTTP 500 and logs a traceback: core's behaviour, not the integration's. Reconnected in the app, the dry run found no differences again. **3** (`force` / `skip_preflight` on `remove_from_room`, `reachability` of an unreachable light) was not run; nor are the Scene Register and threshold reads covered. |

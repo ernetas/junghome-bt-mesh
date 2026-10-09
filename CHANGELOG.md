@@ -13,6 +13,10 @@
   the app and no new export, `clear_key`'s dry run listed the four differences of its publication and subscriptions,
   and the real call was refused before writing anything; with the key connected back, no difference. The Scene
   Register reads, a threshold's wiring, `force` / `skip_preflight` and `reachability` remain unverified on air.
+- **Double click per key, seen working** (on-air sweep B13). A key picked under *Keys that wait for a double click*
+  reported a double press as `double_click` alone, a key beside it `click` then `double_click`, and four quick
+  presses two double clicks; the option applied without a reload. Pressing two keys of one push-button at the same
+  time reports nothing: the push-button sends no key event then, which the documentation now says.
 
 ### Fixed
 

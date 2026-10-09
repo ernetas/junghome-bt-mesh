@@ -757,7 +757,8 @@ class JungHomeHub:
     def async_options_updated(self) -> None:
         """Apply a change of `LIVE_OPTIONS` in place: the gestures read theirs as they go, the app follower is told.
 
-        The keys' event entities write their state again (their `waits_for_double_click`). Unverified on air.
+        The keys' event entities write their state again (their `waits_for_double_click`): seen on air, no reload
+        (`docs/on-air-sweep.md` B13).
         """
         live = {key: self.entry.options.get(key) for key in LIVE_OPTIONS}
         if live == self._live_options:

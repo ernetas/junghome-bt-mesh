@@ -527,7 +527,9 @@ without an app name share one device per node.
   for a double click: the [option](#options) *Report clicks only once a double click is ruled out* makes every key
   wait, *Keys that wait for a double click* only the keys picked there. A key that waits fires only `double_click`
   for a double press, and its single `click` 0.5 s late; every other key keeps firing its `click` at once. The
-  entity attribute `waits_for_double_click` says which way a key works. Per key **unverified on air**.
+  entity attribute `waits_for_double_click` says which way a key works. Seen on air per key (on-air sweep B13).
+- Two keys of one push-button pressed at the same time report nothing: the push-button sends no key event then
+  (seen on air, `docs/hidden-features.md` §14).
 - The JUNG firmware publishes every gateway event twice; duplicates are suppressed.
 - **Every hold ends.** A hold — of either kind above — whose release or stop never arrives still gets its `hold_end`,
   with a `reason` attribute saying why: `timeout` (30 s after the hold started; nobody holds a key that long on
