@@ -74,8 +74,8 @@ class JungHomeMeshTopology(JungHomeEntity, ImageEntity):
     the last 15 minutes (`Liveness.hop_range`), which a beat over a longer relay path leaves as they were — with the
     last beat's hops the picture moved nodes between bands every minute (on-air sweep A12). Always available: without
     a link the picture says so. Diagnostic, on by default (only configuration entities are off by default). Seen on
-    air (A12): the link's proxy, the bands, the names and areas. Unverified on air: the picture in dark mode, and that
-    it stays put with the fewest hops.
+    air (A12): the link's proxy, the bands, the names and areas, the picture staying put with the fewest hops, and its
+    dark colours.
 
     Its words follow the server's language: a new one is loaded and drawn at once when it is chosen, and any look
     finding other words than those shown redraws too.

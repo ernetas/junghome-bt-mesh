@@ -8,7 +8,7 @@ disabled and 2 unsupported are not shown), its distance (the fewest hops of its 
 answers (`JungHomeHub.node_alive`; None for a battery node, which sleeps, and for every node without a link), and when
 it was last heard for one that does not answer. Equal snapshots are equal values, so the image can tell a change from
 a heartbeat that changed nothing. Seen on air (sweep A12): the link's proxy, the bands against the heartbeats, names
-and areas. Unverified on air: that the fewest hops stay put on the installation, and the picture in dark mode.
+and areas, and the fewest hops staying put on the installation.
 
 The picture's words (`topology_texts`) are the translations of the server's language, `common.topology_<key>` for
 each key of `topology_svg.TEXTS`, English where it has none.
