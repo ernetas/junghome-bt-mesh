@@ -192,7 +192,7 @@ jobs:
         # In a called workflow `github` is the caller's context: on release.yml's tag run `ref_type` is `tag`, on a
         # branch push or a pull request it is `branch` and nothing is stored.
         if: github.ref_type == 'tag'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: jhmesh-dist
           path: dist/
@@ -295,7 +295,7 @@ jobs:
       - name: hassfest
         # No release tags since 2020; pinned to the master commit (Renovate moves the SHA along the
         # repository's default branch, which is master there).
-        uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
+        uses: home-assistant/actions/hassfest@06749dd8c0b54f350bc69c8752456cee498808a3 # master
       - name: HACS validation
         # hacs/action is a one-line wrapper (action.yml) around the docker image ghcr.io/hacs/action:main, so pinning
         # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
@@ -339,7 +339,7 @@ jobs:
       - name: Hand the zip to release.yml (tags only)
         # `github` is the caller's context in a called workflow: `tag` on release.yml's run, `branch` otherwise.
         if: github.ref_type == 'tag'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: junghome_ble
           path: dist/junghome_ble.zip
