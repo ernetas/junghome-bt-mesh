@@ -76,7 +76,7 @@ jobs:
       - name: Workflow security (zizmor)
         # Template injection, credentials left in the checkout, unpinned actions or images, excessive permissions.
         # Offline: no repository token for the audits that would query GitHub. Every finding fails the job.
-        uses: docker://ghcr.io/zizmorcore/zizmor:1.30.1@sha256:a2eb396d886c053073405c7a980f2139ba2248ec172243cfa3841e57196e8101
+        uses: docker://ghcr.io/zizmorcore/zizmor:1.31.1@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9
         with:
           args: --offline .
 
@@ -192,7 +192,7 @@ jobs:
         # In a called workflow `github` is the caller's context: on release.yml's tag run `ref_type` is `tag`, on a
         # branch push or a pull request it is `branch` and nothing is stored.
         if: github.ref_type == 'tag'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: jhmesh-dist
           path: dist/
@@ -295,7 +295,7 @@ jobs:
       - name: hassfest
         # No release tags since 2020; pinned to the master commit (Renovate moves the SHA along the
         # repository's default branch, which is master there).
-        uses: home-assistant/actions/hassfest@58bff37c8947f690ace498be413a9b78d6f30f93 # master
+        uses: home-assistant/actions/hassfest@cd6f3635a740c84d8a14f6121a90068b8ece6bf6 # master
       - name: HACS validation
         # hacs/action is a one-line wrapper (action.yml) around the docker image ghcr.io/hacs/action:main, so pinning
         # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
@@ -303,7 +303,7 @@ jobs:
         # the `main` tag: renovate.json `docker:pinDigests`); the wrapper's inputs become the INPUT_* variables its
         # entrypoint (hacs/integration action/action.py) reads. Every validator gates the run, none is ignored (and
         # every release: release.yml calls this workflow).
-        uses: docker://ghcr.io/hacs/action:main@sha256:dc92fdad2f6ffbe74bffb7269d781ea8e064f52d9bb486cdf3925d74e7ab6ebf
+        uses: docker://ghcr.io/hacs/action:main@sha256:7b279b1c83529d05c4ce9d4cf7c04ac875191a6759e8cbf3439384f7e9c98351
         env:
           INPUT_CATEGORY: integration
           INPUT_GITHUB_TOKEN: ${{ github.token }}
@@ -339,7 +339,7 @@ jobs:
       - name: Hand the zip to release.yml (tags only)
         # `github` is the caller's context in a called workflow: `tag` on release.yml's run, `branch` otherwise.
         if: github.ref_type == 'tag'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: junghome_ble
           path: dist/junghome_ble.zip
