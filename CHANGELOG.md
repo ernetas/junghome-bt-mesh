@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.3 (unreleased)
+## 1.5.3
 
 ### Fixed
 
