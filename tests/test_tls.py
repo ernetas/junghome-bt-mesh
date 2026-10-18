@@ -10,11 +10,11 @@ every request it ever sees, so "nothing was sent" is asserted, not assumed.
 from __future__ import annotations
 
 import asyncio
-import datetime
 import hashlib
 import json
 import shutil
 import ssl
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any
@@ -102,15 +102,15 @@ def _self_signed(directory: Path, name: str) -> tuple[Path, Path, str]:
     """Write a fresh self-signed certificate + key; return paths and the certificate's SHA-256 hex."""
     key = ec.generate_private_key(ec.SECP256R1())
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "junghome.local")])
-    now = datetime.datetime.now(datetime.UTC)
+    now = datetime.now(UTC)
     cert = (
         x509.CertificateBuilder()
         .subject_name(subject)
         .issuer_name(subject)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(now - datetime.timedelta(minutes=5))
-        .not_valid_after(now + datetime.timedelta(days=1))
+        .not_valid_before(now - timedelta(minutes=5))
+        .not_valid_after(now + timedelta(days=1))
         .sign(key, hashes.SHA256())
     )
     crt, pem = directory / f"{name}.crt", directory / f"{name}.key"
