@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.5.2
+
+### Changed
+
+- **Checked against Home Assistant 2026.11**, its development build of 18 October 2026 (before the beta). The
+  integration needs no change there: the tests pass but for those that lean on the 2026.10 test harness, which
+  2026.11 moved under them, and `DeviceInfo` turning into a dataclass (home-assistant/core#180251) touches nothing
+  the integration does with it. Two things show. The log has six warnings at startup that the thermostats provide
+  `target_temperature`, `current_temperature` and `_attr_temperature_unit`, which 2026.11 renames to `native_*` and
+  still serves until 2027.11; the new names do not exist before 2026.11, so the move waits until the `hacs.json`
+  floor (2026.9.0) reaches it. And an entity name you gave yourself now shows after its device's name
+  (home-assistant/core#184340): an entity that the gateway import moved to one of our devices and that you had named
+  `Mirror`, on a device named `Mirror light`, shows as `Mirror light Mirror`. Seen in the tests only.
+
+### Internal
+
+- Renovate (#9): ruff 0.17.0 (and its pre-commit hook), pytest-homeassistant-custom-component 0.13.372 (Home
+  Assistant 2026.10.1), hypothesis 6.169.3, and the actions of `ci.yml` and `release.yml`. The TLS test imports from
+  `datetime` as the rest of the tree does.
+
 ## 1.5.1
 
 ### Changed
