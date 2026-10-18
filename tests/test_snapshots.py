@@ -22,12 +22,13 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
 import pytest
-from homeassistant.components import image as image_component
+from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -115,7 +116,9 @@ async def test_platform_entities(
     access token (in its state and picture URL) is random: fixed here.
     """
     freezer.move_to("2020-01-01T00:00:00+00:00")
-    with patch.object(image_component._RND, "getrandbits", return_value=0xC0FFEE):
+    # the random source sits beside `ImageEntity`: in `image` itself, in `image.entity` since Home Assistant 2026.11
+    tokens = vars(sys.modules[ImageEntity.__module__])["_RND"]
+    with patch.object(tokens, "getrandbits", return_value=0xC0FFEE):
         entry = await init_platform(platform)
     if not er.async_entries_for_config_entry(entity_registry, entry.entry_id):
         # A platform nothing on the fixture network needs (covers and thermostats: it has no blind or RTR):

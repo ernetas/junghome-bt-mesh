@@ -294,8 +294,8 @@
    "id": "ui:enum:valuedisplaymode",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/climate.py::JungHomeClimate.target_temperature",
-    "custom_components/junghome_ble/climate.py::JungHomeClimate.current_temperature"
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.native_target_temperature",
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.native_current_temperature"
    ],
    "tests": [
     "tests/test_climate.py::test_entity_attributes_after_the_connect_time_reads"
@@ -1339,7 +1339,7 @@
    "status": "implemented",
    "code": [
     "custom_components/junghome_ble/climate.py::_on_sensor_status",
-    "custom_components/junghome_ble/climate.py::JungHomeClimate.current_temperature"
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.native_current_temperature"
    ],
    "tests": [
     "tests/test_climate.py::test_current_temperature_and_action_follow_the_publications",
@@ -1737,7 +1737,7 @@
    "id": "ui:state:targettemperaturecapability",
    "status": "partial",
    "code": [
-    "custom_components/junghome_ble/climate.py::JungHomeClimate.target_temperature",
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.native_target_temperature",
     "custom_components/junghome_ble/conversions.py::level_to_temperature"
    ],
    "tests": [
@@ -1871,7 +1871,7 @@
    "id": "ui:tile:rtr",
    "status": "implemented",
    "code": [
-    "custom_components/junghome_ble/climate.py::JungHomeClimate.current_temperature"
+    "custom_components/junghome_ble/climate.py::JungHomeClimate.native_current_temperature"
    ],
    "tests": [
     "tests/test_climate.py::test_current_temperature_and_action_follow_the_publications"

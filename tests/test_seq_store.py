@@ -75,7 +75,7 @@ from .conftest import (
     wait_for_link,
     wait_until,
 )
-from .helpers import MESH_UUID, SEQ_STORE_KEY, find_issue
+from .helpers import MESH_UUID, SEQ_STORE_KEY, find_issue, store_writes
 
 if TYPE_CHECKING:
     from freezegun.api import FrozenDateTimeFactory
@@ -546,7 +546,7 @@ async def test_seq_store_writes_atomically(
     SEQ_SAVE_EVERY numbers) can leave a zero-length or truncated file — the CLI's own state file already
     guards against exactly this with fsync (`LocalState._write`'s docstring); the HA-side store needs it too."""
     hub = hub_of(init_integration)
-    assert seq_store(hass, hub.cdb)._atomic_writes is True
+    assert store_writes(seq_store(hass, hub.cdb)) == (True, True)
 
 
 async def test_lost_store_falls_back_to_the_backup(

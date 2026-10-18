@@ -22,6 +22,7 @@ from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opco
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.storage import Store
 
     from custom_components.junghome_ble.configurator.plan import Applied
 
@@ -269,6 +270,15 @@ def sensor_status(*values: tuple[int, bytes]) -> bytes:
 def vendor_button_event(counter: int, code: int) -> bytes:
     """JUNG 'LBC User Property Set Unack' carrying property 0x5012 (ButtonEvent) as the gateway sees it."""
     return encode_opcode(0x10, M.JUNG_CID) + bytes([0x12, 0x50, counter, code])
+
+
+def store_writes(store: Store[Any]) -> tuple[bool, bool]:
+    """Return how a `Store` writes its file: (owner-only, atomic).
+
+    Home Assistant 2026.11 keeps both on the store's file I/O (`Store._io`), earlier cores on the store itself.
+    """
+    io = getattr(store, "_io", store)
+    return io._private, io._atomic_writes
 
 
 def find_issue(hass: HomeAssistant, key: str) -> ir.IssueEntry | None:

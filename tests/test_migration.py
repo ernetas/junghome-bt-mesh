@@ -589,7 +589,11 @@ async def test_apply_moves_entities_and_copies_device_customisations(
     assert hass.states.get("light.wc_mirror") is not None
     assert hass.states.get("event.living_room_rocker_down") is not None
     assert hass.states.get("scene.wc_off") is not None
-    assert hass.states.get("light.wc_mirror").name == "Mirror"
+    # the user's name; Home Assistant 2026.11 shows it after the device's (home-assistant/core#184340)
+    user_name_follows_device = hasattr(er.RegistryEntry, "compat_name")
+    assert hass.states.get("light.wc_mirror").name == (
+        "Mirror light Mirror" if user_name_follows_device else "Mirror"
+    )
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id(ours)) is None
 
 
