@@ -27,6 +27,7 @@ from homeassistant.components.climate import (
     SERVICE_SET_HVAC_MODE,
     SERVICE_SET_PRESET_MODE,
     SERVICE_SET_TEMPERATURE,
+    ClimateEntity,
     ClimateEntityFeature,
     HVACAction,
     HVACMode,
@@ -45,6 +46,7 @@ from homeassistant.const import (
     STATE_OFF,
     STATE_ON,
     STATE_UNAVAILABLE,
+    UnitOfTemperature,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import device_registry as dr
@@ -981,8 +983,10 @@ async def test_thermostat_without_onoff_or_sensor_elements(
     entity.hass = hass
     assert entity.addresses == {RTR}
     assert entity.hvac_action is None
-    assert entity.current_temperature is None
-    assert entity.target_temperature == COMFORT  # the set-point element is still read
+    assert entity.native_current_temperature is None
+    assert (
+        entity.native_target_temperature == COMFORT
+    )  # the set-point element is still read
     rtr_mesh.gets.clear()
     await entity._refresh()
     assert rtr_mesh.gets == [M.GEN_LEVEL_GET]  # nothing else to ask
@@ -990,9 +994,9 @@ async def test_thermostat_without_onoff_or_sensor_elements(
     hub.states.pop(RTR)
     full = CL.JungHomeClimate(hub, hub.devices.thermostats[0])
     assert entity.hvac_action is None
-    assert entity.target_temperature is None
+    assert entity.native_target_temperature is None
     assert full.hvac_action is None
-    assert full.current_temperature is None
+    assert full.native_current_temperature is None
     hub.element_state(RTR)  # heard from, but not its OnOff status yet
     assert full.hvac_action is None
 
@@ -1123,10 +1127,10 @@ async def test_all_thermostats_sets_every_set_point_with_one_message(
     # nothing known: no temperatures
     hub.states[RTR].properties[PID_AMBIENT] = b""
     hub.states[RTR].level = None
-    assert entity.target_temperature is None
-    assert entity.current_temperature is None
+    assert entity.native_target_temperature is None
+    assert entity.native_current_temperature is None
     hub.states[RTR].properties[PID_AMBIENT] = b"\x7f"  # the sensor's "unknown"
-    assert entity.current_temperature is None
+    assert entity.native_current_temperature is None
 
 
 async def test_room_thermostats_set_each_set_point(
@@ -1314,3 +1318,40 @@ async def test_loads_a_thermostat_switches(
     )
     # the plain network: nothing is controlled
     assert build_devices(CDB.load(Path(RTR_CDB_PATH))).thermostats_of == {}
+
+
+def test_the_entities_provide_the_temperature_members_the_core_reads() -> None:
+    """The native temperature members (Home Assistant 2026.11), and their old names only on a core before it."""
+    for cls in (CL.JungHomeClimate, CL.JungHomeAllThermostats):
+        assert {"native_target_temperature", "native_current_temperature"} <= vars(
+            cls
+        ).keys()
+        legacy = CL.LEGACY_TEMPERATURE_MEMBERS.keys() & vars(cls).keys()
+        assert legacy == (
+            set()
+            if CL.NATIVE_TEMPERATURE_MEMBERS
+            else CL.LEGACY_TEMPERATURE_MEMBERS.keys()
+        )
+
+
+@pytest.mark.parametrize("native", [True, False])
+def test_legacy_temperature_members_serve_the_native_ones(native: bool) -> None:
+    class Probe(ClimateEntity):
+        _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
+
+        @property
+        def native_target_temperature(self) -> float | None:
+            return 21.5
+
+        @property
+        def native_current_temperature(self) -> float | None:
+            return 20.0
+
+    with patch.object(CL, "NATIVE_TEMPERATURE_MEMBERS", native):
+        assert CL.legacy_temperature_members(Probe) is Probe
+    if native:
+        assert CL.LEGACY_TEMPERATURE_MEMBERS.keys().isdisjoint(vars(Probe))
+        return
+    probe = Probe()
+    assert (probe.target_temperature, probe.current_temperature) == (21.5, 20.0)
+    assert probe._attr_temperature_unit == UnitOfTemperature.CELSIUS

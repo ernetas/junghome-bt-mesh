@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.5.3 (unreleased)
+
+### Fixed
+
+- **No deprecation warnings from the thermostats on Home Assistant 2026.11.** The thermostats provide the
+  temperature members under the names 2026.11 gives them (`native_target_temperature`, `native_current_temperature`,
+  `_attr_native_temperature_unit`), and on an older core under the old names too, which are all it knows: the six
+  warnings 1.5.2 noted are gone, the floor stays 2026.9.0, and nothing changes before 2026.11. Seen against the
+  2026.11 development build of 18 October 2026, not yet on a released 2026.11.
+
+### Internal
+
+- Strict typing passes against Home Assistant 2026.11 too: it marks the old temperature members final, so the
+  entities name only the native ones and `climate.legacy_temperature_members` adds the old names on an older core
+  (drop it once the floor reaches 2026.11).
+- The tests no longer lean on what Home Assistant 2026.11 moved: `tests/helpers.store_writes` reads whether a
+  `Store` writes owner-only and atomically wherever the core keeps it (on the store, or on its file I/O since
+  2026.11); the file-mode tests write to disk through `Store`'s own writer, taken before the test plugin replaces
+  it, rather than a helper 2026.11 removed; the snapshot test fixes the image token where `ImageEntity` lives
+  (`image`, or `image.entity` since 2026.11); the gateway import test expects the user's entity name after its
+  device's on 2026.11 (home-assistant/core#184340). Against the 2026.11 development build, with Home Assistant's
+  own restore-state helpers in the test plugin, every test passes but the registry snapshots, which gain
+  2026.11's `compat_name` field and get regenerated when the test plugin moves to 2026.11.
+
 ## 1.5.2
 
 ### Changed

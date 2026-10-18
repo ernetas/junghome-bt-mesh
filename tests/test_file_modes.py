@@ -96,6 +96,10 @@ def loose_umask() -> Generator[None]:
     os.umask(old)
 
 
+# `Store`'s own writer, taken before the plugin's `hass_storage` replaces it with one that keeps the data in memory
+WRITE_TO_DISK = storage.Store._async_write_data
+
+
 @pytest.fixture
 def stores_on_disk(hass_storage: dict[str, Any]) -> Generator[None]:
     """Write every `Store` to disk as well (the plugin keeps them in memory only), through HA's own writer.
@@ -106,7 +110,7 @@ def stores_on_disk(hass_storage: dict[str, Any]) -> Generator[None]:
 
     async def both(store: storage.Store[Any], data: dict[str, Any]) -> None:
         await in_memory(store, data)  # what later loads read
-        await store.hass.async_add_executor_job(store._write_data, data)
+        await WRITE_TO_DISK(store, data)
 
     with patch.object(storage.Store, "_async_write_data", both):
         yield

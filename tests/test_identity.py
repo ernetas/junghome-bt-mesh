@@ -44,7 +44,7 @@ from custom_components.junghome_ble.jhmesh.export import ProjectFile
 from custom_components.junghome_ble.jhmesh.vault import Ranges, Vault
 
 from .conftest import SHARE_EXPORT_PATH, FakeProxyLink, setup_entry
-from .helpers import find_issue
+from .helpers import find_issue, store_writes
 from .test_mesh_config import (  # noqa: F401 - fixtures among them
     OUR_SRC,
     Bench,
@@ -565,7 +565,7 @@ async def test_one_keeper_per_mesh_in_private_storage(hass: HomeAssistant) -> No
     assert keeper._backup is not None
     assert keeper._backup.key == "junghome_ble.vault.abcd-mesh.backup"
     assert all(
-        isinstance(s, identity.TrackedStore) and s._private
+        isinstance(s, identity.TrackedStore) and store_writes(s)[0]
         for s in (keeper._store, keeper._backup, keeper._aside("T1"))
     )
     assert identity.VAULT_STORAGE_VERSION == 1

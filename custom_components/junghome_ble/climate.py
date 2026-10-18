@@ -139,6 +139,25 @@ AUTOMATIC_SPEC = P.PROPERTIES[0x1246]  # SchedulerEnabled, bool: 1 auto, 0 manua
 AMBIENT_TEMPERATURE_SPEC = P.SIG_PROPERTIES[PROPERTY_AMBIENT_TEMPERATURE]
 STATE_GET_TIMEOUT = 3.0  # seconds per attempt of a state Get, as the hub's own refresh
 
+# Home Assistant 2026.11 renamed the temperature members to `native_*` (home-assistant/core#184840): it serves the
+# old names with a warning until 2027.11, and mypy rejects them as overrides of a final member. Cores before 2026.11
+# know only the old names, and the floor (hacs.json) is 2026.9.0: the entities provide the native ones, and on an
+# older core `legacy_temperature_members` serves them under the old names too. Drop it once the floor reaches 2026.11.
+NATIVE_TEMPERATURE_MEMBERS: Final = hasattr(ClimateEntity, "native_target_temperature")
+LEGACY_TEMPERATURE_MEMBERS: Final = {
+    "target_temperature": "native_target_temperature",
+    "current_temperature": "native_current_temperature",
+    "_attr_temperature_unit": "_attr_native_temperature_unit",
+}
+
+
+def legacy_temperature_members[C: type[ClimateEntity]](cls: C) -> C:
+    """Serve `cls`'s native temperature members under their pre-2026.11 names too, on a core that reads those."""
+    if not NATIVE_TEMPERATURE_MEMBERS:
+        for old, native in LEGACY_TEMPERATURE_MEMBERS.items():
+            setattr(cls, old, getattr(cls, native))
+    return cls
+
 
 # ----------------------------------------------------------------------------- status handlers
 
@@ -187,6 +206,7 @@ def build_entities(hub: JungHomeHub) -> list[ClimateEntity]:
     return entities
 
 
+@legacy_temperature_members
 class JungHomeClimate(JungHomeEntity, ClimateEntity):
     """A room thermostat: set-point 5..30 °C, manual or automatic, comfort / eco / frost / boost, heating demand.
 
@@ -195,7 +215,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
 
     _attr_name = None  # the node device *is* the thermostat
     _attr_translation_key = "thermostat"
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_precision = PRECISION_HALVES
     _attr_target_temperature_step = CLIMATE_TEMP_STEP
     _attr_min_temp = CLIMATE_MIN_TEMP
@@ -443,7 +463,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         return HVACMode.HEAT
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         """The set-point from the level element's cached Generic Level; None until heard from."""
         st = self.hub.states.get(self.address)
         if st is None or st.level is None:
@@ -451,7 +471,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         return level_to_temperature(st.level)
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         """The room temperature from the sensor element's cached 0x004F; None until heard from (or while 'unknown')."""
         if self.thermostat.sensor_address is None:
             return None
@@ -478,7 +498,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
             return PRESET_BOOST
         if (mode := self._mode_property) is not None:
             return HVAC_MODE_PRESETS.get(mode)
-        target = self.target_temperature
+        target = self.native_target_temperature
         if target is None:
             return None
         known = False
@@ -559,6 +579,7 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
         await self._write(AUTOMATIC_SPEC, automatic)
 
 
+@legacy_temperature_members
 class JungHomeAllThermostats(JungHomeCentralEntity, ClimateEntity):
     """The app's "all RTRs": one Unacknowledged Generic Level Set to 0xFEF9 sets every thermostat's set-point.
 
@@ -567,7 +588,7 @@ class JungHomeAllThermostats(JungHomeCentralEntity, ClimateEntity):
     element, as the app's area sheet sends them. **Unverified on hardware**, like the thermostats.
     """
 
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_precision = PRECISION_HALVES
     _attr_target_temperature_step = CLIMATE_TEMP_STEP
     _attr_min_temp = CLIMATE_MIN_TEMP
@@ -593,7 +614,7 @@ class JungHomeAllThermostats(JungHomeCentralEntity, ClimateEntity):
         return list(dict.fromkeys([*super().watched, *self._sensors]))
 
     @property
-    def target_temperature(self) -> float | None:
+    def native_target_temperature(self) -> float | None:
         """The members' mean set-point; None until one reported."""
         values = [
             level_to_temperature(st.level)
@@ -603,7 +624,7 @@ class JungHomeAllThermostats(JungHomeCentralEntity, ClimateEntity):
         return _mean(values)
 
     @property
-    def current_temperature(self) -> float | None:
+    def native_current_temperature(self) -> float | None:
         """The members' mean room temperature; None until one reported."""
         values = [
             float(value)
