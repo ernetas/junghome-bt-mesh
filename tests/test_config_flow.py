@@ -84,6 +84,7 @@ from custom_components.junghome_ble.const import (
     OPTION_PROVISIONER_IDENTITY,
     OPTION_SYNC_AREAS,
     OPTION_TRANSITIONS,
+    OPTION_UNVERIFIED_WRITES,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -3428,6 +3429,7 @@ async def test_options_flow(
         OPTION_HEARTBEATS: False,
         OPTION_TRANSITIONS: False,  # decision M19: off until a person watched a fade
         OPTION_ALLOW_PROVISIONING: False,
+        OPTION_UNVERIFIED_WRITES: False,  # off until the device types were seen working
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,  # decision M12: following the app is on by default
         OPTION_GATEWAY_CHECK: True,
@@ -3449,6 +3451,7 @@ async def test_options_flow(
         OPTION_HEARTBEATS: True,
         OPTION_TRANSITIONS: False,
         OPTION_ALLOW_PROVISIONING: False,
+        OPTION_UNVERIFIED_WRITES: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,
         OPTION_GATEWAY_CHECK: False,
@@ -3461,6 +3464,7 @@ async def test_options_flow(
         OPTION_HEARTBEATS: True,
         OPTION_TRANSITIONS: False,
         OPTION_ALLOW_PROVISIONING: False,
+        OPTION_UNVERIFIED_WRITES: False,
         OPTION_PROVISIONER_IDENTITY: False,
         OPTION_FOLLOW_APP: True,
         OPTION_GATEWAY_CHECK: False,

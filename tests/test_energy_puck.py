@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from homeassistant.const import EntityCategory
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -22,6 +23,7 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
+    OPTION_UNVERIFIED_WRITES,
 )
 from custom_components.junghome_ble.coordinator import PROPERTY_PRECISE_TOTAL_ENERGY
 from custom_components.junghome_ble.diagnostics import _device_summary
@@ -333,3 +335,31 @@ async def test_a_meter_without_a_manufacturer_server_is_not_asked_for_it(
     ]
     assert hub.states[PUCK].energy_fallback
     assert hub.states[PUCK].energy_total == hub.states[PUCK].energy_resettable_wh
+
+
+@pytest.mark.unverified_writes_off
+async def test_the_puck_is_only_read_until_the_option_lets_home_assistant_write(
+    hass: HomeAssistant, init_puck_reset: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """Off by default: neither the reset nor the output's switching reaches the puck; the option on, the reset does."""
+    answer_counters(fake_link, set_value=ZERO, get_value=None)
+    fake_link.sent.clear()
+    with pytest.raises(ServiceValidationError) as exc:
+        await press(hass, entity_id(hass, "button", UID_PUCK_RESET))
+    assert exc.value.translation_key == "unverified_device"
+    with pytest.raises(ServiceValidationError) as exc:
+        await hass.services.async_call(
+            "light",
+            "turn_on",
+            {"entity_id": entity_id(hass, "light", UID_PUCK)},
+            blocking=True,
+        )
+    assert exc.value.translation_key == "unverified_device"
+    assert fake_link.sent == []
+
+    hass.config_entries.async_update_entry(
+        init_puck_reset, options={OPTION_UNVERIFIED_WRITES: True}
+    )
+    await hass.async_block_till_done()
+    await press(hass, entity_id(hass, "button", UID_PUCK_RESET))
+    assert [dst for _, dst, _ in fake_link.sent] == [PUCK_METER]

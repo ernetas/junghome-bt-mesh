@@ -76,6 +76,10 @@ OPTION_DOUBLE_CLICK_KEYS: Final = "double_click_keys"
 # let `add_device` provision new devices (experimental: nothing of it has run on a real device yet)
 OPTION_ALLOW_PROVISIONING: Final = "allow_provisioning"
 DEFAULT_ALLOW_PROVISIONING: Final = False
+# send commands and settings to the device types no real device has answered yet: blinds, room thermostats,
+# detectors, battery transmitters, the energy puck (experimental; off, they are only read — `unverified.py`)
+OPTION_UNVERIFIED_WRITES: Final = "unverified_writes"
+DEFAULT_UNVERIFIED_WRITES: Final = False
 # write Home Assistant into the network's file as a provisioner of its own, with its own address ranges, and put
 # back the nodes it provisioned (experimental: no app has imported such a file yet — `identity.py`)
 OPTION_PROVISIONER_IDENTITY: Final = "provisioner_identity"
@@ -121,6 +125,7 @@ LIVE_OPTIONS: Final = frozenset(
         OPTION_CLICK_DELAY,
         OPTION_DOUBLE_CLICK_KEYS,
         OPTION_ALLOW_PROVISIONING,
+        OPTION_UNVERIFIED_WRITES,
         OPTION_FOLLOW_APP,
         OPTION_GATEWAY_CHECK,
         OPTION_SYNC_AREAS,
@@ -318,7 +323,7 @@ COVER_LEVEL_OPEN: Final = -32768
 COVER_LEVEL_CLOSED: Final = 32767
 # Transition-time byte of those Move Sets. The gateway asks its Silicon Labs NCP for 0xFFFE ms ("max duration for
 # movement", `PositionState.js`); mesh stacks encode 65.5 s in 10-second steps rounded up: 0b10 << 6 | 7 = 70 s.
-# The byte the NCP really puts on air is not captured yet.
+# The byte the NCP really puts on air is not captured yet: no Move Set goes out unless `OPTION_UNVERIFIED_WRITES` is on.
 COVER_MOVE_TRANSITION: Final = 0x87
 
 ISSUE_KEY_REFRESH: Final = "key_refresh"

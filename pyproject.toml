@@ -40,6 +40,7 @@ asyncio_default_fixture_loop_scope = "function"
 markers = [
     "link_loss_grace: keep the hub's link-loss grace (every other test sees entities go unavailable at once)",
     "refresh_first: keep the property reads' wait for the link's state refresh (every other test reads beside it)",
+    "unverified_writes_off: keep the option's default, which refuses writes to the unverified device types (every other test may write to them)",
     "slow_ok: exempt from the 5 s per-test budget of `tests/conftest.py` (`CALL_BUDGET`)",
     "busy_ok: `settle` may find the loop still busy after its turn cap (`SETTLE_MAX_TURNS` in `tests/conftest.py`)",
     "sim: the hub over the simulated mesh on virtual time (`tests/soak`): seconds by default, minutes with SIM_SOAK=long",

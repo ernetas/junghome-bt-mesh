@@ -50,7 +50,9 @@ composition are picked up automatically.
 
 Implemented from the specifications only, **not yet seen working on hardware** (please report): blinds
 ([Cover](#cover)), the room thermostat ([Climate](#climate)), detectors and battery products
-([Binary sensor](#binary-sensor), [Sensor](#sensor)).
+([Binary sensor](#binary-sensor), [Sensor](#sensor)), and the energy puck. Home Assistant only reads them until the
+option *Send commands and settings to unverified devices* is on (see
+[Unverified device types](#unverified-device-types-experimental)).
 
 Not supported yet (the node is listed as a device, but has no entities):
 
@@ -266,7 +268,9 @@ devices* (see [Sensor](#sensor)) it is what to alert on; the user guide's
 the JUNG HOME Gateway's firmware and the app's decompiled code (`docs/cross-repo-analysis.md` §1.4,
 `docs/gap-analysis/control-and-state.md` §2.6), and no message below has been seen on air yet. If you have a blinds
 actuator mini, a blinds PP2 puck or a push-button with a blinds insert, please open an issue with what works and what
-does not (the [diagnostics download](#diagnostics) and a debug log of one open / close / stop help).
+does not (the [diagnostics download](#diagnostics) and a debug log of one open / close / stop help). Every command
+below is refused until the option *Send commands and settings to unverified devices* is on
+([Unverified device types](#unverified-device-types-experimental)).
 
 One `cover` entity per blind, shutter or awning: a load element with a Generic Level server and no lamp server next
 to it, on a blinds actuator mini (0x0D), a blinds PP2 puck (0x13) or a push-button with a blinds insert. The entity is
@@ -346,7 +350,8 @@ if you like). **Unverified on a real room thermostat**: the maintainer owns none
 from the JUNG HOME app's and the gateway firmware's decompiled behaviour (`docs/gap-analysis/control-and-state.md`
 §2.7, `docs/cross-repo-analysis.md` §1.4 and D9) and tested against a synthetic export only. If you have one, please
 report what works — the `RX` lines of the debug log (see [Troubleshooting](#troubleshooting)) show what the device
-sends.
+sends. The set-point, presets and mode are refused until the option *Send commands and settings to unverified
+devices* is on ([Unverified device types](#unverified-device-types-experimental)).
 
 | Aspect | Behaviour | Mesh |
 |---|---|---|
@@ -1101,7 +1106,8 @@ All three settings are entered in the configuration dialog and can be changed la
 ## Options
 
 Open **Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure** (the entry's options). The two click
-options, adding and removing devices, following the app, the gateway check and moving devices along apply at once,
+options, adding and removing devices, writing to unverified devices, following the app, the gateway check and moving
+devices along apply at once,
 without a reload: the link stays up and no entity goes unavailable. Node heartbeats and Home Assistant as a
 provisioner reload the integration when they changed. Saving the form as it opened changes nothing. Applying
 options without a reload is unverified on air.
@@ -1113,6 +1119,7 @@ options without a reload is unverified on air.
 | Push-buttons using the insert they advertise | none | Listed only while there are some: the push-buttons whose advertised insert the repair [*JUNG HOME push-buttons with another insert than in the export*](#repair-issue-jung-home-push-buttons-with-another-insert-than-in-the-export) adopted. Take one off to go back to the insert the export names; the entry is set up again. |
 | Fade brightness changes (experimental) | off | On: a brightness change of a dimmer or DALI light that is on fades over the `transition` asked for, and so does a scene whose members are all dimmer or DALI lights; nothing else ever carries a transition (see [Light](#light), *Transitions*). Off until someone has watched a fade from Home Assistant (`docs/on-air-sweep.md` B8). **Unverified on air.** |
 | Allow Home Assistant to add and remove devices (experimental) | off | Enables `add_device` and `remove_device`, see [Actions: adding and removing devices](#actions-adding-and-removing-devices-experimental). |
+| Send commands and settings to unverified devices (experimental) | off | Off: blinds, room thermostats, detectors, battery transmitters and the energy puck are only read; see [Unverified device types](#unverified-device-types-experimental) below. |
 | Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app) | off | See [Home Assistant as a provisioner](#home-assistant-as-a-provisioner-experimental) below. Off: every file is written exactly as without it. |
 | Follow changes made in the JUNG HOME app | on | An entry set up from the gateway fetches the gateway's export a few minutes after the phone running the app was heard on the mesh, and takes it over when it changed; an entry set up from a file raises the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation) instead. See [Following the app](#following-the-app). **Unverified on air.** |
 | Check the gateway's export every six hours | on | An entry set up from the gateway asks the gateway for its export every six hours, whatever it heard on the mesh. No effect on an entry set up from a file. See [Following the app](#following-the-app). |
@@ -1127,6 +1134,37 @@ blueprints use, is not visible to the integration), and a key whose double-click
 devices are left out because they sleep. The **Diagnostics** download lists, per device, the age of its last
 heartbeat and how many relays it crossed (`heartbeats`). Verified on the maintainer's devices
 (`docs/hidden-features.md` §4).
+
+### Unverified device types (experimental)
+
+The maintainer owns no blind, room thermostat, motion or presence detector, battery wall transmitter or battery mini
+sensor, and no energy puck (the switch actuator 1-gang 2-input energy, product `0x0010` with a meter; the 2-channel
+actuator of the same product id has none and is not concerned). What Home Assistant sends them follows the JUNG HOME
+app and the gateway, but none of it has been seen working on such a device: a blind's open, close and stop, for
+one, carry a transition time whose byte on air was never captured (`COVER_MOVE_TRANSITION`). So, as long as
+**Send commands and settings to unverified devices (experimental)** is off — the default — these devices are only
+read: their states, readings, battery levels, events and settings show as for any device, and everything that would
+change them is refused with *… is of a kind not yet seen working with Home Assistant …*, before anything is sent:
+
+- their entities' commands and settings: a cover's open, close, stop, position and tilt, *All blinds* and a room's
+  blinds; a thermostat's set-point, presets and mode, *All RTRs* and a room's thermostats; a detector's or the
+  energy puck's light; every `number`, `select`, `switch` and `button` parameter of such a device, *Reset
+  consumption* and *Time keeper* included;
+- the actions that would write to one: a rewiring (rooms, key connections, thresholds, the sensor publication) with
+  a step to such a device — a dry run still answers what it would send — `remove_device` of such a device or of one
+  whose unwiring writes to one (refused before the reset), and the scene and schedule actions where such a device is
+  a member or the target (`store_scene` refuses before it sets any member).
+
+Not refused: what changes nothing on the device or what every node takes alike and that was seen working on the
+maintainer's devices — reads, *Identify*, *Clear faults*, `locate_node`, heartbeats, the time, a key refresh, an IV
+Update — and the group commands of lights and sockets (*All lights*, a room's lights, a scene recall), which an
+energy puck's or a detector's output among the members takes as any switch does. Wiring a verified key *to* such a
+device writes the key, not the device, and is not refused either; nor is adding a new device with `add_device`,
+which has its own experimental option.
+
+Switch the option on to control these devices like every other one; it applies at once, without a reload. Try it
+with the device in sight, and please report what it does — the
+[diagnostics download](#diagnostics) and a debug log help.
 
 ### Home Assistant as a provisioner (experimental)
 

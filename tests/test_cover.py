@@ -78,6 +78,7 @@ from custom_components.junghome_ble.const import (
     CONF_UNICAST,
     COVER_MOVE_TRANSITION,
     DOMAIN,
+    OPTION_UNVERIFIED_WRITES,
     SIGNAL_UPDATE,
 )
 from custom_components.junghome_ble.cover import (
@@ -1621,3 +1622,65 @@ async def test_blind_parameters_follow_the_operation_mode(
         != STATE_UNAVAILABLE
     )
     assert state("number", "slats_move_time", UID_BLIND).attributes["min"] == 0
+
+
+# --------------------------------------------------------------------------- unverified device types
+
+
+@pytest.mark.unverified_writes_off
+async def test_blinds_are_only_read_until_the_option_lets_home_assistant_write(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    levels: LevelMesh,
+) -> None:
+    """Off by default: a blind's commands, *All blinds* and a blind's settings are refused before anything is sent,
+    naming the blind, while its state is still read; the option on, without a reload, the same command goes out.
+    """
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    hub = init_blinds.runtime_data
+    all_blinds = entity_id(hass, "cover", f"{hub.cdb.mesh_uuid.lower()}-central-fef6")
+    levels.levels[SHUTTER] = 0
+    fake_link.inject(SHUTTER, 0xC090, level_status(0))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 50  # read
+    fake_link.sent.clear()
+    commands: list[tuple[str, str, dict[str, Any]]] = [
+        (eid, SERVICE_OPEN_COVER, {}),
+        (eid, SERVICE_CLOSE_COVER, {}),
+        (eid, SERVICE_STOP_COVER, {}),
+        (eid, SERVICE_SET_COVER_POSITION, {ATTR_POSITION: 30}),
+        (all_blinds, SERVICE_OPEN_COVER, {}),
+        (all_blinds, SERVICE_STOP_COVER, {}),
+        (all_blinds, SERVICE_SET_COVER_TILT_POSITION, {ATTR_TILT_POSITION: 30}),
+    ]
+    for target, service, data in commands:
+        with pytest.raises(ServiceValidationError) as exc:
+            await call(hass, service, target, **data)
+        assert exc.value.translation_key == "unverified_device"
+        assert "device" in exc.value.translation_placeholders
+    with pytest.raises(ServiceValidationError) as exc:
+        await hass.services.async_call(
+            NUMBER_DOMAIN,
+            SERVICE_SET_VALUE,
+            {
+                ATTR_ENTITY_ID: entity_id(
+                    hass, "number", param("slat_ventilation_position")
+                ),
+                "value": 50,
+            },
+            blocking=True,
+        )
+    assert exc.value.translation_key == "unverified_device"
+    await settle(hass)
+    assert fake_link.sent == []
+
+    hass.config_entries.async_update_entry(
+        init_blinds, options={OPTION_UNVERIFIED_WRITES: True}
+    )
+    await hass.async_block_till_done()
+    assert init_blinds.runtime_data is hub  # applied in place
+    await call(hass, SERVICE_OPEN_COVER, eid)
+    src, dst, pdu = last_sent(fake_link)
+    assert (src, dst) == (OUR_ADDRESS, SHUTTER)
+    assert pdu == move_set(-32768, tid=pdu[4])

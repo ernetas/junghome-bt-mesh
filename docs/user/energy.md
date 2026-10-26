@@ -4,7 +4,8 @@
 
 - **Metering sockets** measure power, voltage and current, and count energy.
 - The **energy puck** (switch actuator 1-gang 2-input energy) measures power and counts energy for its output —
-  **unverified on hardware**.
+  **unverified on hardware**. Home Assistant only reads it — no switching, no *Reset consumption* — until you turn on
+  *Send commands and settings to unverified devices* in the integration's options.
 
 Other JUNG devices do not measure.
 

@@ -58,6 +58,7 @@ from custom_components.junghome_ble.jhmesh.properties import (
     SIG_MANUFACTURER_NAME,
     SIG_SOFTWARE_VERSION,
 )
+from custom_components.junghome_ble.unverified import refuse_unverified
 
 from .targets import (
     CTL_DEFAULT,
@@ -711,8 +712,10 @@ class PropertyReader:
         Returns how it ended (`WriteOutcome`): a Status answering the Set counts as applied, whatever value it
         carries; a read-back only when it reports the value sent (`applied`). A Status without a value (`has_value`)
         answers the Set too, as in the app, which neither resends nor reads back then: the element does not have
-        the property, and nothing is cached.
+        the property, and nothing is cached. Refused before anything is sent to a device of an unverified type
+        while the option is off (`unverified.py`).
         """
+        refuse_unverified(self.hub, [addr])
         server = vendor_server(spec)
         raw = spec.codec.encode(value)
         pdu = M.vendor_property_set(
@@ -753,6 +756,7 @@ class PropertyReader:
 
     async def write_status(self, addr: int, spec: PropertySpec, value: Any) -> None:
         """Write the property the way the gateway drives the status LED: a User Property Status, no reply."""
+        refuse_unverified(self.hub, [addr])
         raw = spec.codec.encode(value)
         await self.hub.proxy.send_access(
             addr, M.vendor_property_status("user", spec.id, raw)
@@ -814,6 +818,7 @@ class PropertyReader:
         code is not Success (a range's Cannot Set Range Min / Max) answers a Set that did not take. A read-back
         counts as applied when the Status repeats the Set's parameters (a range's after its status code).
         """
+        refuse_unverified(self.hub, [addr])
         async with self._locks[addr]:
             try:
                 reply = await self.hub.proxy.request(

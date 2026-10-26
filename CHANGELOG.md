@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.6.0 (unreleased)
+
+### Upgrading
+
+- **Blinds, room thermostats, detectors, battery transmitters and the energy puck are only read until you allow
+  more** (HACS review). Nothing Home Assistant sends these devices has been seen working on one yet — a blind's
+  open, close and stop, for one, carry a transition byte nobody captured on air — so their commands, their settings
+  and the actions that would change them are now refused, before anything is sent, until the new option *Send
+  commands and settings to unverified devices (experimental)* is on. An installation that drives such a device from
+  Home Assistant turns the option on once (*Settings → Devices & services → JUNG HOME Bluetooth Mesh → Configure*);
+  it applies at once, without a reload. States, readings, events and settings still show either way.
+
+### Added
+
+- **The option *Send commands and settings to unverified devices (experimental)***, off by default. Off, a refused
+  call says which device and why (`unverified_device`); a dry run still answers what it would send. The central
+  functions of lights and sockets and scene recalls are not refused, nor is what every node takes alike (identify,
+  clear faults, locate, heartbeats, the time, key refresh, IV Update). The energy puck is product `0x0010` with a
+  meter: the 2-channel actuator sharing its product id is not concerned. See the reference's *Unverified device
+  types*.
+
 ## 1.5.3
 
 ### Fixed

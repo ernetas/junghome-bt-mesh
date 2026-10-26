@@ -1347,6 +1347,22 @@ def reads_beside_the_refresh(request: pytest.FixtureRequest) -> Generator[None]:
         yield
 
 
+@pytest.fixture(autouse=True)
+def unverified_writes(request: pytest.FixtureRequest) -> Generator[None]:
+    """Let Home Assistant write to the unverified device types, as the tests of their entities and actions expect.
+
+    `unverified_writes_off` tests keep the default, under which those writes are refused (`unverified.py`,
+    `tests/test_unverified.py`). An entry's own option still decides either way.
+    """
+    if "unverified_writes_off" in request.keywords:
+        yield
+        return
+    with patch(
+        "custom_components.junghome_ble.unverified.DEFAULT_UNVERIFIED_WRITES", True
+    ):
+        yield
+
+
 @pytest.fixture
 def no_connect_beacon(
     fake_link: FakeProxyLink, monkeypatch: pytest.MonkeyPatch

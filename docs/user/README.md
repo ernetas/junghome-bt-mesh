@@ -38,3 +38,8 @@ detectors, battery wall transmitters, the energy puck) were not part of it, and 
 on real devices yet. Such places are marked **unverified** in this guide; they are written from the JUNG HOME app's
 and the gateway's behaviour and are expected to work, but nobody has seen them do so yet. If you try one, please
 report what happens in the repository's issue tracker.
+
+Home Assistant only **reads** those devices at first: their states, readings and settings show, but it sends them
+nothing that would change them — no command, no setting, no action — until you turn on
+*Send commands and settings to unverified devices* (experimental) in the integration's options. Turn it on to control them like
+every other device, with the device in sight the first time ([details](../ha-integration.md#unverified-device-types-experimental)).

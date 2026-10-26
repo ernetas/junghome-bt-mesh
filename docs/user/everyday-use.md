@@ -49,7 +49,9 @@ hardware**: no room thermostat or detector was available.
 
 ## Blinds
 
-**Unverified on real blinds** — the maintainer owns none; please report what works.
+**Unverified on real blinds** — the maintainer owns none; please report what works. Home Assistant only reads
+blinds until you turn on *Send commands and settings to unverified devices* in the integration's options (see
+[A word on "unverified"](README.md#a-word-on-unverified)).
 
 Each blind, shutter or awning is a cover: open, close, stop, a position, and the slats for blinds with slats.
 Position 100 % means fully open. **All blinds** and **All blinds in ‹room›** move many at once. The blind's settings
@@ -59,7 +61,8 @@ it.
 
 ## Room thermostats
 
-**Unverified on a real room thermostat** — please report.
+**Unverified on a real room thermostat** — please report. Home Assistant only reads thermostats until you turn on
+*Send commands and settings to unverified devices* in the integration's options.
 
 Each room thermostat is a climate entity: target temperature (5–30 °C), the measured room temperature, whether it is
 heating, and the presets *comfort*, *eco*, *frost protection* and *boost* (five minutes of full power). The mode
@@ -78,7 +81,8 @@ You can make and change scenes from Home Assistant as well — see
 
 ## Detectors
 
-**Unverified on real detectors** — please report.
+**Unverified on real detectors** — please report. Home Assistant only reads detectors (their light and settings
+included) until you turn on *Send commands and settings to unverified devices* in the integration's options.
 
 A motion or presence detector shows motion or occupancy and the light level it measures, on its node device. The
 light it switches is an ordinary light. Its settings (brightness threshold, activation areas, walking test) are
@@ -89,7 +93,8 @@ configuration entities, most of them disabled at first.
 Battery wall transmitters and battery mini sensors sleep between presses, to save their battery. Their keys report
 like any other key (see [Buttons and automations](buttons-and-automations.md)). Their battery level is read right
 after one of their keys was pressed — the only moment they are awake — so it can be hours old. To change one of their
-settings, press one of their keys first, then make the change right away. **Unverified on hardware.**
+settings, press one of their keys first, then make the change right away. **Unverified on hardware.** Their
+settings can be changed only once *Send commands and settings to unverified devices* is on in the integration's options.
 
 ## Device names
 

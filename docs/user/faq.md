@@ -67,6 +67,10 @@ room thermostats, detectors, battery transmitters, the energy puck) and some fun
 the JUNG HOME app and the gateway closely and are covered by tests, but a real device might still behave
 differently. Reports of what happens are welcome.
 
+Those devices are only read until you turn on *Send commands and settings to unverified devices* (experimental) in the integration's
+options: until then, Home Assistant refuses their commands and settings, and the actions that would change them,
+before sending anything ([details](../ha-integration.md#unverified-device-types-experimental)).
+
 ## Is my export safe?
 
 The export file holds **every key** of your installation: with it, anyone could control and reconfigure your

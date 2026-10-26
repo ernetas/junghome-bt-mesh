@@ -118,6 +118,7 @@ from .const import (
     DEFAULT_SYNC_AREAS,
     DEFAULT_TRANSITIONS,
     DEFAULT_UNICAST,
+    DEFAULT_UNVERIFIED_WRITES,
     DOMAIN,
     GATEWAY_DOMAIN,
     GATEWAY_USER_NAME,
@@ -135,6 +136,7 @@ from .const import (
     OPTION_PROVISIONER_IDENTITY,
     OPTION_SYNC_AREAS,
     OPTION_TRANSITIONS,
+    OPTION_UNVERIFIED_WRITES,
     PIN_FROM_MESH,
     PIN_FROM_USER,
     STORAGE_DIR,
@@ -471,6 +473,12 @@ def _options_schema(
                 OPTION_ALLOW_PROVISIONING,
                 default=options.get(
                     OPTION_ALLOW_PROVISIONING, DEFAULT_ALLOW_PROVISIONING
+                ),
+            ): BooleanSelector(),
+            vol.Required(
+                OPTION_UNVERIFIED_WRITES,
+                default=options.get(
+                    OPTION_UNVERIFIED_WRITES, DEFAULT_UNVERIFIED_WRITES
                 ),
             ): BooleanSelector(),
             vol.Required(

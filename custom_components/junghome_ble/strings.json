@@ -226,6 +226,7 @@
           "heartbeats": "Node heartbeats (mark a silent device unavailable)",
           "transitions": "Fade brightness changes (experimental)",
           "allow_provisioning": "Allow Home Assistant to add and remove devices (experimental)",
+          "unverified_writes": "Send commands and settings to unverified devices (experimental)",
           "provisioner_identity": "Write Home Assistant into the network's file as a provisioner (experimental, unverified with the app)",
           "follow_app": "Follow changes made in the JUNG HOME app",
           "gateway_check": "Check the gateway's export every six hours",
@@ -238,6 +239,7 @@
           "heartbeats": "Every mains-powered device is asked to send a heartbeat to Home Assistant every 64 seconds (a standard Bluetooth Mesh setting the JUNG app leaves off). A device that sends nothing for about three and a half minutes has its entities marked unavailable until it is heard again. Switching this off tells the devices to stop (again on the next connection if they could not all be told at once); switch it off before removing the integration, which cannot tell them afterwards.",
           "transitions": "A brightness change of a dimmer or DALI light that is on fades over the `transition` an action or a light profile asks for, and so does a scene whose devices are all dimmer or DALI lights. Switching on or off, a colour temperature change and the All lights groups never fade (the devices would switch at once, or only later). Nothing the JUNG HOME app or gateway sends uses it, and nobody has watched a fade from Home Assistant yet; off, a `transition` is ignored. Unverified on air.",
           "allow_provisioning": "Lets the `junghome_ble.add_device` action provision a new JUNG device and configure it as the app would, after a device of the same product already in the network, and `junghome_ble.remove_device` reset a device and take it out of the network. Not tried on real devices yet: try it with a spare device first. Adding hands the device the network's keys; removing cannot be undone.",
+          "unverified_writes": "Blinds, room thermostats, motion and presence detectors, battery wall transmitters and mini sensors, and the energy-metering switch actuator are built from what the JUNG HOME app and gateway send, but nobody has seen Home Assistant's commands work on such a device yet. Off: Home Assistant only reads them, and refuses their controls, their settings and the actions that would change them. On: they are controlled like every other device. Try it with the device in sight, and report what it does.",
           "provisioner_identity": "Every file Home Assistant writes or hands to the gateway gets a provisioner entry for Home Assistant, with address ranges of its own clear of the app's and Home Assistant's address inside them, and the devices Home Assistant added and the app's file lacks are put back. Rooms, scenes and devices Home Assistant creates then take their addresses from its own ranges. No JUNG app has imported such a file yet: try it on a spare app install (import the file from `junghome_ble.export_network`) before your own app or gateway sees it. Off: the files are written exactly as without it.",
           "follow_app": "When the phone running the JUNG HOME app is heard on the mesh, an entry set up from the gateway fetches the gateway's export a few minutes after the phone went quiet (at most every 15 minutes) and takes it over when it changed: devices, rooms, scenes and key connections changed in the app reach Home Assistant without Reconfigure. An entry set up from a file shows a repair notice instead, once the app was seen changing a device's configuration. Nothing is sent on the mesh for it. Unverified on air.",
           "gateway_check": "An entry set up from the gateway asks the gateway for its export every six hours and takes it over when it changed, which catches what the app changed while Home Assistant did not hear the phone. One request to the gateway; nothing is sent on the mesh. No effect on an entry set up from a file.",
@@ -1403,6 +1405,9 @@
     },
     "add_device_not_allowed": {
       "message": "Adding and removing devices is off for this network: turn on *Allow Home Assistant to add and remove devices* in the integration's options first."
+    },
+    "unverified_device": {
+      "message": "{device} is of a kind not yet seen working with Home Assistant (a blind, room thermostat, detector, battery device or energy-metering switch actuator): nothing that changes it is sent while *Send commands and settings to unverified devices* is off. Turn it on in the integration's options to try it."
     },
     "add_device_not_found": {
       "message": "No new JUNG device advertises at {address}; run `find_new_devices` and use an address it lists."

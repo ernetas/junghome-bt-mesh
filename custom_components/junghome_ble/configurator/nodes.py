@@ -42,6 +42,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
     config_steps,
 )
 from custom_components.junghome_ble.onboard import advertises_unprovisioned
+from custom_components.junghome_ble.unverified import refuse_unverified
 
 from .executor import Operations
 from .plan import APPLIED_NOTHING, applied_removed
@@ -284,15 +285,17 @@ class Nodes(Operations):
 
         The reset cannot be taken back, so the unwiring that follows it is planned on a copy first and its pre-flight
         reads (`PlanExecutor.preflight`) go out before the reset: a node that no longer holds what the export says
-        stops the removal before anything changed.
+        stops the removal before anything changed. So does a device of an unverified type, the removed one or one
+        the unwiring writes to, while the option is off (`unverified.py`): the unwiring would stop at it after the
+        reset.
         """
         probe = copy.deepcopy(pf)
         node = probe.cdb.node_by_addr(unicast)
         assert node is not None  # `remove_node` found it in `pf`
         changes = probe.remove_node(node, self.hub.proxy.state.iv_index)
-        await self.executor.preflight(
-            self.executor.in_order(config_steps(probe, changes))[0]
-        )
+        plan = self.executor.in_order(config_steps(probe, changes))[0]
+        refuse_unverified(self.hub, [unicast, *(step.node for step in plan)])
+        await self.executor.preflight(plan)
 
     async def _reset_unconfirmed(
         self, node: Node, *, force: bool, advertised: bool, err: TimeoutError

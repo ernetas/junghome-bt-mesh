@@ -2,7 +2,8 @@
 
 UNVERIFIED ON HARDWARE. The maintainer owns no blinds: everything here is derived from the gateway firmware
 (`docs/cross-repo-analysis.md` §1.4) and the decompiled app (`docs/gap-analysis/control-and-state.md` §2.6).
-Please report what a real blind does.
+Please report what a real blind does. Until the entry's option *Send commands and settings to unverified devices*
+is on, every command below is refused before it is sent (`unverified.py`): the blinds are only read.
 
 Model. A blind (`jhmesh.devices.Blind`) is a *position* element and, when the node has one, a *slat* element,
 both Generic Level servers. JUNG's level is **closedness**: level -32768 = 0 % = "Open", +32767 = 100 % =

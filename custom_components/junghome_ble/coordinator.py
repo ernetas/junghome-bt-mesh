@@ -133,6 +133,7 @@ from .seq_store import (
     async_migrate_legacy_seq_store,
     seq_store,
 )
+from .unverified import refuse_unverified
 from .vault_refresh import VaultKeyRefresh
 
 if TYPE_CHECKING:
@@ -1109,6 +1110,7 @@ class JungHomeHub:
 
     async def reset_consumption(self, load: MeteredLoad) -> None:
         """Zero a metered load's resettable counters, as the app does (`Energy.reset_consumption`)."""
+        refuse_unverified(self, [load.address])
         await self.energy.reset_consumption(load)
 
     async def async_send_time(self, destination: int = ALL_NODES) -> None:
@@ -1957,6 +1959,7 @@ class JungHomeHub:
         Never with a transition (sweep B8): a switch insert waits it out before it switches off,
         and the DALI insert switches on at once whatever it says.
         """
+        refuse_unverified(self, [addr])
         self._note_request(addr, on=on)
         await self._load_command(
             addr, M.generic_onoff_set(on, transition=0), M.GEN_ONOFF_STATUS, "switch"
@@ -1992,7 +1995,8 @@ class JungHomeHub:
         Unacknowledged Sets (an acknowledged one would have every member answer at the same moment): a lightness
         first, which only the dimmable members take, then OnOff, which switches the others and leaves a dimmer that
         is already on where the lightness put it. No transition: the group's Lightness Set also switches on the
-        members that are off, and an *on* takes none.
+        members that are off, and an *on* takes none. Not refused for an unverified device among the members
+        (`unverified.py`): an energy puck's or a detector's output takes it as any switch does.
         """
         if lightness is not None:
             await self._command(
@@ -2002,6 +2006,7 @@ class JungHomeHub:
 
     async def central_level(self, group: int, level: int) -> None:
         """Send every member of a device-type group one Unacknowledged Generic Level Set: blinds, slats, set-points."""
+        refuse_unverified(self, [group])
         await self._command(
             group, M.generic_level_set(max(-32768, min(32767, level)), ack=False)
         )
@@ -2011,6 +2016,7 @@ class JungHomeHub:
 
         A device-type group (`OpenClose.Blinds`) or a room address (`OpenClose.Group`, the area sheet's stop).
         """
+        refuse_unverified(self, [group])
         await self._command(group, M.generic_delta_set(0, ack=False))
 
     async def room_command(
@@ -2038,6 +2044,7 @@ class JungHomeHub:
         The app's area sheet sends these per device (`CommunicateWithDevice`, no status awaited), not to the room
         address, which the dimmers' Level servers share.
         """
+        refuse_unverified(self, addresses)
         level = max(-32768, min(32767, level))
         for addr in addresses:
             await self._command(addr, M.generic_level_set(level, ack=False))
@@ -2051,6 +2058,7 @@ class JungHomeHub:
         The one Set that takes a transition (`const.TRANSITION_KINDS`): a brightness change of a dimmer
         or DALI load, which the DALI insert fades and reports (sweep B8). Unverified on air from Home Assistant.
         """
+        refuse_unverified(self, [addr])
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness)
         byte = self._transition_byte(transition)
@@ -2069,6 +2077,7 @@ class JungHomeHub:
         Never with a transition: the DALI insert answers a CTL Set at once and reports no fade
         (sweep B8).
         """
+        refuse_unverified(self, [addr])
         lightness = max(0, min(65535, lightness))
         self._note_request(addr, lightness=lightness, kelvin=kelvin)
         await self._load_command(
@@ -2086,6 +2095,7 @@ class JungHomeHub:
         temperature never fades.
         """
         assert light.temperature_address is not None  # the caller checks it has one
+        refuse_unverified(self, [light.address])
         self._note_request(light.address, kelvin=kelvin)
         await self._load_command(
             light.temperature_address,
@@ -2097,6 +2107,7 @@ class JungHomeHub:
 
     async def set_level(self, addr: int, level: int) -> None:
         """Set the Generic Level (-32768..32767) of the element at `addr`: a blind's position or slat target."""
+        refuse_unverified(self, [addr])
         level = max(-32768, min(32767, level))
         self._note_request(addr, level=level)
         await self._load_command(
@@ -2105,6 +2116,7 @@ class JungHomeHub:
 
     async def delta_level(self, addr: int, delta: int) -> None:
         """Send Generic Delta Set `delta` to the element at `addr` (the app's blind up / down / stop: -1 / +1 / 0)."""
+        refuse_unverified(self, [addr])
         await self._command(addr, M.generic_delta_set(delta))
 
     async def move_level(self, addr: int, delta: int, transition: int) -> None:
@@ -2113,6 +2125,7 @@ class JungHomeHub:
         The gateway drives blinds with it: 0x7FFF down, 0x8000 (-32768) up, 0 stop (`docs/cross-repo-analysis.md`
         §1.4); a Move Set without a transition time would be ignored by a spec-compliant Level server.
         """
+        refuse_unverified(self, [addr])
         await self._command(addr, M.generic_move_set(delta, transition=transition))
 
     async def recall_scene(self, number: int, transition: float | None = None) -> None:

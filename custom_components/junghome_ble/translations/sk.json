@@ -226,6 +226,7 @@
           "heartbeats": "Heartbeat uzlov (označiť tiché zariadenie ako nedostupné)",
           "transitions": "Plynulé zmeny jasu (experimentálne)",
           "allow_provisioning": "Povoliť Home Assistantu pridávať a odstraňovať zariadenia (experimentálne)",
+          "unverified_writes": "Posielať príkazy a nastavenia neovereným zariadeniam (experimentálne)",
           "provisioner_identity": "Zapísať Home Assistant do súboru siete ako provisioner (experimentálne, s aplikáciou neoverené)",
           "follow_app": "Sledovať zmeny vykonané v aplikácii JUNG HOME",
           "gateway_check": "Kontrolovať export brány každých šesť hodín",
@@ -238,6 +239,7 @@
           "heartbeats": "Každé zariadenie napájané zo siete je požiadané, aby každých 64 sekúnd posielalo do Home Assistant heartbeat (štandardné nastavenie Bluetooth Mesh, ktoré aplikácia JUNG necháva vypnuté). Entity zariadenia, ktoré približne tri a pol minúty nič nepošle, sa označia ako nedostupné, kým ho znova nezachytí. Vypnutím sa zariadeniam oznámi, aby prestali (pri ďalšom pripojení znova, ak sa nepodarilo oznámiť to všetkým naraz); vypnite to pred odstránením integrácie, ktorá im to potom už oznámiť nemôže.",
           "transitions": "Zmena jasu zapnutého stmievateľného alebo DALI svetla prebehne plynulo počas `transition`, o ktorú žiada akcia alebo svetelný profil, a rovnako aj scéna, ktorej zariadenia sú všetky stmievateľné alebo DALI svetlá. Zapnutie či vypnutie, zmena teploty farby a skupiny všetkých svetiel nikdy neprebiehajú plynulo (zariadenia by prepli hneď, alebo až neskôr). Nič, čo posiela aplikácia alebo brána JUNG HOME, to nevyužíva, a plynulý prechod z Home Assistantu zatiaľ nikto nevidel; vypnuté, `transition` sa ignoruje. Zatiaľ neoverené na skutočných zariadeniach.",
           "allow_provisioning": "Umožní akcii `junghome_ble.add_device` pridať nové zariadenie JUNG cez provisioning a nakonfigurovať ho ako aplikácia podľa zariadenia rovnakého produktu, ktoré už v sieti je, a akcii `junghome_ble.remove_device` resetovať zariadenie a vyradiť ho zo siete. Zatiaľ nevyskúšané na skutočných zariadeniach: najprv to skúste s náhradným zariadením. Pridanie odovzdá zariadeniu kľúče siete; odstránenie sa nedá vrátiť späť.",
+          "unverified_writes": "Žalúzie, priestorové termostaty, detektory pohybu a prítomnosti, batériové nástenné vysielače a minisenzory a spínací aktor s meraním energie sa riadia tým, čo posiela aplikácia a brána JUNG HOME, ale zatiaľ nikto nevidel príkazy Home Assistantu fungovať na takom zariadení. Vypnuté: Home Assistant ich iba číta a odmieta ich ovládanie, ich nastavenia aj akcie, ktoré by ich zmenili. Zapnuté: ovládajú sa ako každé iné zariadenie. Vyskúšajte to so zariadením na očiach a dajte vedieť, čo robí.",
           "provisioner_identity": "Každý súbor, ktorý Home Assistant zapíše alebo odovzdá bráne, dostane záznam provisionera pre Home Assistant s vlastnými rozsahmi adries mimo rozsahov aplikácie a s adresou Home Assistant v nich, a zariadenia, ktoré pridal Home Assistant a v súbore aplikácie chýbajú, sa doň vrátia. Miestnosti, scény a zariadenia, ktoré Home Assistant vytvorí, potom berú adresy z jeho vlastných rozsahov. Žiadna aplikácia JUNG zatiaľ taký súbor neimportovala: vyskúšajte to na náhradnej inštalácii aplikácie (importujte súbor z `junghome_ble.export_network`) skôr, než ho uvidí vaša vlastná aplikácia alebo brána. Vypnuté: súbory sa zapisujú presne ako bez tejto možnosti.",
           "follow_app": "Keď je v sieti mesh zachytený telefón s aplikáciou JUNG HOME, záznam nastavený z brány načíta export brány niekoľko minút po tom, čo telefón stíchol (najviac raz za 15 minút), a prevezme ho, ak sa zmenil: zariadenia, miestnosti, scény a prepojenia tlačidiel zmenené v aplikácii sa dostanú do Home Assistant bez „Prekonfigurovať“. Záznam nastavený zo súboru namiesto toho zobrazí upozornenie na opravu, keď sa zistí, že aplikácia zmenila konfiguráciu zariadenia. Do siete mesh sa kvôli tomu nič neodosiela. Zatiaľ neoverené na skutočných zariadeniach.",
           "gateway_check": "Záznam nastavený z brány si každých šesť hodín vyžiada od brány jej export a prevezme ho, ak sa zmenil, čím zachytí, čo aplikácia zmenila, kým Home Assistant telefón nepočul. Jedna požiadavka na bránu; do siete mesh sa nič neodosiela. Na záznam nastavený zo súboru to nemá vplyv.",
@@ -1403,6 +1405,9 @@
     },
     "add_device_not_allowed": {
       "message": "Pridávanie a odstraňovanie zariadení je pre túto sieť vypnuté: najprv v možnostiach integrácie zapnite *Povoliť Home Assistantu pridávať a odstraňovať zariadenia*."
+    },
+    "unverified_device": {
+      "message": "{device} je typu, ktorý zatiaľ nikto nevidel fungovať s Home Assistantom (žalúzia, priestorový termostat, detektor, batériové zariadenie alebo spínací aktor s meraním energie): kým je *Posielať príkazy a nastavenia neovereným zariadeniam* vypnuté, neposiela sa nič, čo by ho menilo. Na vyskúšanie to zapnite v možnostiach integrácie."
     },
     "add_device_not_found": {
       "message": "Na adrese {address} sa nevysiela žiadne nové zariadenie JUNG; spustite `find_new_devices` a použite adresu, ktorú uvedie."

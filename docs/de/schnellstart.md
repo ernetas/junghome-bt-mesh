@@ -79,6 +79,11 @@ es keinen gibt); mit *JUNG HOME Geräte Bereichen zuordnen* aus bleiben alle Ger
 - Nach Änderungen in der App (neue Geräte, Räume, Szenen): bei Einrichtung über das Gateway holt Home Assistant den
   Export einige Minuten nach der App-Nutzung und alle sechs Stunden selbst (sofort: Schaltfläche *Export vom Gateway
   abrufen* am Gateway-Gerät; noch nicht auf echter Hardware geprüft), sonst den Export neu teilen und hochladen.
+- Jalousien, Raumthermostate, Melder, batteriebetriebene Wandsender und Mini-Sensoren sowie der Schaltaktor mit
+  Energiemessung sind noch an keinem echten Gerät erprobt. Home Assistant liest sie zunächst nur und sendet ihnen
+  nichts, was sie ändert, bis du in den Optionen der Integration *Befehle und Einstellungen an unverifizierte Geräte
+  senden (experimentell)* einschaltest — beim ersten Mal am besten mit dem Gerät in Sichtweite, und bitte melde, was
+  es tut ([Einzelheiten](../ha-integration.md#unverified-device-types-experimental)).
 
 ## Hilfe
 

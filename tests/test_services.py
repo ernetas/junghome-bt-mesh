@@ -66,6 +66,7 @@ from custom_components.junghome_ble.const import (
     EVENT_PLAN,
     ISSUE_DEVICE_NAME,
     ISSUE_GATEWAY_SYNC,
+    OPTION_UNVERIFIED_WRITES,
     PIN_FROM_MESH,
     issue_id,
 )
@@ -681,6 +682,36 @@ async def test_assign_key_from_a_detector(hass: HomeAssistant, env: Env) -> None
     await call(hass, "assign_key", {"key_entity": sensor, "target_entity": relay})
     await settled(hass, env)
     assert env.modes == {}
+    assert env.reload().publication(motion.address, "1001") == 0xC0A2
+
+
+@pytest.mark.unverified_writes_off
+@pytest.mark.parametrize("export_source", [FIXTURES / "MeshNetwork-detectors.json"])
+async def test_rewiring_a_detector_waits_for_the_option(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Off by default: a plan with a step to a detector is refused before its first message and nothing is recorded,
+    while a dry run still answers what it would send; the option on, it goes out."""
+    motion = env.hub.devices.detectors[0]
+    data = {
+        "key_entity": entity_id(hass, "binary_sensor", f"{motion.unique_id}-motion"),
+        "target_entity": entity_id(hass, "light", f"{NODE_PRESENCE}-0001"),
+    }
+    before = env.path.read_bytes()
+    response = await respond(hass, "assign_key", {**data, "dry_run": True})
+    assert response["steps"]
+    with pytest.raises(ServiceValidationError) as exc:
+        await call(hass, "assign_key", data)
+    assert exc.value.translation_key == "unverified_device"
+    assert config_writes(env) == []
+    assert env.path.read_bytes() == before
+
+    hass.config_entries.async_update_entry(
+        env.entry, options={OPTION_UNVERIFIED_WRITES: True}
+    )
+    await hass.async_block_till_done()
+    await call(hass, "assign_key", data)
+    await settled(hass, env)
     assert env.reload().publication(motion.address, "1001") == 0xC0A2
 
 

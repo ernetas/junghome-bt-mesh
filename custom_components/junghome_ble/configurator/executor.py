@@ -39,6 +39,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
     replay,
 )
 from custom_components.junghome_ble.keep_awake import sleepy_node
+from custom_components.junghome_ble.unverified import refuse_unverified
 
 from .plan import (
     APPLIED_KEY_WIRED,
@@ -226,7 +227,8 @@ class PlanExecutor:
         Unverified on air.
 
         The call's `outcome` counts the plan and what was accepted of it (its response, error and logbook line); a
-        dry run ends here with the plan noted, before anything is journaled or sent (`ExportStore.planned`).
+        dry run ends here with the plan noted, before anything is journaled or sent (`ExportStore.planned`). A plan
+        with a step to a device of an unverified type is refused next, while the option is off (`unverified.py`).
 
         Before its first message the plan's destructive steps are read from the nodes and compared with the export
         (`preflight`, with the scene `registers` the call deletes from afterwards); a dry run does those reads too.
@@ -238,6 +240,7 @@ class PlanExecutor:
             if check:
                 await self.preflight(plan, registers=registers)
             self.store.planned(plan, nodes=(c.node for c in registers))
+        refuse_unverified(self.hub, (s.node for s in plan))
         outcome = self.outcome
         outcome.action = action
         outcome.total += len(plan)
@@ -675,6 +678,7 @@ class PlanExecutor:
         (if at all), so the Set is given a short wait and the value is read back otherwise. Returns whether the key
         reports `value`; silence raises, saying what was `applied` before.
         """
+        refuse_unverified(self.hub, [key])
         pdu = M.vendor_property_set("admin", prop, value)
         reply = await self._admin_status(key, pdu, prop, KEY_MODE_TIMEOUT, 1, applied)
         if reply is None or not _confirms_property(reply.params, prop, value):
@@ -751,6 +755,7 @@ class PlanExecutor:
         is then told by the scene being in it or not, which the caller words accordingly. `applied` is what the
         error says about the steps before this one.
         """
+        refuse_unverified(self.hub, [element])
         read_back = False
         reply = await self.reply(
             element, pdu, M.SCENE_REGISTER_STATUS, SCENE_TIMEOUT, 1, applied
@@ -788,6 +793,7 @@ class PlanExecutor:
         self, element: int, scene: int, action: V.Action | None, applied: Applied
     ) -> None:
         """Scene Action Setup Set (`action` None removes) and confirm it — from the Set's status or a Get."""
+        refuse_unverified(self.hub, [element])
         pdu = V.scene_action_set(scene, action or V.NO_ACTION)
         reply = await self.reply(
             element, pdu, V.SCENE_ACTION_SETUP_STATUS, SCENE_TIMEOUT, 1, applied, scene

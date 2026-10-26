@@ -29,6 +29,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
     bind_step,
     config_steps,
 )
+from custom_components.junghome_ble.unverified import refuse_unverified
 
 from .executor import Operations
 from .plan import (
@@ -498,6 +499,7 @@ class Keys(Operations):
             (PROPERTY_KEY_VALUE_UP, b""),
             (PROPERTY_KEY_VALUE_DOWN, b""),
         )
+        refuse_unverified(self.hub, [key])
         for prop, value in writes:
             pdu = M.vendor_property_set("admin", prop, value, ack=False)
             try:

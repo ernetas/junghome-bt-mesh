@@ -226,6 +226,7 @@
           "heartbeats": "节点心跳（将无响应的设备标记为不可用）",
           "transitions": "亮度变化渐变（实验性）",
           "allow_provisioning": "允许 Home Assistant 添加和移除设备（实验性）",
+          "unverified_writes": "向未经验证的设备发送命令和设置（实验性）",
           "provisioner_identity": "将 Home Assistant 作为配网者写入网络文件（实验性，尚未与应用一起验证）",
           "follow_app": "跟随 JUNG HOME 应用中的更改",
           "gateway_check": "每六小时检查一次网关的导出文件",
@@ -238,6 +239,7 @@
           "heartbeats": "会要求每个市电供电的设备每 64 秒向 Home Assistant 发送一次心跳（这是 JUNG 应用未开启的一项标准 Bluetooth Mesh 设置）。若某设备约三分半钟没有发送任何内容，其实体会被标记为不可用，直到再次收到它的消息。关闭此选项会通知设备停止发送（如果无法一次性通知所有设备，会在下次连接时再次通知）；请在移除集成之前将其关闭，因为移除之后就无法再通知设备。",
           "transitions": "已开启的调光灯或 DALI 灯的亮度变化会在操作或灯光配置文件要求的 `transition` 时间内渐变，所有设备均为调光灯或 DALI 灯的场景也是如此。开灯或关灯、色温变化以及所有灯光组从不渐变（设备会立即切换，或稍后才切换）。JUNG HOME 应用或网关发送的内容都不使用此功能，也还没有人观察过从 Home Assistant 发起的渐变；关闭时会忽略 `transition`。尚未在真实设备上验证。",
           "allow_provisioning": "允许 `junghome_ble.add_device` 动作对新的 JUNG 设备进行配网，并参照网络中已有的同款产品设备，像应用那样对其进行配置；也允许 `junghome_ble.remove_device` 重置设备并将其移出网络。尚未在真实设备上测试：请先用一台备用设备试用。添加会将网络密钥交给该设备；移除无法撤销。",
+          "unverified_writes": "百叶窗、室内温控器、运动和人体存在传感器、电池供电的墙面发射器和迷你传感器，以及带电能计量的开关执行器，都是按照 JUNG HOME 应用和网关发送的内容实现的，但还没有人见过 Home Assistant 的命令在此类设备上生效。关闭时：Home Assistant 只读取它们，并拒绝对它们的控制、设置以及会更改它们的操作。开启时：它们像其他设备一样受控。请在能看到设备的情况下试用，并报告它的表现。",
           "provisioner_identity": "Home Assistant 写入或交给网关的每个文件都会获得一个 Home Assistant 的配网者条目，其中包含与应用的地址范围互不重叠的独立地址范围，Home Assistant 的地址也位于其中；并且 Home Assistant 添加而应用文件中缺少的设备会被补回。之后 Home Assistant 创建的房间、场景和设备都会从其自己的范围中获取地址。目前还没有任何 JUNG 应用导入过这样的文件：在您自己的应用或网关看到它之前，请先在备用的应用安装上试用（导入由 `junghome_ble.export_network` 生成的文件）。关闭：文件的写入方式与未开启此选项时完全相同。",
           "follow_app": "当在 Mesh 上检测到运行 JUNG HOME 应用的手机时，从网关设置的条目会在手机静默几分钟后获取网关的导出文件（最多每 15 分钟一次），并在其发生变化时接管：在应用中更改的设备、房间、场景和按钮关联无需“重新配置”即可同步到 Home Assistant。从文件设置的条目则会在发现应用更改了某个设备的配置后显示一条修复通知。此功能不会在 Mesh 上发送任何内容。尚未在真实设备上验证。",
           "gateway_check": "从网关设置的条目每六小时向网关请求一次其导出文件，并在其发生变化时接管，从而捕获 Home Assistant 未检测到手机期间应用所做的更改。只向网关发送一个请求；不会在 Mesh 上发送任何内容。对从文件设置的条目没有影响。",
@@ -1403,6 +1405,9 @@
     },
     "add_device_not_allowed": {
       "message": "此网络已关闭添加和移除设备：请先在集成的选项中开启 *允许 Home Assistant 添加和移除设备*。"
+    },
+    "unverified_device": {
+      "message": "{device} 属于尚未见过与 Home Assistant 配合工作的设备类型（百叶窗、室内温控器、传感器、电池供电设备或带电能计量的开关执行器）：在 *向未经验证的设备发送命令和设置* 关闭期间，不会发送任何会更改它的内容。如需试用，请在集成的选项中开启它。"
     },
     "add_device_not_found": {
       "message": "没有新的 JUNG 设备在 {address} 广播；请运行 `find_new_devices` 并使用其列出的地址。"

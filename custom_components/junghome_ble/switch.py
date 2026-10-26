@@ -96,6 +96,7 @@ from .jhmesh.devices import (
     time_keeper_candidates,
 )
 from .mesh_config import SENSOR_SERVER, sensor_elements, sensor_publication
+from .unverified import refuse_unverified
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -780,6 +781,8 @@ class JungHomeTimeKeeper(JungHomeEntity, SwitchEntity):
 
     async def _set(self, on: bool) -> None:
         unicast = self.node.unicast
+        # before the plan, which may be empty, and the Time Role Set
+        refuse_unverified(self.hub, [unicast])
         await async_configure(
             self.hass,
             self.hub.entry.entry_id,

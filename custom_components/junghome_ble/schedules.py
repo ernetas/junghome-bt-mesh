@@ -51,6 +51,7 @@ from .jhmesh.devices import Blind, Light, Socket, Thermostat
 from .jhmesh.vendor_models import (
     SCHEDULER_MODEL,
 )
+from .unverified import refuse_unverified
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -296,8 +297,11 @@ class Scheduler:
         """Send a JH Scheduler Get / Set and return the element's Status for the same slot and sub-command.
 
         None when it stays silent (a Set is given one short attempt: firmware may publish instead of replying);
-        a lost link is a send failure.
+        a lost link is a send failure. A Set to a device of an unverified type is refused while the option is off
+        (`unverified.py`).
         """
+        if write:
+            refuse_unverified(self.hub, [address])
         timeout = const.PROPERTY_WRITE_TIMEOUT if write else const.PROPERTY_READ_TIMEOUT
         with mesh_errors():
             try:  # silence is caught here, as None: `mesh_errors` would call it send_failed
@@ -424,6 +428,7 @@ class Scheduler:
 
     async def _send_location(self, address: int) -> None:
         """Tell the node where it is (Home Assistant's home), for its sunrise / sunset times; skipped without a server."""
+        refuse_unverified(self.hub, [address])
         element = self.hub.cdb.element(address)
         server = next(
             (

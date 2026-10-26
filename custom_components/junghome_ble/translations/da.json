@@ -226,6 +226,7 @@
           "heartbeats": "Node-heartbeats (markér en tavs enhed som utilgængelig)",
           "transitions": "Bløde lysstyrkeændringer (eksperimentelt)",
           "allow_provisioning": "Tillad Home Assistant at tilføje og fjerne enheder (eksperimentelt)",
+          "unverified_writes": "Send kommandoer og indstillinger til ikke-verificerede enheder (eksperimentelt)",
           "provisioner_identity": "Skriv Home Assistant ind i netværkets fil som provisioner (eksperimentelt, ikke afprøvet med appen)",
           "follow_app": "Følg ændringer foretaget i JUNG HOME-appen",
           "gateway_check": "Kontrollér gatewayens eksport hver sjette time",
@@ -238,6 +239,7 @@
           "heartbeats": "Hver netdrevet enhed bliver bedt om at sende et heartbeat til Home Assistant hvert 64. sekund (en standard Bluetooth Mesh-indstilling, som JUNG-appen lader være slået fra). En enhed, der ikke sender noget i omkring tre et halvt minut, får sine entiteter markeret som utilgængelige, indtil den høres igen. Når dette slås fra, får enhederne besked på at stoppe (igen ved næste forbindelse, hvis de ikke alle kunne nås på én gang); slå det fra, før du fjerner integrationen, som ikke kan give dem besked bagefter.",
           "transitions": "En lysstyrkeændring af et tændt dæmpbart lys eller DALI-lys sker gradvist over den `transition`, en handling eller en lysprofil beder om, og det samme gør en scene, hvis enheder alle er dæmpbare lys eller DALI-lys. Tænd eller sluk, en ændring af farvetemperaturen og grupperne med alle lys sker aldrig gradvist (enhederne ville skifte med det samme eller først senere). Intet af det, JUNG HOME-appen eller gatewayen sender, bruger det, og ingen har endnu set en overgang fra Home Assistant; slået fra ignoreres en `transition`. Endnu ikke afprøvet på rigtige enheder.",
           "allow_provisioning": "Lader handlingen `junghome_ble.add_device` klargøre en ny JUNG-enhed og konfigurere den, som appen ville, efter forbillede af en enhed af samme produkt, der allerede er i netværket, og `junghome_ble.remove_device` nulstille en enhed og tage den ud af netværket. Endnu ikke afprøvet på rigtige enheder: prøv det først med en reserveenhed. Tilføjelse giver enheden netværkets nøgler; fjernelse kan ikke fortrydes.",
+          "unverified_writes": "Persienner, rumtermostater, bevægelses- og tilstedeværelsesmeldere, batteridrevne vægsendere og mini-sensorer samt kontaktaktuatoren med energimåling følger det, JUNG HOME-appen og gatewayen sender, men ingen har endnu set Home Assistants kommandoer virke på sådan en enhed. Fra: Home Assistant læser dem kun og afviser deres betjening, deres indstillinger og de handlinger, der ville ændre dem. Til: de styres som alle andre enheder. Prøv det med enheden inden for synsvidde, og fortæl, hvad den gør.",
           "provisioner_identity": "Hver fil, som Home Assistant skriver eller giver gatewayen, får en provisioner-post for Home Assistant med egne adresseintervaller uden for appens og med Home Assistants adresse inden for dem, og de enheder, som Home Assistant har tilføjet, og som appens fil mangler, lægges tilbage. Rum, scener og enheder, som Home Assistant opretter, får så deres adresser fra dens egne intervaller. Ingen JUNG-app har importeret sådan en fil endnu: prøv det på en reserveinstallation af appen (importér filen fra `junghome_ble.export_network`), før din egen app eller gateway ser den. Fra: filerne skrives præcis som uden den.",
           "follow_app": "Når telefonen med JUNG HOME-appen høres på mesh'et, henter en post, der er sat op fra gatewayen, gatewayens eksport nogle minutter efter, at telefonen er blevet stille (højst hvert 15. minut), og overtager den, hvis den er ændret: enheder, rum, scener og knapkoblinger, der er ændret i appen, når Home Assistant uden Genkonfigurer. En post, der er sat op fra en fil, viser i stedet en reparationsmeddelelse, når appen er set ændre en enheds konfiguration. Der sendes intet på mesh'et for det. Endnu ikke afprøvet på rigtige enheder.",
           "gateway_check": "En post, der er sat op fra gatewayen, beder gatewayen om dens eksport hver sjette time og overtager den, hvis den er ændret, hvilket fanger det, appen ændrede, mens Home Assistant ikke hørte telefonen. Én anmodning til gatewayen; der sendes intet på mesh'et. Ingen virkning på en post, der er sat op fra en fil.",
@@ -1403,6 +1405,9 @@
     },
     "add_device_not_allowed": {
       "message": "Tilføjelse og fjernelse af enheder er slået fra for dette netværk: slå først *Tillad Home Assistant at tilføje og fjerne enheder (eksperimentelt)* til i integrationens indstillinger."
+    },
+    "unverified_device": {
+      "message": "{device} er af en type, der endnu ikke er set virke med Home Assistant (persienne, rumtermostat, melder, batterienhed eller kontaktaktuator med energimåling): intet, der ændrer den, sendes, så længe *Send kommandoer og indstillinger til ikke-verificerede enheder* er slået fra. Slå det til i integrationens indstillinger for at prøve det."
     },
     "add_device_not_found": {
       "message": "Ingen ny JUNG-enhed annoncerer på {address}; kør `find_new_devices`, og brug en adresse, den viser."

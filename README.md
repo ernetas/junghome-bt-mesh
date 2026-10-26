@@ -16,7 +16,9 @@ keeps the gateway in sync.
 
 Devices the maintainer does not own (blinds, room thermostats, detectors, battery transmitters, the energy puck)
 are implemented from the app's and the gateway's behaviour and are not yet verified on real hardware — reports are
-welcome.
+welcome. Home Assistant only reads them until the option *Send commands and settings to unverified devices
+(experimental)* is turned on: off by default, nothing is sent to them that would change them
+([details][unverified]).
 
 ## Install
 
@@ -88,6 +90,7 @@ See [DISCLAIMER.md][disclaimer] for the full notice.
 [entities]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/user/entities.md
 [schnellstart]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/de/schnellstart.md
 [reference]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/ha-integration.md
+[unverified]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/ha-integration.md#unverified-device-types-experimental
 [dev]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/dev/README.md
 [research]: https://github.com/ernetas/junghome-bt-mesh/blob/main/docs/research/README.md
 [readme-pypi]: https://github.com/ernetas/junghome-bt-mesh/blob/main/README-pypi.md

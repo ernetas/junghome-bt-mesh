@@ -19,6 +19,7 @@ from custom_components.junghome_ble.mesh_config import (
     scene_action_for,
 )
 from custom_components.junghome_ble.schedules import ActionError, schedule_action
+from custom_components.junghome_ble.unverified import refuse_unverified
 
 from .common import (
     _DRY_RUN_FIELD,
@@ -182,6 +183,11 @@ async def _store_scene(hass: HomeAssistant, call: ServiceCall) -> ServiceRespons
     owner, scene = _scene_of(hass, call.data)
     loads = await _resolve_loads(hass, call)
     _same_network(owner, (load.entry_id for load in loads))
+    for entry_id in {load.entry_id for load in loads}:  # before the first load is set
+        refuse_unverified(
+            _hub(hass, entry_id),
+            [load.address for load in loads if load.entry_id == entry_id],
+        )
     wanted: dict[tuple[str, int], V.Action] = {}
     if any(name in call.data for name in STATE_FIELDS):
         for load in loads:  # every load checked before anything is sent

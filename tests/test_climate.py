@@ -72,6 +72,7 @@ from custom_components.junghome_ble.const import (
     CONF_METADATA_DIR,
     CONF_UNICAST,
     DOMAIN,
+    OPTION_UNVERIFIED_WRITES,
 )
 from custom_components.junghome_ble.coordinator import STATUS_HANDLERS, JungHomeHub
 from custom_components.junghome_ble.entity import node_device_info
@@ -1355,3 +1356,44 @@ def test_legacy_temperature_members_serve_the_native_ones(native: bool) -> None:
     probe = Probe()
     assert (probe.target_temperature, probe.current_temperature) == (21.5, 20.0)
     assert probe._attr_temperature_unit == UnitOfTemperature.CELSIUS
+
+
+@pytest.mark.unverified_writes_off
+async def test_a_thermostat_is_only_read_until_the_option_lets_home_assistant_write(
+    hass: HomeAssistant,
+    init_rtr: MockConfigEntry,
+    rtr_mesh: RtrMesh,
+    fake_link: FakeProxyLink,
+) -> None:
+    """Off by default: the set-point, a preset, the mode and *All RTRs* are refused before anything is sent, the
+    thermostat still read; the option on, the set-point goes out."""
+    hub = hub_of(init_rtr)
+    assert climate_state(hass).attributes[ATTR_TEMPERATURE] == COMFORT  # read
+    all_rtrs = entity_id(hass, "climate", f"{hub.cdb.mesh_uuid.lower()}-central-fef9")
+    fake_link.sent.clear()
+    for service, data in (
+        (SERVICE_SET_TEMPERATURE, {ATTR_TEMPERATURE: 22.5}),
+        (SERVICE_SET_PRESET_MODE, {ATTR_PRESET_MODE: PRESET_BOOST}),
+        (SERVICE_SET_HVAC_MODE, {ATTR_HVAC_MODE: HVACMode.AUTO}),
+    ):
+        with pytest.raises(ServiceValidationError) as exc:
+            await call(hass, service, **data)
+        assert exc.value.translation_key == "unverified_device"
+    with pytest.raises(ServiceValidationError) as exc:
+        await hass.services.async_call(
+            CLIMATE_DOMAIN,
+            SERVICE_SET_TEMPERATURE,
+            {ATTR_ENTITY_ID: all_rtrs, ATTR_TEMPERATURE: 19.0},
+            blocking=True,
+        )
+    assert exc.value.translation_key == "unverified_device"
+    await settle(hass)
+    assert fake_link.sent == []
+    assert rtr_mesh.mesh.sets == []
+
+    hass.config_entries.async_update_entry(
+        init_rtr, options={OPTION_UNVERIFIED_WRITES: True}
+    )
+    await hass.async_block_till_done()
+    await call(hass, SERVICE_SET_TEMPERATURE, **{ATTR_TEMPERATURE: 22.5})
+    assert level_sets(fake_link) == [CL.temperature_to_level(22.5)]
