@@ -1113,7 +1113,7 @@ All three settings are entered in the configuration dialog and can be changed la
 | Mesh export file (upload) | Upload source only | – | `JungHome.json` from *Share via file* (or `MeshNetwork.json`). |
 | Mesh export file | Path source only | – | Absolute path on the Home Assistant host to the app's mesh export, for example `/config/junghome/MeshNetwork.json`. Must be the CDB JSON with a top-level `meshNetwork` object (see [Prerequisites](#prerequisites)). |
 | App metadata directory | No | empty | Absolute path to a directory containing the app's `device_metadata.json` and/or `scene_metadata.json` (the iOS app's `Application Support` folder). Must be an existing directory if given. Missing files inside it are ignored. |
-| Our unicast address | Yes | `0D00` | In the collapsed *Advanced* section of every source form (gateway, upload, path, fetch again): leave it closed for the default. Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. An invalid or taken address is reported on the section. |
+| Our unicast address | Yes | `0D00` | In the collapsed *Advanced* section of every source form (gateway, upload, path, fetch again): leave it closed for the default. Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. When the export already uses the default — an element's address, or inside a provisioner's range (a second app user's range covers `0D00`) — a new entry takes the first free address after it instead. An invalid or taken address typed there opens the section with the error; a taken one comes back with the first free address after it filled in. |
 
 ## Options
 
@@ -2659,8 +2659,11 @@ the store from a backup is not a fix: an older copy only repeats numbers the nod
 
 ### "That address belongs to a node in the mesh"
 
-The unicast address you entered is used by an element of a JUNG node. Pick another free address such as `0D02`
-(`7FFF` is the default of the command-line tool in this repository).
+The unicast address you entered is taken in the export: an element of a JUNG node has it, a provisioner's range
+(an app user's) covers it, or it is excluded. The *Advanced* section opens with the first free address after it
+filled in; submit that, or pick another free one (`7FFF` is the default of the command-line tool in this
+repository). The default `0D00` is never refused this way on a new entry: it gives way to the first free address by
+itself.
 
 ### "The mesh export could not be read"
 

@@ -430,7 +430,7 @@ class NewExportFlow(_IssueFlow):
             unicast = str(entry.data[CONF_UNICAST])
             self._incoming = incoming_path(self.hass, self.flow_id)
             try:
-                doc, cdb = await async_fetch_to_store(
+                doc, cdb, _ = await async_fetch_to_store(
                     self.hass, api, self._incoming, unicast
                 )
             except GatewayCertificateMismatch:
@@ -474,7 +474,7 @@ class NewExportFlow(_IssueFlow):
                     await self.hass.async_add_executor_job(_discard, self._incoming)
                     return self.async_abort(reason="entry_gone")
                 unicast = str(entry.data[CONF_UNICAST])
-                cdb = await async_validate_stored(self.hass, self._incoming, unicast)
+                cdb, _ = await async_validate_stored(self.hass, self._incoming, unicast)
             except _FormError as err:
                 errors = _base_errors(err)
             else:

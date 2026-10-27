@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- **Setting up from the gateway no longer hangs when the export already uses `0D00`** (#10). When a second app user's
+  provisioner range covers Home Assistant's default address, the flow refused it with an error shown only on the
+  collapsed *Advanced* section, and after the approval in the app the form came back looking like it was still
+  loading; shown again, it had lost the error. A new entry now takes the first free address after the default by
+  itself (gateway, upload and file alike). An address typed there that is taken opens the section with the first
+  free one filled in, and the errors that bring the gateway form back after the approval stay until the next
+  submission.
 - **A room thermostat's room temperature no longer stays put for hours** (#11). On air a thermostat publishes it
   only while its *Sensor values for IoT systems* switch is on, and the app's default is off; the climate entity
   then showed what the last connection read. While the export says the switch is off, the room temperature is now
