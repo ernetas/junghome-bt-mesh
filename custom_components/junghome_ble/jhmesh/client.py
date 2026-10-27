@@ -41,6 +41,7 @@ from .pdu import (
     SecureNetworkBeacon,
     decode_opcode,
     is_unicast,
+    link_mtu,
     lower_unsegmented_access,
     network_decrypt,
     network_encrypt,
@@ -592,21 +593,19 @@ class ProxyClient(Segmentation):
 
     @property
     def mtu(self) -> int:
-        """ATT MTU of the current link, re-read on every use.
+        """ATT MTU of the current link, re-read on every use (`pdu.link_mtu`).
 
         BlueZ still reports 23 right after connecting and only learns the negotiated value (247 with JUNG nodes)
         a little later.
         """
         return (
-            (getattr(self.client, "mtu_size", None) or 23)
-            if self.client is not None
-            else 23
+            link_mtu(self.client, MESH_PROXY_DATA_IN) if self.client is not None else 23
         )
 
     async def attach(
         self, client: Any, filter_blacklist: bool = True, beacon_wait: float = 0.0
     ) -> None:
-        """Take over an already-connected bleak-style client (has write_gatt_char/start_notify/mtu_size).
+        """Take over an already-connected bleak-style client (has write_gatt_char/start_notify, services or mtu_size).
 
         With `beacon_wait` > 0 the first filter request waits up to that long for the proxy's Secure Network Beacon
         (sent right after the subscription) so it is encrypted with the network's current IV index rather than the

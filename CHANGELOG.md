@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.1 (unreleased)
+
+### Fixed
+
+- **No more *Using default MTU value* warnings with a local Bluetooth adapter** (#13). The link's MTU was read from
+  bleak's `mtu_size`, which on BlueZ is never filled in and warns on every read; it is now read from the Mesh Proxy
+  (and, while onboarding, Provisioning) Data In characteristic, which BlueZ keeps current. On such an adapter a proxy
+  PDU now goes out in one write at the negotiated MTU (247 with JUNG nodes) rather than in 20-byte frames.
+
 ## 1.6.0
 
 ### Upgrading
