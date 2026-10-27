@@ -1244,6 +1244,12 @@ async def test_the_room_temperature_is_polled_while_the_thermostat_does_not_publ
     await tick(published=False)
     assert rtr_mesh.gets == [M.SENSOR_GET]
     assert climate_state(hass).attributes[ATTR_CURRENT_TEMPERATURE] == 22.0
+    rtr_mesh.silent, rtr_mesh.ambient = True, 46  # no answer: the last reading stays
+    with patch.object(CL, "STATE_GET_TIMEOUT", 0.01):
+        await tick(published=False)
+    assert M.SENSOR_GET in rtr_mesh.gets
+    assert climate_state(hass).attributes[ATTR_CURRENT_TEMPERATURE] == 22.0
+    rtr_mesh.silent = False
     rtr_mesh.gets.clear()
     await tick(published=True)
     assert rtr_mesh.gets == []

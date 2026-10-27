@@ -501,8 +501,8 @@ def link_mtu(client: Any, char_uuid: str) -> int:
     except Exception:  # no `services`, or bleak's BleakError before discovery (this module does not import bleak)
         char = None
     if char is not None:
-        return char.max_write_without_response_size + 3
-    return getattr(client, "mtu_size", None) or 23
+        return int(char.max_write_without_response_size) + 3
+    return int(getattr(client, "mtu_size", None) or 23)
 
 
 def proxy_frame(msg_type: int, payload: bytes, mtu: int) -> list[bytes]:
