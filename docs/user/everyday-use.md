@@ -61,8 +61,14 @@ it.
 
 ## Room thermostats
 
-**Unverified on a real room thermostat** — please report. Home Assistant only reads thermostats until you turn on
-*Send commands and settings to unverified devices* in the integration's options.
+**Partly verified on real room thermostats** — reading them works; changing the temperature, preset or mode from
+Home Assistant is not confirmed yet, please report. Home Assistant only reads thermostats until you turn on
+*Send commands and settings to unverified devices* in the integration's options (*Sensor values for IoT systems* and
+*Local display* work without it).
+
+Turn on the thermostat's **Sensor values for IoT systems** switch (a configuration entity of the thermostat,
+disabled at first): only then does the thermostat report its room temperature as it changes. Without it Home
+Assistant asks for the temperature every five minutes.
 
 Each room thermostat is a climate entity: target temperature (5–30 °C), the measured room temperature, whether it is
 heating, and the presets *comfort*, *eco*, *frost protection* and *boost* (five minutes of full power). The mode

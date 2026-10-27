@@ -4,6 +4,15 @@
 
 ### Fixed
 
+- **A room thermostat's room temperature no longer stays put for hours** (#11). On air a thermostat publishes it
+  only while its *Sensor values for IoT systems* switch is on, and the app's default is off; the climate entity
+  then showed what the last connection read. While the export says the switch is off, the room temperature is now
+  asked every five minutes. Turning the switch on is still better: readings arrive within seconds, for the
+  gateway too.
+- **The two thermostat writes an owner saw working are no longer refused** (#11). With *Send commands and settings
+  to unverified devices* off, a room thermostat now takes *Sensor values for IoT systems* (on and off, read back,
+  the app agreeing on 13 thermostats) and *Local display*; its set-point, presets, mode and other parameters stay
+  refused until the option is on.
 - **The gateway import takes over blinds and room thermostats** (#12). *Reconfigure → Import the entities of the
   JUNG HOME Gateway integration* matched lights, sockets, keys, socket sensors and scenes only: a blind's `cover` and
   a room thermostat's `climate` stayed with the gateway entry and turned unavailable once the import disabled it,
@@ -14,6 +23,13 @@
   bleak's `mtu_size`, which on BlueZ is never filled in and warns on every read; it is now read from the Mesh Proxy
   (and, while onboarding, Provisioning) Data In characteristic, which BlueZ keeps current. On such an adapter a proxy
   PDU now goes out in one write at the negotiated MTU (247 with JUNG nodes) rather than in 20-byte frames.
+
+### Documentation
+
+- **What 13 room thermostats on firmware 2.2.0.5 showed** (#11): the room temperature, preset temperatures and
+  device parameters read as the app shows them; the room temperature moves in 0.5 °C steps and is published only
+  with *Sensor values for IoT systems* on; *Temperature sensor* (`0x1221`) and *Temperature sensor offset*
+  (`0x1224`) did not answer their reads. The reference and the user guide recommend the switch for thermostats.
 
 ## 1.6.0
 

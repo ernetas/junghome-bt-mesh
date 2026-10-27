@@ -13,12 +13,13 @@ keeper) and the actions' writes (the rewiring plans and the keys' properties, sc
 the central functions of lights and sockets (*All lights*, a room's lights) and scene recalls, which an energy
 puck's or a detector's output among the members takes as any switch does; and the network upkeep every node takes
 alike, seen working on the maintainer's devices — identify, clear faults, locate, heartbeats, the time, a key
-refresh, an IV Update.
+refresh, an IV Update. Nor the writes an owner has since seen working on such a device (`VERIFIED_WRITES`): the
+caller names what it writes (`written`), and the products it was seen on take it whatever the option says.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Final
 
 from homeassistant.exceptions import ServiceValidationError
@@ -42,6 +43,18 @@ ENERGY_PUCK_PID: Final = 0x0010
 # the products that are of an unverified type whatever they drive; the energy puck and a blind are told by what the
 # node has (`is_unverified`)
 UNVERIFIED_PIDS: Final = frozenset({*THERMOSTAT_PIDS, *DETECTOR_PIDS, *BATTERY_PIDS})
+
+# what `refuse_unverified` is told is written, beyond a vendor property id: the plan of *Sensor values for IoT systems*
+SENSOR_PUBLICATION: Final = "sensor_publication"
+PROPERTY_MAIN_PAGE: Final = 0x1240  # RTR *Local display* (`main_page`)
+# the writes seen working on a device of an unverified type, by what is written (a vendor property id or a plan
+# named above), with the products they were seen on. Issue #11, 13 room thermostats on firmware 2.2.0.5: the
+# sensor publication switched on and off, read back and shown alike by the app; *Local display* read back and seen
+# on the thermostat's display
+VERIFIED_WRITES: Final[Mapping[int | str, frozenset[int]]] = {
+    SENSOR_PUBLICATION: frozenset(THERMOSTAT_PIDS),
+    PROPERTY_MAIN_PAGE: frozenset(THERMOSTAT_PIDS),
+}
 
 
 def unverified_writes_on(hub: HubView) -> bool:
@@ -81,15 +94,24 @@ def _reached(hub: HubView, addresses: Iterable[int]) -> Iterator[tuple[int, Node
             yield address, node
 
 
-def refuse_unverified(hub: HubView, addresses: Iterable[int]) -> None:
+def refuse_unverified(
+    hub: HubView, addresses: Iterable[int], *, written: int | str | None = None
+) -> None:
     """Refuse a write to `addresses` that reaches a device of an unverified type while the option is off.
 
-    Raises ServiceValidationError naming the first such device; asked before anything of the call is sent.
+    `written` names what the write is (a vendor property id, `SENSOR_PUBLICATION`): a device whose product it was
+    seen working on (`VERIFIED_WRITES`) takes it. Raises ServiceValidationError naming the first device that does
+    not; asked before anything of the call is sent.
     """
     if unverified_writes_on(hub):
         return
+    seen_on = (
+        VERIFIED_WRITES.get(written, frozenset())
+        if written is not None
+        else frozenset()
+    )
     for address, node in _reached(hub, addresses):
-        if is_unverified(hub, node):
+        if node.pid not in seen_on and is_unverified(hub, node):
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="unverified_device",

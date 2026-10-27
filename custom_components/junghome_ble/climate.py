@@ -1,7 +1,8 @@
 """Climate: the room thermostat (RTR) as a heating climate entity, manual or automatic.
 
-**Unverified on a real room thermostat.** The maintainer has none; everything here follows the app's and the gateway
-firmware's behaviour as documented in `docs/gap-analysis/control-and-state.md` §2.7 and `docs/cross-repo-analysis.md`
+Read as the app shows it on 13 real thermostats (issue #11: firmware 2.2.0.5, the room temperature and the preset
+temperatures); what it writes is **unverified on a real room thermostat**. The maintainer has none; everything here
+follows the app's and the gateway firmware's behaviour as documented in `docs/gap-analysis/control-and-state.md` §2.7 and `docs/cross-repo-analysis.md`
 §1.4 / D9, with the gateway integration's HA semantics (permanent `heat`, derived presets, `none` a no-op).
 
 Mesh side, all on the RTR node (`jhmesh.devices.Thermostat`):
@@ -28,7 +29,8 @@ layout or no documented way in, so they are not used (`docs/android/properties.m
 
 The hub's connect-time refresh does not know thermostats, so the entity queues its own Gets through the property
 reader after every connection; they run after the hub's refresh, like the config entities' initial reads, and
-`homeassistant.update_entity` runs them at once (boost included). Status
+`homeassistant.update_entity` runs them at once (boost included). The room temperature is asked again every
+`RTR_TEMPERATURE_POLL_INTERVAL` while the RTR does not publish its sensor values, which it then keeps to itself. Status
 handlers: Generic Level Status and OnOff Status are the hub's own (`ElementState.level` / `.on`); Sensor Status
 wraps the hub's socket handler and adds 0x004F.
 """
@@ -83,6 +85,7 @@ from .errors import mesh_errors
 from .jhmesh import messages as M
 from .jhmesh import properties as P
 from .jhmesh.devices import ALL_THERMOSTATS, Thermostat
+from .mesh_config import sensor_publication
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -109,6 +112,10 @@ RTR_BOOST_READBACK_MARGIN: Final = 10.0
 # also asks for 0x120D this often while the link is up — the app every 5 s, but only while its page is open
 # (`RoomTemperatureViewModel.requestBoostFunction`); a minute shows such a boost within a fifth of its run.
 RTR_BOOST_POLL_INTERVAL: Final = 60.0
+# A thermostat publishes its room temperature only while *Sensor values for IoT systems* is on (seen on 13 RTRs,
+# issue #11; the app's default is off): while it is off the climate entity asks for 0x004F this often, about the
+# 0.5 °C a room takes a few minutes for (the gateway polls its thermostats less often still).
+RTR_TEMPERATURE_POLL_INTERVAL: Final = 300.0
 
 
 # re-exported: the conversions lived here before `conversions.py`
@@ -313,6 +320,13 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
                 timedelta(seconds=RTR_BOOST_POLL_INTERVAL),
             )
         )
+        self.async_on_remove(
+            async_track_time_interval(
+                self.hass,
+                self._poll_room_temperature,
+                timedelta(seconds=RTR_TEMPERATURE_POLL_INTERVAL),
+            )
+        )
         self._maybe_refresh()
 
     @callback
@@ -330,6 +344,41 @@ class JungHomeClimate(JungHomeEntity, ClimateEntity):
 
     async def _read_boost(self) -> None:
         await self.reader.read(self.primary, BOOST_SPEC)
+
+    @callback
+    def _poll_room_temperature(self, _now: datetime) -> None:
+        """Queue a Sensor Get 0x004F while the RTR does not publish its sensor values (`RTR_TEMPERATURE_POLL_INTERVAL`).
+
+        On air the room temperature is published only with *Sensor values for IoT systems* on (issue #11); without
+        it the entity would show the value of the last link's refresh for hours. Whether the RTR publishes is the
+        export's verdict (`mesh_config.sensor_publication`), which that switch keeps when it changes it.
+        """
+        addr = self.thermostat.sensor_address
+        if (
+            not self.hub.connected
+            or addr is None
+            or sensor_publication(
+                self.hub.cdb, self.hub.cdb.export_meta, self.thermostat.node
+            )
+        ):
+            return
+        self.reader.schedule(
+            addr, self._read_room_temperature, key=PROPERTY_AMBIENT_TEMPERATURE
+        )
+
+    async def _read_room_temperature(self) -> None:
+        addr = self.thermostat.sensor_address
+        assert addr is not None
+        try:
+            await self.hub.proxy.request(
+                addr,
+                M.sensor_get(PROPERTY_AMBIENT_TEMPERATURE),
+                M.SENSOR_STATUS,
+                timeout=STATE_GET_TIMEOUT,
+                retries=REFRESH_RETRIES,
+            )
+        except (TimeoutError, ConnectionError) as err:
+            _LOGGER.debug("%04X did not answer its Sensor Get: %r", addr, err)
 
     @callback
     def _handle_update(self) -> None:

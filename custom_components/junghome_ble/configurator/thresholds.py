@@ -20,6 +20,7 @@ from custom_components.junghome_ble.jhmesh.plan import (
     config_step,
     config_steps,
 )
+from custom_components.junghome_ble.unverified import SENSOR_PUBLICATION
 
 from .executor import Operations
 from .plan import Applied, applied_text
@@ -256,7 +257,7 @@ class Thresholds(Operations):
         `live` is what the node last answered (the switch's read, None when it has not): a node that differs from
         `on` gets its Publication Sets even where the export already agrees — the app changed it
         since, or never recorded it, and the switch shows the node's state, so a skip would leave it unchangeable.
-        Unverified on air.
+        Seen working on room thermostats (issue #11), which therefore take it with the unverified-devices option off.
         """
         async with self.store.lock:
             pf = await self.store.load()
@@ -290,7 +291,10 @@ class Thresholds(Operations):
                 return self.store.adopted  # already so
             # the switch shows what the node publishes, not the export: no pre-flight comparison with it
             await self.executor.send(
-                steps, action="the switch Sensor values for IoT systems", check=False
+                steps,
+                action="the switch Sensor values for IoT systems",
+                check=False,
+                written=SENSOR_PUBLICATION,
             )
             await self.store.save(pf)
             _LOGGER.info(
