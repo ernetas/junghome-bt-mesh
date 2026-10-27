@@ -762,7 +762,8 @@ DEVICE_LOCK_FLAGS: dict[str, frozenset[int]] = {
 }
 # Enabled by default: *Lock operation*, in the app's normal list on every page it is on, now that its bit is
 # confirmed on air (the app settings session: 0x0004). *Key lock* is in the room thermostat's normal list
-# too, but its bit 3 has not been seen on air (no thermostat here); the other two are expert parameters.
+# too, but its bit 3 has not been seen on air (no thermostat here; 13 an owner read matched the app, issue #11, which
+# does not say one had it on); the other two are expert parameters.
 DEVICE_LOCK_ENABLED = frozenset({"local_devices_lock"})
 
 

@@ -195,6 +195,7 @@ class PlanExecutor:
         as_planned: bool = False,
         check: bool = True,
         registers: Iterable[Check] = (),
+        written: str | None = None,
     ) -> None:
         """Send the plan, additive steps first; the first refusal, silence or lost link stops it, apply-and-record.
 
@@ -228,7 +229,8 @@ class PlanExecutor:
 
         The call's `outcome` counts the plan and what was accepted of it (its response, error and logbook line); a
         dry run ends here with the plan noted, before anything is journaled or sent (`ExportStore.planned`). A plan
-        with a step to a device of an unverified type is refused next, while the option is off (`unverified.py`).
+        with a step to a device of an unverified type is refused next, while the option is off (`unverified.py`),
+        unless the plan is one seen working on that device's product (`written`, e.g. `SENSOR_PUBLICATION`).
 
         Before its first message the plan's destructive steps are read from the nodes and compared with the export
         (`preflight`, with the scene `registers` the call deletes from afterwards); a dry run does those reads too.
@@ -240,7 +242,7 @@ class PlanExecutor:
             if check:
                 await self.preflight(plan, registers=registers)
             self.store.planned(plan, nodes=(c.node for c in registers))
-        refuse_unverified(self.hub, (s.node for s in plan))
+        refuse_unverified(self.hub, (s.node for s in plan), written=written)
         outcome = self.outcome
         outcome.action = action
         outcome.total += len(plan)

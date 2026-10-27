@@ -4,9 +4,11 @@ Entry points: manual (user), Bluetooth discovery of a JUNG node's Mesh Proxy adv
 JUNG HOME Gateway, reconfigure, and reauth. All but reauth and zeroconf lead to the same menu: fetch the export from the
 JUNG HOME Gateway, upload the app's export file, or name a file that is already on the Home Assistant host; zeroconf goes
 straight to the gateway form with the address the gateway announced. Our unicast address sits in a collapsed
-*Advanced* section of every source form: the default suits every installation with one Home
-Assistant. Fetched and uploaded exports are kept under `<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold
-every mesh key).
+*Advanced* section of every source form: the default suits every installation with one Home Assistant. An export
+that already uses the default (a node's address, or inside a range the app's provisioner keeps) gives a new entry the
+first free address after it instead (`validate_input`'s `pick_free`); an address typed there that is taken opens the
+section again, with that free address filled in. Fetched and uploaded exports are kept under
+`<config>/junghome_ble/<mesh UUID>.json` (mode 0600: they hold every mesh key).
 
 Whatever the source, the export is validated by loading it (`CDB.load` checks the document's shape; the mesh
 UUID that names the stored file is a UUID by then) and by checking that at least one proxy node of *that* network
@@ -234,11 +236,15 @@ _PASSWORD = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
 
 
 class _FormError(Exception):
-    """Validation failed; `errors` is what the form shows (field or `base` → translation key)."""
+    """Validation failed; `errors` is what the form shows (field or `base` → translation key).
 
-    def __init__(self, errors: dict[str, str]) -> None:
+    `unicast`: the first free address from ours, when ours is in use — the form fills it in.
+    """
+
+    def __init__(self, errors: dict[str, str], unicast: str | None = None) -> None:
         super().__init__(str(errors))
         self.errors = errors
+        self.unicast = unicast
 
 
 class _CertificateChanged(Exception):
@@ -257,12 +263,16 @@ def certificate_issue_id(entry_id: str) -> str:
     return f"{ISSUE_GATEWAY_CERTIFICATE}_{entry_id}"
 
 
-def _advanced(unicast: str) -> dict[Any, Any]:
-    """Return the collapsed *Advanced* section of a source form: our unicast address, which hardly anyone changes."""
+def _advanced(unicast: str, errors: Mapping[str, str] | None = None) -> dict[Any, Any]:
+    """Return the *Advanced* section of a source form: our unicast address, which hardly anyone changes.
+
+    Collapsed, unless `errors` (the form's, as `validate_input` names them) has one for the address: the frontend
+    shows it on the section's header only, which a collapsed section leaves easy to miss (issue #10).
+    """
     return {
         vol.Required(SECTION_ADVANCED): section(
             vol.Schema({vol.Required(CONF_UNICAST, default=unicast): TextSelector()}),
-            {"collapsed": True},
+            {"collapsed": CONF_UNICAST not in (errors or {})},
         )
     }
 
@@ -284,7 +294,9 @@ def _form_errors(errors: dict[str, str]) -> dict[str, str]:
     }
 
 
-def _schema(defaults: Mapping[str, Any], unicast: str) -> vol.Schema:
+def _schema(
+    defaults: Mapping[str, Any], unicast: str, errors: Mapping[str, str] | None = None
+) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(
@@ -293,29 +305,31 @@ def _schema(defaults: Mapping[str, Any], unicast: str) -> vol.Schema:
             vol.Optional(
                 CONF_METADATA_DIR, default=defaults.get(CONF_METADATA_DIR, "")
             ): TextSelector(),
-            **_advanced(unicast),
+            **_advanced(unicast, errors),
         }
     )
 
 
-def _upload_schema(unicast: str) -> vol.Schema:
+def _upload_schema(unicast: str, errors: Mapping[str, str] | None = None) -> vol.Schema:
     return vol.Schema(
         {
             vol.Required(CONF_EXPORT_FILE): FileSelector(
                 FileSelectorConfig(accept=".json,application/json")
             ),
-            **_advanced(unicast),
+            **_advanced(unicast, errors),
         }
     )
 
 
-def _gateway_schema(host: str, unicast: str) -> vol.Schema:
+def _gateway_schema(
+    host: str, unicast: str, errors: Mapping[str, str] | None = None
+) -> vol.Schema:
     # the password is never suggested back: a retry is usually because it was wrong
     return vol.Schema(
         {
             vol.Required(CONF_GATEWAY_HOST, default=host): TextSelector(),
             vol.Optional(CONF_GATEWAY_PASSWORD): _PASSWORD,
-            **_advanced(unicast),
+            **_advanced(unicast, errors),
         }
     )
 
@@ -745,9 +759,14 @@ async def _own_uuid(hass: HomeAssistant, cdb: CDB, unicast: int) -> str | None:
 
 
 async def validate_input(
-    hass: HomeAssistant, data: dict[str, Any]
+    hass: HomeAssistant, data: dict[str, Any], *, pick_free: bool = False
 ) -> tuple[CDB | None, dict[str, str]]:
-    """Load the export and check address + a visible proxy. Returns (cdb, errors)."""
+    """Load the export and check address + a visible proxy. Returns (cdb, errors).
+
+    `pick_free`: the address is the default nobody chose (a new entry's): one the export already uses — a node's, or
+    inside the range the app's provisioner keeps for itself (issue #10: 0D00 to beyond 3000) — gives way to the first
+    free one from it (`CDB.suggest_unicast`), written back into `data[CONF_UNICAST]`.
+    """
     errors: dict[str, str] = {}
     try:
         cdb = await hass.async_add_executor_job(CDB.load, Path(data[CONF_CDB_PATH]))
@@ -771,7 +790,15 @@ async def validate_input(
     if (unicast := _parse_unicast(data[CONF_UNICAST])) is None:
         errors[CONF_UNICAST] = "invalid_address"
     elif not cdb.unicast_is_free(unicast, own=await _own_uuid(hass, cdb, unicast)):
-        errors[CONF_UNICAST] = "address_in_use"
+        free = cdb.suggest_unicast(unicast) if pick_free else None
+        if free is None:
+            errors[CONF_UNICAST] = "address_in_use"
+        else:
+            _LOGGER.info(
+                "The export already uses %04X: Home Assistant takes %04X", unicast, free
+            )
+            data[CONF_UNICAST] = f"{free:04X}"
+            await async_apply_followed_key_refresh(hass, cdb, free)
     else:
         # a key refresh the hub followed to its end since the export was made, as the setup applies it: the
         # proxies advertise its new key
@@ -786,6 +813,21 @@ async def validate_input(
         else:
             errors["base"] = "no_proxy_visible"
     return cdb, errors
+
+
+def _form_error(
+    cdb: CDB | None, data: Mapping[str, Any], errors: dict[str, str]
+) -> _FormError:
+    """`validate_input`'s errors as a form error; an address in use comes with the first free one from it."""
+    unicast = _parse_unicast(data[CONF_UNICAST])
+    free = (
+        cdb.suggest_unicast(unicast)
+        if cdb is not None
+        and unicast is not None
+        and errors.get(CONF_UNICAST) == "address_in_use"
+        else None
+    )
+    return _FormError(errors, None if free is None else f"{free:04X}")
 
 
 def mesh_unique_id(mesh_uuid: str) -> str:
@@ -875,30 +917,34 @@ async def async_take_upload(hass: HomeAssistant, file_id: str, incoming: Path) -
 
 
 async def async_validate_stored(
-    hass: HomeAssistant, incoming: Path, unicast: str
-) -> CDB:
-    """Validate a fetched or uploaded export in our store (`validate_input`); deleted again unless it passes."""
+    hass: HomeAssistant, incoming: Path, unicast: str, *, pick_free: bool = False
+) -> tuple[CDB, str]:
+    """Validate a fetched or uploaded export in our store (`validate_input`); deleted again unless it passes.
+
+    Returns the network and the address it was checked for: `unicast`, or with `pick_free` the free one taken instead.
+    """
+    data = {CONF_CDB_PATH: str(incoming), CONF_METADATA_DIR: "", CONF_UNICAST: unicast}
     try:
-        cdb, errors = await validate_input(
-            hass,
-            {
-                CONF_CDB_PATH: str(incoming),
-                CONF_METADATA_DIR: "",
-                CONF_UNICAST: unicast,
-            },
-        )
+        cdb, errors = await validate_input(hass, data, pick_free=pick_free)
         if cdb is None or errors:
-            raise _FormError(errors)
+            raise _form_error(cdb, data, errors)
     except BaseException:
         await hass.async_add_executor_job(_discard, incoming)
         raise
-    return cdb
+    return cdb, str(data[CONF_UNICAST])
 
 
 async def async_fetch_to_store(
-    hass: HomeAssistant, api: JungHomeGatewayApi, incoming: Path, unicast: str
-) -> tuple[dict[str, Any], CDB]:
-    """Fetch the gateway's export with the token `api` holds into `incoming` and validate it; (document, network).
+    hass: HomeAssistant,
+    api: JungHomeGatewayApi,
+    incoming: Path,
+    unicast: str,
+    *,
+    pick_free: bool = False,
+) -> tuple[dict[str, Any], CDB, str]:
+    """Fetch the gateway's export with the token `api` holds into `incoming` and validate it.
+
+    Returns (document, network, our address), the address as `async_validate_stored` returns it.
 
     The gateway's errors pass through (the caller decides: a new access request, the certificate step, an abort);
     a file that cannot be stored (`cannot_store`) or does not validate is deleted again.
@@ -911,7 +957,10 @@ async def async_fetch_to_store(
     except OSError as err:
         await hass.async_add_executor_job(_discard, incoming)
         raise _FormError({"base": "cannot_store"}) from err
-    return doc, await async_validate_stored(hass, incoming, unicast)
+    cdb, unicast = await async_validate_stored(
+        hass, incoming, unicast, pick_free=pick_free
+    )
+    return doc, cdb, unicast
 
 
 def gateway_entry_data(
@@ -1327,18 +1376,24 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 CONF_UNICAST: unicast,
             }
             try:
-                cdb = await self._async_validate(data)
+                cdb = await self._async_validate(
+                    data, pick_free=self._pick_free(unicast)
+                )
                 return await self._async_finish(
-                    {CONF_SOURCE: SOURCE_PATH, **data, CONF_UNICAST: _hex4(unicast)},
+                    {
+                        CONF_SOURCE: SOURCE_PATH,
+                        **data,
+                        CONF_UNICAST: _hex4(data[CONF_UNICAST]),
+                    },
                     cdb,
                 )
             except _FormError as err:
-                errors = err.errors
+                errors, unicast = err.errors, err.unicast or unicast
         elif self.source == SOURCE_RECONFIGURE:
             defaults = self._get_reconfigure_entry().data
         return self.async_show_form(
             step_id=SOURCE_PATH,
-            data_schema=_schema(defaults, unicast),
+            data_schema=_schema(defaults, unicast, errors),
             errors=_form_errors(errors),
         )
 
@@ -1347,6 +1402,7 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Take the app's `JungHome.json` uploaded through the browser and keep it in our store."""
         errors: dict[str, str] = {}
+        suggested: str | None = None  # a free address instead of a taken one, filled in
         if user_input is not None:
             try:
                 # out of Home Assistant's upload folder before anything can fail: the file holds every key
@@ -1361,7 +1417,9 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 if _parse_unicast(unicast) is None:
                     await self._async_discard_incoming()
                     raise _FormError({CONF_UNICAST: "invalid_address"})
-                cdb = await self._async_validate_incoming(incoming, unicast)
+                cdb, unicast = await self._async_validate_incoming(
+                    incoming, unicast, pick_free=self._pick_free(unicast)
+                )
                 return await self._async_finish(
                     {
                         CONF_SOURCE: SOURCE_UPLOAD,
@@ -1371,11 +1429,13 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                     cdb,
                 )
             except _FormError as err:
-                errors = err.errors
-        unicast = _unicast_input(user_input) if user_input else self._default_unicast()
+                errors, suggested = err.errors, err.unicast
+        unicast = suggested or (
+            _unicast_input(user_input) if user_input else self._default_unicast()
+        )
         return self.async_show_form(
             step_id=SOURCE_UPLOAD,
-            data_schema=_upload_schema(unicast),
+            data_schema=_upload_schema(unicast, errors),
             errors=_form_errors(errors),
         )
 
@@ -1394,10 +1454,15 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self._async_gateway_submit(user_input)
             except _FormError as err:
                 errors = err.errors
+                if err.unicast is not None:
+                    self._unicast = err.unicast
+                    return self._show_gateway_form(None, errors)
             except _CertificateChanged as err:
                 return self._async_show_certificate(err.mismatch)
         elif self._pending_errors:
-            errors, self._pending_errors = self._pending_errors, {}
+            # kept until the next submission: the frontend may show the step again (a reload, a second tab), and
+            # a form reached from the approval wait or the fetch after it must still say what went wrong (issue #10)
+            errors = dict(self._pending_errors)
         return self._show_gateway_form(user_input, errors)
 
     async def async_step_gateway_register(
@@ -1448,6 +1513,9 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             return await self._async_fetch_and_finish()
         except _FormError as err:
+            # the gateway form, as the step shows it whenever it is asked for again (`async_step_gateway`)
+            self._pending_errors = err.errors
+            self._unicast = err.unicast or self._unicast
             return self._show_gateway_form(None, err.errors)
         except _CertificateChanged as err:
             return self._async_show_certificate(err.mismatch)
@@ -1498,12 +1566,14 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 return await self._async_fetch_and_finish(reregister_on_401=True)
             except _FormError as err:
                 errors = err.errors
+                if err.unicast is not None:
+                    user_input = {SECTION_ADVANCED: {CONF_UNICAST: err.unicast}}
             except _CertificateChanged as err:
                 return self._async_show_certificate(err.mismatch)
         unicast = _unicast_input(user_input) if user_input else self._default_unicast()
         return self.async_show_form(
             step_id=STEP_REFETCH,
-            data_schema=vol.Schema(_advanced(unicast)),
+            data_schema=vol.Schema(_advanced(unicast, errors)),
             errors=_form_errors(errors),
             description_placeholders={"host": str(entry.data[CONF_GATEWAY_HOST])},
         )
@@ -1758,7 +1828,7 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             unicast = self._unicast if self._host else self._default_unicast()
         return self.async_show_form(
             step_id=SOURCE_GATEWAY,
-            data_schema=_gateway_schema(host, unicast),
+            data_schema=_gateway_schema(host, unicast, errors),
             errors=_form_errors(errors),
             description_placeholders={"user_name": GATEWAY_USER_NAME},
         )
@@ -1881,8 +1951,12 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         api = self._api()
         incoming = self._incoming_path()
         try:
-            doc, cdb = await async_fetch_to_store(
-                self.hass, api, incoming, self._unicast
+            doc, cdb, self._unicast = await async_fetch_to_store(
+                self.hass,
+                api,
+                incoming,
+                self._unicast,
+                pick_free=self._pick_free(self._unicast),
             )
         except GatewayCertificateMismatch as err:
             raise _CertificateChanged(err) from err
@@ -1907,6 +1981,16 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
             return str(self._get_reconfigure_entry().data[CONF_UNICAST])
         return DEFAULT_UNICAST
 
+    def _pick_free(self, unicast: str) -> bool:
+        """Whether `unicast` is a new entry's default, left as it was: the export decides then (`validate_input`).
+
+        A reconfigured entry keeps its address (the `address_in_use` repair moves it, on confirmation), and one
+        typed is the user's: refused when taken, with the free one filled in.
+        """
+        return self.source != SOURCE_RECONFIGURE and _parse_unicast(unicast) == int(
+            DEFAULT_UNICAST, 16
+        )
+
     def _default_host(self) -> str:
         if self._discovered_host is not None:
             return self._discovered_host
@@ -1919,16 +2003,22 @@ class JungHomeConfigFlow(ConfigFlow, domain=DOMAIN):
     def _incoming_path(self) -> Path:
         return incoming_path(self.hass, self.flow_id)
 
-    async def _async_validate(self, data: dict[str, Any]) -> CDB:
-        cdb, errors = await validate_input(self.hass, data)
+    async def _async_validate(
+        self, data: dict[str, Any], *, pick_free: bool = False
+    ) -> CDB:
+        cdb, errors = await validate_input(self.hass, data, pick_free=pick_free)
         if cdb is None or errors:
-            raise _FormError(errors)
+            raise _form_error(cdb, data, errors)
         return cdb
 
-    async def _async_validate_incoming(self, incoming: Path, unicast: str) -> CDB:
+    async def _async_validate_incoming(
+        self, incoming: Path, unicast: str, *, pick_free: bool = False
+    ) -> tuple[CDB, str]:
         """Validate a file in our store; it is deleted again unless it passes (whatever went wrong)."""
         self._incoming = incoming  # deleted again unless it passes; the flow's removal sees to a cancellation
-        return await async_validate_stored(self.hass, incoming, unicast)
+        return await async_validate_stored(
+            self.hass, incoming, unicast, pick_free=pick_free
+        )
 
     async def _async_discard_incoming(self) -> None:
         if self._incoming is not None:

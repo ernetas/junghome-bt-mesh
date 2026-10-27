@@ -9,6 +9,7 @@ same flows against real TLS servers.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import shutil
@@ -330,6 +331,26 @@ def _read_json(path: str) -> dict[str, Any]:
 
 def _share_export() -> dict[str, Any]:
     return _read_json(SHARE_EXPORT_PATH)
+
+
+def _wide_range_export() -> dict[str, Any]:
+    """The share export with the phone's provisioner keeping 0001-3FFF, the default 0D00 among it (issue #10)."""
+    doc = _share_export()
+    network = json.loads(base64.b64decode(doc["network"]))
+    network["provisioners"][0]["allocatedUnicastRange"] = [
+        {"lowAddress": "0001", "highAddress": "3FFF"}
+    ]
+    doc["network"] = base64.b64encode(json.dumps(network).encode()).decode()
+    return doc
+
+
+def _advanced_collapsed(result: Any) -> bool:
+    """Whether a source form shows its *Advanced* section collapsed."""
+    return next(
+        value.options["collapsed"]
+        for key, value in result["data_schema"].schema.items()
+        if key == SECTION_ADVANCED
+    )
 
 
 def _bare_cdb() -> dict[str, Any]:
@@ -657,6 +678,7 @@ async def test_user_flow_address_in_use(
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {SECTION_ADVANCED: "address_in_use"}
+    assert not _advanced_collapsed(result)  # the error in view (issue #10)
 
     # the first address above the phone's range is fine (so is the default, 0D00: test_user_flow)
     result = await hass.config_entries.flow.async_configure(
@@ -921,6 +943,82 @@ async def test_gateway_flow_not_approved_then_retry(
     assert len(_calls(aioclient_mock, "/register")) == 2
 
 
+async def test_gateway_flow_takes_a_free_address_when_the_default_is_taken(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Issue #10: the app's provisioner keeps 0001-3FFF, the default 0D00 among it; left as it was, the address
+    gives way to the first free one (4000) and the setup goes on, through the approval and the fetch after it."""
+    _mock_gateway(aioclient_mock, _wide_range_export())
+    result = await _start_gateway_flow(hass)
+    assert _advanced_collapsed(result)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], GATEWAY_INPUT
+    )
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    result = await through_areas(hass, await _advance_progress(hass, result))
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_UNICAST] == "4000"
+
+
+async def test_path_flow_takes_a_free_address_when_the_default_is_taken(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    tmp_path: Path,
+) -> None:
+    """Issue #10, a file on the host: the default the export's provisioner range covers gives way to 4000."""
+    raw = _bare_cdb()
+    provisioner = {
+        **raw["provisioners"][0],
+        "allocatedUnicastRange": [{"lowAddress": "0001", "highAddress": "3FFF"}],
+    }
+    path, _ = _export_variant(tmp_path, "Wide.json", provisioners=[provisioner])
+    flow_id = await _start_user_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**USER_INPUT, CONF_CDB_PATH: path}
+    )
+    result = await through_areas(hass, result)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_UNICAST] == "4000"
+
+
+async def test_gateway_form_after_approval_keeps_the_address_error_in_view(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    mock_setup_entry: AsyncMock,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Issue #10: an address typed that the fetched export uses comes back on the gateway form after the approval:
+    the *Advanced* section open, the first free address from it filled in, and the error still there when the
+    frontend asks for the step again (a reload, the websocket) — until the next submission."""
+    _mock_gateway(aioclient_mock, _wide_range_export())
+    result = await _start_gateway_flow(hass)
+    flow_id = result["flow_id"]
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**GATEWAY_INPUT, **advanced("0148")}
+    )
+    result = await _advance_progress(hass, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "gateway"
+    assert result["errors"] == {SECTION_ADVANCED: "address_in_use"}
+    assert not _advanced_collapsed(result)
+    assert result["data_schema"](advanced())[SECTION_ADVANCED] == {CONF_UNICAST: "4000"}
+    again = await hass.config_entries.flow.async_configure(flow_id)
+    assert again["step_id"] == "gateway"
+    assert again["errors"] == {SECTION_ADVANCED: "address_in_use"}
+    assert not _advanced_collapsed(again)
+
+    result = await hass.config_entries.flow.async_configure(
+        flow_id, {**GATEWAY_INPUT, **advanced("4000")}
+    )
+    result = await through_areas(hass, await _advance_progress(hass, result))
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_UNICAST] == "4000"
+
+
 async def test_gateway_flow_fetch_fails_after_approval(
     hass: HomeAssistant,
     mock_bluetooth_env: dict[str, Any],
@@ -945,6 +1043,9 @@ async def test_gateway_flow_fetch_fails_after_approval(
         CONF_GATEWAY_HOST: HOST,
         **advanced("0D00"),
     }
+    # shown again (the frontend reloading the step): the reason stays in view (issue #10)
+    again = await hass.config_entries.flow.async_configure(result["flow_id"])
+    assert again["errors"] == {"base": "no_project"}
 
 
 @pytest.mark.parametrize(
@@ -1994,12 +2095,18 @@ async def test_upload_flow_errors(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "upload"
     assert result["errors"] == errors
+    # the address typed is kept; one in use gives way to the first free one from it (issue #10)
+    kept = (
+        {CONF_UNICAST: "0CCD"}
+        if errors == {SECTION_ADVANCED: "address_in_use"}
+        else user_input[SECTION_ADVANCED]
+    )
     assert (
         result["data_schema"]({CONF_EXPORT_FILE: str(uuid.uuid4()), **advanced()})[
             SECTION_ADVANCED
         ]
-        == user_input[SECTION_ADVANCED]
-    )  # the address typed is kept
+        == kept
+    )
     assert _incoming_files(hass) == []
     assert not _stored(hass).exists()
 
@@ -3041,10 +3148,12 @@ async def test_reconfigure_refetch_bad_address(
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "gateway_refetch"
     assert result["errors"] == errors
-    assert (
-        result["data_schema"](advanced())[SECTION_ADVANCED]
-        == user_input[SECTION_ADVANCED]
+    kept = (  # one in use: the first free address from it is filled in (issue #10)
+        {CONF_UNICAST: "0CCD"}
+        if errors == {SECTION_ADVANCED: "address_in_use"}
+        else user_input[SECTION_ADVANCED]
     )
+    assert result["data_schema"](advanced())[SECTION_ADVANCED] == kept
     assert _incoming_files(hass) == []
 
 

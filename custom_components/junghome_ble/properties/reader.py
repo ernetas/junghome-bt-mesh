@@ -713,9 +713,9 @@ class PropertyReader:
         carries; a read-back only when it reports the value sent (`applied`). A Status without a value (`has_value`)
         answers the Set too, as in the app, which neither resends nor reads back then: the element does not have
         the property, and nothing is cached. Refused before anything is sent to a device of an unverified type
-        while the option is off (`unverified.py`).
+        while the option is off (`unverified.py`), unless that write was seen working on its product.
         """
-        refuse_unverified(self.hub, [addr])
+        refuse_unverified(self.hub, [addr], written=spec.id)
         server = vendor_server(spec)
         raw = spec.codec.encode(value)
         pdu = M.vendor_property_set(

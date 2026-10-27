@@ -76,7 +76,13 @@ from typing import Any
 from cryptography.hazmat.primitives.asymmetric import ec
 
 from .crypto import aes_cmac, ccm_decrypt, ccm_encrypt, hmac_sha256, k1, k5, s1, s2
-from .pdu import BEACON_UNPROVISIONED, PROXY_PROVISIONING, ProxyReassembler, proxy_frame
+from .pdu import (
+    BEACON_UNPROVISIONED,
+    PROXY_PROVISIONING,
+    ProxyReassembler,
+    link_mtu,
+    proxy_frame,
+)
 
 __all__ = [
     "ALGORITHM_HMAC_SHA256",
@@ -858,7 +864,7 @@ async def provision(
 ) -> ProvisioningResult:
     """Provision the device behind `client`, an already-connected bleak-like client of its 0x1827 service.
 
-    `client` needs `start_notify` / `stop_notify` / `write_gatt_char` and optionally `mtu_size` (as for
+    `client` needs `start_notify` / `stop_notify` / `write_gatt_char` and optionally `services` / `mtu_size` (as for
     `ProxyClient.attach`). `check` sees the device's capabilities before anything is sent in reply and may raise
     (a `ProvisioningError`, say, when the node's element count does not fit at the unicast address) to abort
     before the device learns any address. Each PDU from the device must arrive within `timeout` seconds.
@@ -944,7 +950,7 @@ async def provision(
 
 async def _write(client: Any, provisioning_pdu: bytes) -> None:
     """Write one provisioning PDU as proxy PDUs of type 0x03, SAR-framed to the link's MTU."""
-    mtu = getattr(client, "mtu_size", None) or 23
+    mtu = link_mtu(client, MESH_PROVISIONING_DATA_IN)
     log.debug(
         "provisioning: sending %s (%d bytes)",
         PDU_NAMES[provisioning_pdu[0]],

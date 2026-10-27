@@ -54,8 +54,8 @@ The messages the setup dialog can show, and what to do:
   the network again (or fetch it from the gateway again) and use the new one.
 - **"The export belongs to a different mesh network"** — the file is from another installation.
 - **"This mesh is already set up as another entry"** — use that entry's *Reconfigure* instead of adding it again.
-- **"That address belongs to a node in the mesh"** — open *Advanced* and pick another *Our unicast address*, such as
-  `0D02`.
+- **"That address belongs to a node in the mesh"** — the address you typed is taken. *Advanced* opens with the first
+  free *Our unicast address* filled in: submit again.
 - **"The gateway is busy with another configuration request"** — the app or another client is changing the
   installation through the gateway; submit again in a minute.
 - **"The access request was not approved in time"** — approve *Home Assistant (Bluetooth Mesh)* in the app under

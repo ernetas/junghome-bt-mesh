@@ -15,6 +15,8 @@ its `const.py` (`{slug}_{datapoint suffix}[_{qualifier}]`, devices identified by
 |---|---|
 | light `{node}-{loc}` | the one `light` with unique id `{slug}_{suffix}` |
 | socket switch `{node}-{loc}` | the one `switch` with unique id `{slug}_{suffix}` (no qualifier) |
+| cover of a blind `{node}-{loc}` | the one `cover` with unique id `{slug}_{suffix}` (`_007` in the gateway's scheme) |
+| climate of a room thermostat `{node}-{loc}` | the one `climate` with unique id `{slug}_{suffix}` (`_009` there) |
 | status LED switch `…-key_status_led` of key X | the `switch` `{slug}_x_{suffix}_switch` on the key's own device, else key A's on the gang device |
 | sensor `…-{power,voltage,current}` | the `sensor` `{slug}_{suffix}_{same word}` |
 | event of key X | the `up` event on the key's own device `{slug}_x`, else `up` / `down` on the gang device for key A / B |
@@ -28,7 +30,8 @@ with the gateway (listed as gateway-only); on a gang-named device the `up` entit
 B. Device customisations (area, name, labels) are copied from the gateway device with the gang's own slug only.
 Keys C and D on gang-named devices, the power-on-time sensor, the proxy sensor and the device-parameter entities
 have no gateway counterpart, and the gateway's energy sensor has none here (the sockets report no total-energy
-counter over the mesh).
+counter over the mesh), nor has its room thermostat's temperature sensor (ours shows the temperature on the climate
+entity only).
 """
 
 from __future__ import annotations
@@ -55,7 +58,9 @@ from .jhmesh.devices import BUTTON_LETTERS
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-SUPPORTED_DOMAINS = frozenset({"light", "switch", "sensor", "event", "scene"})
+SUPPORTED_DOMAINS = frozenset(
+    {"light", "switch", "cover", "climate", "sensor", "event", "scene"}
+)
 SENSOR_KEYS = frozenset({"power", "voltage", "current"})
 KEY_SIDES = {
     "A": "up",
@@ -71,7 +76,7 @@ _SCENE_UID = re.compile(rf"^{_UUID}-scene-\d+$")
 class Thing:
     """What one of our entities represents: `kind` and the qualifier the gateway id must carry as well."""
 
-    kind: str  # light | socket | status_led | sensor | key | scene
+    kind: str  # light | socket | cover | climate | status_led | sensor | key | scene
     qualifier: str | None = None  # sensor word, key letter or scene name
 
 
@@ -131,6 +136,8 @@ def classify(entity: er.RegistryEntry) -> Thing | None:
         by_domain = {
             "light": Thing("light"),
             "switch": Thing("socket"),
+            "cover": Thing("cover"),
+            "climate": Thing("climate"),
             "event": Thing("key", letter) if letter else None,
         }
         return by_domain.get(entity.domain)
@@ -176,7 +183,7 @@ def counterpart(
     key's whatever its letter; otherwise the gang rule applies (status LED and `up` to key A, `down` to key B) —
     and keys C / D have no side there, so they match nothing (not an event that merely lacks a translation key).
     A per-key slug is only trusted when the device behind it looks like a key's: events and a status LED, no
-    light, socket or sensor (a gang whose *name* ends in a letter cannot be told from a key's device — a naming
+    light, socket, cover, climate or sensor (a gang whose *name* ends in a letter cannot be told from a key's device — a naming
     collision the gateway integration's own slug scheme shares).
     """
     if per_key and not _looks_like_a_key(on_device):
@@ -185,6 +192,8 @@ def counterpart(
     rules: dict[str, Callable[[er.RegistryEntry], bool]] = {
         "light": lambda g: g.domain == "light" and bool(primary.match(g.unique_id)),
         "socket": lambda g: g.domain == "switch" and bool(primary.match(g.unique_id)),
+        "cover": lambda g: g.domain == "cover" and bool(primary.match(g.unique_id)),
+        "climate": lambda g: g.domain == "climate" and bool(primary.match(g.unique_id)),
         "status_led": lambda g: (
             g.domain == "switch"
             and (per_key or thing.qualifier == "A")

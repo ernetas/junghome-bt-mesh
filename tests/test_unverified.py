@@ -11,8 +11,11 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from homeassistant.exceptions import ServiceValidationError
 
+from custom_components.junghome_ble import unverified
 from custom_components.junghome_ble.const import OPTION_UNVERIFIED_WRITES
+from custom_components.junghome_ble.jhmesh import properties as P
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.devices import (
     ALL_BLINDS,
@@ -21,6 +24,8 @@ from custom_components.junghome_ble.jhmesh.devices import (
     build_devices,
 )
 from custom_components.junghome_ble.unverified import (
+    PROPERTY_MAIN_PAGE,
+    SENSOR_PUBLICATION,
     _reached,
     is_unverified,
     refuse_unverified,
@@ -99,3 +104,24 @@ def test_the_option_is_off_by_default_and_lets_every_write_through_when_on() -> 
     # verified devices only: nothing to refuse, even off
     hub = hub_of("MeshNetwork.json")
     refuse_unverified(hub, [n.unicast for n in hub.cdb.nodes])
+
+
+@pytest.mark.unverified_writes_off
+def test_a_write_seen_working_on_a_product_is_not_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #11: a room thermostat takes *Sensor values for IoT systems* and *Local display* with the option off;
+    any other write to it is refused, and so is the sensor publication of a detector (not seen working there)."""
+    monkeypatch.setattr(unverified, "address_label", lambda _hub, a: f"{a:04X}")
+    assert P.PROPERTIES[PROPERTY_MAIN_PAGE].name == "main_page"
+    hub = hub_of("MeshNetwork-rtr.json")
+    (rtr,) = (n for n in hub.cdb.nodes if n.uuid.lower() == NODE_THERMOSTAT)
+    refuse_unverified(hub, [rtr.unicast], written=SENSOR_PUBLICATION)
+    refuse_unverified(hub, [rtr.unicast], written=PROPERTY_MAIN_PAGE)
+    for written in (None, 0x1203, "scenes"):
+        with pytest.raises(ServiceValidationError):
+            refuse_unverified(hub, [rtr.unicast], written=written)
+    hub = hub_of("MeshNetwork-detectors.json")
+    (motion,) = (n for n in hub.cdb.nodes if n.uuid.lower() == NODE_MOTION)
+    with pytest.raises(ServiceValidationError):
+        refuse_unverified(hub, [motion.unicast], written=SENSOR_PUBLICATION)

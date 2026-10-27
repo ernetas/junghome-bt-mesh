@@ -50,6 +50,7 @@ __all__ = [
     "encode_opcode",
     "is_group",
     "is_unicast",
+    "link_mtu",
     "lower_segments_access",
     "lower_unsegmented_access",
     "network_decrypt",
@@ -485,6 +486,23 @@ PROXY_PROVISIONING = 0x03
 
 FILTER_WHITELIST = 0x00
 FILTER_BLACKLIST = 0x01
+
+
+def link_mtu(client: Any, char_uuid: str) -> int:
+    """ATT MTU of the link behind a bleak-style `client`, for writes without response to `char_uuid`.
+
+    Read from the characteristic (its `max_write_without_response_size` + the 3-byte ATT header), as bleak advises:
+    BlueZ keeps it current (the characteristic's MTU property, BlueZ 5.62+), while its `mtu_size` stays at 23 and
+    warns on every read unless the private `_acquire_mtu()` ran. A client whose services are not resolved (or one
+    without any, like the tests' fakes) falls back to `mtu_size`, then to the minimum of 23.
+    """
+    try:
+        char = client.services.get_characteristic(char_uuid)
+    except Exception:  # no `services`, or bleak's BleakError before discovery (this module does not import bleak)
+        char = None
+    if char is not None:
+        return int(char.max_write_without_response_size) + 3
+    return int(getattr(client, "mtu_size", None) or 23)
 
 
 def proxy_frame(msg_type: int, payload: bytes, mtu: int) -> list[bytes]:

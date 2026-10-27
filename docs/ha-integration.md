@@ -346,7 +346,10 @@ the slat drive.
 
 One `climate` entity per room thermostat (product ID `0x000A`), on the thermostat's node device (the node *is* the
 thermostat, so the entity carries the device's name, `Room thermostat <address>`; rename the device in Home Assistant
-if you like). **Unverified on a real room thermostat**: the maintainer owns none, so everything below is implemented
+if you like). **Partly verified**: an owner checked 13 thermostats on firmware 2.2.0.5 (issue #11) — the room
+temperature, the preset temperatures and the device parameters read as the app shows them, and *Sensor values for
+IoT systems* and *Local display* write as they should. The rest — the set-point, presets, mode and boost sent from
+here — is **unverified on a real room thermostat**: the maintainer owns none, so it is implemented
 from the JUNG HOME app's and the gateway firmware's decompiled behaviour (`docs/gap-analysis/control-and-state.md`
 §2.7, `docs/cross-repo-analysis.md` §1.4 and D9) and tested against a synthetic export only. If you have one, please
 report what works — the `RX` lines of the debug log (see [Troubleshooting](#troubleshooting)) show what the device
@@ -367,7 +370,11 @@ own state refresh goes first), then reads the preset temperatures, the mode, boo
 configuration entities read theirs (the mode only on firmware that has it, when the version is known); afterwards it
 relies on the thermostat publishing its changes (the set-point element and the sensor publish to the element group by
 the app's standard wiring — whether a wheel turn or a local mode change actually produces such a publication is one
-of the open questions). `homeassistant.update_entity` runs the same reads at once, boost included, so an automation
+of the open questions). The room temperature is published only while the thermostat's **Sensor values for IoT
+systems** switch is on — off is the app's default — and then within seconds of a change, in 0.5 °C steps (issue #11);
+while the export says it is off, the entity asks for the room temperature every five minutes instead
+(`RTR_TEMPERATURE_POLL_INTERVAL`). Turn the switch on for live readings (it is a configuration switch of the node
+device, disabled by default; the gateway gets the values the same way). `homeassistant.update_entity` runs the same reads at once, boost included, so an automation
 can see a boost started on the thermostat itself (unverified on air). Boost is also read every minute while the link
 is up and no boost is known to run (review-4 F4-16; the app reads it every 5 s, but only while its thermostat page is
 open), so such a boost shows within a minute; a read another entity made within the last 10 s counts. **Unverified on
@@ -384,6 +391,9 @@ An **Open window** `binary_sensor` (device class `window`, disabled by default) 
 thermostat's window-open detection: firmware property `0x1225` (`RTR_DROP_OF_TEMP_STATE`, "drop of temperature"), read
 once per connection and taken from any status the thermostat publishes; non-zero is open. The app declares the state
 (under another id) but never shows it, so what the value holds beyond zero / non-zero is unknown.
+
+*Temperature sensor* (`0x1221`) and *Temperature sensor offset* (`0x1224`) did not answer their reads on a
+thermostat of firmware 2.2.0.5, not even to `homeassistant.update_entity` (issue #11): they stay `unknown` there.
 
 Not used, because nothing documents their layout or how the app would reach them: the firmware's cooling (`0x1202`,
 `0x1206`), holiday temperature (`0x120E`), set-point limits (`0x1242` / `0x1243`) and sensor reading (`0x1223`)
@@ -747,7 +757,7 @@ the switches follow the encoder (bit 1 factory reset, bit 2 operation, bit 3 key
 gateway's value map agrees), and the app's own writes confirmed bits 1 and 2 on air. **Lock operation**
 is enabled by default, like in the app's normal parameter list; the others are disabled by default (*Lock factory
 reset* and *Lock configuration* are expert parameters; *Key lock*, normal in the app, waits for its bit to be seen on
-a thermostat). On an install from an earlier version, which registered every flag disabled, *Lock operation* is
+a thermostat — 13 thermostats read as the app shows them, issue #11, which does not say that one had it on). On an install from an earlier version, which registered every flag disabled, *Lock operation* is
 enabled at the next start unless you disabled it yourself (Home Assistant then reloads the integration once). A change
 rewrites the whole word with the other flags — and the bits without a name — as last read
 (read first when not known; refused while the device has not answered), one change at a time per device.
@@ -763,6 +773,8 @@ for its publications again right after. It is planned
 against what the node answered: when the node publishes and the export says it does not (the app changed it since),
 switching off still sends the *Publication Set* and records it, rather than finding the export already off
 (review-4 W4-6; unverified on air). The publication parameters (TTL, no period) are inferred from the app, not captured.
+Switching it on and off was seen working on 13 room thermostats (issue #11: read back, the app showing the same), so
+a room thermostat takes it with *Send commands and settings to unverified devices* off.
 
 Every input of a mini actuator (E1 / E2, on the input's buttons device) has the app's **edge evaluation** (`0x5009`,
 config, disabled by default — the app has it on the inputs' Display tab): an **Edge evaluation** switch (on = the
@@ -1101,7 +1113,7 @@ All three settings are entered in the configuration dialog and can be changed la
 | Mesh export file (upload) | Upload source only | – | `JungHome.json` from *Share via file* (or `MeshNetwork.json`). |
 | Mesh export file | Path source only | – | Absolute path on the Home Assistant host to the app's mesh export, for example `/config/junghome/MeshNetwork.json`. Must be the CDB JSON with a top-level `meshNetwork` object (see [Prerequisites](#prerequisites)). |
 | App metadata directory | No | empty | Absolute path to a directory containing the app's `device_metadata.json` and/or `scene_metadata.json` (the iOS app's `Application Support` folder). Must be an existing directory if given. Missing files inside it are ignored. |
-| Our unicast address | Yes | `0D00` | In the collapsed *Advanced* section of every source form (gateway, upload, path, fetch again): leave it closed for the default. Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. An invalid or taken address is reported on the section. |
+| Our unicast address | Yes | `0D00` | In the collapsed *Advanced* section of every source form (gateway, upload, path, fetch again): leave it closed for the default. Hexadecimal mesh address Home Assistant uses as its own node, `0001`–`7FFF`. It must not be the address of any element in the export; the default lies outside the address range the app allocates. Use different addresses if more than one Home Assistant instance joins the same mesh. When the export already uses the default — an element's address, or inside a provisioner's range (a second app user's range covers `0D00`) — a new entry takes the first free address after it instead. An invalid or taken address typed there opens the section with the error; a taken one comes back with the first free address after it filled in. |
 
 ## Options
 
@@ -1158,7 +1170,9 @@ change them is refused with *… is of a kind not yet seen working with Home Ass
 Not refused: what changes nothing on the device or what every node takes alike and that was seen working on the
 maintainer's devices — reads, *Identify*, *Clear faults*, `locate_node`, heartbeats, the time, a key refresh, an IV
 Update — and the group commands of lights and sockets (*All lights*, a room's lights, a scene recall), which an
-energy puck's or a detector's output among the members takes as any switch does. Wiring a verified key *to* such a
+energy puck's or a detector's output among the members takes as any switch does. Nor the writes an owner has seen
+working on such a device: on a room thermostat, *Sensor values for IoT systems* and *Local display* (issue #11).
+Wiring a verified key *to* such a
 device writes the key, not the device, and is not refused either; nor is adding a new device with `add_device`,
 which has its own experimental option.
 
@@ -1305,13 +1319,16 @@ slugifies it into its identifiers) and the entity type:
 |---|---|
 | The `light` of a light device | its `light` |
 | The `switch` of a socket device | its socket `switch` |
+| The `cover` of a blind device | its `cover` |
+| The `climate` of a room thermostat | its `climate` |
 | `sensor` power / voltage / current of a socket | its sensor of the same name |
 | The `event` of a key of a *Push-buttons* device | the `Up` event entity of the gateway's device for that key (`<gang name> <letter>`, the way it registers keys); on an older gang-named registration, `Up` for key A and `Down` for key B |
 | The *Status LED* `switch` of a key | the *Status LED* switch of the gateway's device for that key; on a gang-named registration key A's |
 | A `scene`, by the app's scene name | its scene with the same name |
 
 Everything else has no counterpart and stays as it is: keys C and D, the *Power-on time* and *Proxy node* sensors,
-the device parameters (number / select / config switches), and on the gateway's side covers, thermostats, detector
+the device parameters (number / select / config switches), and on the gateway's side its room thermostats'
+temperature sensors (the room temperature here is the `climate` entity's current temperature), detector
 sensors, its socket *Energy* sensors (not matched with the *Energy* sensor here, which reads the socket's own
 lifetime counter, see [Sensor](#sensor)) and its own connectivity sensor. A device name the gateway integration
 could not tell apart (two devices with the same name) is skipped as well. Keys: the gateway integration has one
@@ -1321,7 +1338,8 @@ gateway (listed as gateway-only) — an automation on a *Down* entity has to be 
 moved key: a [device trigger](#device-triggers) with a `_down` subtype (*Button A clicked (lower half)*,
 `click_down`, …) for a key linked to the gateway, `press_off` for a rocker wired to a load, or a trigger on the moved
 event entity with a condition on its `side` attribute being `down` (see [Event](#event)). Device area / name / labels
-are copied from the gateway device with the same name as the device here (a light, a socket, a gang), not from the
+are copied from the gateway device with the same name as the device here (a light, a socket, a blind, a room
+thermostat, a gang), not from the
 per-key devices.
 
 An entity of this integration that you have already renamed, moved to an area, given an icon, labels or aliases, or
@@ -2641,8 +2659,11 @@ the store from a backup is not a fix: an older copy only repeats numbers the nod
 
 ### "That address belongs to a node in the mesh"
 
-The unicast address you entered is used by an element of a JUNG node. Pick another free address such as `0D02`
-(`7FFF` is the default of the command-line tool in this repository).
+The unicast address you entered is taken in the export: an element of a JUNG node has it, a provisioner's range
+(an app user's) covers it, or it is excluded. The *Advanced* section opens with the first free address after it
+filled in; submit that, or pick another free one (`7FFF` is the default of the command-line tool in this
+repository). The default `0D00` is never refused this way on a new entry: it gives way to the first free address by
+itself.
 
 ### "The mesh export could not be read"
 

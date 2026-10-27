@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+import warnings
 
 import pytest
+from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 
 from jhmesh import pdu as pdu_mod
 from jhmesh.crypto import AppKeyMaterial, NetKeyMaterial, aes_cmac, ccm_encrypt
@@ -28,6 +31,7 @@ from jhmesh.pdu import (
     encode_opcode,
     is_group,
     is_unicast,
+    link_mtu,
     lower_segments_access,
     lower_unsegmented_access,
     network_decrypt,
@@ -692,6 +696,67 @@ def test_proxy_frame_sar_bits_for_small_mtu():
     # a degenerate MTU still makes progress one byte at a time
     frames = proxy_frame(PROXY_NETWORK_PDU, b"ab", mtu=1)
     assert frames == [b"\x40a", b"\xc0b"]
+
+
+class _BlueZLike:
+    """A client as bleak's BlueZ backend has it: `mtu_size` 23 with a warning, the characteristic's size current."""
+
+    def __init__(self, services):
+        self._services = services
+
+    @property
+    def services(self):
+        if self._services is None:
+            raise RuntimeError(
+                "Service Discovery has not been performed yet"
+            )  # bleak's BleakError
+        return self._services
+
+    @property
+    def mtu_size(self):
+        warnings.warn(
+            "Using default MTU value. Call _acquire_mtu() or set _mtu_size first to avoid this warning.",
+            stacklevel=2,
+        )
+        return 23
+
+
+def _services_with(uuid, size):
+    services = BleakGATTServiceCollection()
+    service = BleakGATTService(None, 1, "00001828-0000-1000-8000-00805f9b34fb")
+    services.add_service(service)
+    services.add_characteristic(
+        BleakGATTCharacteristic(
+            None, 2, uuid, ["write-without-response"], lambda: size[0], service
+        )
+    )
+    return services
+
+
+@pytest.mark.filterwarnings("error")
+def test_link_mtu_reads_the_characteristic_not_mtu_size():
+    """Issue #13: BlueZ's `mtu_size` warns on every read; the characteristic reports the MTU as BlueZ learns it."""
+    data_in = "00002add-0000-1000-8000-00805f9b34fb"
+    size = [20]  # BlueZ before the MTU exchange
+    client = _BlueZLike(_services_with(data_in, size))
+    assert link_mtu(client, data_in) == 23
+    size[0] = 244
+    assert link_mtu(client, data_in) == 247
+    assert link_mtu(client, data_in.upper()) == 247
+
+
+def test_link_mtu_falls_back_to_mtu_size():
+    class Fake:
+        mtu_size = 69
+
+    assert link_mtu(Fake(), "00002add-0000-1000-8000-00805f9b34fb") == 69
+    assert link_mtu(object(), "00002add-0000-1000-8000-00805f9b34fb") == 23
+    # services not discovered, or without the characteristic: the client's own `mtu_size`
+    with pytest.warns(UserWarning, match="default MTU"):
+        assert link_mtu(_BlueZLike(None), "00002add-0000-1000-8000-00805f9b34fb") == 23
+    other = _services_with("00002adb-0000-1000-8000-00805f9b34fb", [244])
+    with pytest.warns(UserWarning, match="default MTU"):
+        assert link_mtu(_BlueZLike(other), "00002add-0000-1000-8000-00805f9b34fb") == 23
 
 
 def test_proxy_reassembler_round_trip():

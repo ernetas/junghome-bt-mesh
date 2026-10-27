@@ -87,7 +87,8 @@ into it. Keep it where it is (and as private as the export itself); deleting it 
 ### Advanced
 
 Each of these forms has a collapsed *Advanced* section with one field, *Our unicast address*: the address Home
-Assistant uses in the JUNG HOME network. Leave it closed to keep the default `0D00`. Only if you run a second Home
+Assistant uses in the JUNG HOME network. Leave it closed to keep the default `0D00` (or, where the installation
+already uses that address, the first free one after it, which Home Assistant picks by itself). Only if you run a second Home
 Assistant (or the repository's command-line tools) on the same installation does each one need an address of its own.
 
 Before the setup finishes, Home Assistant checks that it can read the file and that it sees at least one device of

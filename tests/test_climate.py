@@ -62,6 +62,7 @@ from custom_components.junghome_ble.climate import (
     RTR_BOOST_DURATION,
     RTR_BOOST_POLL_INTERVAL,
     RTR_BOOST_READBACK_MARGIN,
+    RTR_TEMPERATURE_POLL_INTERVAL,
 )
 from custom_components.junghome_ble.config_entities import (
     SIG_SOFTWARE_VERSION,
@@ -1216,6 +1217,66 @@ async def test_boost_is_polled_while_the_link_is_up(
     tick()  # no link: nothing
     await settle(hass)
     assert mesh.gets == [(RTR, PID_BOOST)]
+
+
+async def test_the_room_temperature_is_polled_while_the_thermostat_does_not_publish_it(
+    hass: HomeAssistant,
+    init_rtr: MockConfigEntry,
+    rtr_mesh: RtrMesh,
+    fake_link: FakeProxyLink,
+    mock_bluetooth_env: dict[str, Any],
+) -> None:
+    """Issue #11: an RTR publishes its room temperature only with *Sensor values for IoT systems* on; while the
+    export says it is off, 0x004F is asked every RTR_TEMPERATURE_POLL_INTERVAL; on, or without a link, nothing."""
+    poll = timedelta(seconds=RTR_TEMPERATURE_POLL_INTERVAL + 1)
+    now = dt_util.utcnow()
+
+    async def tick(published: bool) -> None:
+        nonlocal now
+        now += poll
+        with patch.object(CL, "sensor_publication", return_value=published):
+            async_fire_time_changed(hass, now)
+            await reads_done(hass, init_rtr)
+
+    assert climate_state(hass).attributes[ATTR_CURRENT_TEMPERATURE] == 20.5
+    rtr_mesh.gets.clear()
+    rtr_mesh.ambient = 44  # 22 °C, not published
+    await tick(published=False)
+    assert rtr_mesh.gets == [M.SENSOR_GET]
+    assert climate_state(hass).attributes[ATTR_CURRENT_TEMPERATURE] == 22.0
+    rtr_mesh.silent, rtr_mesh.ambient = True, 46  # no answer: the last reading stays
+    with patch.object(CL, "STATE_GET_TIMEOUT", 0.01):
+        await tick(published=False)
+    assert M.SENSOR_GET in rtr_mesh.gets
+    assert climate_state(hass).attributes[ATTR_CURRENT_TEMPERATURE] == 22.0
+    rtr_mesh.silent = False
+    rtr_mesh.gets.clear()
+    await tick(published=True)
+    assert rtr_mesh.gets == []
+    mock_bluetooth_env["infos"] = []
+    fake_link.drop_link()
+    await settle(hass)
+    await tick(published=False)
+    assert rtr_mesh.gets == []
+
+
+@pytest.mark.unverified_writes_off
+async def test_local_display_is_written_with_the_unverified_option_off(
+    hass: HomeAssistant, init_rtr: MockConfigEntry, rtr_mesh: RtrMesh
+) -> None:
+    """Issue #11: *Local display* (0x1240) was seen working on room thermostats, so it is not refused; the other
+    parameters still are."""
+    reader = property_reader(hass, hub_of(init_rtr))
+    assert (
+        await reader.write(RTR, P.PROPERTIES[0x1240], "current_temperature")
+        == "applied"
+    )
+    assert rtr_mesh.mesh.sets[-1][:2] == (RTR, 0x1240)
+    sent = len(rtr_mesh.mesh.sets)
+    with pytest.raises(ServiceValidationError) as exc:
+        await reader.write(RTR, P.PROPERTIES[PID_COMFORT], 22.0)
+    assert exc.value.translation_key == "unverified_device"
+    assert len(rtr_mesh.mesh.sets) == sent
 
 
 async def test_scheduler_function_status_is_the_automatic_operation(

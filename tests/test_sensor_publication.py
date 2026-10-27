@@ -18,6 +18,7 @@ from homeassistant.helpers import entity_registry as er
 from custom_components.junghome_ble import mesh_config
 from custom_components.junghome_ble import switch as SW
 from custom_components.junghome_ble.actions import common as action_common
+from custom_components.junghome_ble.configurator import executor as executor_mod
 from custom_components.junghome_ble.configurator import thresholds as thresholds_mod
 from custom_components.junghome_ble.const import DOMAIN
 from custom_components.junghome_ble.entity import node_identifier
@@ -27,6 +28,7 @@ from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.devices import Metadata, build_devices
 from custom_components.junghome_ble.jhmesh.export import raw_model
 from custom_components.junghome_ble.jhmesh.pdu import decode_opcode, encode_opcode
+from custom_components.junghome_ble.unverified import SENSOR_PUBLICATION
 
 from . import property_helpers as ph
 from . import test_services as services_env
@@ -149,6 +151,18 @@ async def test_set_sensor_publication_plans_against_the_node(
         C.model_publication_set(SOCKET_SENSOR, 0, "1100")
     ]
     assert publication(env) is None
+
+
+async def test_set_sensor_publication_names_its_plan_to_the_unverified_gate(
+    hass: HomeAssistant, env: Env
+) -> None:
+    """Issue #11: the plan says what it writes, so a room thermostat (seen working) takes it with the option off."""
+    with patch.object(executor_mod, "refuse_unverified") as gate:
+        await action_common.async_configure(
+            hass, env.entry.entry_id, lambda c: c.set_sensor_publication(SOCKET, False)
+        )
+    await settled(hass, env)
+    assert gate.call_args.kwargs == {"written": SENSOR_PUBLICATION}
 
 
 async def test_set_sensor_publication_refusals(hass: HomeAssistant, env: Env) -> None:

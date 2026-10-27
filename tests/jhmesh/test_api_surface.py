@@ -657,6 +657,7 @@ API: dict[str, list[str]] = {
         "encode_opcode",
         "is_group",
         "is_unicast",
+        "link_mtu",
         "lower_segments_access",
         "lower_unsegmented_access",
         "network_decrypt",
