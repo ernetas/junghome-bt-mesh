@@ -1305,13 +1305,16 @@ slugifies it into its identifiers) and the entity type:
 |---|---|
 | The `light` of a light device | its `light` |
 | The `switch` of a socket device | its socket `switch` |
+| The `cover` of a blind device | its `cover` |
+| The `climate` of a room thermostat | its `climate` |
 | `sensor` power / voltage / current of a socket | its sensor of the same name |
 | The `event` of a key of a *Push-buttons* device | the `Up` event entity of the gateway's device for that key (`<gang name> <letter>`, the way it registers keys); on an older gang-named registration, `Up` for key A and `Down` for key B |
 | The *Status LED* `switch` of a key | the *Status LED* switch of the gateway's device for that key; on a gang-named registration key A's |
 | A `scene`, by the app's scene name | its scene with the same name |
 
 Everything else has no counterpart and stays as it is: keys C and D, the *Power-on time* and *Proxy node* sensors,
-the device parameters (number / select / config switches), and on the gateway's side covers, thermostats, detector
+the device parameters (number / select / config switches), and on the gateway's side its room thermostats'
+temperature sensors (the room temperature here is the `climate` entity's current temperature), detector
 sensors, its socket *Energy* sensors (not matched with the *Energy* sensor here, which reads the socket's own
 lifetime counter, see [Sensor](#sensor)) and its own connectivity sensor. A device name the gateway integration
 could not tell apart (two devices with the same name) is skipped as well. Keys: the gateway integration has one
@@ -1321,7 +1324,8 @@ gateway (listed as gateway-only) — an automation on a *Down* entity has to be 
 moved key: a [device trigger](#device-triggers) with a `_down` subtype (*Button A clicked (lower half)*,
 `click_down`, …) for a key linked to the gateway, `press_off` for a rocker wired to a load, or a trigger on the moved
 event entity with a condition on its `side` attribute being `down` (see [Event](#event)). Device area / name / labels
-are copied from the gateway device with the same name as the device here (a light, a socket, a gang), not from the
+are copied from the gateway device with the same name as the device here (a light, a socket, a blind, a room
+thermostat, a gang), not from the
 per-key devices.
 
 An entity of this integration that you have already renamed, moved to an area, given an icon, labels or aliases, or

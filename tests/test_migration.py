@@ -24,7 +24,13 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.junghome_ble.const import DOMAIN, GATEWAY_DOMAIN
+from custom_components.junghome_ble.const import (
+    CONF_CDB_PATH,
+    CONF_METADATA_DIR,
+    CONF_UNICAST,
+    DOMAIN,
+    GATEWAY_DOMAIN,
+)
 from custom_components.junghome_ble.migration import (
     ImportAborted,
     Thing,
@@ -36,13 +42,23 @@ from custom_components.junghome_ble.migration import (
     issue_id,
 )
 
-from .conftest import FakeProxyLink, settle, setup_entry, wait_for_link
+from .conftest import (
+    FIXTURES,
+    META_DIR,
+    FakeProxyLink,
+    settle,
+    setup_entry,
+    wait_for_link,
+)
 from .helpers import (
     MESH_UUID,
     NODE_ACTUATOR,
+    NODE_BLIND,
     NODE_LIGHT_CTL,
     NODE_LIGHT_DIMMER,
     NODE_LIGHT_SWITCH,
+    NODE_SHUTTER,
+    NODE_THERMOSTAT,
     UID_BUTTON_DIMMER,
     UID_BUTTON_WC,
     UID_LIGHT_CTL,
@@ -497,6 +513,10 @@ async def test_plan_skips_our_entities_without_a_device(
     [
         ("light", UID_LIGHT_SWITCH, None, Thing("light")),
         ("switch", UID_SOCKET, None, Thing("socket")),
+        ("cover", f"{NODE_BLIND}-0001", None, Thing("cover")),
+        ("climate", f"{NODE_THERMOSTAT}-0001", None, Thing("climate")),
+        ("cover", f"{MESH_UUID}-central-fef6", None, None),  # All blinds
+        ("climate", f"{MESH_UUID}-room-c010-thermostats", None, None),
         ("switch", UID_STATUS_LED_WC, "Status LED", Thing("status_led", "A")),
         ("switch", f"{UID_SOCKET}-automatic_dst", "x", None),
         (
@@ -527,6 +547,86 @@ async def test_classify(
         domain, DOMAIN, unique_id, original_name=original_name
     )
     assert classify(entry) == expected
+
+
+@pytest.mark.parametrize(
+    ("data", "domain", "moves", "gateway_only"),
+    [
+        pytest.param(
+            {CONF_CDB_PATH: str(FIXTURES / "Blinds.json"), CONF_UNICAST: "0D00"},
+            "cover",
+            {
+                "cover.kitchen_blind": f"{NODE_BLIND}-0001",
+                "cover.living_room_shutter": f"{NODE_SHUTTER}-0001",
+            },
+            {"cover.garage_door"},  # no blind of that name here
+            id="blinds",
+        ),
+        pytest.param(
+            {
+                CONF_CDB_PATH: str(FIXTURES / "MeshNetwork-rtr.json"),
+                CONF_METADATA_DIR: META_DIR,
+                CONF_UNICAST: "0D00",
+            },
+            "climate",
+            {"climate.room_thermostat_0500": f"{NODE_THERMOSTAT}-0001"},
+            # the thermostat's temperature has no sensor of its own here (the climate entity shows it)
+            {"sensor.room_thermostat_0500_present_ambient_temperature"},
+            id="thermostat",
+        ),
+    ],
+)
+async def test_import_takes_over_covers_and_climates(
+    hass: HomeAssistant,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    fast_sleep: list[float],
+    data: dict[str, str],
+    domain: str,
+    moves: dict[str, str],
+    gateway_only: set[str],
+) -> None:
+    """Issue #12: a blind's `cover` takes over the gateway's `{slug}_007`, a room thermostat's `climate` its `{slug}_009`."""
+    gw = Gateway(hass)
+    for theirs_id in moves:
+        slug = theirs_id.split(".")[1]
+        device = gw.device(slug, slug.replace("_", " ").capitalize())
+        gw.entity(
+            domain,
+            f"{slug}_{'007' if domain == 'cover' else '009'}",
+            slug,
+            device=device,
+        )
+    if domain == "cover":
+        garage = gw.device("garage_door", "Garage door")
+        gw.entity("cover", "garage_door_007", "garage_door", device=garage)
+    else:
+        rtr = gw.devices["room_thermostat_0500"]
+        gw.entity(
+            "sensor",
+            "room_thermostat_0500_004f_present_ambient_temperature",
+            "room_thermostat_0500_present_ambient_temperature",
+            device=rtr,
+        )
+    ours = MockConfigEntry(
+        domain=DOMAIN, title="JUNG HOME", unique_id="1fbd2c61a4b6e5a4", data=data
+    )
+    await setup_entry(hass, ours)
+    await wait_for_link(hass, ours)
+    await settle(hass)
+
+    plan = build_import_plan(hass, ours)
+    assert _moves(plan) == moves
+    assert {g.entity_id for g in plan.gateway_only} == gateway_only
+
+    gw.entry.mock_state(hass, ConfigEntryState.LOADED)
+    await async_apply_import(hass, ours)
+    await hass.async_block_till_done()
+    reg = er.async_get(hass)
+    for theirs_id, our_uid in moves.items():
+        assert reg.async_get_entity_id(domain, DOMAIN, our_uid) == theirs_id
+        assert hass.states.get(theirs_id) is not None
+    assert gw.entry.disabled_by is ConfigEntryDisabler.USER
 
 
 # --------------------------------------------------------------------------- applying

@@ -4,6 +4,12 @@
 
 ### Fixed
 
+- **The gateway import takes over blinds and room thermostats** (#12). *Reconfigure → Import the entities of the
+  JUNG HOME Gateway integration* matched lights, sockets, keys, socket sensors and scenes only: a blind's `cover` and
+  a room thermostat's `climate` stayed with the gateway entry and turned unavailable once the import disabled it,
+  while ours kept their `_2` entity ids. They now take over the gateway's `cover` / `climate` on the device of the
+  same name, like a light its `light`. The gateway's room temperature sensors still have no counterpart here (the
+  `climate` entity carries the temperature) and are listed as staying with the gateway entry.
 - **No more *Using default MTU value* warnings with a local Bluetooth adapter** (#13). The link's MTU was read from
   bleak's `mtu_size`, which on BlueZ is never filled in and warns on every read; it is now read from the Mesh Proxy
   (and, while onboarding, Provisioning) Data In characteristic, which BlueZ keeps current. On such an adapter a proxy
