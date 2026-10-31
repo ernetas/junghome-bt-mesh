@@ -1953,17 +1953,27 @@ class JungHomeHub:
             f"{DOMAIN} transition {load:04X}",
         )
 
-    async def set_onoff(self, addr: int, on: bool) -> None:
-        """Switch the element at `addr` on or off, with transition time 0.
+    async def set_onoff(
+        self, addr: int, on: bool, transition: float | None = None
+    ) -> None:
+        """Switch the element at `addr` on or off, with transition time 0 unless `transition` is given.
 
-        Never with a transition (sweep B8): a switch insert waits it out before it switches off,
+        Only a dimmer's off takes one (`light.DIMMER_OFF_TRANSITION`): a dimmer publishes an off to its element
+        group, which the rocker on its other element follows with its status LED, only when the off fades; at 0 the
+        LED stays lit. Never anything else (sweep B8): a switch insert waits a transition out before it switches off,
         and the DALI insert switches on at once whatever it says.
         """
         refuse_unverified(self, [addr])
         self._note_request(addr, on=on)
-        await self._load_command(
-            addr, M.generic_onoff_set(on, transition=0), M.GEN_ONOFF_STATUS, "switch"
+        byte = self._transition_byte(transition)
+        reply = await self._load_command(
+            addr,
+            M.generic_onoff_set(on, transition=0 if byte is None else byte),
+            M.GEN_ONOFF_STATUS,
+            "switch",
         )
+        if byte is not None:
+            self._reread_after_transition(addr, reply)
 
     async def identify(self, node: Node, seconds: int = IDENTIFY_SECONDS) -> None:
         """Make `node` draw attention to itself (Health Attention Set to its primary element; its LED blinks)."""

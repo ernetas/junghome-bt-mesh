@@ -15,7 +15,10 @@ transition with its target and the time left, and faded; it answered a CTL Set a
 insert took a transition on off as a delay. So HA's `transition` goes only into a Lightness Set
 (`JungHomeHub.set_lightness`) that changes the brightness of a dimmer or DALI light that is on
 (`const.TRANSITION_KINDS`): never into a CTL or colour temperature Set, an on, an off, or the *All lights* group
-Sets (which switch the members that are off on). Only with the option *Fade brightness changes*
+Sets (which switch the members that are off on). The one exception is a dimmer's off, which always fades over
+`DIMMER_OFF_TRANSITION`, option or not: at transition 0 the dimmer does not publish the off to its element group, and
+the status LED of the rocker on its other element stays lit (seen on air through the gateway, which sends 0, and
+cleared by the same off with a 1 s transition). Only with the option *Fade brightness changes*
 (`OPTION_TRANSITIONS`, off by default until a person watched a fade); without it no light declares the feature, HA
 drops a `transition`, and every Set keeps the bytes it always had. Unverified on air from Home Assistant.
 
@@ -67,6 +70,9 @@ MAX_KELVIN: Final = 6000
 # resolution, 1 step) and a delta per step from the speed, in % of the full range per second. Seen on air.
 DIM_MOVE_TRANSITION: Final = 0x01
 DIM_STEPS_PER_SECOND: Final = 10
+# A dimmer's off, in seconds: any non-zero transition makes the dimmer publish the off its rocker's status LED
+# follows; short enough not to read as lag.
+DIMMER_OFF_TRANSITION: Final = 1.0
 
 
 # re-exported: the dimming actions' schema lived here before `actions/dim.py`
@@ -238,9 +244,12 @@ class JungHomeLight(LoadLock, LightEntity):
             await self.hub.set_onoff(self.address, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Send Generic OnOff Set off; never with a `transition`: only a brightness change fades."""
+        """Send Generic OnOff Set off; HA's `transition` is dropped, a dimmer fades over `DIMMER_OFF_TRANSITION`."""
         await self._check_unlocked()
-        await self._send_switch(self.hub.set_onoff(self.address, False), False)
+        transition = DIMMER_OFF_TRANSITION if self.light.kind == "dimmer" else None
+        await self._send_switch(
+            self.hub.set_onoff(self.address, False, transition), False
+        )
 
     @property
     def dimmable(self) -> bool:

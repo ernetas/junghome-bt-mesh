@@ -188,7 +188,8 @@ async def test_dimmer(
 
     await turn_off(hass, eid)
     _, pdu = load_sets(fake_link)[-1]
-    assert pdu == M.generic_onoff_set(False, tid=pdu[3], transition=0)
+    # a dimmer's off fades over 1 s (0x0A: 10 steps of 100 ms), so it publishes the off its rocker's LED follows
+    assert pdu == M.generic_onoff_set(False, tid=pdu[3], transition=0x0A)
     assert len(load_sets(fake_link)) == 3
 
     fake_link.inject(LIGHT_DIMMER, 0xC070, lightness_status(32768))
@@ -706,8 +707,9 @@ async def test_what_never_fades(
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """Decision M19, from sweep B8: an off, an on (also a brightness to a light that is off), a CTL Set and a colour
-    temperature alone carry no transition; nothing is read after them."""
+    """Decision M19, from sweep B8: an on (also a brightness to a light that is off), a CTL Set and a colour
+    temperature alone carry no transition; nothing is read after them. A dimmer's off carries its own 1 s, never
+    HA's `transition`."""
     hub = init_integration.runtime_data
     dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
     ctl = entity_id(hass, "light", UID_LIGHT_CTL)
@@ -723,7 +725,7 @@ async def test_what_never_fades(
     sent = load_sets(fake_link)
     assert [pdu for _, pdu in sent] == [
         M.light_lightness_set(32896, tid=sent[0][1][4]),
-        M.generic_onoff_set(False, tid=sent[1][1][3], transition=0),
+        M.generic_onoff_set(False, tid=sent[1][1][3], transition=0x0A),
         M.light_ctl_set(65535, 3000, tid=sent[2][1][8]),
         M.light_ctl_temperature_set(4000, tid=sent[3][1][6], transition=0),
     ]
