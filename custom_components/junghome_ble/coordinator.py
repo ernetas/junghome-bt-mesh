@@ -1477,6 +1477,10 @@ class JungHomeHub:
         the short form, no time left, or present within one step of target; else the way present moved since the
         last status; else, for a status with more than one 100 ms step left, the way to its target; else unchanged
         (the same status arrives on the group and as a reply).
+
+        A Move's first status comes ~3 s in, so the Move Set's own sign (`_note_move`) stands in until then: taken
+        once the blind confirms a Move — its first status, one step off the level it starts at, `1x100ms` left —
+        and dropped when the blind rests away from that level (a short reply at the start level is no stop).
         """
         if len(p) < 2:
             return
@@ -1487,7 +1491,18 @@ class JungHomeHub:
             int.from_bytes(p[2:4], "little", signed=True) if len(p) >= 5 else st.level
         )
         remaining = M.remaining_time(m.opcode, p)  # None: the short form, or "unknown" (still moving)
-        if len(p) < 5 or remaining == 0 or abs(st.target_level - st.level) <= 1:
+        at_rest = len(p) < 5 or remaining == 0
+        near = abs(st.target_level - st.level) <= 1
+        if near and not at_rest and remaining is not None and remaining <= 0.1:
+            if st.move_pending:
+                st.move_sign, st.move_from, st.move_pending = (
+                    st.move_pending,
+                    st.target_level,
+                    0,
+                )
+        elif at_rest and st.move_from is not None and abs(st.level - st.move_from) > 1:
+            st.move_sign = 0
+        if at_rest or near:
             st.level_direction = 0
         elif previous is not None and abs(st.level - previous) > 1:
             st.level_direction = 1 if st.level > previous else -1
@@ -1734,7 +1749,19 @@ class JungHomeHub:
 
     @register_status_handler(*GENERIC_LEVEL_OPCODES)
     def _on_level_set(self, m: AccessMessage, p: bytes) -> None:
-        """Report a rocker dimming its load (Generic Level / Delta / Move Set), then the hold that makes (`ButtonGestures.dim_hold`)."""
+        """Report a rocker dimming its load (Generic Level / Delta / Move Set), then the hold that makes (`ButtonGestures.dim_hold`).
+
+        A Move Set to a blind, or to a group its Level server subscribes to (a wall button's), gives the blind its
+        direction (`_note_move`).
+        """
+        if m.opcode in (M.GEN_MOVE_SET, M.GEN_MOVE_SET_UNACK) and len(p) >= 3:
+            delta = int.from_bytes(p[:2], "little", signed=True)
+            for blind in self.devices.blinds:
+                element = self.cdb.element(blind.address)
+                if m.dst == blind.address or (
+                    element is not None and m.dst in element.subscriptions("1002")
+                ):
+                    self._note_move(blind.address, delta)
         if self.gestures.from_button(m, p):
             self.fire_button(m.src, "dim", {"target": f"{m.dst:04X}", "raw": p.hex()})
             self.gestures.dim_hold(m, p)
@@ -2144,6 +2171,19 @@ class JungHomeHub:
         """
         refuse_unverified(self, [addr])
         await self._command(addr, M.generic_move_set(delta, transition=transition))
+        self._note_move(addr, delta)
+
+    def _note_move(self, addr: int, delta: int) -> None:
+        """Remember a Move Set's sign for the element at `addr` until it confirms the Move (`_on_level_status`).
+
+        Only a blind's direction reads it. A Move 0 (stop) ends a direction taken at once: the blind's status after
+        a stop may be one it had sent before.
+        """
+        st = self.element_state(addr)
+        st.move_pending = (delta > 0) - (delta < 0)
+        if delta == 0:
+            st.move_sign = 0
+            self.notify_update(addr)
 
     async def recall_scene(self, number: int, transition: float | None = None) -> None:
         """Recall a scene on every node (unacknowledged); the proxy never echoes our own PDU, so the bus event is ours to fire.

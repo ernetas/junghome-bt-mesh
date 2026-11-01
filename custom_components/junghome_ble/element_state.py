@@ -45,6 +45,11 @@ class ElementState:
     level: int | None = None  # Generic Level, -32768..32767 (blinds position / slat)
     target_level: int | None = None  # a moving blind's destination; level when idle
     level_direction: int = 0  # -1 toward -32768 (a blind opening), +1 toward 32767, 0 at rest (`_on_level_status`)
+    # a blind's Move Set: its sign once sent or heard (`move_pending`), taken (`move_sign`) when the blind confirms a
+    # Move, from the level it started at (`move_from`), until it rests elsewhere or a Move 0 (`JungHomeHub._note_move`)
+    move_pending: int = 0
+    move_sign: int = 0
+    move_from: int | None = None
     battery: int | None = None  # Generic Battery level, percent
     power_w: float | None = None
     voltage_v: float | None = None

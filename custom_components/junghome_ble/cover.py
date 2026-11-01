@@ -255,15 +255,15 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
 
     @property
     def is_opening(self) -> bool:
-        """The position element is moving toward -32768 = open."""
+        """The position element is moving toward -32768 = open (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return st is not None and st.level_direction < 0
+        return st is not None and (st.level_direction or st.move_sign) < 0
 
     @property
     def is_closing(self) -> bool:
-        """The position element is moving toward 32767 = closed."""
+        """The position element is moving toward 32767 = closed (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return st is not None and st.level_direction > 0
+        return st is not None and (st.level_direction or st.move_sign) > 0
 
     # ------------------------------------------------------------------ operation mode read
     async def async_added_to_hass(self) -> None:

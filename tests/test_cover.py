@@ -826,6 +826,43 @@ async def test_open_close_stop(
     assert hass.states.get(eid).attributes[ATTR_CURRENT_POSITION] == 25
 
 
+async def test_a_confirmed_move_set_gives_the_direction_at_once(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    levels: LevelMesh,
+) -> None:
+    """On air a Move's first status showing motion comes ~3 s in; the Move Set's sign (ours, or a wall button's heard
+    on the way) stands in once the blind confirms the Move with its first status, one step off where it starts."""
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    levels.levels[SHUTTER] = -28656
+    fake_link.inject(SHUTTER, 0xC0A0, level_status(-28656))
+    await hass.async_block_till_done()
+
+    await call(hass, SERVICE_CLOSE_COVER, eid)
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.OPEN  # not confirmed yet
+    fake_link.inject(SHUTTER, 0xC0A0, level_status(-28655, -28656, 0x01))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.CLOSING
+    fake_link.inject(SHUTTER, 0xC0A0, level_status(-28656))  # a short reply at the start level: no stop
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.CLOSING
+    fake_link.inject(SHUTTER, 0xC0A0, level_status(-18119))  # at rest elsewhere: stopped
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.OPEN
+
+    # a wall button's Move Set up, to the blind
+    fake_link.inject(0x0010, SHUTTER, M.generic_move_set(-32768, ack=False, tid=26))
+    fake_link.inject(SHUTTER, 0xC0A0, level_status(-18118, -18119, 0x01))
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.OPENING
+    levels.levels[SHUTTER] = -24544
+    await call(hass, SERVICE_STOP_COVER, eid)  # a Move 0 ends it at once
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.OPEN
+
+
 async def test_a_blind_that_does_not_answer_its_movements_still_runs(
     hass: HomeAssistant,
     init_blinds: MockConfigEntry,
