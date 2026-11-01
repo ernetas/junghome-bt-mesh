@@ -686,6 +686,40 @@ async def test_position_and_direction_from_level_status(
     assert hub.states[SHUTTER_SLAT].level == LEVEL_CLOSED
 
 
+async def test_direction_of_a_move_from_successive_statuses(
+    hass: HomeAssistant, init_blinds: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """A Move's statuses carry the level it started at as target (on air, shutter fw 2.2.0.2), so the direction is
+    the way present moves; the one-step-off statuses at the start and end of a move, and a status with no time
+    left, are at rest."""
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+
+    async def status(present: int, target: int | None = None, remaining: int = 0) -> str:
+        fake_link.inject(SHUTTER, 0xC0A0, level_status(present, target, remaining))
+        await hass.async_block_till_done()
+        return hass.states.get(eid).state
+
+    await status(-28656)
+    # close: starts one step off the start level, which stays the target while present climbs away from it
+    assert await status(-28655, -28656, 0x01) == CoverState.OPEN
+    await status(-28656)
+    assert await status(-22231, -28656, 0x01) == CoverState.CLOSING
+    assert await status(-22231, -28656, 0x01) == CoverState.CLOSING  # the same status again, as a reply
+    await status(-18119)
+    # open
+    assert await status(-18118, -18119, 0x01) == CoverState.OPEN
+    await status(-18119)
+    assert await status(-24544, -18119, 0x01) == CoverState.OPENING
+    assert await status(-31226, -18119, 0x01) == CoverState.OPENING
+    assert await status(-31226, -18119, 0x00) == CoverState.OPEN  # read later: nothing left
+    # a Level Set (the app's slider) carries its destination and real remaining time
+    await status(-30712)
+    assert await status(-30712, -17091, 0x60) == CoverState.CLOSING  # 32 x 1 s
+    assert await status(-24287, -17091, 0x5D) == CoverState.CLOSING
+    assert await status(-17091) == CoverState.OPEN
+    assert await status(-17090, -17091, 0x5A) == CoverState.OPEN  # one step past its target
+
+
 async def test_tilt_follows_the_slat_element(
     hass: HomeAssistant, init_blinds: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:

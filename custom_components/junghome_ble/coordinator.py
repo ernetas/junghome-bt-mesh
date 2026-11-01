@@ -1467,15 +1467,32 @@ class JungHomeHub:
         """Store a Generic Level Status `[present s16]` or `[present s16][target s16][remaining u8]`: present is the state.
 
         A blind's position and slat elements answer with it (the app reads the level the same way, ignoring the
-        remaining time); the target is kept so the cover can tell an opening from a closing blind while they differ.
+        remaining time).
+
+        The direction (`level_direction`) cannot be read off target vs present alone. Seen on air from a shutter
+        insert (fw 2.2.0.2): a Level Set's statuses carry the destination and its real remaining time (`32x1s`,
+        `3x100ms`), but a Move's (open / close, from the wall button or from us) carry the level the move *started*
+        at, always with `1x100ms` left, so the blind moves away from that target. And every move starts and ends
+        with a status one step off its target (`present=-28655 target=-28656`) that says nothing. So: at rest for
+        the short form, no time left, or present within one step of target; else the way present moved since the
+        last status; else, for a status with more than one 100 ms step left, the way to its target; else unchanged
+        (the same status arrives on the group and as a reply).
         """
         if len(p) < 2:
             return
         st = self.element_state(m.src)
+        previous = st.level
         st.level = int.from_bytes(p[:2], "little", signed=True)
         st.target_level = (
             int.from_bytes(p[2:4], "little", signed=True) if len(p) >= 5 else st.level
         )
+        remaining = M.remaining_time(m.opcode, p)  # None: the short form, or "unknown" (still moving)
+        if len(p) < 5 or remaining == 0 or abs(st.target_level - st.level) <= 1:
+            st.level_direction = 0
+        elif previous is not None and abs(st.level - previous) > 1:
+            st.level_direction = 1 if st.level > previous else -1
+        elif remaining is not None and remaining > 0.1:
+            st.level_direction = 1 if st.target_level > st.level else -1
         self.notify_update(m.src)
 
     @register_status_handler(M.LIGHT_CTL_TEMP_RANGE_STATUS)

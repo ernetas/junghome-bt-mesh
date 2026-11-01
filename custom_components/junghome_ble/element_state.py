@@ -44,6 +44,7 @@ class ElementState:
     kelvin_max: int | None = None
     level: int | None = None  # Generic Level, -32768..32767 (blinds position / slat)
     target_level: int | None = None  # a moving blind's destination; level when idle
+    level_direction: int = 0  # -1 toward -32768 (a blind opening), +1 toward 32767, 0 at rest (`_on_level_status`)
     battery: int | None = None  # Generic Battery level, percent
     power_w: float | None = None
     voltage_v: float | None = None
