@@ -8,6 +8,7 @@ self-consistent, and a single wrong digit anywhere would fail the chain.
 from __future__ import annotations
 
 import asyncio
+import threading
 from collections.abc import Callable
 from typing import Any
 
@@ -484,6 +485,30 @@ async def test_provision_over_gatt_with_sar_framing():
     ]
     assert [w[0] >> 6 for w in public_key_frames][:4] == [1, 2, 2, 3]
     assert device.stopped == 1
+
+
+async def test_provision_computes_the_key_and_the_secret_off_the_event_loop(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    device = FakeDevice()
+    threads: dict[str, threading.Thread] = {}
+
+    def recorded(name: str) -> Callable[..., Any]:
+        real = getattr(P, name)
+
+        def call(*args: Any) -> Any:
+            if args[:1] != (device.private_key,):  # the fake device runs on the loop
+                threads[name] = threading.current_thread()
+            return real(*args)
+
+        return call
+
+    for name in ("generate_private_key", "public_key_bytes", "ecdh_secret"):
+        monkeypatch.setattr(P, name, recorded(name))
+    result = await P.provision(device, DATA)
+    assert result.device_key == device.device_key
+    assert set(threads) == {"generate_private_key", "public_key_bytes", "ecdh_secret"}
+    assert threading.current_thread() not in threads.values()
 
 
 async def test_provision_without_a_known_mtu_and_with_noise():
