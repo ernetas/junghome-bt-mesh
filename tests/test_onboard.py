@@ -6,6 +6,7 @@ import asyncio
 import json
 import re
 import shutil
+import threading
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from datetime import UTC, datetime, timedelta
@@ -43,6 +44,7 @@ from custom_components.junghome_ble.entity import mesh_identifier, node_identifi
 from custom_components.junghome_ble.gateway_api import JungHomeGatewayApi
 from custom_components.junghome_ble.jhmesh import config_messages as C
 from custom_components.junghome_ble.jhmesh import messages as M
+from custom_components.junghome_ble.jhmesh import provisioning
 from custom_components.junghome_ble.jhmesh.advert import JungAdvertisement
 from custom_components.junghome_ble.jhmesh.cdb import CDB
 from custom_components.junghome_ble.jhmesh.crypto import NetKeyMaterial
@@ -1795,6 +1797,44 @@ async def test_add_device_lists_its_steps_and_sends_the_time(
         "recorded": True,
         "provisioning": kept.capabilities,
     }
+
+
+async def test_add_device_generates_its_key_off_the_event_loop(
+    hass: HomeAssistant,
+    provisioning_entry: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    fake_link: FakeProxyLink,
+    network_id: bytes,
+) -> None:
+    """The session's P-256 key is generated on the executor, before the link to the device opens."""
+    hub = provisioning_entry.runtime_data
+    template = hub.cdb.node_by_addr(TEMPLATE)
+    assert template is not None
+    learn_new_nodes(hub, fake_link)
+    mock_bluetooth_env["infos"].append(new_device_advert(hub, network_id))
+    fake_link.config_reply = FreshNodes(fake_link)
+    device = FakeDevice(elements=len(template.elements), mtu_size=69)
+    real = provisioning.generate_private_key
+    order: list[str] = []
+    threads: list[threading.Thread] = []
+
+    def generate() -> bytes:
+        order.append("key")
+        threads.append(threading.current_thread())
+        return real()
+
+    async def connect(*_args: Any, **_kwargs: Any) -> FakeDevice:
+        order.append("link")
+        return device
+
+    with (
+        patch.object(provisioning, "generate_private_key", generate),
+        patch.object(onboard, "establish_connection", connect),
+    ):
+        result = await add_new_device(hass)
+    assert result is not None
+    assert order == ["key", "link"]
+    assert threading.current_thread() not in threads
 
 
 async def test_add_device_with_the_devices_static_oob_value(

@@ -53,6 +53,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from functools import partial
 from typing import TYPE_CHECKING, Any, Final, Protocol
 
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
@@ -516,6 +517,10 @@ async def _provision(
     is pending (`add_device_provisioning_unconfirmed`). The link is closed whatever happens.
     """
     unicast, uuid, name = data.unicast, request.uuid, request.name
+    # the session generates its P-256 key; before the link opens, so that nothing can end this wait with it open
+    prov = await hass.async_add_executor_job(
+        partial(Provisioner, data, static_oob=request.static_oob)
+    )
 
     device = (
         bluetooth.async_ble_device_from_address(hass, info.address, connectable=True)
@@ -533,7 +538,6 @@ async def _provision(
         )
     except Exception as err:
         raise _failure("add_device_connect_failed", error=str(err)) from err
-    prov = Provisioner(data, static_oob=request.static_oob)
     kept = False
 
     async def keep(dev_key: bytes) -> None:
