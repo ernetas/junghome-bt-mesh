@@ -16,7 +16,7 @@ import asyncio
 import logging
 import time
 from collections import deque
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial
@@ -185,6 +185,12 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 # A Set with a transition time: the load's state is read again this long after the remaining time its Status gave,
 # as its last publication may come before the fade ends (`_reread_after_transition`)
 TRANSITION_REREAD_SLACK = 1.0
+# A blind's Move Set counts only if the blind confirms a Move within this long: ~100 ms on air, the rest is the way
+# through the proxy. A sign nothing confirmed must not reach a later, unrelated move (`_note_motion`)
+MOVE_CONFIRM_WINDOW = 5.0
+# A moving blind publishes about every 3 s on air: this long without a status, it is shown at rest and read again
+# (`_motion_silent`), so that a lost status cannot leave it moving
+MOTION_SILENCE = 10.0
 
 # how long one send waits for the store to catch up (`JungHomeHub.while_seq_stalls`) before it is given up on: a
 # healthy store lands its write within a second, one that refuses for this long will not do so by waiting
@@ -552,6 +558,8 @@ class JungHomeHub:
         self.heard_groups: set[int] = set()
         # load element → the pending read of its state after a transition (`_reread_after_transition`)
         self._transition_reread = self.lifecycle.keyed("transition_reread")
+        # blind position element → the end of its motion if no status comes (`_watch_motion`)
+        self._motion_watch = self.lifecycle.keyed("motion_watch")
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
         self._locating = self.lifecycle.keyed("locating")
         self._rebuilding = (
@@ -1474,13 +1482,15 @@ class JungHomeHub:
         `3x100ms`), but a Move's (open / close, from the wall button or from us) carry the level the move *started*
         at, always with `1x100ms` left, so the blind moves away from that target. And every move starts and ends
         with a status one step off its target (`present=-28655 target=-28656`) that says nothing. So: at rest for
-        the short form, no time left, or present within one step of target; else the way present moved since the
-        last status; else, for a status with more than one 100 ms step left, the way to its target; else unchanged
-        (the same status arrives on the group and as a reply).
+        the short form, no time left, or present within one step of target; else, for a status with more than one
+        100 ms step left, the way to its target, which it names (present alone can lag: a blind reversing, statuses
+        missed); else the way present moved since the last status; else unchanged (the same status arrives on the
+        group and as a reply).
 
-        A Move's first status comes ~3 s in, so the Move Set's own sign (`_note_move`) stands in until then: taken
+        A Move's first status comes ~3 s in, so the Move Set's own sign (`_note_motion`) stands in until then: taken
         once the blind confirms a Move — its first status, one step off the level it starts at, `1x100ms` left —
-        and dropped when the blind rests away from that level (a short reply at the start level is no stop).
+        and dropped when the blind rests away from that level (a short reply at the start level is no stop) or at
+        the end it was running to. Whatever a lost status leaves is bounded by `_watch_motion`.
         """
         if len(p) < 2:
             return
@@ -1490,24 +1500,31 @@ class JungHomeHub:
         st.target_level = (
             int.from_bytes(p[2:4], "little", signed=True) if len(p) >= 5 else st.level
         )
-        remaining = M.remaining_time(m.opcode, p)  # None: the short form, or "unknown" (still moving)
+        remaining = M.remaining_time(
+            m.opcode, p
+        )  # None: the short form, or "unknown" (still moving)
         at_rest = len(p) < 5 or remaining == 0
         near = abs(st.target_level - st.level) <= 1
         if near and not at_rest and remaining is not None and remaining <= 0.1:
-            if st.move_pending:
-                st.move_sign, st.move_from, st.move_pending = (
-                    st.move_pending,
-                    st.target_level,
-                    0,
-                )
-        elif at_rest and st.move_from is not None and abs(st.level - st.move_from) > 1:
+            if st.move_pending and time.monotonic() < st.move_pending_until:
+                st.move_sign, st.move_from = st.move_pending, st.target_level
+            st.move_pending = 0
+        elif (
+            at_rest
+            and st.move_sign
+            and (
+                abs(st.level - st.move_from) > 1
+                or st.level == (32767 if st.move_sign > 0 else -32768)
+            )
+        ):
             st.move_sign = 0
         if at_rest or near:
             st.level_direction = 0
-        elif previous is not None and abs(st.level - previous) > 1:
-            st.level_direction = 1 if st.level > previous else -1
         elif remaining is not None and remaining > 0.1:
             st.level_direction = 1 if st.target_level > st.level else -1
+        elif previous is not None and abs(st.level - previous) > 1:
+            st.level_direction = 1 if st.level > previous else -1
+        self._watch_motion(m.src, st)
         self.notify_update(m.src)
 
     @register_status_handler(M.LIGHT_CTL_TEMP_RANGE_STATUS)
@@ -1751,17 +1768,15 @@ class JungHomeHub:
     def _on_level_set(self, m: AccessMessage, p: bytes) -> None:
         """Report a rocker dimming its load (Generic Level / Delta / Move Set), then the hold that makes (`ButtonGestures.dim_hold`).
 
-        A Move Set to a blind, or to a group its Level server subscribes to (a wall button's), gives the blind its
-        direction (`_note_move`).
+        One to a blind, or to a group its Level server subscribes to (a wall button's, the app's), tells the blind's
+        direction (`_note_motion`).
         """
         if m.opcode in (M.GEN_MOVE_SET, M.GEN_MOVE_SET_UNACK) and len(p) >= 3:
-            delta = int.from_bytes(p[:2], "little", signed=True)
-            for blind in self.devices.blinds:
-                element = self.cdb.element(blind.address)
-                if m.dst == blind.address or (
-                    element is not None and m.dst in element.subscriptions("1002")
-                ):
-                    self._note_move(blind.address, delta)
+            self._note_motion(m.dst, int.from_bytes(p[:2], "little", signed=True))
+        elif m.opcode in (M.GEN_DELTA_SET, M.GEN_DELTA_SET_UNACK) and len(p) >= 5:
+            self._note_motion(m.dst, int.from_bytes(p[:4], "little", signed=True))
+        elif m.opcode in (M.GEN_LEVEL_SET, M.GEN_LEVEL_SET_UNACK) and len(p) >= 3:
+            self._note_motion(m.dst, None)
         if self.gestures.from_button(m, p):
             self.fire_button(m.src, "dim", {"target": f"{m.dst:04X}", "raw": p.hex()})
             self.gestures.dim_hold(m, p)
@@ -2051,6 +2066,7 @@ class JungHomeHub:
     async def central_level(self, group: int, level: int) -> None:
         """Send every member of a device-type group one Unacknowledged Generic Level Set: blinds, slats, set-points."""
         refuse_unverified(self, [group])
+        self._note_motion(group, None)
         await self._command(
             group, M.generic_level_set(max(-32768, min(32767, level)), ack=False)
         )
@@ -2061,7 +2077,7 @@ class JungHomeHub:
         A device-type group (`OpenClose.Blinds`) or a room address (`OpenClose.Group`, the area sheet's stop).
         """
         refuse_unverified(self, [group])
-        await self._command(group, M.generic_delta_set(0, ack=False))
+        await self._send_motion(group, M.generic_delta_set(0, ack=False), 0)
 
     async def room_command(
         self, room: int, members: Sequence[int], on: bool, lightness: int | None = None
@@ -2154,6 +2170,7 @@ class JungHomeHub:
         refuse_unverified(self, [addr])
         level = max(-32768, min(32767, level))
         self._note_request(addr, level=level)
+        self._note_motion(addr, None)
         await self._load_command(
             addr, M.generic_level_set(level), M.GEN_LEVEL_STATUS, "level"
         )
@@ -2161,7 +2178,7 @@ class JungHomeHub:
     async def delta_level(self, addr: int, delta: int) -> None:
         """Send Generic Delta Set `delta` to the element at `addr` (the app's blind up / down / stop: -1 / +1 / 0)."""
         refuse_unverified(self, [addr])
-        await self._command(addr, M.generic_delta_set(delta))
+        await self._send_motion(addr, M.generic_delta_set(delta), delta)
 
     async def move_level(self, addr: int, delta: int, transition: int) -> None:
         """Send Generic Move Set `delta` (-32768..32767) with a transition-time byte to the element at `addr`.
@@ -2170,20 +2187,86 @@ class JungHomeHub:
         §1.4); a Move Set without a transition time would be ignored by a spec-compliant Level server.
         """
         refuse_unverified(self, [addr])
-        await self._command(addr, M.generic_move_set(delta, transition=transition))
-        self._note_move(addr, delta)
+        await self._send_motion(
+            addr, M.generic_move_set(delta, transition=transition), delta
+        )
 
-    def _note_move(self, addr: int, delta: int) -> None:
-        """Remember a Move Set's sign for the element at `addr` until it confirms the Move (`_on_level_status`).
+    async def _send_motion(self, dst: int, access_pdu: bytes, delta: int) -> None:
+        """Send a Move or Delta Set, noted for the direction of the blinds it reaches (`_note_motion`).
 
-        Only a blind's direction reads it. A Move 0 (stop) ends a direction taken at once: the blind's status after
-        a stop may be one it had sent before.
+        A sign is noted first: the blind can confirm before the send returns. A stop only once it is sent: a blind
+        it never reached keeps running.
         """
-        st = self.element_state(addr)
-        st.move_pending = (delta > 0) - (delta < 0)
-        if delta == 0:
-            st.move_sign = 0
+        if delta:
+            self._note_motion(dst, delta)
+        try:
+            await self._command(dst, access_pdu)
+        except BaseException:
+            for addr in self._blinds_at(dst):
+                self.element_state(addr).move_pending = 0
+            raise
+        if not delta:
+            self._note_motion(dst, 0)
+
+    def _blinds_at(self, dst: int) -> Iterator[int]:
+        """Yield the position elements of the blinds a message to `dst` reaches: itself or a group it subscribes to."""
+        for blind in self.devices.blinds:
+            element = self.cdb.element(blind.address)
+            if dst == blind.address or (
+                element is not None and dst in element.subscriptions("1002")
+            ):
+                yield blind.address
+
+    def _note_motion(self, dst: int, delta: int | None) -> None:
+        """Note a command, ours or heard, for the direction of the blinds it reaches (`_on_level_status`).
+
+        A Move or Delta Set's sign waits for the blind to confirm, for MOVE_CONFIRM_WINDOW (not again while that sign
+        is in force: a Set retransmitted after the confirmation has no Move left to confirm). `delta` 0, a stop, ends
+        the direction at once: the blind's status after a stop may be one it had sent before. None, a Level Set,
+        ends only what a Move Set stood in for: its own statuses name its destination.
+        """
+        for addr in self._blinds_at(dst):
+            st = self.element_state(addr)
+            if delta:
+                sign = 1 if delta > 0 else -1
+                st.move_pending = 0 if sign == st.move_sign else sign
+                st.move_pending_until = time.monotonic() + MOVE_CONFIRM_WINDOW
+                continue
+            st.move_pending = st.move_sign = 0
+            if delta == 0:
+                st.level_direction = 0
+            self._watch_motion(addr, st)
             self.notify_update(addr)
+
+    def _watch_motion(self, addr: int, st: ElementState) -> None:
+        """Give a blind shown moving MOTION_SILENCE until its next status (`_motion_silent`); a newer status starts it over."""
+        if (cancel := self._motion_watch.pop(addr, None)) is not None:
+            cancel()
+        if (
+            (st.level_direction or st.move_sign)
+            and not self.stopping
+            and any(blind.address == addr for blind in self.devices.blinds)
+        ):
+            self._motion_watch[addr] = async_call_later(
+                self.hass, MOTION_SILENCE, partial(self._motion_silent, addr)
+            )
+
+    @callback
+    def _motion_silent(self, addr: int, _now: datetime) -> None:
+        """Show a blind that went silent at rest and read it, unless the link is down (the next one's refresh reads it).
+
+        One still running answers with a level away from the last it published, which shows its direction again.
+        """
+        del self._motion_watch[addr]
+        st = self.element_state(addr)
+        st.level_direction = st.move_sign = 0
+        self.notify_update(addr)
+        if self.connected:
+            self.entry.async_create_background_task(
+                self.hass,
+                self.async_refresh_element(addr, "level"),
+                f"{DOMAIN} motion {addr:04X}",
+            )
 
     async def recall_scene(self, number: int, transition: float | None = None) -> None:
         """Recall a scene on every node (unacknowledged); the proxy never echoes our own PDU, so the bus event is ours to fire.

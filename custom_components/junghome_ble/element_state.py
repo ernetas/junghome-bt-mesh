@@ -43,13 +43,17 @@ class ElementState:
     kelvin_min: int | None = None
     kelvin_max: int | None = None
     level: int | None = None  # Generic Level, -32768..32767 (blinds position / slat)
-    target_level: int | None = None  # a moving blind's destination; level when idle
+    # as the last status gave it, level for the short form: a Level Set's destination, but the level a Move *started*
+    # at, and a later read can still carry either: says nothing of a direction (`level_direction`)
+    target_level: int | None = None
     level_direction: int = 0  # -1 toward -32768 (a blind opening), +1 toward 32767, 0 at rest (`_on_level_status`)
-    # a blind's Move Set: its sign once sent or heard (`move_pending`), taken (`move_sign`) when the blind confirms a
-    # Move, from the level it started at (`move_from`), until it rests elsewhere or a Move 0 (`JungHomeHub._note_move`)
+    # a blind's Move Set: its sign once sent or heard (`move_pending`, until `move_pending_until`), taken (`move_sign`)
+    # when the blind confirms a Move, from the level it started at (`move_from`), until it rests elsewhere or at the
+    # end it ran to, or a stop or Level Set (`JungHomeHub._note_motion`) or silence (`JungHomeHub._motion_silent`)
     move_pending: int = 0
+    move_pending_until: float = 0.0  # a `time.monotonic()`
     move_sign: int = 0
-    move_from: int | None = None
+    move_from: int = 0
     battery: int | None = None  # Generic Battery level, percent
     power_w: float | None = None
     voltage_v: float | None = None
