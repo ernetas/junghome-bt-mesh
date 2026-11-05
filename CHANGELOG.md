@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.7.0
+
+### Fixed
+
+- **A blind or roller shutter now shows the direction it really runs** (#20). Opening and closing were swapped for
+  open / close from Home Assistant and from the wall button: a Move's status carries the level it *started* at as its
+  target, so comparing the target with the present level got every Move backwards, and a later read could leave a
+  blind at rest shown moving. The direction now comes from how the level moves between statuses, and for a Level Set
+  (the app's slider) from its destination. Until a Move's first status showing motion arrives, about 3 s in, the sign
+  of the Move or Delta Set (ours, or a wall button's or the app's heard on the way) stands in once the blind confirms
+  it. A blind silent for 10 s while shown moving is shown at rest and read again. Moves started by something not
+  heard, such as the gateway's timers, show their direction from the first moving status. The 5 s and 10 s timings,
+  the 2 s after a stop and Delta Sets from the app have not been tried on a real blind.
+
+### Notes
+
+- **The integration's icon in HACS.** HACS 2.0.5 only looks up icons in the Home Assistant brands repository, which no
+  longer takes custom integrations, so it shows a placeholder there. Home Assistant itself has shown the icon this
+  integration ships since 1.0.0, and from Home Assistant 2026.11 the Marketplace, which replaces HACS, shows it as
+  well, before and after installing.
+
 ## 1.6.2
 
 ### Fixed
