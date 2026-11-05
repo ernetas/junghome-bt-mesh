@@ -9,11 +9,15 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from homeassistant.util import dt as dt_util
 
 from .jhmesh.messages import STATE_STEP
 from .jhmesh.properties import PROPERTIES, EnforcedOutput
+
+if TYPE_CHECKING:
+    from .blind_motion import BlindMotion
 
 PROPERTY_LOCK = 0x0009  # EnforceOutput: a load's lock (`ElementState.note_lock`)
 PROPERTY_RUN_ON = (
@@ -44,16 +48,10 @@ class ElementState:
     kelvin_max: int | None = None
     level: int | None = None  # Generic Level, -32768..32767 (blinds position / slat)
     # as the last status gave it, level for the short form: a Level Set's destination, but the level a Move *started*
-    # at, and a later read can still carry either: says nothing of a direction (`level_direction`)
+    # at, and a later read can still carry either: says nothing of a direction (`BlindMotion`)
     target_level: int | None = None
-    level_direction: int = 0  # -1 toward -32768 (a blind opening), +1 toward 32767, 0 at rest (`_on_level_status`)
-    # a blind's Move Set: its sign once sent or heard (`move_pending`, until `move_pending_until`), taken (`move_sign`)
-    # when the blind confirms a Move, from the level it started at (`move_from`), until it rests elsewhere or at the
-    # end it ran to, or a stop or Level Set (`JungHomeHub._note_motion`) or silence (`JungHomeHub._motion_silent`)
-    move_pending: int = 0
-    move_pending_until: float = 0.0  # a `time.monotonic()`
-    move_sign: int = 0
-    move_from: int = 0
+    # a blind position element's direction of travel; None for every other element (`JungHomeHub._motion`)
+    motion: BlindMotion | None = None
     battery: int | None = None  # Generic Battery level, percent
     power_w: float | None = None
     voltage_v: float | None = None

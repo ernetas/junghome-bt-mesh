@@ -71,6 +71,11 @@ from custom_components.junghome_ble.binary_sensor import (
     REFERENCE_RUN_LONGEST,
     REFERENCE_RUN_MARGIN,
 )
+from custom_components.junghome_ble.blind_motion import (
+    MOTION_SILENCE,
+    MOVE_CONFIRM_WINDOW,
+    STOP_SETTLE,
+)
 from custom_components.junghome_ble.config_entities import (
     LOCK_EXPIRY_MARGIN,
 )
@@ -81,10 +86,6 @@ from custom_components.junghome_ble.const import (
     DOMAIN,
     OPTION_UNVERIFIED_WRITES,
     SIGNAL_UPDATE,
-)
-from custom_components.junghome_ble.coordinator import (
-    MOTION_SILENCE,
-    MOVE_CONFIRM_WINDOW,
 )
 from custom_components.junghome_ble.cover import (
     COVER_MODE_PROPERTY,
@@ -927,7 +928,7 @@ async def test_the_move_sign_is_noted_before_the_send_and_dropped_when_it_fails(
     seen: list[int] = []
 
     async def fail(_dst: int, _pdu: bytes) -> None:
-        seen.append(hub.states[SHUTTER].move_pending)
+        seen.append(hub.states[SHUTTER].motion.pending)
         raise ConnectionError("lost")
 
     with (
@@ -936,7 +937,7 @@ async def test_the_move_sign_is_noted_before_the_send_and_dropped_when_it_fails(
     ):
         await hub.move_level(SHUTTER, 32767, COVER_MOVE_TRANSITION)
     assert seen == [1]
-    assert hub.states[SHUTTER].move_pending == 0
+    assert hub.states[SHUTTER].motion.pending == 0
 
 
 async def test_a_retransmitted_move_set_arms_nothing_after_its_confirmation(
@@ -952,7 +953,7 @@ async def test_a_retransmitted_move_set_arms_nothing_after_its_confirmation(
     )
     fake_link.inject(0x0010, SHUTTER, move)
     await hass.async_block_till_done()
-    assert hub.states[SHUTTER].move_pending == 0
+    assert hub.states[SHUTTER].motion.pending == 0
 
 
 async def test_a_level_sets_target_goes_before_a_lagging_present(
@@ -987,7 +988,7 @@ async def test_a_level_set_ends_what_a_move_set_stood_in_for(
     else:
         await hub.set_level(SHUTTER, -25000)
         await hass.async_block_till_done()
-    assert hub.states[SHUTTER].move_sign == 0
+    assert hub.states[SHUTTER].motion.sign == 0
     assert await _status(hass, fake_link, eid, -24999, -25000, 0x5A) == CoverState.OPEN
 
 
@@ -1045,12 +1046,27 @@ async def test_a_stop_that_was_not_sent_leaves_the_direction(
     assert hass.states.get(eid).state == CoverState.CLOSING
 
 
-async def test_a_confirmed_move_at_its_end_is_not_moving(
+async def test_a_move_set_toward_the_end_a_blind_is_at_shows_nothing(
     hass: HomeAssistant, init_blinds: MockConfigEntry, fake_link: FakeProxyLink
 ) -> None:
-    """A wall button's close of a closed blind: at the end it ran to, nothing is moving, even at its start level."""
+    """A wall button's close of a closed blind has nowhere to run: it arms no sign, so the blind never shows closing,
+    and a move something else starts meanwhile (the gateway's timer, an open) is not shown as a close."""
     eid = entity_id(hass, "cover", UID_SHUTTER)
     await _status(hass, fake_link, eid, LEVEL_CLOSED)
+    fake_link.inject(0x0010, SHUTTER, M.generic_move_set(32767, ack=False, tid=26))
+    await hass.async_block_till_done()
+    assert (
+        await _status(hass, fake_link, eid, LEVEL_CLOSED - 1, LEVEL_CLOSED, 0x01)
+        == CoverState.CLOSED
+    )
+    assert await _status(hass, fake_link, eid, LEVEL_CLOSED) == CoverState.CLOSED
+
+
+async def test_a_confirmed_move_with_no_known_level_rests_at_its_end(
+    hass: HomeAssistant, init_blinds: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """Its level unknown when the close was heard: the close is armed, and a rest at the end it ran to ends it."""
+    eid = entity_id(hass, "cover", UID_SHUTTER)
     fake_link.inject(0x0010, SHUTTER, M.generic_move_set(32767, ack=False, tid=26))
     await hass.async_block_till_done()
     assert (
@@ -1058,6 +1074,127 @@ async def test_a_confirmed_move_at_its_end_is_not_moving(
         == CoverState.CLOSING
     )
     assert await _status(hass, fake_link, eid, LEVEL_CLOSED) == CoverState.CLOSED
+
+
+@pytest.mark.parametrize("central", [False, True])
+async def test_a_level_set_that_was_not_sent_leaves_the_move_sign(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    central: bool,
+) -> None:
+    """A position asked during a confirmed close, its send failing: the blind still closes, and is shown closing."""
+    hub = init_blinds.runtime_data
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    await _status(hass, fake_link, eid, -18119)
+    await call(hass, SERVICE_CLOSE_COVER, eid)
+    assert (
+        await _status(hass, fake_link, eid, -18118, -18119, 0x01) == CoverState.CLOSING
+    )
+    with (
+        patch.object(hub, "_command", side_effect=ConnectionError("lost")),
+        patch.object(hub, "_load_command", side_effect=ConnectionError("lost")),
+        pytest.raises(ConnectionError),
+    ):
+        await (
+            hub.central_level(ALL_BLINDS, -25000)
+            if central
+            else hub.set_level(SHUTTER, -25000)
+        )
+    await hass.async_block_till_done()
+    assert hass.states.get(eid).state == CoverState.CLOSING
+
+
+async def test_a_status_long_after_the_last_tells_no_direction_from_present(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """At rest at -10000 when last heard; closed and reopening unheard meanwhile: the first status back, above the
+    old level, is no close. The next, 3 s on, shows the way it runs."""
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    await _status(hass, fake_link, eid, -10000)
+    await _pass_time(hass, freezer, MOTION_SILENCE + 1)
+    assert (
+        await _status(hass, fake_link, eid, 20000, LEVEL_CLOSED, 0x01)
+        == CoverState.OPEN
+    )
+    await _pass_time(hass, freezer, 3)
+    assert (
+        await _status(hass, fake_link, eid, 14000, LEVEL_CLOSED, 0x01)
+        == CoverState.OPENING
+    )
+
+
+async def test_a_new_move_the_same_way_as_a_stale_sign_is_tracked(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A close confirmed, its end never heard; a close well after it is a new move, not a retransmission: it is armed
+    and its confirmation moves the start level the rest rule measures from."""
+    hub = init_blinds.runtime_data
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    await _status(hass, fake_link, eid, -28656)
+    fake_link.inject(0x0010, SHUTTER, M.generic_move_set(32767, ack=False, tid=26))
+    await _status(hass, fake_link, eid, -28655, -28656, 0x01)
+    await _pass_time(hass, freezer, MOVE_CONFIRM_WINDOW + 1)
+    fake_link.inject(0x0010, SHUTTER, M.generic_move_set(32767, ack=False, tid=27))
+    await hass.async_block_till_done()
+    assert hub.states[SHUTTER].motion.pending == 1
+    await _status(hass, fake_link, eid, -10000, -10001, 0x01)
+    assert hub.states[SHUTTER].motion.start == -10001
+    assert (
+        await _status(hass, fake_link, eid, -10001) == CoverState.CLOSING
+    )  # a short reply at the new start
+
+
+async def test_a_status_sent_before_a_stop_shows_no_direction_after_it(
+    hass: HomeAssistant,
+    init_blinds: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    levels: LevelMesh,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """A moving status still on its way when we stopped the blind: it moves present, but the blind is at rest."""
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    await _status(hass, fake_link, eid, -28656)
+    assert (
+        await _status(hass, fake_link, eid, -22231, -28656, 0x01) == CoverState.CLOSING
+    )
+    levels.silent.add(SHUTTER)
+    await call(hass, SERVICE_STOP_COVER, eid)
+    await hass.async_block_till_done()
+    assert await _status(hass, fake_link, eid, -20000, -28656, 0x01) == CoverState.OPEN
+    await _pass_time(
+        hass, freezer, STOP_SETTLE + 1
+    )  # a status after that is a new move's
+    assert (
+        await _status(hass, fake_link, eid, -17000, -28656, 0x01) == CoverState.CLOSING
+    )
+
+
+async def test_a_failed_send_leaves_a_sign_it_did_not_arm(
+    hass: HomeAssistant, init_blinds: MockConfigEntry, fake_link: FakeProxyLink
+) -> None:
+    """A wall button's open heard; our stop, or a close, then fails: the button's sign still waits for the blind."""
+    hub = init_blinds.runtime_data
+    eid = entity_id(hass, "cover", UID_SHUTTER)
+    await _status(hass, fake_link, eid, -18119)
+    fake_link.inject(0x0010, SHUTTER, M.generic_move_set(-32768, ack=False, tid=26))
+    await hass.async_block_till_done()
+    for delta in (0, 32767):
+        fake_link.inject(0x0010, SHUTTER, M.generic_move_set(-32768, ack=False, tid=27))
+        await hass.async_block_till_done()
+        with (
+            patch.object(hub, "_command", side_effect=ConnectionError("lost")),
+            pytest.raises(ConnectionError),
+        ):
+            await hub.move_level(SHUTTER, delta, COVER_MOVE_TRANSITION)
+        # a failed stop takes back nothing; a failed close only its own sign (which had replaced the open's)
+        assert hub.states[SHUTTER].motion.pending == (-1 if delta == 0 else 0)
 
 
 @pytest.mark.parametrize("connected", [True, False])
@@ -1088,7 +1225,7 @@ async def test_a_silent_blind_is_shown_at_rest_and_read(
         type(hub), "connected", new_callable=PropertyMock, return_value=connected
     ):
         await _pass_time(hass, freezer, 2)
-        assert hub.states[SHUTTER].level_direction == 0
+        assert hub.states[SHUTTER].motion.from_statuses == 0
     await hass.async_block_till_done()
     assert levels.gets == ([SHUTTER] if connected else [])
 
@@ -1124,7 +1261,7 @@ async def test_delta_sets_tell_the_direction_as_move_sets_do(
     fake_link.inject(0x0010, SHUTTER, M.generic_delta_set(0, ack=False, tid=28))
     await hass.async_block_till_done()
     assert hass.states.get(eid).state == CoverState.OPEN
-    assert hub.states[SHUTTER].move_pending == 0
+    assert hub.states[SHUTTER].motion.pending == 0
 
 
 async def test_all_blinds_stop_ends_the_direction_of_its_members(
@@ -1148,7 +1285,7 @@ async def test_move_level_notes_nothing_on_a_load_that_is_no_blind(
     """A light dims with the same Move Set, the slats take it too: neither has a direction to show."""
     hub = init_blinds.runtime_data
     await hub.move_level(SHUTTER_SLAT, 32767, COVER_MOVE_TRANSITION)
-    assert hub.states[SHUTTER_SLAT].move_pending == 0
+    assert hub.element_state(SHUTTER_SLAT).motion is None
 
 
 async def test_a_blind_that_does_not_answer_its_movements_still_runs(

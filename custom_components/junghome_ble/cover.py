@@ -25,7 +25,7 @@ Set` -1 / +1 / 0 and no transition (`JungHomeHub.delta_level`; kept as the fallb
 to be ignored). A position or tilt is a plain `Generic Level Set`, as the app's sliders send it. Stop ends a
 move at an unknown position, so it is followed by a `Generic Level Get`. Nothing is written optimistically:
 the state changes when the element publishes (or answers) its Generic Level Status, and `is_opening` /
-`is_closing` come from the direction the hub derives from successive statuses (`_on_level_status`: a Move's
+`is_closing` come from the direction the hub derives from successive statuses (`blind_motion`: a Move's
 target is where it started, not where it goes). Stopping the slats (`stop_cover_tilt`) is the position's stop
 sent to the slat element: no JUNG client does it (the app has a slat slider only), it is the plain Generic Level
 server semantics of the SIG spec (class c).
@@ -257,13 +257,13 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
     def is_opening(self) -> bool:
         """The position element is moving toward -32768 = open (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return st is not None and (st.level_direction or st.move_sign) < 0
+        return st is not None and st.motion is not None and st.motion.direction < 0
 
     @property
     def is_closing(self) -> bool:
         """The position element is moving toward 32767 = closed (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return st is not None and (st.level_direction or st.move_sign) > 0
+        return st is not None and st.motion is not None and st.motion.direction > 0
 
     # ------------------------------------------------------------------ operation mode read
     async def async_added_to_hass(self) -> None:

@@ -16,7 +16,7 @@ import asyncio
 import logging
 import time
 from collections import deque
-from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from functools import partial
@@ -37,6 +37,7 @@ from homeassistant.helpers.event import (
 from homeassistant.util import dt as dt_util
 from homeassistant.util.hass_dict import HassKey
 
+from .blind_motion import MOTION_SILENCE, BlindMotion
 from .bus_events import fire_scene_recalled, publish_button_event
 from .const import (
     DEFAULT_HEARTBEATS,
@@ -102,6 +103,7 @@ from .jhmesh.client import (
 from .jhmesh.crypto import NetKeyMaterial
 from .jhmesh.devices import (
     BATTERY_PIDS,
+    Blind,
     Devices,
     Light,
     Metadata,
@@ -185,12 +187,6 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 # A Set with a transition time: the load's state is read again this long after the remaining time its Status gave,
 # as its last publication may come before the fade ends (`_reread_after_transition`)
 TRANSITION_REREAD_SLACK = 1.0
-# A blind's Move Set counts only if the blind confirms a Move within this long: ~100 ms on air, the rest is the way
-# through the proxy. A sign nothing confirmed must not reach a later, unrelated move (`_note_motion`)
-MOVE_CONFIRM_WINDOW = 5.0
-# A moving blind publishes about every 3 s on air: this long without a status, it is shown at rest and read again
-# (`_motion_silent`), so that a lost status cannot leave it moving
-MOTION_SILENCE = 10.0
 
 # how long one send waits for the store to catch up (`JungHomeHub.while_seq_stalls`) before it is given up on: a
 # healthy store lands its write within a second, one that refuses for this long will not do so by waiting
@@ -560,6 +556,14 @@ class JungHomeHub:
         self._transition_reread = self.lifecycle.keyed("transition_reread")
         # blind position element → the end of its motion if no status comes (`_watch_motion`)
         self._motion_watch = self.lifecycle.keyed("motion_watch")
+        # (cdb, devices) → the blinds' position elements by every address that reaches them (`_blinds_at`)
+        self._blind_index: tuple[
+            CDB | None, Devices | None, dict[int, tuple[int, ...]]
+        ] = (
+            None,
+            None,
+            {},
+        )
         # node unicast → the pending end of its Node Identity advert (`async_locate`)
         self._locating = self.lifecycle.keyed("locating")
         self._rebuilding = (
@@ -1475,56 +1479,25 @@ class JungHomeHub:
         """Store a Generic Level Status `[present s16]` or `[present s16][target s16][remaining u8]`: present is the state.
 
         A blind's position and slat elements answer with it (the app reads the level the same way, ignoring the
-        remaining time).
-
-        The direction (`level_direction`) cannot be read off target vs present alone. Seen on air from a shutter
-        insert (fw 2.2.0.2): a Level Set's statuses carry the destination and its real remaining time (`32x1s`,
-        `3x100ms`), but a Move's (open / close, from the wall button or from us) carry the level the move *started*
-        at, always with `1x100ms` left, so the blind moves away from that target. And every move starts and ends
-        with a status one step off its target (`present=-28655 target=-28656`) that says nothing. So: at rest for
-        the short form, no time left, or present within one step of target; else, for a status with more than one
-        100 ms step left, the way to its target, which it names (present alone can lag: a blind reversing, statuses
-        missed); else the way present moved since the last status; else unchanged (the same status arrives on the
-        group and as a reply).
-
-        A Move's first status comes ~3 s in, so the Move Set's own sign (`_note_motion`) stands in until then: taken
-        once the blind confirms a Move — its first status, one step off the level it starts at, `1x100ms` left —
-        and dropped when the blind rests away from that level (a short reply at the start level is no stop) or at
-        the end it was running to. Whatever a lost status leaves is bounded by `_watch_motion`.
+        remaining time). A blind's position element also tells which way it runs (`BlindMotion.on_status`).
         """
         if len(p) < 2:
             return
         st = self.element_state(m.src)
-        previous = st.level
         st.level = int.from_bytes(p[:2], "little", signed=True)
+        short = len(p) < 5
         st.target_level = (
-            int.from_bytes(p[2:4], "little", signed=True) if len(p) >= 5 else st.level
+            st.level if short else int.from_bytes(p[2:4], "little", signed=True)
         )
-        remaining = M.remaining_time(
-            m.opcode, p
-        )  # None: the short form, or "unknown" (still moving)
-        at_rest = len(p) < 5 or remaining == 0
-        near = abs(st.target_level - st.level) <= 1
-        if near and not at_rest and remaining is not None and remaining <= 0.1:
-            if st.move_pending and time.monotonic() < st.move_pending_until:
-                st.move_sign, st.move_from = st.move_pending, st.target_level
-            st.move_pending = 0
-        elif (
-            at_rest
-            and st.move_sign
-            and (
-                abs(st.level - st.move_from) > 1
-                or st.level == (32767 if st.move_sign > 0 else -32768)
+        if (motion := self._motion(m.src)) is not None:
+            motion.on_status(
+                st.level,
+                st.target_level,
+                M.remaining_time(m.opcode, p),
+                short,
+                time.monotonic(),
             )
-        ):
-            st.move_sign = 0
-        if at_rest or near:
-            st.level_direction = 0
-        elif remaining is not None and remaining > 0.1:
-            st.level_direction = 1 if st.target_level > st.level else -1
-        elif previous is not None and abs(st.level - previous) > 1:
-            st.level_direction = 1 if st.level > previous else -1
-        self._watch_motion(m.src, st)
+            self._watch_motion(m.src, motion)
         self.notify_update(m.src)
 
     @register_status_handler(M.LIGHT_CTL_TEMP_RANGE_STATUS)
@@ -1991,24 +1964,11 @@ class JungHomeHub:
         remaining = M.remaining_time(reply.opcode, reply.params)
         if not remaining:
             return
-        if (cancel := self._transition_reread.pop(load, None)) is not None:
-            cancel()
-        kind = getattr(self.devices.by_address.get(load), "kind", "switch")
-        self._transition_reread[load] = async_call_later(
-            self.hass,
+        self._read_later(
+            self._transition_reread,
+            load,
             remaining + TRANSITION_REREAD_SLACK,
-            partial(self._transition_over, load, kind),
-        )
-
-    @callback
-    def _transition_over(self, load: int, kind: str, _now: datetime) -> None:
-        """Read the load's state after its transition, unless the link is down (the next one's refresh reads it)."""
-        del self._transition_reread[load]
-        if not self.connected:
-            return
-        self.entry.async_create_background_task(
-            self.hass,
-            self.async_refresh_element(load, kind),
+            getattr(self.devices.by_address.get(load), "kind", "switch"),
             f"{DOMAIN} transition {load:04X}",
         )
 
@@ -2066,10 +2026,12 @@ class JungHomeHub:
     async def central_level(self, group: int, level: int) -> None:
         """Send every member of a device-type group one Unacknowledged Generic Level Set: blinds, slats, set-points."""
         refuse_unverified(self, [group])
-        self._note_motion(group, None)
         await self._command(
             group, M.generic_level_set(max(-32768, min(32767, level)), ack=False)
         )
+        self._note_motion(
+            group, None
+        )  # once sent: a blind it never reached keeps running
 
     async def central_stop(self, group: int) -> None:
         """Stop every blind of a group: Unacknowledged Generic Delta Set 0, as the app's "all blinds stop".
@@ -2170,10 +2132,12 @@ class JungHomeHub:
         refuse_unverified(self, [addr])
         level = max(-32768, min(32767, level))
         self._note_request(addr, level=level)
-        self._note_motion(addr, None)
         await self._load_command(
             addr, M.generic_level_set(level), M.GEN_LEVEL_STATUS, "level"
         )
+        self._note_motion(
+            addr, None
+        )  # once sent: a blind it never reached keeps running
 
     async def delta_level(self, addr: int, delta: int) -> None:
         """Send Generic Delta Set `delta` to the element at `addr` (the app's blind up / down / stop: -1 / +1 / 0)."""
@@ -2194,8 +2158,8 @@ class JungHomeHub:
     async def _send_motion(self, dst: int, access_pdu: bytes, delta: int) -> None:
         """Send a Move or Delta Set, noted for the direction of the blinds it reaches (`_note_motion`).
 
-        A sign is noted first: the blind can confirm before the send returns. A stop only once it is sent: a blind
-        it never reached keeps running.
+        A sign is noted first: the blind can confirm before the send returns; a send that fails takes back only
+        that sign (`BlindMotion.on_send_failed`). A stop only once it is sent: a blind it never reached keeps running.
         """
         if delta:
             self._note_motion(dst, delta)
@@ -2203,70 +2167,103 @@ class JungHomeHub:
             await self._command(dst, access_pdu)
         except BaseException:
             for addr in self._blinds_at(dst):
-                self.element_state(addr).move_pending = 0
+                if (motion := self._motion(addr)) is not None:
+                    motion.on_send_failed(delta)
             raise
         if not delta:
             self._note_motion(dst, 0)
 
-    def _blinds_at(self, dst: int) -> Iterator[int]:
-        """Yield the position elements of the blinds a message to `dst` reaches: itself or a group it subscribes to."""
-        for blind in self.devices.blinds:
-            element = self.cdb.element(blind.address)
-            if dst == blind.address or (
-                element is not None and dst in element.subscriptions("1002")
-            ):
-                yield blind.address
+    def _blinds_at(self, dst: int) -> tuple[int, ...]:
+        """Return the position elements of the blinds a message to `dst` reaches: itself, or a group its `1002` subscribes to.
+
+        Every Level, Delta and Move Set heard asks (a light's rocker too), so the answer is indexed once per device
+        model: `swap_model` replaces the model whole, it is never edited in place.
+        """
+        cdb, devices, index_by_dst = self._blind_index
+        if cdb is not self.cdb or devices is not self.devices:
+            index: dict[int, list[int]] = {}
+            for blind in self.devices.blinds:
+                element = self.cdb.element(blind.address)
+                subscribed = [] if element is None else element.subscriptions("1002")
+                for address in {blind.address, *subscribed}:
+                    index.setdefault(address, []).append(blind.address)
+            index_by_dst = {address: tuple(blinds) for address, blinds in index.items()}
+            self._blind_index = (self.cdb, self.devices, index_by_dst)
+        return index_by_dst.get(dst, ())
+
+    def _motion(self, addr: int) -> BlindMotion | None:
+        """Return the direction tracker of a blind's position element (made on first use); None for any other element."""
+        if not isinstance(self.devices.by_address.get(addr), Blind):
+            return None
+        st = self.element_state(addr)
+        if st.motion is None:
+            st.motion = BlindMotion()
+        return st.motion
 
     def _note_motion(self, dst: int, delta: int | None) -> None:
-        """Note a command, ours or heard, for the direction of the blinds it reaches (`_on_level_status`).
+        """Note a command, ours or heard, for the direction of the blinds it reaches (`BlindMotion.on_command`).
 
-        A Move or Delta Set's sign waits for the blind to confirm, for MOVE_CONFIRM_WINDOW (not again while that sign
-        is in force: a Set retransmitted after the confirmation has no Move left to confirm). `delta` 0, a stop, ends
-        the direction at once: the blind's status after a stop may be one it had sent before. None, a Level Set,
-        ends only what a Move Set stood in for: its own statuses name its destination.
+        `delta` a Move or Delta Set's, 0 a stop, None a Level Set.
         """
+        now = time.monotonic()
         for addr in self._blinds_at(dst):
-            st = self.element_state(addr)
-            if delta:
-                sign = 1 if delta > 0 else -1
-                st.move_pending = 0 if sign == st.move_sign else sign
-                st.move_pending_until = time.monotonic() + MOVE_CONFIRM_WINDOW
+            if (motion := self._motion(addr)) is None:
                 continue
-            st.move_pending = st.move_sign = 0
-            if delta == 0:
-                st.level_direction = 0
-            self._watch_motion(addr, st)
-            self.notify_update(addr)
+            motion.on_command(delta, self.element_state(addr).level, now)
+            if delta is None or delta == 0:
+                self._watch_motion(addr, motion)
+                self.notify_update(addr)
 
-    def _watch_motion(self, addr: int, st: ElementState) -> None:
+    def _watch_motion(self, addr: int, motion: BlindMotion) -> None:
         """Give a blind shown moving MOTION_SILENCE until its next status (`_motion_silent`); a newer status starts it over."""
-        if (cancel := self._motion_watch.pop(addr, None)) is not None:
-            cancel()
-        if (
-            (st.level_direction or st.move_sign)
-            and not self.stopping
-            and any(blind.address == addr for blind in self.devices.blinds)
-        ):
-            self._motion_watch[addr] = async_call_later(
-                self.hass, MOTION_SILENCE, partial(self._motion_silent, addr)
-            )
+        self._read_later(
+            self._motion_watch,
+            addr,
+            MOTION_SILENCE if motion.direction and not self.stopping else None,
+            "level",
+            f"{DOMAIN} motion {addr:04X}",
+            before=partial(self._motion_silent, addr),
+        )
 
-    @callback
-    def _motion_silent(self, addr: int, _now: datetime) -> None:
-        """Show a blind that went silent at rest and read it, unless the link is down (the next one's refresh reads it).
+    def _motion_silent(self, addr: int) -> None:
+        """Show a blind that went silent at rest; `_read_later` then reads it, unless the link is down.
 
         One still running answers with a level away from the last it published, which shows its direction again.
         """
-        del self._motion_watch[addr]
-        st = self.element_state(addr)
-        st.level_direction = st.move_sign = 0
+        if (motion := self._motion(addr)) is not None:
+            motion.rest()
         self.notify_update(addr)
-        if self.connected:
-            self.entry.async_create_background_task(
-                self.hass,
-                self.async_refresh_element(addr, "level"),
-                f"{DOMAIN} motion {addr:04X}",
-            )
+
+    def _read_later(
+        self,
+        timers: dict[int, CALLBACK_TYPE],
+        addr: int,
+        delay: float | None,
+        kind: str,
+        name: str,
+        before: Callable[[], None] | None = None,
+    ) -> None:
+        """Read `addr`'s `kind` state in `delay` seconds, in place of the read pending in `timers`; None: no read.
+
+        When it comes due, `before` runs first, then the read, unless the link is down (the next one's refresh
+        reads it).
+        """
+        if (cancel := timers.pop(addr, None)) is not None:
+            cancel()
+        if delay is None:
+            return
+
+        @callback
+        def due(_now: datetime) -> None:
+            del timers[addr]
+            if before is not None:
+                before()
+            if self.connected:
+                self.entry.async_create_background_task(
+                    self.hass, self.async_refresh_element(addr, kind), name
+                )
+
+        timers[addr] = async_call_later(self.hass, delay, due)
 
     async def recall_scene(self, number: int, transition: float | None = None) -> None:
         """Recall a scene on every node (unacknowledged); the proxy never echoes our own PDU, so the bus event is ours to fire.
