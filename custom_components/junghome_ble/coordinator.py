@@ -2167,8 +2167,7 @@ class JungHomeHub:
             await self._command(dst, access_pdu)
         except BaseException:
             for addr in self._blinds_at(dst):
-                if (motion := self._motion(addr)) is not None:
-                    motion.on_send_failed(delta)
+                self._blind_motion(addr).on_send_failed(delta)
             raise
         if not delta:
             self._note_motion(dst, 0)
@@ -2195,6 +2194,10 @@ class JungHomeHub:
         """Return the direction tracker of a blind's position element (made on first use); None for any other element."""
         if not isinstance(self.devices.by_address.get(addr), Blind):
             return None
+        return self._blind_motion(addr)
+
+    def _blind_motion(self, addr: int) -> BlindMotion:
+        """Return the direction tracker of the blind position element at `addr` (`_blinds_at`), made on first use."""
         st = self.element_state(addr)
         if st.motion is None:
             st.motion = BlindMotion()
@@ -2207,8 +2210,7 @@ class JungHomeHub:
         """
         now = time.monotonic()
         for addr in self._blinds_at(dst):
-            if (motion := self._motion(addr)) is None:
-                continue
+            motion = self._blind_motion(addr)
             motion.on_command(delta, self.element_state(addr).level, now)
             if delta is None or delta == 0:
                 self._watch_motion(addr, motion)
