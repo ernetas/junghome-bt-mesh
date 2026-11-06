@@ -820,6 +820,21 @@ async def test_a_dimmer_still_on_after_the_fade_shows_on_again(
     assert hass.states.get(dimmer_on).state == STATE_ON
 
 
+async def test_a_dimmers_fade_ends_without_a_read_while_the_link_is_down(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """With no link to read over, the off is no longer assumed: the next link's refresh tells."""
+    hub = init_integration.runtime_data
+    await turn_off(hass, dimmer_on)
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await tick(hass, freezer, 3.5)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+
+
 async def test_a_toggle_during_a_dimmers_fade_switches_it_on(
     hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
