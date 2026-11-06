@@ -141,8 +141,12 @@ nothing, so `import jhmesh` loads neither `bleak` nor `cryptography`.
   remaining time schedules a state Get that much later plus a second (`_reread_after_transition`). The entities pass
   one only with the option *Fade brightness changes* on (`const.OPTION_TRANSITIONS`, off by default): a light of a
   kind in `const.TRANSITION_KINDS` (dimmer, DALI) for a brightness change while it is on, and a scene whose members
-  are all of those kinds. OnOff, CTL and CTL Temperature Sets and the central / room commands never carry one
-  (unverified on air).
+  are all of those kinds. CTL and CTL Temperature Sets, an on, and the central commands never carry one
+  (unverified on air). A dimmer's off is the exception, with the hub's own 1 s, in `set_onoff` and per load in
+  `room_command`, whatever the option (`JungHomeHub.fades_off`): a dimmer insert publishes the off its rocker's status
+  LED follows only then. It answers with a short Status, still on, so the entity shows off from the Set on
+  (`is_fading_off`) and the state is read 3 s later. A central command's single group Set cannot carry it, as a switch
+  insert among the members would wait it out.
 - After every connect `_after_connect` broadcasts Time Set and the location first (unacknowledged, right after the
   proxy filter), then `_refresh_all` sends one Get per light and socket (`REFRESH_CHUNK = 5` jobs between 0.5 s
   pauses), one job per metered load's meter element (`Devices.metered`, `jhmesh.devices.meter_element`) that sends

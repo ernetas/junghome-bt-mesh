@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A dimmer's rocker LED goes out with the light.** A JUNG dimmer insert tells its rocker about an off only when the off
+  has a transition, so the LED stayed lit after Home Assistant switched it off. A dimmer's off now takes 1 s, from its own
+  entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the fade. The
+  home-wide *All lights* is one message to every load, which a switch insert would answer by switching off late, so it
+  keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
+
 ## 1.7.0
 
 ### Fixed

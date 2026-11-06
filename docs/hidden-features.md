@@ -429,6 +429,14 @@ switch insert or socket in it would only switch off late). Built behind the opti
 by default: whether anything visibly fades still needs a person (sweep B8's remaining step), and the dimmer insert
 and a scene were not run.
 
+**One exception, a dimmer's off (reported, not seen here):** a contributor's dimmer inserts leave their rocker's status
+LED lit after an off at transition 0, and clear it after the same off with 1 s: they answer `01` (still on, no target
+or time) and publish `00` to the element group 1-2 s later. `JungHomeHub.fades_off` sends a dimmer's unicast off that
+way, option or not; not a central command's group Set, nor a load on a DALI insert or mini. The sniffer here shows why
+no other load needs it: in two days of captures, all 60 offs at transition 0 sent to a switch or DALI insert that was
+on were published to the element group (57 switch, 3 DALI), and the DALI insert's answer to an off with a
+transition is the same short Status (sweep B8). Whether the LED follows was not watched here.
+
 A key in scene mode carries a transition of its own (KeyModeSceneConfig `0x5002`, `[scene u16][transition u32 ms]`;
 the app writes 0, `mesh_config.py` too): writing one from `assign_key` waits for this probe to show that a recalled
 scene fades, and for the key-scene check of the on-air sweep (review-4 brief 30).
