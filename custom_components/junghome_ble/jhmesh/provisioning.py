@@ -71,6 +71,7 @@ import logging
 import os
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Any
 
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -875,11 +876,18 @@ async def provision(
     The caller owns the connection and closes it afterwards — on success (the node leaves the provisioning
     service for the proxy service anyway) and on any error (which is how a provisioner aborts). `provisioner`
     lets a caller inject a prepared session (deterministic keys in tests).
+
+    The P-256 key generation and the ECDH exchange are CPU-bound: the session is built and fed on the loop's default
+    executor (Home Assistant's `async_add_executor_job` runs on the same one), one PDU at a time, so the event loop
+    never computes them. `check` and `on_device_key` stay on the loop.
     """
+    loop = asyncio.get_running_loop()
     prov = (
         provisioner
         if provisioner is not None
-        else Provisioner(data, attention=attention)
+        else await loop.run_in_executor(
+            None, partial(Provisioner, data, attention=attention)
+        )
     )
     received: asyncio.Queue[bytes] = asyncio.Queue()
     reasm = ProxyReassembler()
@@ -909,7 +917,7 @@ async def provision(
                 raise ProvisioningTimeout(
                     f"no {waiting_for} from the device within {timeout:g}s"
                 ) from None
-            replies = prov.feed(incoming)
+            replies = await loop.run_in_executor(None, prov.feed, incoming)
             if not checked and prov.capabilities is not None:
                 checked = True
                 if check is not None:

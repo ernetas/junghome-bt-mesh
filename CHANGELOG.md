@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.2
+
+### Fixed
+
+- **Adding a device no longer computes its P-256 key and ECDH secret on Home Assistant's event loop.** The provisioning
+  session is created and fed on the executor, so this CPU-bound work cannot hold up the rest of Home Assistant. Nothing
+  changes on air.
+
 ## 1.6.1
 
 ### Fixed
