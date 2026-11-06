@@ -126,6 +126,15 @@ class HubPort(MeshPort, HubView, Protocol):
     def node_alive(self, address: int) -> bool:
         """Whether the node owning element `address` counts as there."""
 
+    def fades_off(self, addr: int) -> bool:
+        """Whether an off of the element carries the dimmer's transition."""
+
+    def is_fading_off(self, addr: int) -> bool:
+        """Whether the element's accepted off is still fading."""
+
+    def end_fading_off(self, addr: int) -> None:
+        """Show the element's cached state again."""
+
     def load_locked(self, address: int) -> bool:
         """Whether the load at `address` last reported a lock that has not run out."""
 

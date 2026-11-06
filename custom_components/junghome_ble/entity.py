@@ -458,7 +458,7 @@ class JungHomeCentralEntity(JungHomeEntity):
     def members_on(self) -> bool | None:
         """On while any member is; None until one of them has reported."""
         known = [
-            st.on
+            st.on and not self.hub.is_fading_off(m.address)
             for m in self.members
             if (st := self.hub.states.get(m.address)) and st.on is not None
         ]
