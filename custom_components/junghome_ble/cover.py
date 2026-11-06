@@ -25,9 +25,10 @@ Set` -1 / +1 / 0 and no transition (`JungHomeHub.delta_level`; kept as the fallb
 to be ignored). A position or tilt is a plain `Generic Level Set`, as the app's sliders send it. Stop ends a
 move at an unknown position, so it is followed by a `Generic Level Get`. Nothing is written optimistically:
 the state changes when the element publishes (or answers) its Generic Level Status, and `is_opening` /
-`is_closing` come from target vs present level while they differ. Stopping the slats (`stop_cover_tilt`) is the
-position's stop sent to the slat element: no JUNG client does it (the app has a slat slider only), it is the
-plain Generic Level server semantics of the SIG spec (class c).
+`is_closing` come from the direction the hub derives from successive statuses (`blind_motion`: a Move's
+target is where it started, not where it goes). Stopping the slats (`stop_cover_tilt`) is the position's stop
+sent to the slat element: no JUNG client does it (the app has a slat slider only), it is the plain Generic Level
+server semantics of the SIG spec (class c).
 
 End positions. As the app's arrows, open does nothing at all while the blind reports itself fully
 open and close nothing while fully closed; the slats are refused while the blind is fully open, where the app
@@ -254,25 +255,15 @@ class JungHomeCover(JungHomeEntity, CoverEntity):
 
     @property
     def is_opening(self) -> bool:
-        """The last status carried a target below the present level (toward -32768 = open)."""
+        """The position element is moving toward -32768 = open (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return (
-            st is not None
-            and st.level is not None
-            and st.target_level is not None
-            and st.target_level < st.level
-        )
+        return st is not None and st.motion is not None and st.motion.direction < 0
 
     @property
     def is_closing(self) -> bool:
-        """The last status carried a target above the present level (toward 32767 = closed)."""
+        """The position element is moving toward 32767 = closed (by its statuses, else by its confirmed Move Set)."""
         st = self._state(self.address)
-        return (
-            st is not None
-            and st.level is not None
-            and st.target_level is not None
-            and st.target_level > st.level
-        )
+        return st is not None and st.motion is not None and st.motion.direction > 0
 
     # ------------------------------------------------------------------ operation mode read
     async def async_added_to_hass(self) -> None:
