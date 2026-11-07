@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from unittest.mock import PropertyMock, patch
 
 import pytest
 from homeassistant.components.bluetooth import BluetoothChange
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import State
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import (
+    async_fire_time_changed,
+    mock_restore_cache_with_extra_data,
+)
 
 from custom_components.junghome_ble.const import (
     ISSUE_SEQUENCE_SPACE_LOW,
@@ -248,6 +254,47 @@ async def test_sequence_space_running_low_raises_an_issue(
     assert await hass.config_entries.async_unload(diagnostics.entry_id)
     await hass.async_block_till_done()
     assert find_issue(hass, ISSUE_SEQUENCE_SPACE_LOW) is None
+
+
+LAST_RESTART = "sensor.wc_wc_mirror_push_button_1_gang_last_restart"
+BEFORE = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
+
+
+@pytest.fixture
+def restored_restart(hass: HomeAssistant) -> None:
+    """The light switch's last restart as Home Assistant stored it before its own restart."""
+    mock_restore_cache_with_extra_data(
+        hass,
+        [
+            (
+                State(LAST_RESTART, BEFORE.isoformat()),
+                {
+                    "native_value": {
+                        "__type": str(datetime),
+                        "isoformat": BEFORE.isoformat(),
+                    },
+                    "native_unit_of_measurement": None,
+                },
+            )
+        ],
+    )
+
+
+async def test_the_last_restart_survives_a_restart_of_home_assistant(
+    hass: HomeAssistant,
+    entity_registry_enabled_by_default: None,
+    restored_restart: None,
+    init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:
+    """The node's last restart from before Home Assistant's own restart is shown until the node restarts again."""
+    assert entity_id(hass, "sensor", f"{UUID}-last_restart") == LAST_RESTART
+    assert hub_of(init_integration).restarted[LIGHT_SWITCH] == BEFORE
+    assert dt_util.parse_datetime(value(hass, "last_restart")) == BEFORE
+    await send_from(fake_link, LIGHT_SWITCH, 0x5A0000 + 5)
+    await send_from(fake_link, LIGHT_SWITCH, 0x5B0000 + 1)
+    await settle(hass)
+    assert hub_of(init_integration).restarted[LIGHT_SWITCH] > BEFORE
 
 
 async def test_the_last_restart_is_signalled_at_once(
