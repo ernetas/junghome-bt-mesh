@@ -265,10 +265,15 @@ async def test_room_lights_dim_with_one_message_and_switch_each_light(
         LIGHT_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: eid}, blocking=True
     )
     # never on / off to the room address: the room's sockets listen there too
-    assert [(dst, op, p[0]) for dst, op, p in sends(fake_link)] == [
-        (LIGHT_SWITCH, M.GEN_ONOFF_SET_UNACK, 0),
-        (LIGHT_DIMMER, M.GEN_ONOFF_SET_UNACK, 0),
+    off = sends(fake_link)
+    assert [(dst, op) for dst, op, _ in off] == [
+        (LIGHT_SWITCH, M.GEN_ONOFF_SET_UNACK),
+        (LIGHT_DIMMER, M.LIGHT_LIGHTNESS_SET_UNACK),  # a dimmer's off (`dimmer_off`)
     ]
+    assert off[0][2][0] == 0
+    # [lightness 0][tid][transition 0x05: 0.5 s][delay 0]
+    assert off[1][2][:2] == b"\x00\x00"
+    assert off[1][2][3:] == b"\x05\x00"
 
 
 async def test_room_sockets_switch_each_socket(
