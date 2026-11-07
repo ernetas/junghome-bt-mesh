@@ -1,15 +1,15 @@
 # Changelog
 
-## 1.7.1 (unreleased)
+## 1.7.1
 
 ### Fixed
 
-- **The JUNG HOME app re-sending a setting no longer asks for a new export.** An entry set up from a file raised the
-  *new export* notice for any Config message the app sent a device, including ones setting exactly what the loaded
-  export already records (seen on the gateway node, with an export that then differed only in its timestamp). Now a
-  key, binding, subscription, publication or node-wide setting the export already has for that node is passed over
-  (logged at debug level). A Node Reset, a scene edit, a setting the export does not record and anything that cannot
-  be read still raise it. The notice's log line now names the message.
+- **The JUNG HOME app re-sending a setting no longer asks for a new export** (#22). An entry set up from a file raised
+  the *new export* notice for any Config message the app sent a device, including ones setting exactly what the loaded
+  export already records (seen on the gateway node, with an export that then differed only in its timestamp). Now a key,
+  binding, subscription, publication or node-wide setting the export already has for that node is passed over (logged at
+  debug level). A Node Reset, a scene edit, a setting the export does not record and anything that cannot be read still
+  raise it. The notice's log line now names the message.
 
 ## 1.7.0
 
