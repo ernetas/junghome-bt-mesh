@@ -9,6 +9,12 @@
   entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the fade. The
   home-wide *All lights* is one message to every load, which a switch insert would answer by switching off late, so it
   keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
+- **A dimmer switched off from Home Assistant goes off, and shows so.** Once a JUNG dimmer insert has been given a
+  brightness (Home Assistant's slider, a scene, an automation), it accepts a faded *Generic OnOff* off without ever
+  carrying it out: the light stayed on at full, its rocker LED went out and Home Assistant showed it on again, and
+  every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
+  of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
+  With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
 
 ## 1.7.0
 

@@ -18,8 +18,10 @@ insert took a transition on off as a delay. So HA's `transition` goes only into 
 Sets (which switch the members that are off on). Only with the option *Fade brightness changes*
 (`OPTION_TRANSITIONS`, off by default until a person watched a fade); without it no light declares the feature, HA
 drops a `transition`, and every Set keeps the bytes it always had. Unverified on air from Home Assistant.
-A dimmer's off carries a transition of the hub's own, for its rocker's status LED, option or not
-(`JungHomeHub.fades_off`); the entity shows it as off from the Set on (`JungHomeHub.is_fading_off`).
+A dimmer's off is a Light Lightness Set 0 fading over at least 0.5 s (HA's `transition` when longer), option or
+not, so its rocker's status LED clears with the light: a faded Generic OnOff off is never carried out by a dimmer
+once a Lightness Set drove it (`JungHomeHub.dimmer_off`). The entity shows it as off from the Set on
+(`JungHomeHub.is_fading_off`).
 
 **Locks**: a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
 `lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`). A brightness counts
@@ -241,15 +243,18 @@ class JungHomeLight(LoadLock, LightEntity):
             await self.hub.set_onoff(self.address, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Send Generic OnOff Set off; HA's `transition` is dropped, a dimmer's off has its own (`hub.fades_off`).
+        """Send Generic OnOff Set off, or a dimmer's faded Lightness Set 0 (`hub.dimmer_off`).
 
-        A dimmer answers that off with where it is now, on, as a locked one answers any Set: only the lock it
-        publishes on refusing tells them apart (and the read after the fade, if that lands after the answer).
+        HA's `transition` (given only when *Fade brightness changes* declares the feature) lengthens a dimmer's
+        fade, never under 0.5 s (`hub.dimmer_fade`); every other light drops it. A dimmer answers its off with where
+        it is now, still on, heading to 0: the answer is not compared, only the lock it publishes on refusing tells a
+        locked one apart (and the read after the fade).
         """
         await self._check_unlocked()
         fades = self.hub.fades_off(self.address)
         await self._send_switch(
-            self.hub.set_onoff(self.address, False), None if fades else False
+            self.hub.set_onoff(self.address, False, kwargs.get(ATTR_TRANSITION)),
+            None if fades else False,
         )
         if fades and self.hub.load_locked(self.address):
             self.hub.end_fading_off(self.address)

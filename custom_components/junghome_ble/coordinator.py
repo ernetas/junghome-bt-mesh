@@ -188,12 +188,14 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 # A Set with a transition time: the load's state is read again this long after the remaining time its Status gave,
 # as its last publication may come before the fade ends (`_reread_after_transition`)
 TRANSITION_REREAD_SLACK = 1.0
-# A dimmer's off, in seconds: any non-zero transition makes the dimmer publish the off its rocker's status LED follows
-# (`JungHomeHub._fades_off`); short enough not to read as lag.
-DIMMER_OFF_TRANSITION = 1.0
-# How long after the Set that off's last publication may land (seen on a dimmer insert: 1-2 s). The state is read this
-# long plus TRANSITION_REREAD_SLACK after the Set, as the dimmer's first answer gives no remaining time.
-DIMMER_OFF_SETTLE = 2.0
+# A dimmer's off fades out over at least this many seconds, so that its rocker's status LED clears with the light
+# (`JungHomeHub.dimmer_off`); short enough not to read as lag. HA's `transition` lengthens it, never shortens it.
+# Seen on air: a 0.5 s fade ends at off and clears the LED, as 1 s and 3 s do; the same Set at transition 0 switches
+# the light off but leaves the LED lit.
+DIMMER_OFF_TRANSITION = 0.5
+# How long after its fade that off's last publication may land (seen on a dimmer insert: about 1 s after it). The
+# state is read the fade plus this plus TRANSITION_REREAD_SLACK after the Set, in case that publication is lost.
+DIMMER_OFF_SETTLE = 1.0
 # InsertId actuator function of a tunable-white (DALI) insert (`properties.ACTUATOR_FUNCTION`)
 TW_DIMMING_FUNCTION = 4
 
@@ -1996,13 +1998,12 @@ class JungHomeHub:
         )
 
     def fades_off(self, addr: int) -> bool:
-        """Whether an off of the element at `addr` carries DIMMER_OFF_TRANSITION: a dimmer's, not a DALI light's.
+        """Whether the element at `addr` is switched off by a fade (`dimmer_off`): a dimmer's, not a DALI light's.
 
-        A dimmer insert publishes an off to its element group, which the rocker on its other element follows with its
-        status LED, only when the off fades; at 0 the LED stays lit (reported on air on dimmer inserts through the
-        gateway; there is none here to confirm it). Every other load publishes an off at transition 0 (switch and DALI
-        inserts, sniffed), and sweep B8 rules a transition out for them: a switch insert waits it out and a DALI
-        insert switches off late. A non-CTL DALI load has the dimmer's kind, so its host tells them apart.
+        A dimmer insert's rocker status LED clears with an off that fades; at transition 0 the LED stays lit (seen on
+        air for a Generic OnOff and a Light Lightness off alike). Every other load publishes an off at transition 0
+        (switch and DALI inserts, sniffed), and sweep B8 rules a transition out for them: a switch insert waits it out
+        and a DALI insert switches off late. A non-CTL DALI load has the dimmer's kind, so its host tells them apart.
         """
         if getattr(self.devices.by_address.get(addr), "kind", None) != "dimmer":
             return False
@@ -2022,8 +2023,8 @@ class JungHomeHub:
             self._fading_off.discard(addr)
             self.notify_update(addr)
 
-    def _start_fading_off(self, addr: int) -> None:
-        """Show the element as off from now on, and read it once the fade must be over.
+    def _start_fading_off(self, addr: int, fade: float = DIMMER_OFF_TRANSITION) -> None:
+        """Show the element as off from now on, and read it once its `fade` (seconds) must be over.
 
         Only the read ends that, so a dimmer that went dark without a last status shows no flicker.
         """
@@ -2031,43 +2032,78 @@ class JungHomeHub:
         self._read_later(
             self._transition_reread,
             addr,
-            DIMMER_OFF_SETTLE + TRANSITION_REREAD_SLACK,
+            fade + DIMMER_OFF_SETTLE + TRANSITION_REREAD_SLACK,
             "dimmer",
             f"{DOMAIN} faded off {addr:04X}",
             after=partial(self.end_fading_off, addr),
         )
         self.notify_update(addr)
 
-    async def set_onoff(self, addr: int, on: bool) -> None:
-        """Switch the element at `addr` on or off, with transition time 0, except a dimmer's off (`fades_off`).
+    @staticmethod
+    def dimmer_fade(transition: float | None = None) -> float:
+        """The seconds a dimmer's off fades over: HA's `transition`, but never under DIMMER_OFF_TRANSITION.
 
-        Never anything else (sweep B8): a switch insert waits a transition out before it switches off, and the DALI
-        insert switches on at once whatever it says.
+        A shorter one (0 included) would be no fade at all for the status LED; a longer one is clamped to what the
+        transition byte carries. Lightness fades to 0 of 0.5, 1 and 3 s were seen counting down and ending at off.
+        """
+        return max(
+            DIMMER_OFF_TRANSITION, min(transition or 0.0, M.TRANSITION_MAX_SECONDS)
+        )
+
+    @staticmethod
+    def dimmer_off(ack: bool = True, fade: float = DIMMER_OFF_TRANSITION) -> bytes:
+        """A dimmer's off: Light Lightness Set 0 fading over `fade` seconds (`dimmer_fade`), never a Generic OnOff Set.
+
+        Seen on air on JUNG dimmer inserts: once a dimmer has been driven by a Light Lightness Set (any brightness
+        command: a slider, a scene, an automation, with or without a transition), a Generic OnOff Set off *with* a
+        transition is accepted but never carried out. The dimmer answers it with a plain `ON` (sometimes with the
+        target), then reports `present=65535 target=0 remaining=0` for good: the light stays on at full while its
+        rocker's status LED, which follows the target, goes out, and the entity shows on. Offs without a fade (the
+        rocker's, the app's) still switch it off but leave that state behind, so the next faded off fails again;
+        only a fade through Light Lightness ends it. A Light Lightness Set 0 with a transition fades out and ends at
+        off from either state, healthy or stuck (answered `present=65535 target=0 remaining=...`, then `present=0`
+        and OnOff OFF), and the status LED clears with it. The dimmer keeps its last non-zero lightness, so the next
+        OnOff on restores it as before.
+        """
+        return M.light_lightness_set(0, ack=ack, transition=M.encode_transition(fade))
+
+    async def set_onoff(
+        self, addr: int, on: bool, transition: float | None = None
+    ) -> None:
+        """Switch the element at `addr` on or off, with transition time 0, except a dimmer's off (`dimmer_off`).
+
+        That off fades over HA's `transition`, at least DIMMER_OFF_TRANSITION (`dimmer_fade`); every other Set ignores
+        it (sweep B8): a switch insert waits a transition out before it switches off, and the DALI insert switches on
+        at once whatever it says.
         """
         refuse_unverified(self, [addr])
         self._note_request(addr, on=on)
         fades = not on and self.fades_off(addr)
+        fade = self.dimmer_fade(transition)
         if fades:
             self._fading_off.add(
                 addr
             )  # before the answer lands: it shows no run-on starting either
         try:
-            await self._load_command(
-                addr,
-                M.generic_onoff_set(
-                    on,
-                    transition=M.encode_transition(DIMMER_OFF_TRANSITION)
-                    if fades
-                    else 0,
-                ),
-                M.GEN_ONOFF_STATUS,
-                "switch",
-            )
+            if fades:
+                await self._load_command(
+                    addr,
+                    self.dimmer_off(fade=fade),
+                    M.LIGHT_LIGHTNESS_STATUS,
+                    "dimmer",
+                )
+            else:
+                await self._load_command(
+                    addr,
+                    M.generic_onoff_set(on, transition=0),
+                    M.GEN_ONOFF_STATUS,
+                    "switch",
+                )
         except BaseException:
             self._fading_off.discard(addr)
             raise
         if addr in self._fading_off:  # else the answer already said off
-            self._start_fading_off(addr)
+            self._start_fading_off(addr, fade)
 
     async def identify(self, node: Node, seconds: int = IDENTIFY_SECONDS) -> None:
         """Make `node` draw attention to itself (Health Attention Set to its primary element; its LED blinks)."""
@@ -2137,16 +2173,15 @@ class JungHomeHub:
         extends). On / off never goes to the room address, where the lights and the sockets both listen: every
         member gets an Unacknowledged OnOff Set of its own (`CommunicateWithDevice` not waiting for a status), after
         the lightness, as `central_command` orders them, and as it without a transition, except a dimmer's off
-        (`fades_off`), which can be told apart here. With no answer to wait for, that state is read after the fade.
+        (`dimmer_off`: a faded Light Lightness Set 0), which can be told apart here. With no answer to wait for,
+        that state is read after the fade.
         """
         if lightness is not None:
             await self._command(
                 room, M.light_lightness_set(max(1, min(65535, lightness)), ack=False)
             )
         onoff = M.generic_onoff_set(on, ack=False, transition=0)
-        fading = M.generic_onoff_set(
-            False, ack=False, transition=M.encode_transition(DIMMER_OFF_TRANSITION)
-        )
+        fading = self.dimmer_off(ack=False)
         for addr in members:
             fades = not on and self.fades_off(addr)
             await self._command(addr, fading if fades else onoff)

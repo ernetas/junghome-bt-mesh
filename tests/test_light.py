@@ -197,8 +197,9 @@ async def test_dimmer(
 
     await turn_off(hass, eid)
     _, pdu = load_sets(fake_link)[-1]
-    # a dimmer's off fades over 1 s (0x0A: 10 steps of 100 ms), so it publishes the off its rocker's LED follows
-    assert pdu == M.generic_onoff_set(False, tid=pdu[3], transition=0x0A)
+    # a dimmer's off: Light Lightness Set 0 fading over 0.5 s (0x05: 5 steps of 100 ms), never a faded OnOff off,
+    # which a dimmer driven by a Lightness Set accepts and never carries out (`JungHomeHub.dimmer_off`)
+    assert pdu == M.light_lightness_set(0, tid=pdu[4], transition=0x05)
     assert len(load_sets(fake_link)) == 3
 
     fake_link.inject(LIGHT_DIMMER, 0xC070, lightness_status(32768))
@@ -734,7 +735,7 @@ async def test_what_never_fades(
     sent = load_sets(fake_link)
     assert [pdu for _, pdu in sent] == [
         M.light_lightness_set(32896, tid=sent[0][1][4]),
-        M.generic_onoff_set(False, tid=sent[1][1][3], transition=0x0A),
+        M.light_lightness_set(0, tid=sent[1][1][4], transition=0x1E),  # HA's 3 s lengthens the dimmer's fade
         M.light_ctl_set(65535, 3000, tid=sent[2][1][8]),
         M.light_ctl_temperature_set(4000, tid=sent[3][1][6], transition=0),
     ]
@@ -753,10 +754,13 @@ async def dimmer_on(
     answering_mesh: FakeProxyLink,
     init_integration: MockConfigEntry,
 ) -> str:
-    """A dimmer that is on and answers an off as dimmer inserts do: a short Status, still on (`82 04 01`)."""
+    """A dimmer that is on and answers its faded off as dimmer inserts do: still on, heading to 0, 0.3 s left.
+
+    `82 4E 00 80 00 00 03`: the Light Lightness Status the JUNG dimmers answered `dimmer_off` with on air.
+    """
     answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
     await hass.async_block_till_done()
-    answering_mesh.set_answers[LIGHT_DIMMER] = b"\x01"
+    answering_mesh.set_answers[LIGHT_DIMMER] = (0x8000).to_bytes(2, "little") + b"\x00\x00\x03"
     answering_mesh.sent.clear()
     return entity_id(hass, "light", UID_LIGHT_DIMMER)
 
@@ -799,7 +803,7 @@ async def test_a_dimmers_off_whose_last_status_is_lost_is_read_after_the_fade(
     await tick(hass, freezer, 1)  # the fade is still running
     assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
     assert hub.is_fading_off(LIGHT_DIMMER)
-    await tick(hass, freezer, 2.5)  # 2 s + the slack are over
+    await tick(hass, freezer, 2.5)  # the fade, 1 s and the slack are over
     assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
     assert hub.states[LIGHT_DIMMER].on is False
     assert not hub.is_fading_off(LIGHT_DIMMER)
@@ -879,11 +883,11 @@ async def test_every_unicast_off_of_a_dimmer_fades_and_nothing_else_does(
     await hub.set_onoff(LIGHT_CTL, False)
     await hub.set_onoff(LIGHT_DIMMER, True)
     sent = load_sets(answering_mesh)
-    assert [(dst, pdu[2], pdu[4]) for dst, pdu in sent] == [
-        (LIGHT_DIMMER, 0, 0x0A),
-        (LIGHT_SWITCH, 0, 0),
-        (LIGHT_CTL, 0, 0),
-        (LIGHT_DIMMER, 1, 0),
+    assert sent == [  # only the dimmer's off fades, as a Lightness Set; the CTL light is a DALI one
+        (LIGHT_DIMMER, M.light_lightness_set(0, tid=sent[0][1][4], transition=0x05)),
+        (LIGHT_SWITCH, M.generic_onoff_set(False, tid=sent[1][1][3], transition=0)),
+        (LIGHT_CTL, M.generic_onoff_set(False, tid=sent[2][1][3], transition=0)),
+        (LIGHT_DIMMER, M.generic_onoff_set(True, tid=sent[3][1][3], transition=0)),
     ]
 
     answering_mesh.sent.clear()
@@ -893,10 +897,18 @@ async def test_every_unicast_off_of_a_dimmer_fades_and_nothing_else_does(
         for _, dst, a in answering_mesh.sent
         if dst in (LIGHT_DIMMER, LIGHT_SWITCH)
     ]
-    assert [(dst, a[4]) for dst, a in room] == [(LIGHT_DIMMER, 0x0A), (LIGHT_SWITCH, 0)]
+    assert room == [
+        (LIGHT_DIMMER, M.light_lightness_set(0, ack=False, tid=room[0][1][4], transition=0x05)),
+        (LIGHT_SWITCH, M.generic_onoff_set(False, ack=False, tid=room[1][1][3], transition=0)),
+    ]
     assert hub.is_fading_off(LIGHT_DIMMER)
     await hub.room_command(0xC500, [LIGHT_DIMMER, LIGHT_SWITCH], True)
     assert not hub.is_fading_off(LIGHT_DIMMER)
+
+    # HA's transition lengthens a dimmer's fade, never under 0.5 s, and no more than the byte carries
+    assert hub.dimmer_fade(None) == hub.dimmer_fade(0) == hub.dimmer_fade(0.2) == 0.5
+    assert hub.dimmer_fade(3) == 3.0
+    assert hub.dimmer_fade(1e9) == M.TRANSITION_MAX_SECONDS
 
     with patch.object(node, "insert_function", 4):  # a non-CTL light on a DALI insert
         assert not hub.fades_off(LIGHT_DIMMER)
