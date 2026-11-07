@@ -1296,7 +1296,11 @@ JUNG product, or no node at all) as the phone's:
 - **An entry set up from a file** fetches nothing. When the phone is seen configuring a device — a Config message that
   changes a key connection, a room membership, a binding or a device's mesh settings, or a scene stored or deleted —
   the repair issue [*The JUNG HOME app changed the installation*](#repair-issue-the-jung-home-app-changed-the-installation)
-  appears once, and stays across restarts until a new export is loaded. Plain control from the phone raises nothing.
+  appears once, and stays across restarts until a new export is loaded. Plain control from the phone raises nothing,
+  and neither does a Config message that sets what the loaded export already records for that device (a key, binding,
+  subscription, publication or mesh setting it has as sent): the app re-sends some settings unchanged, seen on the
+  gateway node, and the new export would differ only in its timestamp. Such a message is logged at debug level; the
+  notice's warning in the log names the message that raised it.
 
 Both are [options](#options) of the entry (*Follow changes made in the JUNG HOME app*, *Check the gateway's export
 every six hours*), on by default. A source taken for the phone wrongly costs one request whose export has not changed.

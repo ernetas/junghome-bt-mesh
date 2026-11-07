@@ -82,6 +82,7 @@ from custom_components.junghome_ble.jhmesh import vendor_models as V
 from custom_components.junghome_ble.jhmesh.client import AccessMessage
 from custom_components.junghome_ble.jhmesh.pdu import (
     ALL_NODES,
+    decode_opcode,
     encode_opcode,
 )
 from custom_components.junghome_ble.mesh_config import export_digest, gateway_sync
@@ -141,6 +142,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
     from custom_components.junghome_ble.coordinator import MessageKey, StatusHandler
+    from custom_components.junghome_ble.jhmesh.cdb import CDB
 
 SECOND_PROXY = MAC_LIGHT_CTL  # node 0232's MAC
 GROUP_SWITCH = 0xC061  # the group LIGHT_SWITCH publishes its status to
@@ -1957,6 +1959,16 @@ async def test_the_app_changing_a_file_entrys_devices_raises_a_repair_once(
         assert find_issue(hass, ISSUE_APP_CHANGED) is None
         assert hub.app_follow is not None
         assert hub.app_follow._unsub_quiet is None  # nothing to fetch from
+        # the app re-sending what the export records (0148's OnOff server is in C061 already) changes nothing
+        caplog.set_level(
+            logging.DEBUG, logger="custom_components.junghome_ble.app_follow"
+        )
+        fake_link.inject_from_provisioner(
+            LIGHT_SWITCH, C.model_subscription_add(LIGHT_SWITCH, 0xC061, "1000")
+        )
+        await settle(hass)
+        assert find_issue(hass, ISSUE_APP_CHANGED) is None
+        assert "re-sent what the export records already" in caplog.text
         fake_link.inject_from_provisioner(LIGHT_SWITCH, SUBSCRIPTION_ADD)
         await settle(hass)
         issue = find_issue(hass, ISSUE_APP_CHANGED)
@@ -1967,6 +1979,7 @@ async def test_the_app_changing_a_file_entrys_devices_raises_a_repair_once(
         assert issue.translation_placeholders == {"title": init_integration.title}
         assert issue.learn_more_url == learn_more_url(ISSUE_APP_CHANGED)
         assert caplog.text.count("changed the configuration of 0148") == 1
+        assert "Subscription Add" in caplog.text  # the warning names the message
         # a scene edit too, but the notice is up already
         fake_link.inject(
             PHONE, LIGHT_SWITCH, encode_opcode(M.SCENE_STORE) + b"\x02\x00"
@@ -2091,3 +2104,129 @@ def test_what_counts_as_the_phone_and_as_a_change() -> None:
     assert not change(msg(PHONE, C.CONFIG_MODEL_PUBLICATION_GET, "dev:0148"))
     assert change(msg(PHONE, M.SCENE_STORE_UNACK))
     assert not change(msg(PHONE, M.SCENE_STORE, cid=M.JUNG_CID))
+
+
+def _recorded(
+    cdb: CDB, pdu: bytes, dst: int = LIGHT_SWITCH, cid: int | None = None
+) -> bool:
+    """`export_records` for the phone sending `pdu` to `dst` with its device key."""
+    opcode, _cid, params = decode_opcode(pdu)
+    m = AccessMessage(PHONE, dst, 3, 0, opcode, cid, params, pdu, f"dev:{dst:04X}")
+    return app_follow.export_records(cdb, m)
+
+
+def test_only_a_config_change_to_a_node_can_be_recorded(cdb: CDB) -> None:
+    """A vendor message, a scene edit, a Node Reset and a message to no node's primary element are changes."""
+    sub_add = C.model_subscription_add(LIGHT_SWITCH, 0xC061, "1000")
+    assert _recorded(cdb, sub_add)
+    assert not _recorded(cdb, sub_add, cid=M.JUNG_CID)
+    assert not _recorded(cdb, encode_opcode(M.SCENE_STORE) + b"\x02\x00")
+    assert not _recorded(cdb, C.node_reset())
+    assert not _recorded(cdb, C.default_ttl_set(5), dst=0x0D42)  # no such node
+    assert not _recorded(cdb, C.default_ttl_set(5), dst=LIGHT_SWITCH + 1)
+    assert not _recorded(cdb, sub_add + b"\x00")  # a 3-byte model identifier
+
+
+def test_re_sent_keys_are_recorded(cdb: CDB) -> None:
+    """An AppKey / NetKey the node has, or a Delete of one it has not; never when the export lists no keys."""
+    assert _recorded(cdb, C.appkey_add(bytes(16)))
+    assert not _recorded(cdb, C.appkey_add(bytes(16), app_key_index=1))
+    assert not _recorded(cdb, C.appkey_add(bytes(16), net_key_index=1))
+    assert not _recorded(cdb, C.appkey_add(bytes(16))[:-1])
+    assert _recorded(cdb, C.appkey_delete(1))
+    assert not _recorded(cdb, C.appkey_delete(0))
+    assert _recorded(cdb, C.netkey_add(bytes(16)))
+    assert not _recorded(cdb, C.netkey_add(bytes(16), 1))
+    assert not _recorded(cdb, C.netkey_add(bytes(16))[:-1])
+    assert _recorded(cdb, C.netkey_delete(1))
+    assert not _recorded(cdb, C.netkey_delete(0))
+    node = cdb.node_by_addr(LIGHT_SWITCH)
+    assert node is not None
+    del node.raw["appKeys"], node.raw["netKeys"]
+    assert not _recorded(cdb, C.appkey_add(bytes(16)))
+    assert not _recorded(cdb, C.netkey_add(bytes(16)))
+
+
+def test_re_sent_node_settings_are_recorded(cdb: CDB) -> None:
+    """A node-wide setting as the export records it; one it does not record is a change, a missing feature not."""
+    assert _recorded(cdb, C.default_ttl_set(5))
+    assert not _recorded(cdb, C.default_ttl_set(7))
+    assert _recorded(cdb, C.gatt_proxy_set(True))
+    assert not _recorded(cdb, C.gatt_proxy_set(False))
+    assert not _recorded(cdb, C.beacon_set(True))  # not recorded
+    assert not _recorded(cdb, C.network_transmit_set(2, 9))
+    assert not _recorded(cdb, C.relay_set(True, 2, 8))
+    assert not _recorded(cdb, C.relay_set(True, 2, 8)[:-1])
+    node = cdb.node_by_addr(LIGHT_SWITCH)
+    assert node is not None
+    node.raw.update(
+        secureNetworkBeacon=True,
+        networkTransmit={"count": 3, "interval": 100},
+        relayRetransmit={"count": 3, "interval": 90},
+    )
+    assert _recorded(cdb, C.beacon_set(True))
+    assert not _recorded(cdb, C.beacon_set(False))
+    assert _recorded(cdb, C.network_transmit_set(2, 9))
+    assert not _recorded(cdb, C.network_transmit_set(3, 9))
+    assert _recorded(cdb, C.relay_set(True, 2, 8))
+    assert not _recorded(cdb, C.relay_set(True, 2, 9))
+    assert not _recorded(cdb, C.relay_set(False, 2, 8))
+    node.raw["features"] = {"relay": 2, "proxy": 2}
+    assert _recorded(cdb, C.relay_set(False, 2, 8))
+    assert _recorded(cdb, C.gatt_proxy_set(False))
+
+
+def test_re_sent_bindings_and_subscriptions_are_recorded(cdb: CDB) -> None:
+    """A binding or subscription the model has, or a removal of one it has not, on the node the message is for."""
+    assert _recorded(cdb, C.model_app_bind(LIGHT_SWITCH, "1000"))
+    assert not _recorded(cdb, C.model_app_bind(LIGHT_SWITCH, "1000", 1))
+    assert _recorded(cdb, C.model_app_unbind(LIGHT_SWITCH, "1000", 1))
+    assert not _recorded(cdb, C.model_app_unbind(LIGHT_SWITCH, "1000"))
+    assert not _recorded(cdb, C.model_app_bind(LIGHT_SWITCH, "1300"))  # not there
+    assert not _recorded(cdb, C.model_app_bind(LIGHT_CTL, "1000"))  # another node's
+    assert not _recorded(cdb, C.model_app_bind(0x0D42, "1000"))  # nobody's
+    add, delete = C.model_subscription_add, C.model_subscription_delete
+    assert not _recorded(cdb, add(LIGHT_SWITCH, 0xC001, "1000"))
+    assert _recorded(cdb, delete(LIGHT_SWITCH, 0xC001, "1000"))
+    assert not _recorded(cdb, delete(LIGHT_SWITCH, 0xC061, "1000"))
+    overwrite = C.model_subscription_overwrite
+    assert _recorded(cdb, overwrite(LIGHT_SWITCH, 0xC061, 0x05271013))
+    assert not _recorded(cdb, overwrite(LIGHT_SWITCH, 0xC061, "1000"))
+    assert not _recorded(cdb, add(LIGHT_SWITCH, 0xC061, "1300"))
+    delete_all = C.model_subscription_delete_all
+    assert _recorded(cdb, delete_all(LIGHT_SWITCH, "1011"))
+    assert not _recorded(cdb, delete_all(LIGHT_SWITCH, "1000"))
+    assert not _recorded(cdb, delete_all(LIGHT_SWITCH, "1300"))
+
+
+def test_a_re_sent_publication_is_recorded(cdb: CDB) -> None:
+    """Every field of a Publication Set the export records must match it; an address of 0 is no `publish`."""
+    pub = C.model_publication_set
+    assert _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000"))
+    # no retransmissions: their interval is not compared
+    assert _recorded(
+        cdb, pub(LIGHT_SWITCH + 1, 0xC005, "1001", retransmit_interval_steps=3)
+    )
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC062, "1000"))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000", ttl=5))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000", credential=True))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000", period_steps=1))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000", retransmit_count=1))
+    assert _recorded(cdb, pub(LIGHT_SWITCH, 0x0000, "1004"))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1004"))
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1300"))
+    node = cdb.node_by_addr(LIGHT_SWITCH)
+    assert node is not None
+    entry = node.elements[0].model_entry("1000")
+    assert entry is not None
+    publish = entry["publish"]
+    del publish["ttl"], publish["retransmit"]  # not compared when left out
+    publish["period"] = {"numberOfSteps": 2, "resolution": 1000}
+    assert _recorded(
+        cdb,
+        pub(LIGHT_SWITCH, 0xC061, "1000", ttl=5, period_steps=2, period_resolution=1),
+    )
+    publish["period"] = {"numberOfSteps": "2"}
+    assert not _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000"))
+    del publish["period"]
+    assert _recorded(cdb, pub(LIGHT_SWITCH, 0xC061, "1000", period_steps=5))
