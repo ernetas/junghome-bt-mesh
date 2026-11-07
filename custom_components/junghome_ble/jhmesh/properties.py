@@ -43,6 +43,7 @@ __all__ = [
     "KEY_PROPERTY_MODE",
     "KEY_VALUE_UP",
     "LED_COLOURS",
+    "LED_COLOUR_TOLERANCE",
     "LED_HOSTS",
     "LED_PALETTES",
     "LOCKABLE",
@@ -1175,10 +1176,31 @@ def led_palette(product_id: int) -> Mapping[str, LedColour]:
     return LED_PALETTES[product_id]
 
 
+# How far (per channel, in the 0..100 scale) a colour may be from a palette entry and still go by its name. The
+# palettes differ by product (orange is 100/27/0 on a 1-gang rocker, 100/29/0 on a 2-gang one), and a 2-gang node
+# left at its factory LED colours showed no name for its "off" colour while every 1-gang node showed orange: an
+# exact match alone left those selects unknown. 2 bridges that and no more (no two entries of one palette are that
+# close).
+LED_COLOUR_TOLERANCE = 2
+
+
 def led_colour_name(rgb: tuple[int, int, int], product_id: int) -> str | None:
-    """Return the palette name of an exact RGB triple, or None when the device shows a colour the app cannot name."""
+    """Return the palette name of an RGB triple, or None when the device shows a colour the app cannot name.
+
+    An exact entry wins; else the closest entry no channel of which is more than `LED_COLOUR_TOLERANCE` away.
+    """
     palette = led_palette(product_id)
-    return next((name for name, c in palette.items() if c == tuple(rgb)), None)
+    colour = tuple(rgb)
+    if (
+        exact := next((name for name, c in palette.items() if c == colour), None)
+    ) is not None:
+        return exact
+    near = [
+        (max(abs(a - b) for a, b in zip(c, colour, strict=True)), name)
+        for name, c in palette.items()
+    ]
+    distance, name = min(near)
+    return name if distance <= LED_COLOUR_TOLERANCE else None
 
 
 LedSlot = Literal["channel", "on", "off"]

@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A key LED's colour is named when it is within a hair of the palette's.** The palettes differ by product (orange
+  is 100/27/0 on a 1-gang rocker, 100/29/0 on a 2-gang one), and only an exact match had a name: on a live install,
+  16 *LED colour (switched off)* selects of 2-gang and wall-transmitter keys left at their factory colours showed
+  unknown while every 1-gang key showed orange. A colour no channel of which is more than 2 away from an entry now
+  goes by that entry's name; no two entries of a palette are that close. That the factory colour is the one bridged
+  is inferred from the pattern, not read off those nodes.
+- ***Last restart* keeps its time across a Home Assistant restart.** The hub held it in memory only, so every node's
+  sensor (enabled by default) showed unknown after each restart until the node restarted again. The time shown before
+  is restored.
+- **A key's *Status LED* switch keeps its state across a Home Assistant restart.** It has nothing to read (it is
+  written the gateway's way, assumed state), so it showed unknown until something wrote it again; it now starts from
+  the state it had before, until a write or a Status from the gateway replaces it.
+
 ## 1.7.1
 
 ### Fixed

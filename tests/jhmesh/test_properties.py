@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import re
 from typing import Any
 
@@ -418,6 +419,16 @@ def test_led_palettes_and_ids():
         assert palette["no_color"] == (0, 0, 0)
     assert P.led_colour_name((0, 60, 0), 0x03) == "green"
     assert P.led_colour_name((1, 2, 3), 0x03) is None
+    # a near colour goes by the palette's name: a 2-gang rocker's orange is 100/29/0, the 1-gang one's 100/27/0
+    assert P.led_colour_name((100, 27, 0), 0x02) == "orange"
+    assert P.led_colour_name((100, 26, 0), 0x02) is None
+    # a colour is never within the tolerance of two entries
+    for palette in P.LED_PALETTES.values():
+        for a, b in itertools.combinations(palette.values(), 2):
+            assert (
+                max(abs(x - y) for x, y in zip(a, b, strict=True))
+                > 2 * P.LED_COLOUR_TOLERANCE
+            )
     with pytest.raises(KeyError):
         P.led_palette(0x0A)
     assert P.led_property_id(1, "on") == 0xA001

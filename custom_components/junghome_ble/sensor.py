@@ -1554,6 +1554,8 @@ class NodeDiagnosticDescription(SensorEntityDescription):
     value: Callable[[JungHomeHub, int], datetime | float | None]
     mains_only: bool = False  # battery nodes sleep: no heartbeats, no hops
     applies: Callable[[Node], bool] = lambda _node: True  # the nodes that get it
+    # a time the hub keeps in memory only: the state before a restart seeds it again (`JungHomeNodeDiagnostic`)
+    restore: Callable[[JungHomeHub, int, datetime], object] | None = None
 
 
 NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
@@ -1593,6 +1595,7 @@ NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         mains_only=True,
         value=lambda hub, unicast: hub.restarted.get(unicast),
+        restore=lambda hub, unicast, when: hub.restarted.setdefault(unicast, when),
     ),
     NodeDiagnosticDescription(
         key="clock_offset",
@@ -1610,13 +1613,15 @@ NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
 )
 
 
-class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
+class JungHomeNodeDiagnostic(JungHomeEntity, RestoreSensor):
     """How Home Assistant hears one node: when last, how strongly, over how many relays; when it last restarted.
 
     *Last seen* is the time of the node's last message, *Signal strength* the RSSI of its last advertisement as
     the Bluetooth scanner heard it, *Hops* the relays its last Heartbeat took to our proxy (heartbeat option), and
     *Last restart* the last time its sequence number jumped into a fresh block (`JungHomeHub._note_seq`) — a
-    mains blip, a breaker, a firmware reset — seen while Home Assistant ran. Pushed at most once a minute. *Clock
+    mains blip, a breaker, a firmware reset — seen while Home Assistant ran; the hub keeps it in memory only, so the
+    time shown before a Home Assistant restart is restored into it (else every node showed unknown after each
+    restart). Pushed at most once a minute. *Clock
     offset* is how far the node's clock was off Home Assistant's at its last Time Status (`node_clocks.py`, off by
     default; a mains node with a Time Server), pushed as each one arrives — that one is unverified on air.
     """
@@ -1648,7 +1653,14 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
         return self.entity_description.value(self.hub, self.address)
 
     async def async_added_to_hass(self) -> None:
-        """Follow the node's (rate-limited) diagnostics signal and the link — not every update of its element."""
+        """Follow the node's (rate-limited) diagnostics signal and the link — not every update of its element.
+
+        A restorable time the hub has not seen since the start is taken from the state before the restart.
+        """
+        restore = self.entity_description.restore
+        if restore is not None and (last := await self.async_get_last_sensor_data()):
+            if isinstance(value := last.native_value, datetime):
+                restore(self.hub, self.address, value)
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass,

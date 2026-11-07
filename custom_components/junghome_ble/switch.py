@@ -31,7 +31,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
-from homeassistant.const import STATE_ON, EntityCategory
+from homeassistant.const import STATE_OFF, STATE_ON, EntityCategory
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -253,19 +253,32 @@ class JungHomeSocket(LoadLock, SwitchEntity):
         await self._send_switch(self.hub.set_onoff(self.address, on), on)
 
 
-class JungHomePropertySwitch(PropertyEntity, SwitchEntity):
-    """A boolean property; the key status LED is written the gateway's way and has no state to read (assumed)."""
+class JungHomePropertySwitch(PropertyEntity, SwitchEntity, RestoreEntity):
+    """A boolean property; the key status LED is written the gateway's way and has no state to read (assumed).
+
+    Having nothing to read, the status LED showed unknown after every Home Assistant restart until something wrote
+    it again: it starts from the state it had before, until a write (or a Status the gateway sends) replaces it.
+    """
 
     def __init__(self, hub: JungHomeHub, target: PropertyTarget) -> None:
         """Bind to `target`."""
         super().__init__(hub, target)
         self._attr_assumed_state = target.description.write == "status"
+        self._restored: bool | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe as every property entity does; an assumed one takes its state from before the restart."""
+        await super().async_added_to_hass()
+        if self._attr_assumed_state and (last := await self.async_get_last_state()):
+            self._restored = {STATE_ON: True, STATE_OFF: False}.get(last.state)
 
     @property
     def is_on(self) -> bool | None:
-        """The decoded value; None until the element reported it."""
+        """The decoded value; None until the element reported it (an assumed one: the state before the restart)."""
         value = self.property_value
-        return value if isinstance(value, bool) else None
+        if isinstance(value, bool):
+            return value
+        return self._restored if self._attr_assumed_state else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Write 1."""
