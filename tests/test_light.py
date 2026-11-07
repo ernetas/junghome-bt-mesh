@@ -735,7 +735,9 @@ async def test_what_never_fades(
     sent = load_sets(fake_link)
     assert [pdu for _, pdu in sent] == [
         M.light_lightness_set(32896, tid=sent[0][1][4]),
-        M.light_lightness_set(0, tid=sent[1][1][4], transition=0x1E),  # HA's 3 s lengthens the dimmer's fade
+        M.light_lightness_set(
+            0, tid=sent[1][1][4], transition=0x1E
+        ),  # HA's 3 s lengthens the dimmer's fade
         M.light_ctl_set(65535, 3000, tid=sent[2][1][8]),
         M.light_ctl_temperature_set(4000, tid=sent[3][1][6], transition=0),
     ]
@@ -760,7 +762,9 @@ async def dimmer_on(
     """
     answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
     await hass.async_block_till_done()
-    answering_mesh.set_answers[LIGHT_DIMMER] = (0x8000).to_bytes(2, "little") + b"\x00\x00\x03"
+    answering_mesh.set_answers[LIGHT_DIMMER] = (0x8000).to_bytes(
+        2, "little"
+    ) + b"\x00\x00\x03"
     answering_mesh.sent.clear()
     return entity_id(hass, "light", UID_LIGHT_DIMMER)
 
@@ -883,12 +887,18 @@ async def test_every_unicast_off_of_a_dimmer_fades_and_nothing_else_does(
     await hub.set_onoff(LIGHT_CTL, False)
     await hub.set_onoff(LIGHT_DIMMER, True)
     sent = load_sets(answering_mesh)
-    assert sent == [  # only the dimmer's off fades, as a Lightness Set; the CTL light is a DALI one
-        (LIGHT_DIMMER, M.light_lightness_set(0, tid=sent[0][1][4], transition=0x05)),
-        (LIGHT_SWITCH, M.generic_onoff_set(False, tid=sent[1][1][3], transition=0)),
-        (LIGHT_CTL, M.generic_onoff_set(False, tid=sent[2][1][3], transition=0)),
-        (LIGHT_DIMMER, M.generic_onoff_set(True, tid=sent[3][1][3], transition=0)),
-    ]
+    assert (
+        sent
+        == [  # only the dimmer's off fades, as a Lightness Set; the CTL light is a DALI one
+            (
+                LIGHT_DIMMER,
+                M.light_lightness_set(0, tid=sent[0][1][4], transition=0x05),
+            ),
+            (LIGHT_SWITCH, M.generic_onoff_set(False, tid=sent[1][1][3], transition=0)),
+            (LIGHT_CTL, M.generic_onoff_set(False, tid=sent[2][1][3], transition=0)),
+            (LIGHT_DIMMER, M.generic_onoff_set(True, tid=sent[3][1][3], transition=0)),
+        ]
+    )
 
     answering_mesh.sent.clear()
     await hub.room_command(0xC500, [LIGHT_DIMMER, LIGHT_SWITCH], False)
@@ -898,8 +908,14 @@ async def test_every_unicast_off_of_a_dimmer_fades_and_nothing_else_does(
         if dst in (LIGHT_DIMMER, LIGHT_SWITCH)
     ]
     assert room == [
-        (LIGHT_DIMMER, M.light_lightness_set(0, ack=False, tid=room[0][1][4], transition=0x05)),
-        (LIGHT_SWITCH, M.generic_onoff_set(False, ack=False, tid=room[1][1][3], transition=0)),
+        (
+            LIGHT_DIMMER,
+            M.light_lightness_set(0, ack=False, tid=room[0][1][4], transition=0x05),
+        ),
+        (
+            LIGHT_SWITCH,
+            M.generic_onoff_set(False, ack=False, tid=room[1][1][3], transition=0),
+        ),
     ]
     assert hub.is_fading_off(LIGHT_DIMMER)
     await hub.room_command(0xC500, [LIGHT_DIMMER, LIGHT_SWITCH], True)

@@ -190,8 +190,8 @@ SETTLE_SLACK = {"lightness": 0x0290, "level": 0x0290, "kelvin": 100}
 TRANSITION_REREAD_SLACK = 1.0
 # A dimmer's off fades out over at least this many seconds, so that its rocker's status LED clears with the light
 # (`JungHomeHub.dimmer_off`); short enough not to read as lag. HA's `transition` lengthens it, never shortens it.
-# Seen on air: a 0.5 s fade ends at off and clears the LED, as 1 s and 3 s do; the same Set at transition 0 switches
-# the light off but leaves the LED lit.
+# Seen on air: a 0.5 s fade ends at off and clears the LED, as 1 s and 3 s do; the same Set at transition 0 or 0.1 s
+# (answered at once with `present=0`, like no fade) switches the light off but leaves the LED lit.
 DIMMER_OFF_TRANSITION = 0.5
 # How long after its fade that off's last publication may land (seen on a dimmer insert: about 1 s after it). The
 # state is read the fade plus this plus TRANSITION_REREAD_SLACK after the Set, in case that publication is lost.
@@ -2041,7 +2041,7 @@ class JungHomeHub:
 
     @staticmethod
     def dimmer_fade(transition: float | None = None) -> float:
-        """The seconds a dimmer's off fades over: HA's `transition`, but never under DIMMER_OFF_TRANSITION.
+        """Return the seconds a dimmer's off fades over: HA's `transition`, but never under DIMMER_OFF_TRANSITION.
 
         A shorter one (0 included) would be no fade at all for the status LED; a longer one is clamped to what the
         transition byte carries. Lightness fades to 0 of 0.5, 1 and 3 s were seen counting down and ending at off.
@@ -2052,7 +2052,7 @@ class JungHomeHub:
 
     @staticmethod
     def dimmer_off(ack: bool = True, fade: float = DIMMER_OFF_TRANSITION) -> bytes:
-        """A dimmer's off: Light Lightness Set 0 fading over `fade` seconds (`dimmer_fade`), never a Generic OnOff Set.
+        """Build a dimmer's off: Light Lightness Set 0 fading over `fade` s (`dimmer_fade`), never a Generic OnOff Set.
 
         Seen on air on JUNG dimmer inserts: once a dimmer has been driven by a Light Lightness Set (any brightness
         command: a slider, a scene, an automation, with or without a transition), a Generic OnOff Set off *with* a
