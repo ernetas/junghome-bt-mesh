@@ -5,16 +5,27 @@
 ### Fixed
 
 - **A dimmer's rocker LED goes out with the light.** A JUNG dimmer insert tells its rocker about an off only when the off
-  has a transition, so the LED stayed lit after Home Assistant switched it off. A dimmer's off now takes 1 s, from its own
-  entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the fade. The
-  home-wide *All lights* is one message to every load, which a switch insert would answer by switching off late, so it
-  keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
+  has a transition, so the LED stayed lit after Home Assistant switched it off. A dimmer's off now fades out (0.5 s),
+  from its own entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the
+  fade. The home-wide *All lights* is one message to every load, which a switch insert would answer by switching off
+  late, so it keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
 - **A dimmer switched off from Home Assistant goes off, and shows so.** Once a JUNG dimmer insert has been given a
   brightness (Home Assistant's slider, a scene, an automation), it accepts a faded *Generic OnOff* off without ever
   carrying it out: the light stayed on at full, its rocker LED went out and Home Assistant showed it on again, and
   every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
   of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
   With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
+
+## 1.7.1
+
+### Fixed
+
+- **The JUNG HOME app re-sending a setting no longer asks for a new export** (#22). An entry set up from a file raised
+  the *new export* notice for any Config message the app sent a device, including ones setting exactly what the loaded
+  export already records (seen on the gateway node, with an export that then differed only in its timestamp). Now a key,
+  binding, subscription, publication or node-wide setting the export already has for that node is passed over (logged at
+  debug level). A Node Reset, a scene edit, a setting the export does not record and anything that cannot be read still
+  raise it. The notice's log line now names the message.
 
 ## 1.7.0
 

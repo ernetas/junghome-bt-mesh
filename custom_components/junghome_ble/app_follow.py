@@ -17,7 +17,9 @@ JUNG product id, the phone's own entry in the export, or no node at all) — is 
 - **An entry set up from a file** fetches nothing: once the phone was seen configuring a device (a Config Set, Add,
   Delete, Bind, Unbind or Node Reset with a device key, or a Scene Store or Delete), the `app_changed` repair asks for
   the app's new export (`repairs.NewExportFlow`). Raised once, kept across restarts, cleared when a new export
-  loads (the repair, Reconfigure). Plain control from the phone raises nothing.
+  loads (the repair, Reconfigure). Plain control from the phone raises nothing, and neither does a Config message
+  that sets what the loaded export already records (`export_records`): the app re-sends some settings as they are
+  (seen on the gateway node), and a new export would be the same file with a new timestamp.
 
 Both follow the options (`OPTION_FOLLOW_APP`, `OPTION_GATEWAY_CHECK`), on by default. A phone told apart wrongly costs
 one GET whose digest has not moved. Unverified on air: whether the proxy forwards the phone's device-key messages, and
@@ -49,13 +51,17 @@ from .const import (
 )
 from .jhmesh import config_messages as C
 from .jhmesh import messages as M
+from .jhmesh.audit import export_keys, export_settings
+from .jhmesh.cdb import model_publication, model_subscriptions
 from .mesh_config import token_rejected_open
 
 if TYPE_CHECKING:
     from datetime import datetime
+    from typing import Any
 
     from .coordinator import JungHomeHub
     from .jhmesh.access import AccessMessage
+    from .jhmesh.cdb import CDB, Element, Node
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -103,6 +109,167 @@ def is_app_change(m: AccessMessage) -> bool:
     if m.opcode in SCENE_CHANGES:
         return True
     return m.opcode in CONFIG_CHANGES and m.key.startswith("dev:")
+
+
+def _u16(p: bytes, at: int) -> int:
+    return int.from_bytes(p[at : at + 2], "little")
+
+
+def _transmit(byte: int) -> dict[str, int]:
+    """Put a Relay / Network Transmit byte in the export's terms: transmissions, and ms apart (`audit`)."""
+    count, steps = byte & 0x07, byte >> 3
+    return {"count": count + 1, "interval": (steps + 1) * 10}
+
+
+def _model_of(cdb: CDB, node: Node, p: bytes, model_at: int) -> dict[str, Any] | None:
+    """Return the CDB entry of the model a `[element u16]…[model 2|4]` message names on `node`; None without one."""
+    element: Element | None = cdb.element(_u16(p, 0))
+    if element is None or element.node is not node:
+        return None
+    return element.model_entry(C.model_id_str(C.decode_model_id(p[model_at:])))
+
+
+# What each Config change sets, against the node's entry: True when the export records it already. The
+# parameters are the message's; a length the message cannot have, or a state the export does not record, is False.
+
+
+def _app_keys(node: Node, op: int, p: bytes, _cdb: CDB) -> bool:
+    keys = export_keys(node)
+    adding = op == C.CONFIG_APPKEY_ADD
+    if len(p) != (19 if adding else 3) or None in keys.values():
+        return False
+    packed = int.from_bytes(p[:3], "little")
+    net, app = packed & 0xFFF, packed >> 12
+    held = app in (keys["app_keys"] or ())
+    return held and net in (keys["net_keys"] or ()) if adding else not held
+
+
+def _net_keys(node: Node, op: int, p: bytes, _cdb: CDB) -> bool:
+    nets = export_keys(node)["net_keys"]
+    adding = op == C.CONFIG_NETKEY_ADD
+    if len(p) != (18 if adding else 2) or nets is None:
+        return False
+    held = (_u16(p, 0) & 0xFFF) in nets
+    return held if adding else not held
+
+
+def _setting(node: Node, op: int, p: bytes, _cdb: CDB) -> bool:
+    """Beacon, Default TTL, GATT Proxy, Network Transmit and Relay Set; a feature the node lacks it keeps lacking."""
+    settings: dict[str, object] = export_settings(node)
+    if len(p) != (2 if op == C.CONFIG_RELAY_SET else 1):
+        return False
+    if op == C.CONFIG_BEACON_SET:
+        return settings["beacon"] is not None and settings["beacon"] == bool(p[0])
+    if op == C.CONFIG_DEFAULT_TTL_SET:
+        return settings["default_ttl"] == p[0]
+    if op == C.CONFIG_GATT_PROXY_SET:
+        return settings["gatt_proxy"] in (p[0], C.FEATURE_NOT_SUPPORTED)
+    if op == C.CONFIG_NETWORK_TRANSMIT_SET:
+        return settings["network_transmit"] == _transmit(p[0])
+    relay = settings["relay"]
+    return relay == C.FEATURE_NOT_SUPPORTED or (
+        relay == p[0] and settings["relay_retransmit"] == _transmit(p[1])
+    )
+
+
+def _binding(node: Node, op: int, p: bytes, cdb: CDB) -> bool:
+    entry = _model_of(cdb, node, p, 4)
+    if entry is None or not isinstance(bound := entry.get("bind"), list):
+        return False
+    held = (_u16(p, 2) & 0xFFF) in bound
+    return held if op == C.CONFIG_MODEL_APP_BIND else not held
+
+
+def _subscription(node: Node, op: int, p: bytes, cdb: CDB) -> bool:
+    delete_all = op == C.CONFIG_MODEL_SUBSCRIPTION_DELETE_ALL
+    entry = _model_of(cdb, node, p, 2 if delete_all else 4)
+    if entry is None:
+        return False
+    subscribed = model_subscriptions(entry)
+    if delete_all:
+        return not subscribed
+    address = _u16(p, 2)
+    if op == C.CONFIG_MODEL_SUBSCRIPTION_ADD:
+        return address in subscribed
+    if op == C.CONFIG_MODEL_SUBSCRIPTION_DELETE:
+        return address not in subscribed
+    return subscribed == [address]  # Overwrite
+
+
+def _publication(node: Node, _op: int, p: bytes, cdb: CDB) -> bool:
+    """Compare a Model Publication Set with the model's `publish`, field by field; one the export leaves out is not.
+
+    An address of 0x0000 (no publication) is what an entry without `publish` records.
+    """
+    entry = _model_of(cdb, node, p, 9)
+    if entry is None:
+        return False
+    publish = entry.get("publish")
+    if not isinstance(publish, dict) or "address" not in publish:
+        return _u16(p, 2) == 0
+    key_and_cred, period, retransmit = _u16(p, 4), p[7], p[8]
+    count, steps = retransmit & 0x07, retransmit >> 3
+    wanted: dict[str, Any] = {
+        "index": key_and_cred & 0xFFF,
+        "credentials": (key_and_cred >> 12) & 1,
+        "ttl": p[6],
+        # the export's period is steps x resolution in ms; with no retransmissions their interval means nothing
+        "period": (100, 1_000, 10_000, 600_000)[period >> 6] * (period & 0x3F),
+        "retransmit": {"count": count, "interval": (steps + 1) * 50 if count else None},
+    }
+    recorded = dict(publish)
+    if isinstance(period_raw := recorded.get("period"), dict):
+        n, resolution = period_raw.get("numberOfSteps"), period_raw.get("resolution")
+        recorded["period"] = (
+            n * resolution
+            if isinstance(n, int) and isinstance(resolution, int)
+            else None
+        )
+    if isinstance(retransmit_raw := recorded.get("retransmit"), dict):
+        recorded["retransmit"] = {
+            "count": retransmit_raw.get("count"),
+            "interval": retransmit_raw.get("interval") if count else None,
+        }
+    return model_publication(entry) == _u16(p, 2) and all(
+        recorded[name] == value for name, value in wanted.items() if name in recorded
+    )
+
+
+_RECORDED_BY = {
+    C.CONFIG_APPKEY_ADD: _app_keys,
+    C.CONFIG_APPKEY_DELETE: _app_keys,
+    C.CONFIG_NETKEY_ADD: _net_keys,
+    C.CONFIG_NETKEY_DELETE: _net_keys,
+    C.CONFIG_BEACON_SET: _setting,
+    C.CONFIG_DEFAULT_TTL_SET: _setting,
+    C.CONFIG_GATT_PROXY_SET: _setting,
+    C.CONFIG_NETWORK_TRANSMIT_SET: _setting,
+    C.CONFIG_RELAY_SET: _setting,
+    C.CONFIG_MODEL_APP_BIND: _binding,
+    C.CONFIG_MODEL_APP_UNBIND: _binding,
+    C.CONFIG_MODEL_SUBSCRIPTION_ADD: _subscription,
+    C.CONFIG_MODEL_SUBSCRIPTION_DELETE: _subscription,
+    C.CONFIG_MODEL_SUBSCRIPTION_DELETE_ALL: _subscription,
+    C.CONFIG_MODEL_SUBSCRIPTION_OVERWRITE: _subscription,
+    C.CONFIG_MODEL_PUBLICATION_SET: _publication,
+}
+
+
+def export_records(cdb: CDB, m: AccessMessage) -> bool:
+    """Whether a Config change sets what the export already records for its node: the app re-sending a setting.
+
+    A Node Reset, a scene edit, a message to a node the export does not have (or to an element that is not a node's
+    primary), and one this cannot read are changes.
+    """
+    check = _RECORDED_BY.get(m.opcode) if m.company_id is None else None
+    node = cdb.node_by_addr(m.dst)
+    if check is None or node is None or node.unicast != m.dst:
+        return False
+    # a model identifier of the wrong length, an address the export cannot hold
+    try:
+        return check(node, m.opcode, m.params, cdb)
+    except ValueError:
+        return False
 
 
 class AppFollower:
@@ -175,6 +342,11 @@ class AppFollower:
         if self.hub.follows_gateway:
             self._arm()
         elif is_app_change(m):
+            if export_records(self.hub.cdb, m):
+                _LOGGER.debug(
+                    "The JUNG HOME app re-sent what the export records already: %s", m
+                )
+                return
             self._report(m)
 
     def _arm(self) -> None:
@@ -244,10 +416,11 @@ class AppFollower:
         if issue is not None and issue.active:
             return  # raised before a restart, still standing
         _LOGGER.warning(
-            "The JUNG HOME app (%04X) changed the configuration of %04X in the mesh %s: load the app's new export",
+            "The JUNG HOME app (%04X) changed the configuration of %04X in the mesh %s: load the app's new export (%s)",
             m.src,
             m.dst,
             self.hub.entry.title,
+            m,  # `AccessMessage.__str__` redacts key material
         )
         ir.async_create_issue(
             self.hub.hass,
