@@ -152,7 +152,11 @@ def build_entities(hub: JungHomeHub) -> list[SwitchEntity]:
         for room, sockets in room_loads(hub, Socket).items()
     ]
     entities += [
-        JungHomePropertySwitch(hub, target)
+        (
+            JungHomeAssumedPropertySwitch
+            if target.description.write == "status"
+            else JungHomePropertySwitch
+        )(hub, target)
         for target in config_targets(hub, "switch")
         if target.spec.id != PROPERTY_LOCK
     ]
@@ -253,32 +257,19 @@ class JungHomeSocket(LoadLock, SwitchEntity):
         await self._send_switch(self.hub.set_onoff(self.address, on), on)
 
 
-class JungHomePropertySwitch(PropertyEntity, SwitchEntity, RestoreEntity):
-    """A boolean property; the key status LED is written the gateway's way and has no state to read (assumed).
-
-    Having nothing to read, the status LED showed unknown after every Home Assistant restart until something wrote
-    it again: it starts from the state it had before, until a write (or a Status the gateway sends) replaces it.
-    """
+class JungHomePropertySwitch(PropertyEntity, SwitchEntity):
+    """A boolean property; the key status LED is written the gateway's way and has no state to read (assumed)."""
 
     def __init__(self, hub: JungHomeHub, target: PropertyTarget) -> None:
         """Bind to `target`."""
         super().__init__(hub, target)
         self._attr_assumed_state = target.description.write == "status"
-        self._restored: bool | None = None
-
-    async def async_added_to_hass(self) -> None:
-        """Subscribe as every property entity does; an assumed one takes its state from before the restart."""
-        await super().async_added_to_hass()
-        if self._attr_assumed_state and (last := await self.async_get_last_state()):
-            self._restored = {STATE_ON: True, STATE_OFF: False}.get(last.state)
 
     @property
     def is_on(self) -> bool | None:
-        """The decoded value; None until the element reported it (an assumed one: the state before the restart)."""
+        """The decoded value; None until the element reported it."""
         value = self.property_value
-        if isinstance(value, bool):
-            return value
-        return self._restored if self._attr_assumed_state else None
+        return value if isinstance(value, bool) else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Write 1."""
@@ -287,6 +278,30 @@ class JungHomePropertySwitch(PropertyEntity, SwitchEntity, RestoreEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Write 0."""
         await self.async_write_value(False)
+
+
+class JungHomeAssumedPropertySwitch(JungHomePropertySwitch, RestoreEntity):
+    """A boolean property written the gateway's way (the key status LED): nothing to read, so its state is restored.
+
+    It showed unknown after every Home Assistant restart until something wrote it again: it starts from the state it
+    had before, until the element reports a value — a write, or a Status the gateway sends. Once anything is
+    reported the restored state is out of play: a value the codec cannot decode shows unknown, not the old state.
+    """
+
+    _restored: bool | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe as every property entity does, and take the state from before the restart."""
+        await super().async_added_to_hass()
+        if last := await self.async_get_last_state():
+            self._restored = {STATE_ON: True, STATE_OFF: False}.get(last.state)
+
+    @property
+    def is_on(self) -> bool | None:
+        """The decoded value once the element reported one; the state before the restart until then."""
+        if self.reader.cached(self.address, self.spec) is None:
+            return self._restored
+        return super().is_on
 
 
 class JungHomeLedNightMode(PropertyEntity, SwitchEntity):

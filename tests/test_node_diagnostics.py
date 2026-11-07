@@ -287,14 +287,47 @@ async def test_the_last_restart_survives_a_restart_of_home_assistant(
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """The node's last restart from before Home Assistant's own restart is shown until the node restarts again."""
+    """The node's last restart from before Home Assistant's own restart is shown until the node restarts again.
+
+    The restored time is the sensor's alone: the hub's record (which the version reads go by) only holds what it saw.
+    """
+    hub = hub_of(init_integration)
     assert entity_id(hass, "sensor", f"{UUID}-last_restart") == LAST_RESTART
-    assert hub_of(init_integration).restarted[LIGHT_SWITCH] == BEFORE
     assert dt_util.parse_datetime(value(hass, "last_restart")) == BEFORE
+    assert LIGHT_SWITCH not in hub.restarted
     await send_from(fake_link, LIGHT_SWITCH, 0x5A0000 + 5)
     await send_from(fake_link, LIGHT_SWITCH, 0x5B0000 + 1)
     await settle(hass)
-    assert hub_of(init_integration).restarted[LIGHT_SWITCH] > BEFORE
+    assert hub.restarted[LIGHT_SWITCH] > BEFORE
+    assert dt_util.parse_datetime(value(hass, "last_restart")) == hub.restarted[
+        LIGHT_SWITCH
+    ].replace(microsecond=0)
+
+
+async def test_a_restart_while_home_assistant_was_down_is_seen_at_the_first_message(
+    hass: HomeAssistant,
+    diagnostics: MockConfigEntry,
+    fake_link: FakeProxyLink,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The tracking starts from the stored replay list: a jump since the last number heard before is a restart."""
+    await send_from(fake_link, LIGHT_SWITCH, 0x212340)
+    await settle(hass)
+    assert hub_of(diagnostics).proxy.state.rpl[LIGHT_SWITCH][1] == 0x212340
+    assert await hass.config_entries.async_reload(diagnostics.entry_id)
+    await settle(hass)
+    hub = hub_of(diagnostics)
+    assert hub._last_seq[LIGHT_SWITCH] == 0x212340
+    assert LIGHT_SWITCH not in hub.restarted
+    await send_from(fake_link, LIGHT_SWITCH, 0x220003)
+    await settle(hass)
+    assert "restarted (its sequence number jumped from 212340 to 220003)" in caplog.text
+    assert LIGHT_SWITCH in hub.restarted
+    # an entry of another IV index is not picked up: its numbers say nothing of the current one's
+    hub.proxy.state.rpl[0x0999] = (hub.proxy.state.mesh_iv_index + 1, 0x10)
+    assert await hass.config_entries.async_reload(diagnostics.entry_id)
+    await settle(hass)
+    assert 0x0999 not in hub_of(diagnostics)._last_seq
 
 
 async def test_the_last_restart_is_signalled_at_once(

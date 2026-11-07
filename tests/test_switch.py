@@ -366,6 +366,46 @@ async def test_status_led_follows_the_gateways_writes(
     assert PID_STATUS_LED not in hub.element_state(SOCKET).properties
 
 
+@pytest.fixture
+def restored_status_leds(hass: HomeAssistant) -> None:
+    """The WC button's status LED was on, rocker key A's off, before Home Assistant's restart."""
+    mock_restore_cache(
+        hass,
+        [
+            State("switch.wc_wc_mirror_button_status_led", STATE_ON),
+            State("switch.living_room_living_room_rocker_status_led_a", STATE_OFF),
+        ],
+    )
+
+
+async def test_status_led_starts_from_its_state_before_the_restart(
+    hass: HomeAssistant,
+    restored_status_leds: None,
+    init_with_mesh: MockConfigEntry,
+    mesh: PropertyMesh,
+) -> None:
+    """Nothing to read, so the state from before is kept until the key reports one; then only the report counts."""
+    eid = entity_id(hass, "switch", UID_STATUS_LED)
+    a = entity_id(hass, "switch", f"{UID_ROCKER_A}-key_status_led")
+    b = entity_id(hass, "switch", f"{UID_ROCKER_B}-key_status_led")
+    assert hass.states.get(eid).state == STATE_ON
+    assert hass.states.get(a).state == STATE_OFF
+    assert hass.states.get(b).state == STATE_UNKNOWN  # nothing stored for it
+    assert mesh.sets == []  # restoring writes nothing
+    assert not any(pid == PID_STATUS_LED for _, pid in mesh.gets)
+
+    # the gateway's write replaces it
+    mesh.link.inject(GATEWAY, BUTTON_WC, vendor_status(0x11, PID_STATUS_LED, b"\x00"))
+    await settle(hass)
+    assert hass.states.get(eid).state == STATE_OFF
+    # a reported value the codec cannot decode is unknown, not the state from before the restart
+    hub = init_with_mesh.runtime_data
+    hub.element_state(ROCKER_A).properties[PID_STATUS_LED] = b""
+    hub.notify_update(ROCKER_A)
+    await settle(hass)
+    assert hass.states.get(a).state == STATE_UNKNOWN
+
+
 async def test_night_mode(
     hass: HomeAssistant, mesh: PropertyMesh, mock_config_entry: MockConfigEntry,
     mock_bluetooth_env: dict[str, Any], fast_sleep: list[float],

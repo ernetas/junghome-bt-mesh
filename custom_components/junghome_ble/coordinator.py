@@ -547,7 +547,12 @@ class JungHomeHub:
         self.last_seen: dict[int, datetime] = {}
         self.node_rssi: dict[int, int] = {}
         self.restarted: dict[int, datetime] = {}
-        self._last_seq: dict[int, int] = {}
+        # each source's last sequence number starts from the stored replay list (current IV index), so a node that
+        # restarted while Home Assistant was down is seen to at its first message (`_note_seq`)
+        iv = state.mesh_iv_index
+        self._last_seq: dict[int, int] = {
+            src: seq for src, (entry_iv, seq) in state.rpl.items() if entry_iv == iv
+        }
         self._node_signalled: dict[int, float] = {}
         # every group address a message heard on this run was sent to: a new device's element groups keep clear of
         # them, as of the sources heard (`heard_sources`; `onboard._reserved_groups`)
@@ -1292,7 +1297,9 @@ class JungHomeHub:
         RESTART_SLACK of a block start counts, and only from a number that was not about to reach that block
         anyway — the counter running on into the next block is no restart. The replay protection has already
         accepted the message, so the number only ever grows within one IV index; a lower one (a new IV index)
-        just restarts the tracking.
+        just restarts the tracking. The tracking starts from the stored replay list, so a restart while Home
+        Assistant was down counts too, at the node's first message after the start (the time it was seen, not the
+        time it happened); the list is persisted at most `RPL_FLUSH_EVERY` messages behind, far within the slack.
         """
         last = self._last_seq.get(src)
         self._last_seq[src] = seq

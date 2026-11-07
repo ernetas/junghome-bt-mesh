@@ -734,7 +734,7 @@ API: dict[str, list[str]] = {
         "KEY_VALUE_UP",
         "KeyEvent",
         "LED_COLOURS",
-        "LED_COLOUR_TOLERANCE",
+        "LED_COLOUR_ALIASES",
         "LED_HOSTS",
         "LED_PALETTES",
         "LOCKABLE",
