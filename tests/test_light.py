@@ -1260,7 +1260,7 @@ async def test_a_dimmer_that_is_on_keeps_a_slow_transition_running(
     (first,) = keep_reporting_sets(answering_mesh, LIGHT_DIMMER)
     # towards the middle of the range: 0x8000 is not above it, so up by the step
     assert M.decode_opcode(first)[2][:2] == (0x8000 + 514).to_bytes(2, "little")
-    assert not [a for _, dst, a in answering_mesh.sent if dst == LIGHT_SWITCH]
+    assert keep_reporting_sets(answering_mesh, LIGHT_SWITCH) == []
 
     # while it runs, a status with a target starts nothing
     answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000, 0x8202, 0xFE))
