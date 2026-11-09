@@ -15,10 +15,12 @@
   every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
   of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
   With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
-- **A dimmer switched off at its wall switch shows as off.** A JUNG dimmer insert switched off without a fade (its
-  own rocker does that) tells no one, so Home Assistant kept showing it on. Home Assistant now reads the dimmer
-  a moment after it hears such an off. The rocker's status LED still stays lit in that case: the dimmer publishes
-  nothing that could clear it, and no message sent afterwards makes it.
+- **A dimmer switched off at its wall switch shows as off, and its LED goes out.** A JUNG dimmer insert reports its
+  state only for about 3 s after a change, so an off from its own rocker after that was carried out but told to no
+  one: the rocker's status LED stayed lit and Home Assistant kept showing it on. While a transition runs, the dimmer
+  does report such an off. So a dimmer that is on now gets one very slow brightness transition (0.8 % over about
+  10 hours, then back), sent once it settles after an on or a brightness change: no polling, nothing while it is
+  off. Home Assistant also reads a dimmer a moment after it hears another device switch it off.
 
 ## 1.7.1
 

@@ -1228,3 +1228,59 @@ async def test_a_dimmer_switched_off_by_another_device_is_read_after_the_off(
     await tick(hass, freezer, 1)
     assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
     assert hass.states.get(dimmer_on).state == STATE_OFF
+
+
+def keep_reporting_sets(link: FakeProxyLink, addr: int) -> list[bytes]:
+    """The Unacknowledged Lightness Sets with the longest transition the hub sent `addr` (`_keep_reporting`)."""
+    return [
+        a
+        for _, dst, a in link.sent
+        if dst == addr
+        and M.decode_opcode(a)[0] == M.LIGHT_LIGHTNESS_SET_UNACK
+        and M.decode_opcode(a)[2][3] == M.encode_transition(M.TRANSITION_MAX_SECONDS)
+    ]
+
+
+async def test_a_dimmer_that_is_on_keeps_a_slow_transition_running(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """So that it publishes an off at transition 0 (its rocker's): one Set per level, alternating, none while off."""
+    hub = init_integration.runtime_data
+    answering_mesh.sent.clear()
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))  # on, at rest
+    answering_mesh.inject(
+        LIGHT_SWITCH, 0xC062, onoff_status(True)
+    )  # not a dimmer: never
+    await tick(hass, freezer, 1)
+    assert (
+        keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []
+    )  # not before it settled
+    await tick(hass, freezer, 1.5)
+    (first,) = keep_reporting_sets(answering_mesh, LIGHT_DIMMER)
+    # towards the middle of the range: 0x8000 is not above it, so up by the step
+    assert M.decode_opcode(first)[2][:2] == (0x8000 + 514).to_bytes(2, "little")
+    assert not [a for _, dst, a in answering_mesh.sent if dst == LIGHT_SWITCH]
+
+    # while it runs, a status with a target starts nothing
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000, 0x8202, 0xFE))
+    await tick(hass, freezer, 3)
+    assert len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER)) == 1
+
+    # it ended (here reported): the next one heads back to where the light rests
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8202))
+    await tick(hass, freezer, 2.5)
+    second = keep_reporting_sets(answering_mesh, LIGHT_DIMMER)[-1]
+    assert M.decode_opcode(second)[2][:2] == (0x8000).to_bytes(2, "little")
+
+    # an end that is not reported is read once the transition must be over
+    gets = gets_to(answering_mesh, LIGHT_DIMMER, M.light_lightness_get())
+    await tick(hass, freezer, M.TRANSITION_MAX_SECONDS + 3)
+    assert gets_to(answering_mesh, LIGHT_DIMMER, M.light_lightness_get()) == gets + 1
+
+    # off (the read's answer is lightness 0): nothing more is sent
+    sent = len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER))
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0))
+    await tick(hass, freezer, M.TRANSITION_MAX_SECONDS + 10)
+    assert len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER)) == sent
+    assert hub.states[LIGHT_DIMMER].on is False
