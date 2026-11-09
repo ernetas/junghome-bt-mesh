@@ -1192,3 +1192,39 @@ async def test_a_lock_past_its_time_limit_does_not_block_a_silent_load(
         mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1 + 3
     )  # asked: 3 attempts, unanswered
     assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]
+
+
+async def test_a_dimmer_switched_off_by_another_device_is_read_after_the_off(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """A dimmer does not publish an off at transition 0 (its rocker's): the hub reads it once the off is over.
+
+    Only for an off reaching a dimmer: an on is published by the dimmer, and a switch insert publishes its off.
+    """
+    rocker = 0x0123  # any other device's element
+    # what a JUNG rocker sends: Unacknowledged, transition 0, 40 ms delay (8 steps of 5 ms)
+    fake_link.inject(
+        rocker,
+        LIGHT_DIMMER,
+        M.generic_onoff_set(True, ack=False, transition=0, delay=8),
+    )
+    fake_link.inject(
+        rocker,
+        LIGHT_SWITCH,
+        M.generic_onoff_set(False, ack=False, transition=0, delay=8),
+    )
+    await tick(hass, freezer, 2)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert gets_to(fake_link, LIGHT_SWITCH, M.generic_onoff_get()) == 0
+
+    fake_link.inject(
+        rocker,
+        LIGHT_DIMMER,
+        M.generic_onoff_set(False, ack=False, transition=0, delay=8),
+    )
+    await tick(hass, freezer, 0.5)  # not before the off is over
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    await tick(hass, freezer, 1)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
+    assert hass.states.get(dimmer_on).state == STATE_OFF

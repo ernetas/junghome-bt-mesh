@@ -15,6 +15,10 @@
   every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
   of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
   With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
+- **A dimmer switched off at its wall switch shows as off.** A JUNG dimmer insert switched off without a fade (its
+  own rocker does that) tells no one, so Home Assistant kept showing it on. Home Assistant now reads the dimmer
+  a moment after it hears such an off. The rocker's status LED still stays lit in that case: the dimmer publishes
+  nothing that could clear it, and no message sent afterwards makes it.
 
 ## 1.7.1
 

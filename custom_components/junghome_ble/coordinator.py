@@ -569,6 +569,16 @@ class JungHomeHub:
         self._fading_off: set[int] = set()
         # blind position element → the end of its motion if no status comes (`_watch_motion`)
         self._motion_watch = self.lifecycle.keyed("motion_watch")
+        # dimmer element → the read after an off another device sent it, which it does not publish (`_on_onoff_set`)
+        self._heard_off = self.lifecycle.keyed("heard_off")
+        # (cdb, devices) → the dimmers' elements by every address that reaches their OnOff server (`_dimmers_at`)
+        self._dimmer_index: tuple[
+            CDB | None, Devices | None, dict[int, tuple[int, ...]]
+        ] = (
+            None,
+            None,
+            {},
+        )
         # (cdb, devices) → the blinds' position elements by every address that reaches them (`_blinds_at`)
         self._blind_index: tuple[
             CDB | None, Devices | None, dict[int, tuple[int, ...]]
@@ -1687,10 +1697,28 @@ class JungHomeHub:
 
     @register_status_handler(M.GEN_ONOFF_SET, M.GEN_ONOFF_SET_UNACK)
     def _on_onoff_set(self, m: AccessMessage, p: bytes) -> None:
-        """Report the upper / lower half of a rocker wired to a load or a room being pressed."""
+        """Report a rocker wired to a load or a room being pressed (upper / lower half); read a dimmer it switched off.
+
+        A JUNG dimmer insert switched off by an OnOff Set at transition 0 (its wall rocker sends exactly that:
+        Unacknowledged, 40 ms delay, to the dimmer's element group) goes out without publishing anything: not to its
+        group, so its rocker's status LED stays lit, nor to us, so the entity would stay on. Nothing makes it publish
+        that off afterwards (seen on air: neither a faded Lightness or OnOff off to the dark dimmer, nor
+        `server_state_publish_request`). Its state answers a Get, though: every dimmer such an off reaches
+        (`_dimmers_at`) is read once the off's delay and transition are over. An off from any other sender is read
+        the same way; another load publishes its off, and an on is published by the dimmer too.
+        """
         if self.gestures.from_button(m, p) and p:
             self.fire_button(
                 m.src, "press_on" if p[0] else "press_off", {"target": f"{m.dst:04X}"}
+            )
+        if not p or p[0] or m.src == self.proxy.state.src:
+            return
+        wait = DIMMER_OFF_SETTLE
+        if len(p) >= 4:  # `[onoff][tid][transition][delay in 5 ms steps]`
+            wait += (M.decode_transition(p[2]) or 0.0) + p[3] * 0.005
+        for addr in self._dimmers_at(m.dst):
+            self._read_later(
+                self._heard_off, addr, wait, "dimmer", f"{DOMAIN} heard off {addr:04X}"
             )
 
     @register_status_handler(M.SCENE_RECALL, M.SCENE_RECALL_UNACK)
@@ -2318,6 +2346,25 @@ class JungHomeHub:
                     index.setdefault(address, []).append(blind.address)
             index_by_dst = {address: tuple(blinds) for address, blinds in index.items()}
             self._blind_index = (self.cdb, self.devices, index_by_dst)
+        return index_by_dst.get(dst, ())
+
+    def _dimmers_at(self, dst: int) -> tuple[int, ...]:
+        """Return the dimmer elements (`fades_off`) an OnOff Set to `dst` reaches: itself, or a group its 1000 joined.
+
+        Indexed once per device model, as `_blinds_at`.
+        """
+        cdb, devices, index_by_dst = self._dimmer_index
+        if cdb is not self.cdb or devices is not self.devices:
+            index: dict[int, list[int]] = {}
+            for light in self.devices.lights:
+                if not self.fades_off(light.address):
+                    continue
+                element = self.cdb.element(light.address)
+                subscribed = [] if element is None else element.subscriptions("1000")
+                for address in {light.address, *subscribed}:
+                    index.setdefault(address, []).append(light.address)
+            index_by_dst = {address: tuple(lights) for address, lights in index.items()}
+            self._dimmer_index = (self.cdb, self.devices, index_by_dst)
         return index_by_dst.get(dst, ())
 
     def _motion(self, addr: int) -> BlindMotion | None:

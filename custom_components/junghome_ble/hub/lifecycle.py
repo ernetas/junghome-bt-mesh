@@ -43,6 +43,7 @@ KEYED = (
     "recheck",  # node unicast → its pending re-ask (`Liveness._schedule_recheck`)
     "transition_reread",  # load element → the read after a transition (`JungHomeHub._reread_after_transition`)
     "motion_watch",  # blind element → the end of its motion if no status comes (`JungHomeHub._watch_motion`)
+    "heard_off",  # dimmer element → the read after an off another device sent it (`JungHomeHub._on_onoff_set`)
     "locating",  # node unicast → the end of its Node Identity advert (`JungHomeHub.async_locate`)
 )
 # the background tasks, in the order the hub cancels them (`Lifecycle.async_cancel_tasks`)
