@@ -524,7 +524,7 @@ class FakeProxyLink:
     asserts it is empty), and `sent_acks` holds the Segment Acknowledgments the hub sent for injected segments.
     """
 
-    def __init__(self, cdb: CDB) -> None:
+    def __init__(self, cdb: CDB) -> None:  # noqa: PLR0915  # one line per thing the fake models
         self.cdb = cdb
         self.nk: NetKeyMaterial = cdb.net_keys[0]
         self.ak: AppKeyMaterial = cdb.app_keys[0]
@@ -618,6 +618,8 @@ class FakeProxyLink:
         # element -> (its present state, a remaining-time byte): it answers a state Set mid-transition, with the
         # status's long form `[present][target][remaining]`, the Set's state as the target (Mesh Model §3.2.1.4)
         self.fading: dict[int, tuple[bytes, int]] = {}
+        # element -> the status parameters it answers a state Set with instead (a dimmer's faded off: `01`, still on)
+        self.set_answers: dict[int, bytes] = {}
         # answer the connect-time refresh's state Gets (`STATE_GET_REPLIES`, unicast) as a healthy mesh does; off by
         # default, where a test drives every status itself (`answering_mesh`)
         self.answer_state_gets = False
@@ -930,6 +932,7 @@ class FakeProxyLink:
         if dst in self.fading:
             present, remaining = self.fading[dst]
             value = present + value + bytes([remaining])
+        value = self.set_answers.get(dst, value)
         self.inject(dst, ELEMENT_GROUP, encode_opcode(status) + value)
 
     def _answer_scheduler(self, src: int, dst: int, access: bytes) -> None:

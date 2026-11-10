@@ -24,6 +24,7 @@ from homeassistant.components.light import (
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     ATTR_SUPPORTED_FEATURES,
+    SERVICE_TOGGLE,
     SERVICE_TURN_OFF,
     SERVICE_TURN_ON,
     STATE_OFF,
@@ -48,12 +49,20 @@ from custom_components.junghome_ble.entity import (
 )
 from custom_components.junghome_ble.jhmesh import messages as M
 from custom_components.junghome_ble.jhmesh.devices import Light
+from custom_components.junghome_ble.jhmesh.pdu import encode_opcode
 from custom_components.junghome_ble.light import (
     DIM_MOVE_TRANSITION,
 )
 
 from . import property_helpers as ph
-from .conftest import FakeProxyLink, load_sets, settle, setup_entry, wait_for_link
+from .conftest import (
+    STATE_GET_REPLIES,
+    FakeProxyLink,
+    load_sets,
+    settle,
+    setup_entry,
+    wait_for_link,
+)
 from .helpers import (
     LIGHT_CTL,
     LIGHT_CTL_TEMPERATURE,
@@ -188,7 +197,9 @@ async def test_dimmer(
 
     await turn_off(hass, eid)
     _, pdu = load_sets(fake_link)[-1]
-    assert pdu == M.generic_onoff_set(False, tid=pdu[3], transition=0)
+    # a dimmer's off: Light Lightness Set 0 fading over 0.5 s (0x05: 5 steps of 100 ms), never a faded OnOff off,
+    # which a dimmer driven by a Lightness Set accepts and never carries out (`JungHomeHub.dimmer_off`)
+    assert pdu == M.light_lightness_set(0, tid=pdu[4], transition=0x05)
     assert len(load_sets(fake_link)) == 3
 
     fake_link.inject(LIGHT_DIMMER, 0xC070, lightness_status(32768))
@@ -706,8 +717,9 @@ async def test_what_never_fades(
     init_integration: MockConfigEntry,
     fake_link: FakeProxyLink,
 ) -> None:
-    """Decision M19, from sweep B8: an off, an on (also a brightness to a light that is off), a CTL Set and a colour
-    temperature alone carry no transition; nothing is read after them."""
+    """Decision M19, from sweep B8: an on (also a brightness to a light that is off), a CTL Set and a colour
+    temperature alone carry no transition; nothing is read after them. A dimmer's off carries its own 1 s, never
+    HA's `transition`."""
     hub = init_integration.runtime_data
     dimmer = entity_id(hass, "light", UID_LIGHT_DIMMER)
     ctl = entity_id(hass, "light", UID_LIGHT_CTL)
@@ -723,7 +735,9 @@ async def test_what_never_fades(
     sent = load_sets(fake_link)
     assert [pdu for _, pdu in sent] == [
         M.light_lightness_set(32896, tid=sent[0][1][4]),
-        M.generic_onoff_set(False, tid=sent[1][1][3], transition=0),
+        M.light_lightness_set(
+            0, tid=sent[1][1][4], transition=0x1E
+        ),  # HA's 3 s lengthens the dimmer's fade
         M.light_ctl_set(65535, 3000, tid=sent[2][1][8]),
         M.light_ctl_temperature_set(4000, tid=sent[3][1][6], transition=0),
     ]
@@ -734,6 +748,190 @@ async def test_what_never_fades(
         LIGHT_CTL_TEMPERATURE,
     ]
     assert not hub._transition_reread
+
+
+@pytest.fixture
+async def dimmer_on(
+    hass: HomeAssistant,
+    answering_mesh: FakeProxyLink,
+    init_integration: MockConfigEntry,
+) -> str:
+    """A dimmer that is on and answers its faded off as dimmer inserts do: still on, heading to 0, 0.3 s left.
+
+    `82 4E 00 80 00 00 03`: the Light Lightness Status the JUNG dimmers answered `dimmer_off` with on air.
+    """
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
+    await hass.async_block_till_done()
+    answering_mesh.set_answers[LIGHT_DIMMER] = (0x8000).to_bytes(
+        2, "little"
+    ) + b"\x00\x00\x03"
+    answering_mesh.sent.clear()
+    return entity_id(hass, "light", UID_LIGHT_DIMMER)
+
+
+async def test_a_dimmers_off_shows_at_once_and_its_late_status_ends_it(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, mesh: PropertyMesh,
+) -> None:  # fmt: skip
+    """The short Status answers the off: the entity shows off from then on, without a lock read, and a late
+    `01` to the group neither switches it back nor starts a run-on. The dimmer's own `00` ends the fade."""
+    hub = init_integration.runtime_data
+    st = hub.states[LIGHT_DIMMER]
+    st.properties[0x1007] = (20).to_bytes(4, "little")  # a run-on time
+    mesh.gets.clear()
+
+    await turn_off(hass, dimmer_on)
+    assert not mesh.gets  # no lock read for the answer of an off that fades
+    assert st.on is True  # the cache keeps what the load said
+    assert hass.states.get(dimmer_on).state == STATE_OFF
+    assert hass.states.get(dimmer_on).attributes[ATTR_BRIGHTNESS] is None
+
+    fake_link.inject(LIGHT_DIMMER, 0xC062, onoff_status(True))
+    await hass.async_block_till_done()
+    assert hass.states.get(dimmer_on).state == STATE_OFF
+    assert st.off_at is None
+
+    fake_link.inject(LIGHT_DIMMER, 0xC062, onoff_status(False))
+    await hass.async_block_till_done()
+    assert hass.states.get(dimmer_on).state == STATE_OFF
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+
+
+async def test_a_dimmers_off_whose_last_status_is_lost_is_read_after_the_fade(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """The short Status gives no remaining time, yet the state is read once the fade must be over."""
+    hub = init_integration.runtime_data
+    await turn_off(hass, dimmer_on)
+    await tick(hass, freezer, 1)  # the fade is still running
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert hub.is_fading_off(LIGHT_DIMMER)
+    await tick(hass, freezer, 2.5)  # the fade, 1 s and the slack are over
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
+    assert hub.states[LIGHT_DIMMER].on is False
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+    assert hass.states.get(dimmer_on).state == STATE_OFF
+
+
+async def test_a_dimmer_still_on_after_the_fade_shows_on_again(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """The read decides: an off the dimmer never carried out does not stay shown."""
+    hub = init_integration.runtime_data
+    await turn_off(hass, dimmer_on)
+    still_on = encode_opcode(M.LIGHT_LIGHTNESS_STATUS) + (0x8000).to_bytes(2, "little")
+    with patch.dict(STATE_GET_REPLIES, {M.LIGHT_LIGHTNESS_GET: still_on}):
+        await tick(hass, freezer, 3.5)
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+    assert hass.states.get(dimmer_on).state == STATE_ON
+
+
+async def test_a_dimmers_fade_ends_without_a_read_while_the_link_is_down(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """With no link to read over, the off is no longer assumed: the next link's refresh tells."""
+    hub = init_integration.runtime_data
+    await turn_off(hass, dimmer_on)
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await tick(hass, freezer, 3.5)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+
+
+async def test_a_toggle_during_a_dimmers_fade_switches_it_on(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink,
+) -> None:  # fmt: skip
+    """A toggle within the fade means on: not a second off, and at transition 0 (an on takes none)."""
+    hub = init_integration.runtime_data
+    await turn_off(hass, dimmer_on)
+    del fake_link.set_answers[LIGHT_DIMMER]
+    await hass.services.async_call(
+        LIGHT_DOMAIN, SERVICE_TOGGLE, {ATTR_ENTITY_ID: dimmer_on}, blocking=True
+    )
+    _, pdu = load_sets(fake_link)[-1]
+    assert pdu == M.generic_onoff_set(True, tid=pdu[3], transition=0)
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+    assert hass.states.get(dimmer_on).state == STATE_ON
+
+
+async def test_a_dimmer_that_refuses_its_off_for_a_lock_says_so(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+) -> None:  # fmt: skip
+    """A lock the dimmer published on refusing: no read needed, the state stays on and the off is refused."""
+    hub = init_integration.runtime_data
+    with (
+        patch.object(type(hub), "load_locked", return_value=True),
+        pytest.raises(ServiceValidationError) as exc,
+    ):
+        await turn_off(hass, dimmer_on)
+    assert exc.value.translation_key == "load_locked"
+    assert hass.states.get(dimmer_on).state == STATE_ON
+
+
+async def test_every_unicast_off_of_a_dimmer_fades_and_nothing_else_does(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+) -> None:  # fmt: skip
+    """The hub picks the byte: a scene's `set_onoff` and a room's Sets too, and only for a dimmer that is no DALI."""
+    hub = init_integration.runtime_data
+    node = hub.cdb.node_by_addr(LIGHT_DIMMER)
+    answering_mesh.sent.clear()
+
+    await hub.set_onoff(LIGHT_DIMMER, False)
+    await hub.set_onoff(LIGHT_SWITCH, False)
+    await hub.set_onoff(LIGHT_CTL, False)
+    await hub.set_onoff(LIGHT_DIMMER, True)
+    sent = load_sets(answering_mesh)
+    assert (
+        sent
+        == [  # only the dimmer's off fades, as a Lightness Set; the CTL light is a DALI one
+            (
+                LIGHT_DIMMER,
+                M.light_lightness_set(0, tid=sent[0][1][4], transition=0x05),
+            ),
+            (LIGHT_SWITCH, M.generic_onoff_set(False, tid=sent[1][1][3], transition=0)),
+            (LIGHT_CTL, M.generic_onoff_set(False, tid=sent[2][1][3], transition=0)),
+            (LIGHT_DIMMER, M.generic_onoff_set(True, tid=sent[3][1][3], transition=0)),
+        ]
+    )
+
+    answering_mesh.sent.clear()
+    await hub.room_command(0xC500, [LIGHT_DIMMER, LIGHT_SWITCH], False)
+    room = [
+        (dst, a)
+        for _, dst, a in answering_mesh.sent
+        if dst in (LIGHT_DIMMER, LIGHT_SWITCH)
+    ]
+    assert room == [
+        (
+            LIGHT_DIMMER,
+            M.light_lightness_set(0, ack=False, tid=room[0][1][4], transition=0x05),
+        ),
+        (
+            LIGHT_SWITCH,
+            M.generic_onoff_set(False, ack=False, tid=room[1][1][3], transition=0),
+        ),
+    ]
+    assert hub.is_fading_off(LIGHT_DIMMER)
+    await hub.room_command(0xC500, [LIGHT_DIMMER, LIGHT_SWITCH], True)
+    assert not hub.is_fading_off(LIGHT_DIMMER)
+
+    # HA's transition lengthens a dimmer's fade, never under 0.5 s, and no more than the byte carries
+    assert hub.dimmer_fade(None) == hub.dimmer_fade(0) == hub.dimmer_fade(0.2) == 0.5
+    assert hub.dimmer_fade(3) == 3.0
+    assert hub.dimmer_fade(1e9) == M.TRANSITION_MAX_SECONDS
+
+    with patch.object(node, "insert_function", 4):  # a non-CTL light on a DALI insert
+        assert not hub.fades_off(LIGHT_DIMMER)
+    with patch.object(node, "pid", 0x14):  # a DALI mini
+        assert not hub.fades_off(LIGHT_DIMMER)
+    with patch.object(node, "insert_function", None):  # an export that does not say
+        assert hub.fades_off(LIGHT_DIMMER)
 
 
 async def test_the_read_after_a_transition_waits_for_a_link(
@@ -994,3 +1192,120 @@ async def test_a_lock_past_its_time_limit_does_not_block_a_silent_load(
         mesh.gets.count((LIGHT_SWITCH, PID_LOCK)) == 1 + 3
     )  # asked: 3 attempts, unanswered
     assert [dst for dst, _ in load_sets(answering_mesh)] == [LIGHT_SWITCH]
+
+
+async def test_a_dimmer_switched_off_by_another_device_is_read_after_the_off(
+    hass: HomeAssistant, dimmer_on: str, init_integration: MockConfigEntry,
+    fake_link: FakeProxyLink, freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """A dimmer does not publish an off at transition 0 (its rocker's): the hub reads it once the off is over.
+
+    Only for an off reaching a dimmer: an on is published by the dimmer, and a switch insert publishes its off.
+    """
+    rocker = 0x0123  # any other device's element
+    # what a JUNG rocker sends: Unacknowledged, transition 0, 40 ms delay (8 steps of 5 ms)
+    fake_link.inject(
+        rocker,
+        LIGHT_DIMMER,
+        M.generic_onoff_set(True, ack=False, transition=0, delay=8),
+    )
+    fake_link.inject(
+        rocker,
+        LIGHT_SWITCH,
+        M.generic_onoff_set(False, ack=False, transition=0, delay=8),
+    )
+    await tick(hass, freezer, 2)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    assert gets_to(fake_link, LIGHT_SWITCH, M.generic_onoff_get()) == 0
+
+    fake_link.inject(
+        rocker,
+        LIGHT_DIMMER,
+        M.generic_onoff_set(False, ack=False, transition=0, delay=8),
+    )
+    await tick(hass, freezer, 0.5)  # not before the off is over
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 0
+    await tick(hass, freezer, 1)
+    assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
+    assert hass.states.get(dimmer_on).state == STATE_OFF
+
+
+def keep_reporting_sets(link: FakeProxyLink, addr: int) -> list[bytes]:
+    """The Unacknowledged Lightness Sets with the longest transition the hub sent `addr` (`_keep_reporting`)."""
+    return [
+        a
+        for _, dst, a in link.sent
+        if dst == addr
+        and M.decode_opcode(a)[0] == M.LIGHT_LIGHTNESS_SET_UNACK
+        and M.decode_opcode(a)[2][3] == M.encode_transition(M.TRANSITION_MAX_SECONDS)
+    ]
+
+
+async def test_a_dimmer_that_is_on_keeps_a_slow_transition_running(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """So that it publishes an off at transition 0 (its rocker's): one Set per level, alternating, none while off."""
+    hub = init_integration.runtime_data
+    answering_mesh.sent.clear()
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))  # on, at rest
+    answering_mesh.inject(
+        LIGHT_SWITCH, 0xC062, onoff_status(True)
+    )  # not a dimmer: never
+    await tick(hass, freezer, 1)
+    assert (
+        keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []
+    )  # not before it settled
+    await tick(hass, freezer, 1.5)
+    (first,) = keep_reporting_sets(answering_mesh, LIGHT_DIMMER)
+    # towards the middle of the range: 0x8000 is not above it, so up by the step
+    assert M.decode_opcode(first)[2][:2] == (0x8000 + 514).to_bytes(2, "little")
+    assert keep_reporting_sets(answering_mesh, LIGHT_SWITCH) == []
+
+    # while it runs, a status with a target starts nothing
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000, 0x8202, 0xFE))
+    await tick(hass, freezer, 3)
+    assert len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER)) == 1
+
+    # it ended (here reported): the next one heads back to where the light rests
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8202))
+    await tick(hass, freezer, 2.5)
+    second = keep_reporting_sets(answering_mesh, LIGHT_DIMMER)[-1]
+    assert M.decode_opcode(second)[2][:2] == (0x8000).to_bytes(2, "little")
+
+    # an end that is not reported is read once the transition must be over
+    gets = gets_to(answering_mesh, LIGHT_DIMMER, M.light_lightness_get())
+    await tick(hass, freezer, M.TRANSITION_MAX_SECONDS + 3)
+    assert gets_to(answering_mesh, LIGHT_DIMMER, M.light_lightness_get()) == gets + 1
+
+    # off (the read's answer is lightness 0): nothing more is sent
+    sent = len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER))
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0))
+    await tick(hass, freezer, M.TRANSITION_MAX_SECONDS + 10)
+    assert len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER)) == sent
+    assert hub.states[LIGHT_DIMMER].on is False
+
+
+async def test_a_dimmers_slow_transition_waits_for_a_link_and_a_writable_device(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """Nothing is sent while the link is down when it falls due, nor to a device whose writes are refused."""
+    hub = init_integration.runtime_data
+    answering_mesh.sent.clear()
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
+    await tick(hass, freezer, 0.5)
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await tick(hass, freezer, 2)
+    assert keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []
+
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
+    await tick(hass, freezer, 0.5)
+    with patch(
+        "custom_components.junghome_ble.coordinator.refuse_unverified",
+        side_effect=ServiceValidationError("refused"),
+    ):
+        await tick(hass, freezer, 2)
+    assert keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []

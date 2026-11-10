@@ -18,6 +18,10 @@ insert took a transition on off as a delay. So HA's `transition` goes only into 
 Sets (which switch the members that are off on). Only with the option *Fade brightness changes*
 (`OPTION_TRANSITIONS`, off by default until a person watched a fade); without it no light declares the feature, HA
 drops a `transition`, and every Set keeps the bytes it always had. Unverified on air from Home Assistant.
+A dimmer's off is a Light Lightness Set 0 fading over at least 0.5 s (HA's `transition` when longer), option or
+not, so its rocker's status LED clears with the light: a faded Generic OnOff off is never carried out by a dimmer
+once a Lightness Set drove it (`JungHomeHub.dimmer_off`). The entity shows it as off from the Set on
+(`JungHomeHub.is_fading_off`).
 
 **Locks**: a load locked in the app, by a key or by its *Lock* switch shows `locked` (and
 `lock_until` for a timed lock), and refuses commands while locked (`config_entities.LoadLock`). A brightness counts
@@ -138,7 +142,9 @@ class JungHomeLight(LoadLock, LightEntity):
 
     @property
     def is_on(self) -> bool | None:
-        """On/off from the state cache; None until the element has been heard from."""
+        """On/off from the state cache, off while an accepted off fades; None until the element has been heard from."""
+        if self.hub.is_fading_off(self.address):
+            return False
         st = self.hub.states.get(self.address)
         return st.on if st else None
 
@@ -152,7 +158,7 @@ class JungHomeLight(LoadLock, LightEntity):
         same way.
         """
         st = self.hub.states.get(self.address)
-        if st is None or not st.lightness:
+        if st is None or not st.lightness or self.hub.is_fading_off(self.address):
             return None
         return max(1, round(st.lightness * 255 / 65535))
 
@@ -204,10 +210,9 @@ class JungHomeLight(LoadLock, LightEntity):
         A brightness alone is a Lightness Set (`_turn_on`); with a colour temperature it is a CTL Set, which does not
         fade, and to a light that is off it is an *on*, which does not either.
         """
-        st = self.hub.states.get(self.address)
         if not self._fades or lightness is None or kelvin is not None:
             return None
-        return kwargs.get(ATTR_TRANSITION) if st is not None and st.on else None
+        return kwargs.get(ATTR_TRANSITION) if self.is_on else None
 
     async def _turn_on(
         self, lightness: int | None, kelvin: Any, transition: float | None
@@ -238,9 +243,22 @@ class JungHomeLight(LoadLock, LightEntity):
             await self.hub.set_onoff(self.address, True)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
-        """Send Generic OnOff Set off; never with a `transition`: only a brightness change fades."""
+        """Send Generic OnOff Set off, or a dimmer's faded Lightness Set 0 (`hub.dimmer_off`).
+
+        HA's `transition` (given only when *Fade brightness changes* declares the feature) lengthens a dimmer's
+        fade, never under 0.5 s (`hub.dimmer_fade`); every other light drops it. A dimmer answers its off with where
+        it is now, still on, heading to 0: the answer is not compared, only the lock it publishes on refusing tells a
+        locked one apart (and the read after the fade).
+        """
         await self._check_unlocked()
-        await self._send_switch(self.hub.set_onoff(self.address, False), False)
+        fades = self.hub.fades_off(self.address)
+        await self._send_switch(
+            self.hub.set_onoff(self.address, False, kwargs.get(ATTR_TRANSITION)),
+            None if fades else False,
+        )
+        if fades and self.hub.load_locked(self.address):
+            self.hub.end_fading_off(self.address)
+            raise self._locked()
 
     @property
     def dimmable(self) -> bool:

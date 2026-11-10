@@ -18,6 +18,23 @@
 - **A key's *Status LED* switch keeps its state across a Home Assistant restart.** It has nothing to read (it is
   written the gateway's way, assumed state), so it showed unknown until something wrote it again; it now starts from
   the state it had before, until the key reports a value (a write, or a Status from the gateway).
+- **A dimmer's rocker LED goes out with the light.** A JUNG dimmer insert tells its rocker about an off only when the off
+  has a transition, so the LED stayed lit after Home Assistant switched it off. A dimmer's off now fades out (0.5 s),
+  from its own entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the
+  fade. The home-wide *All lights* is one message to every load, which a switch insert would answer by switching off
+  late, so it keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
+- **A dimmer switched off from Home Assistant goes off, and shows so.** Once a JUNG dimmer insert has been given a
+  brightness (Home Assistant's slider, a scene, an automation), it accepts a faded *Generic OnOff* off without ever
+  carrying it out: the light stayed on at full, its rocker LED went out and Home Assistant showed it on again, and
+  every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
+  of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
+  With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
+- **A dimmer switched off at its wall switch shows as off, and its LED goes out.** A JUNG dimmer insert reports its
+  state only for about 3 s after a change, so an off from its own rocker after that was carried out but told to no
+  one: the rocker's status LED stayed lit and Home Assistant kept showing it on. While a transition runs, the dimmer
+  does report such an off. So a dimmer that is on now gets one very slow brightness transition (0.8 % over about
+  10 hours, then back), sent once it settles after an on or a brightness change: no polling, nothing while it is
+  off. Home Assistant also reads a dimmer a moment after it hears another device switch it off.
 
 ## 1.7.1
 
