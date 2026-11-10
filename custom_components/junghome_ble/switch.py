@@ -31,7 +31,7 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Final
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
-from homeassistant.const import STATE_ON, EntityCategory
+from homeassistant.const import STATE_OFF, STATE_ON, EntityCategory
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -152,7 +152,11 @@ def build_entities(hub: JungHomeHub) -> list[SwitchEntity]:
         for room, sockets in room_loads(hub, Socket).items()
     ]
     entities += [
-        JungHomePropertySwitch(hub, target)
+        (
+            JungHomeAssumedPropertySwitch
+            if target.description.write == "status"
+            else JungHomePropertySwitch
+        )(hub, target)
         for target in config_targets(hub, "switch")
         if target.spec.id != PROPERTY_LOCK
     ]
@@ -274,6 +278,30 @@ class JungHomePropertySwitch(PropertyEntity, SwitchEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Write 0."""
         await self.async_write_value(False)
+
+
+class JungHomeAssumedPropertySwitch(JungHomePropertySwitch, RestoreEntity):
+    """A boolean property written the gateway's way (the key status LED): nothing to read, so its state is restored.
+
+    It showed unknown after every Home Assistant restart until something wrote it again: it starts from the state it
+    had before, until the element reports a value — a write, or a Status the gateway sends. Once anything is
+    reported the restored state is out of play: a value the codec cannot decode shows unknown, not the old state.
+    """
+
+    _restored: bool | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe as every property entity does, and take the state from before the restart."""
+        await super().async_added_to_hass()
+        if last := await self.async_get_last_state():
+            self._restored = {STATE_ON: True, STATE_OFF: False}.get(last.state)
+
+    @property
+    def is_on(self) -> bool | None:
+        """The decoded value once the element reported one; the state before the restart until then."""
+        if self.reader.cached(self.address, self.spec) is None:
+            return self._restored
+        return super().is_on
 
 
 class JungHomeLedNightMode(PropertyEntity, SwitchEntity):

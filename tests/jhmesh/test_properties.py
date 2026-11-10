@@ -418,6 +418,22 @@ def test_led_palettes_and_ids():
         assert palette["no_color"] == (0, 0, 0)
     assert P.led_colour_name((0, 60, 0), 0x03) == "green"
     assert P.led_colour_name((1, 2, 3), 0x03) is None
+    # a 2-gang rocker's or a wall transmitter's factory "off" colour is the 1-gang one's orange, 100/27/0 (its own
+    # palette's is 100/29/0); nothing near it has a name, and a socket's palette knows no such alias
+    for pid in (0x02, 0x05, 0x06):
+        assert P.led_colour_name((100, 27, 0), pid) == "orange"
+        assert P.led_colour_name((100, 29, 0), pid) == "orange"
+        assert P.led_colour_name((100, 28, 0), pid) is None
+    assert P.led_colour_name((100, 27, 0), 0x03) is None
+    # an alias never shadows an entry of its product's palette, and names one
+    for pid, aliases in P.LED_COLOUR_ALIASES.items():
+        palette = P.led_palette(pid)
+        for rgb, name in aliases.items():
+            assert rgb not in palette.values()
+            assert name in palette
+    # a value that is no triple has no name
+    assert P.led_colour_name((100, 27), 0x01) is None
+    assert P.led_colour_name((), 0x01) is None
     with pytest.raises(KeyError):
         P.led_palette(0x0A)
     assert P.led_property_id(1, "on") == 0xA001
