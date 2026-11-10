@@ -1,35 +1,35 @@
 # Changelog
 
-## Unreleased
+## 1.7.2
 
 ### Fixed
 
-- **A 2-gang rocker's or a wall transmitter's factory "off" colour is named orange.** The palettes differ by
+- **A 2-gang rocker's or a wall transmitter's factory "off" colour is named orange** (#23). The palettes differ by
   product (orange is 100/27/0 on a 1-gang rocker, 100/29/0 on the others), and only a palette entry had a name: on a
   live install, 16 *LED colour (switched off)* selects of 2-gang and wall-transmitter keys left at their factory
   colours showed unknown while every 1-gang key showed orange. On those products 100/27/0 now goes by orange too (an
   explicit alias; no other colour gains a name); choosing orange still writes the product's own 100/29/0. That their
   factory colour is 100/27/0 is inferred from the pattern, not read off those nodes.
-- ***Last restart* keeps its time across a Home Assistant restart, and notices a restart while it was down.** The
+- ***Last restart* keeps its time across a Home Assistant restart, and notices a restart while it was down** (#23). The
   hub held it in memory only, so every node's sensor (enabled by default) showed unknown after each restart until the
   node restarted again. The sensor now shows the time from before until the hub sees a restart; and the hub follows
   each node's sequence numbers from the stored replay list, so a node that restarted while Home Assistant was down is
   seen to at its first message (stamped with that time, not when it happened).
-- **A key's *Status LED* switch keeps its state across a Home Assistant restart.** It has nothing to read (it is
+- **A key's *Status LED* switch keeps its state across a Home Assistant restart** (#23). It has nothing to read (it is
   written the gateway's way, assumed state), so it showed unknown until something wrote it again; it now starts from
   the state it had before, until the key reports a value (a write, or a Status from the gateway).
-- **A dimmer's rocker LED goes out with the light.** A JUNG dimmer insert tells its rocker about an off only when the off
+- **A dimmer's rocker LED goes out with the light** (#19). A JUNG dimmer insert tells its rocker about an off only when the off
   has a transition, so the LED stayed lit after Home Assistant switched it off. A dimmer's off now fades out (0.5 s),
   from its own entity, a scene or a room's *All lights*, and shows as off at once; the state is read again after the
   fade. The home-wide *All lights* is one message to every load, which a switch insert would answer by switching off
   late, so it keeps the old off, and the LED, for now. Switch inserts, DALI lights and sockets are unchanged.
-- **A dimmer switched off from Home Assistant goes off, and shows so.** Once a JUNG dimmer insert has been given a
+- **A dimmer switched off from Home Assistant goes off, and shows so** (#19). Once a JUNG dimmer insert has been given a
   brightness (Home Assistant's slider, a scene, an automation), it accepts a faded *Generic OnOff* off without ever
   carrying it out: the light stayed on at full, its rocker LED went out and Home Assistant showed it on again, and
   every later faded off failed the same way until the light was faded out by brightness. A dimmer's off is now a fade
   of its brightness to 0 (*Light Lightness*) over 0.5 s, which ends at off whatever came before, and clears the LED.
   With *Fade brightness changes* on, a longer `transition` sets how long that fade takes.
-- **A dimmer switched off at its wall switch shows as off, and its LED goes out.** A JUNG dimmer insert reports its
+- **A dimmer switched off at its wall switch shows as off, and its LED goes out** (#19). A JUNG dimmer insert reports its
   state only for about 3 s after a change, so an off from its own rocker after that was carried out but told to no
   one: the rocker's status LED stayed lit and Home Assistant kept showing it on. While a transition runs, the dimmer
   does report such an off. So a dimmer that is on now gets one very slow brightness transition (0.8 % over about
