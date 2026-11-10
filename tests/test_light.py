@@ -1284,3 +1284,28 @@ async def test_a_dimmer_that_is_on_keeps_a_slow_transition_running(
     await tick(hass, freezer, M.TRANSITION_MAX_SECONDS + 10)
     assert len(keep_reporting_sets(answering_mesh, LIGHT_DIMMER)) == sent
     assert hub.states[LIGHT_DIMMER].on is False
+
+
+async def test_a_dimmers_slow_transition_waits_for_a_link_and_a_writable_device(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """Nothing is sent while the link is down when it falls due, nor to a device whose writes are refused."""
+    hub = init_integration.runtime_data
+    answering_mesh.sent.clear()
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
+    await tick(hass, freezer, 0.5)
+    with patch.object(
+        type(hub), "connected", new_callable=PropertyMock, return_value=False
+    ):
+        await tick(hass, freezer, 2)
+    assert keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []
+
+    answering_mesh.inject(LIGHT_DIMMER, 0xC062, lightness_status(0x8000))
+    await tick(hass, freezer, 0.5)
+    with patch(
+        "custom_components.junghome_ble.coordinator.refuse_unverified",
+        side_effect=ServiceValidationError("refused"),
+    ):
+        await tick(hass, freezer, 2)
+    assert keep_reporting_sets(answering_mesh, LIGHT_DIMMER) == []

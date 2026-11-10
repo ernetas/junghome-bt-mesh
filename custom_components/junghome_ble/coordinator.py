@@ -1514,14 +1514,12 @@ class JungHomeHub:
                 or addr in self._fading_off
             ):
                 return
-            rest, heading = self._keep_reporting_levels.get(addr, (None, None))
-            if (
-                heading is None
-                or abs(st.lightness - heading) > SETTLE_SLACK["lightness"]
-            ):
-                rest = st.lightness  # a new level: the light rests here
-            if rest is None:
-                return
+            rest: int = st.lightness  # a new level: the light rests here
+            heading: int | None = None
+            if (levels := self._keep_reporting_levels.get(addr)) is not None and abs(
+                st.lightness - levels[1]
+            ) <= SETTLE_SLACK["lightness"]:
+                rest, heading = levels  # where our last transition was heading
             target = (
                 rest
                 if heading is not None and rest != st.lightness
