@@ -16,7 +16,7 @@ Names are stable snake_case identifiers (they become translation keys).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -43,6 +43,7 @@ __all__ = [
     "KEY_PROPERTY_MODE",
     "KEY_VALUE_UP",
     "LED_COLOURS",
+    "LED_COLOUR_ALIASES",
     "LED_HOSTS",
     "LED_PALETTES",
     "LOCKABLE",
@@ -1175,10 +1176,29 @@ def led_palette(product_id: int) -> Mapping[str, LedColour]:
     return LED_PALETTES[product_id]
 
 
-def led_colour_name(rgb: tuple[int, int, int], product_id: int) -> str | None:
-    """Return the palette name of an exact RGB triple, or None when the device shows a colour the app cannot name."""
-    palette = led_palette(product_id)
-    return next((name for name, c in palette.items() if c == tuple(rgb)), None)
+# Colours a node shows that its product's palette lacks, by product, each with the palette name it goes by. A 2-gang
+# rocker or a wall transmitter left at its factory LED colours showed no name for its "off" colour while every 1-gang
+# rocker showed orange: the palettes differ by product (orange is 100/27/0 on a 1-gang rocker, 100/29/0 on the others),
+# and the factory colour is taken to be the 1-gang palette's orange on them too — inferred from that pattern, not
+# read off those nodes. Picking the name writes the product's own entry (the app's colour), not the alias.
+_FACTORY_ORANGE: Mapping[LedColour, str] = {(100, 27, 0): "orange"}
+LED_COLOUR_ALIASES: Mapping[int, Mapping[LedColour, str]] = {
+    0x02: _FACTORY_ORANGE,
+    0x05: _FACTORY_ORANGE,
+    0x06: _FACTORY_ORANGE,
+}
+
+
+def led_colour_name(rgb: Sequence[int], product_id: int) -> str | None:
+    """Return the palette name of an RGB triple, or None when the device shows a colour the app cannot name.
+
+    A palette entry, else an alias of the product (`LED_COLOUR_ALIASES`); a value that is no triple has no name.
+    """
+    colour = tuple(rgb)
+    if len(colour) != 3:
+        return None
+    names = {c: name for name, c in led_palette(product_id).items()}
+    return names.get(colour) or LED_COLOUR_ALIASES.get(product_id, {}).get(colour)
 
 
 LedSlot = Literal["channel", "on", "off"]

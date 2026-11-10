@@ -445,7 +445,9 @@ def build_entities(hub: JungHomeHub) -> list[SensorEntity]:
     entities.append(JungHomeUnreachableDevices(hub))
     entities.append(JungHomeMeshOverview(hub))
     entities += [
-        JungHomeNodeDiagnostic(hub, node, desc)
+        (JungHomeNodeRestoredTime if desc.restore else JungHomeNodeDiagnostic)(
+            hub, node, desc
+        )
         for node in hub.cdb.nodes
         if node.pid is not None
         for desc in NODE_DIAGNOSTICS
@@ -1554,6 +1556,8 @@ class NodeDiagnosticDescription(SensorEntityDescription):
     value: Callable[[JungHomeHub, int], datetime | float | None]
     mains_only: bool = False  # battery nodes sleep: no heartbeats, no hops
     applies: Callable[[Node], bool] = lambda _node: True  # the nodes that get it
+    # shows the state before a Home Assistant restart until the hub has a value (`JungHomeNodeRestoredTime`)
+    restore: bool = False
 
 
 NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
@@ -1593,6 +1597,7 @@ NODE_DIAGNOSTICS: tuple[NodeDiagnosticDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         mains_only=True,
         value=lambda hub, unicast: hub.restarted.get(unicast),
+        restore=True,
     ),
     NodeDiagnosticDescription(
         key="clock_offset",
@@ -1616,7 +1621,9 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
     *Last seen* is the time of the node's last message, *Signal strength* the RSSI of its last advertisement as
     the Bluetooth scanner heard it, *Hops* the relays its last Heartbeat took to our proxy (heartbeat option), and
     *Last restart* the last time its sequence number jumped into a fresh block (`JungHomeHub._note_seq`) — a
-    mains blip, a breaker, a firmware reset — seen while Home Assistant ran. Pushed at most once a minute. *Clock
+    mains blip, a breaker, a firmware reset — including one while Home Assistant was down, seen at the node's first
+    message after the start (the hub picks up each source's last sequence number from the stored replay list); until
+    then it shows the time from before the restart (`JungHomeNodeRestoredTime`). Pushed at most once a minute. *Clock
     offset* is how far the node's clock was off Home Assistant's at its last Time Status (`node_clocks.py`, off by
     default; a mains node with a Time Server), pushed as each one arrives — that one is unverified on air.
     """
@@ -1663,6 +1670,31 @@ class JungHomeNodeDiagnostic(JungHomeEntity, SensorEntity):
                 self._handle_update,
             )
         )
+
+
+class JungHomeNodeRestoredTime(JungHomeNodeDiagnostic, RestoreSensor):
+    """A node time the hub keeps in memory only (*Last restart*): the one shown before a restart until the hub has one.
+
+    The restored time is the entity's alone; the hub never takes it (its restart record only holds what it saw on
+    this run, which the version reads go by). A node that restarted while Home Assistant was down replaces it at its
+    first message (`JungHomeHub._note_seq`); one that stays silent keeps showing it.
+    """
+
+    _restored: datetime | None = None
+
+    @property
+    def native_value(self) -> datetime | float | None:
+        """The hub's value, else the one from before the restart."""
+        value = super().native_value
+        return self._restored if value is None else value
+
+    async def async_added_to_hass(self) -> None:
+        """Take the time from before the restart, then follow the node as every node diagnostic does."""
+        if (last := await self.async_get_last_sensor_data()) and isinstance(
+            last.native_value, datetime
+        ):
+            self._restored = last.native_value
+        await super().async_added_to_hass()
 
 
 @dataclass(frozen=True, kw_only=True)
