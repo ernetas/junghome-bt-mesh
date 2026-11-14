@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- **A dimmer switched off at its wall switch no longer comes back on hours later.** 1.7.2 kept a very slow brightness
+  transition running on every dimmer that was on, so that it would report an off from its rocker. A JUNG dimmer insert
+  keeps stepping that transition after the off, though, switching the light back on at each step, and nothing sent
+  while it is off cancels it. The transition is gone. Home Assistant still reads a dimmer a moment after it hears
+  another device switch it off, so the state stays right. A transition 1.7.2 already started is stopped
+  the next time the dimmer reports it while on (a brightness set at its own level, at once): stopped then, it stays
+  stopped through a wall off (seen on air).
+- **The rocker LED after a wall-switch off: set the dimmer's *Switch-off delay* to 0.3 s.** The rocker tracks its own
+  last press, so after Home Assistant (or the JUNG app) switches a dimmer on, a wall off more than ~3 s later leaves
+  its LED lit, and the dimmer reports nothing. With the dimmer's *Switch-off delay* (disabled by default, enable the
+  entity) at 0.3 s, the wall off goes through the dimmer's timer, which it does report: the LED goes out and Home
+  Assistant sees the off. 0.1 s is too short (the off is not reported). Home Assistant's own off is not delayed; wall
+  and app offs come 0.3 s later. The *Switch-on delay* and *Switch-off delay* entities now step in 0.1 s (they took whole
+  seconds only).
+
 ## 1.7.2
 
 ### Fixed

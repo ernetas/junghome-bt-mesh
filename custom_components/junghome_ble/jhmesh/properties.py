@@ -1359,8 +1359,8 @@ _VENDOR_SPECS: list[PropertySpec] = [
     _fw(0x0F01, "current_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
     _fw(0x0F02, "all_time_runtime_stats", ALL_PRODUCTS, server="manufacturer"),
     # --- §1.3 load parameters (element = the load)
-    PropertySpec(0x1001, "on_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=1, products=LOAD_HOSTS, set_access=1),
-    PropertySpec(0x1002, "off_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=1, products=LOAD_HOSTS, set_access=1),
+    PropertySpec(0x1001, "on_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=0.1, products=LOAD_HOSTS, set_access=1),
+    PropertySpec(0x1002, "off_delay", "admin", "rw", DELAY_MS, element="load", unit="s", min=0, max=14400, step=0.1, products=LOAD_HOSTS, set_access=1),
     PropertySpec(0x1007, "timed_on_duration", "admin", "rw", MS32, element="load", unit="s", min=0, max=14400, step=1, products=LOAD_HOSTS, set_access=1),  # "run-on time"
     PropertySpec(0x100A, "prewarning", "admin", "rw", BOOL, element="load", products=LAMP_HOSTS),
     PropertySpec(0x100B, "manual_off_enable", "admin", "rw", BOOL, element="load", products=LOAD_HOSTS),
