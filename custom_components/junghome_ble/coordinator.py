@@ -27,7 +27,7 @@ from homeassistant.components import bluetooth
 from homeassistant.config_entries import SOURCE_IGNORE
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, ServiceValidationError
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
@@ -196,6 +196,11 @@ DIMMER_OFF_TRANSITION = 0.5
 # How long after its fade that off's last publication may land (seen on a dimmer insert: about 1 s after it). The
 # state is read the fade plus this plus TRANSITION_REREAD_SLACK after the Set, in case that publication is lost.
 DIMMER_OFF_SETTLE = 1.0
+# 1.7.2 kept a transition this far (≈ 0.8 %) from where a dimmer that is on rests, over up to 10 h 20 min; the dimmer
+# carries it on after a wall off and switches the light back on. One reported running this close and at least this
+# long is stopped (`JungHomeHub._stop_leftover_transition`).
+LEFTOVER_STEP = 514
+LEFTOVER_MIN_REMAINING = 60.0
 # InsertId actuator function of a tunable-white (DALI) insert (`properties.ACTUATOR_FUNCTION`)
 TW_DIMMING_FUNCTION = 4
 
@@ -1465,7 +1470,38 @@ class JungHomeHub:
         st.on = st.lightness > 0
         if not st.on:
             self._fading_off.discard(m.src)
+        elif len(p) >= 5:
+            self._stop_leftover_transition(
+                m.src, st.lightness, st.target_lightness, p[4]
+            )
         self.notify_update(m.src)
+
+    def _stop_leftover_transition(
+        self, addr: int, present: int, target: int, remaining: int
+    ) -> None:
+        """Stop a slow transition 1.7.2 left running on a dimmer that is on: a Lightness Set at its level, transition 0.
+
+        Once the light is off nothing cancels it, and each of its steps switches the light back on.
+        """
+        seconds = M.decode_transition(remaining)
+        if (
+            not 0 < abs(target - present) <= LEFTOVER_STEP
+            or seconds is None
+            or seconds < LEFTOVER_MIN_REMAINING
+            or not self.fades_off(addr)
+        ):
+            return
+        try:
+            refuse_unverified(self, [addr])
+        except ServiceValidationError:
+            return
+        self.entry.async_create_background_task(
+            self.hass,
+            self._command(
+                addr, M.light_lightness_set(present, ack=False, transition=0)
+            ),
+            f"{DOMAIN} stop leftover transition {addr:04X}",
+        )
 
     @register_status_handler(M.LIGHT_CTL_STATUS)
     def _on_ctl_status(self, m: AccessMessage, p: bytes) -> None:

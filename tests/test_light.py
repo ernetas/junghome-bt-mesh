@@ -1228,3 +1228,48 @@ async def test_a_dimmer_switched_off_by_another_device_is_read_after_the_off(
     await tick(hass, freezer, 1)
     assert gets_to(fake_link, LIGHT_DIMMER, M.light_lightness_get()) == 1
     assert hass.states.get(dimmer_on).state == STATE_OFF
+
+
+def lightness_sets(link: FakeProxyLink, addr: int) -> list[bytes]:
+    """The parameters of the Unacknowledged Lightness Sets the hub sent `addr`."""
+    return [
+        M.decode_opcode(a)[2]
+        for _, dst, a in link.sent
+        if dst == addr and M.decode_opcode(a)[0] == M.LIGHT_LIGHTNESS_SET_UNACK
+    ]
+
+
+async def test_a_slow_transition_left_by_1_7_2_is_stopped_while_the_light_is_on(
+    hass: HomeAssistant, answering_mesh: FakeProxyLink, init_integration: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:  # fmt: skip
+    """Its signature (on, ≤ 514 from its target, minutes to go): a Set at the present level, transition 0."""
+    answering_mesh.sent.clear()
+    answering_mesh.inject(
+        LIGHT_DIMMER, 0xC062, lightness_status(0x8000, 0x8000 + 514, 0xFE)
+    )
+    await tick(hass, freezer, 0.5)
+    (stop,) = lightness_sets(answering_mesh, LIGHT_DIMMER)
+    assert stop[:2] == (0x8000).to_bytes(2, "little")
+    assert stop[3] == 0  # transition 0
+
+    answering_mesh.sent.clear()
+    for status in (
+        lightness_status(0x8000, 0xFFFF, 0xFE),  # a real brightness change
+        lightness_status(0x8000, 0x8100, 0x0A),  # a short fade
+        lightness_status(0x8000, 0x8100, 0x3F),  # no estimate
+        lightness_status(0, 0x0100, 0xFE),  # off: nothing cancels it then
+    ):
+        answering_mesh.inject(LIGHT_DIMMER, 0xC062, status)
+    await tick(hass, freezer, 0.5)
+    assert lightness_sets(answering_mesh, LIGHT_DIMMER) == []
+
+    with patch(
+        "custom_components.junghome_ble.coordinator.refuse_unverified",
+        side_effect=ServiceValidationError("refused"),
+    ):
+        answering_mesh.inject(
+            LIGHT_DIMMER, 0xC062, lightness_status(0x8000, 0x8100, 0xFE)
+        )
+        await tick(hass, freezer, 0.5)
+    assert lightness_sets(answering_mesh, LIGHT_DIMMER) == []
