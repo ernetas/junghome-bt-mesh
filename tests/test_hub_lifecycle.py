@@ -185,8 +185,6 @@ async def test_stop_cancels_every_registered_handle_in_order(
         "transition_reread",
         "motion_watch",
         "heard_off",
-        "keep_reporting",
-        "keep_reporting_end",
         "locating",
         "gestures",
         "link",

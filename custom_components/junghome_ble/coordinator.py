@@ -196,11 +196,11 @@ DIMMER_OFF_TRANSITION = 0.5
 # How long after its fade that off's last publication may land (seen on a dimmer insert: about 1 s after it). The
 # state is read the fade plus this plus TRANSITION_REREAD_SLACK after the Set, in case that publication is lost.
 DIMMER_OFF_SETTLE = 1.0
-# A dimmer that is on keeps a slow lightness transition running (`JungHomeHub._keep_reporting`): this far from where it
-# rests (514 ≈ 0.8 %, invisible), over the longest transition a Set carries (10 h 20 min), sent this long after its
-# last status at rest
-KEEP_REPORTING_STEP = 514
-KEEP_REPORTING_SETTLE = 2.0
+# 1.7.2 kept a transition this far (≈ 0.8 %) from where a dimmer that is on rests, over up to 10 h 20 min; the dimmer
+# carries it on after a wall off and switches the light back on. One reported running this close and at least this
+# long is stopped (`JungHomeHub._stop_leftover_transition`).
+LEFTOVER_STEP = 514
+LEFTOVER_MIN_REMAINING = 60.0
 # InsertId actuator function of a tunable-white (DALI) insert (`properties.ACTUATOR_FUNCTION`)
 TW_DIMMING_FUNCTION = 4
 
@@ -581,10 +581,6 @@ class JungHomeHub:
         self._motion_watch = self.lifecycle.keyed("motion_watch")
         # dimmer element → the read after an off another device sent it, which it does not publish (`_on_onoff_set`)
         self._heard_off = self.lifecycle.keyed("heard_off")
-        # dimmer element → its next slow transition, and (level it rests at, level the transition heads for)
-        self._keep_reporting_timers = self.lifecycle.keyed("keep_reporting")
-        self._keep_reporting_end = self.lifecycle.keyed("keep_reporting_end")
-        self._keep_reporting_levels: dict[int, tuple[int, int]] = {}
         # (cdb, devices) → the dimmers' elements by every address that reaches their OnOff server (`_dimmers_at`)
         self._dimmer_index: tuple[
             CDB | None, Devices | None, dict[int, tuple[int, ...]]
@@ -1474,84 +1470,37 @@ class JungHomeHub:
         st.on = st.lightness > 0
         if not st.on:
             self._fading_off.discard(m.src)
-        self._keep_reporting(m.src)
+        elif len(p) >= 5:
+            self._stop_leftover_transition(
+                m.src, st.lightness, st.target_lightness, p[4]
+            )
         self.notify_update(m.src)
 
-    def _keep_reporting(self, addr: int) -> None:
-        """Keep a slow lightness transition running on a dimmer that is on, so that it publishes the next off.
+    def _stop_leftover_transition(
+        self, addr: int, present: int, target: int, remaining: int
+    ) -> None:
+        """Stop a slow transition 1.7.2 left running on a dimmer that is on: a Lightness Set at its level, transition 0.
 
-        A JUNG dimmer insert publishes its state twice after a change, at once and again 1-3 s later, and never
-        again: an off at transition 0 (its wall rocker's) after that is carried out but published nowhere, so the
-        rocker's status LED stays lit and the entity stays on. While a transition runs, the same off is published at
-        once (seen on air, with the off 6 s and 37 s after the on). So once a dimmer reports itself on and at rest
-        for KEEP_REPORTING_SETTLE, it gets one Unacknowledged Light Lightness Set KEEP_REPORTING_STEP towards the
-        middle of the range (so never past its minimum or maximum) over the longest transition a Set carries; when
-        that one ends, the next heads back to where the light rested, so the level does not drift. The dimmer is read
-        once that transition must be over, in case it does not report the end, and the reply starts the next one. One
-        message per switch-on, brightness change or ~10 h on, none while the light is off. Dimmers only (`fades_off`).
+        Once the light is off nothing cancels it, and each of its steps switches the light back on.
         """
-        if (cancel := self._keep_reporting_timers.pop(addr, None)) is not None:
-            cancel()
-        st = self.states.get(addr)
-        if st is None or not st.on:
-            # the levels stay: an off mid-transition leaves the dimmer's last level a little off where it rested,
-            # and the next on resumes from there; the next transition heads back to the remembered rest
-            self._read_later(self._keep_reporting_end, addr, None, "dimmer", "")
+        seconds = M.decode_transition(remaining)
+        if (
+            not 0 < abs(target - present) <= LEFTOVER_STEP
+            or seconds is None
+            or seconds < LEFTOVER_MIN_REMAINING
+            or not self.fades_off(addr)
+        ):
             return
-        if not self.fades_off(addr) or st.target_lightness != st.lightness:
-            return  # not a dimmer, or a transition (ours, or a fade) already runs
-
-        @callback
-        def due(_now: datetime) -> None:
-            del self._keep_reporting_timers[addr]
-            st = self.states.get(addr)
-            if (
-                not self.connected
-                or st is None
-                or not st.on
-                or st.lightness is None
-                or st.target_lightness != st.lightness
-                or addr in self._fading_off
-            ):
-                return
-            rest: int = st.lightness  # a new level: the light rests here
-            heading: int | None = None
-            if (levels := self._keep_reporting_levels.get(addr)) is not None and abs(
-                st.lightness - levels[1]
-            ) <= SETTLE_SLACK["lightness"]:
-                rest, heading = levels  # where our last transition was heading
-            target = (
-                rest
-                if heading is not None and rest != st.lightness
-                else rest - KEEP_REPORTING_STEP
-                if rest > 0x8000
-                else rest + KEEP_REPORTING_STEP
-            )
-            self._keep_reporting_levels[addr] = (rest, target)
-            try:
-                refuse_unverified(self, [addr])
-            except ServiceValidationError:
-                return
-            pdu = M.light_lightness_set(
-                target,
-                ack=False,
-                transition=M.encode_transition(M.TRANSITION_MAX_SECONDS),
-            )
-            self.entry.async_create_background_task(
-                self.hass,
-                self._command(addr, pdu),
-                f"{DOMAIN} keep reporting {addr:04X}",
-            )
-            self._read_later(
-                self._keep_reporting_end,
-                addr,
-                M.TRANSITION_MAX_SECONDS + KEEP_REPORTING_SETTLE,
-                "dimmer",
-                f"{DOMAIN} keep reporting end {addr:04X}",
-            )
-
-        self._keep_reporting_timers[addr] = async_call_later(
-            self.hass, KEEP_REPORTING_SETTLE, due
+        try:
+            refuse_unverified(self, [addr])
+        except ServiceValidationError:
+            return
+        self.entry.async_create_background_task(
+            self.hass,
+            self._command(
+                addr, M.light_lightness_set(present, ack=False, transition=0)
+            ),
+            f"{DOMAIN} stop leftover transition {addr:04X}",
         )
 
     @register_status_handler(M.LIGHT_CTL_STATUS)

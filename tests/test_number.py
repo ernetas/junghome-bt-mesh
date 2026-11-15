@@ -156,6 +156,15 @@ async def test_factory_delay_reads_as_off_and_is_still_written(
     await settle(hass, 200)
     eid = entity_id(hass, "number", uid)
     assert hass.states.get(eid).state == "0.0"
+    assert hass.states.get(eid).attributes[ATTR_STEP] == 0.1
+
+    await hass.services.async_call(
+        NUMBER_DOMAIN,
+        SERVICE_SET_VALUE,
+        {ATTR_ENTITY_ID: eid, ATTR_VALUE: 0.3},
+        blocking=True,
+    )  # a dimmer reports a wall off once it goes through this delay: 0.3 s does, 0.1 s does not
+    assert mesh.sets[-1] == (SOCKET, 0x1002, ms(0.3))
 
     await hass.services.async_call(
         NUMBER_DOMAIN,
