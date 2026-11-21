@@ -186,6 +186,7 @@ async def test_stop_cancels_every_registered_handle_in_order(
         "motion_watch",
         "heard_off",
         "locating",
+        "unknown_confirm",
         "gestures",
         "link",
         "refresh",

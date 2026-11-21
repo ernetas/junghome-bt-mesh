@@ -197,7 +197,8 @@ Advertising survey (`adv_survey.py`, `jung_adv.py` on the capture host; 60 s + 1
 **Consequences, built the same day:** `JungHomeHub.node_for_address` maps every visible proxy to its node before
 any message is exchanged (the *Proxy node* sensor and the diagnostics' `visible_proxies` name the node at once;
 the Filter Status only confirms it), and a proxy advert carrying **our Network ID from a MAC the export does not
-know** is a node added or re-provisioned after the export — reported once as the repair issue *JUNG HOME devices
+know** is a node added or re-provisioned after the export — once it keeps advertising from that MAC (a scanner
+that garbles one advert's address hands over the Network ID too) reported once as the repair issue *JUNG HOME devices
 missing from the export* with the product from the JUNG record (`ISSUE_UNKNOWN_NODES`; the `dynamic-devices` rule
 as far as an export-based integration can go). HA's Bluetooth discovery could match `manufacturer_id` 1319 too,
 but the `0x1828` matcher already finds every JUNG node and the flow verifies the Network ID, so it was left alone.
