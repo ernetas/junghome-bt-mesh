@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.0
+
+### Fixed
+
+- **No more *JUNG HOME devices missing from the export* for devices that do not exist.** A Bluetooth scanner that
+  garbles the address of an advert hands over our mesh's Network ID from an address no device has. Home Assistant took
+  each one for a device added in the app since the export: on a live install, the repair listed 15 such addresses, one or
+  two bytes off the MACs of known devices, and asked for a new export that could never list them. A new address is now
+  looked at again a minute after it is first heard. It is reported only when Home Assistant has heard it again at
+  least 30 s after that first advert, which a JUNG device, advertising several times a second, always is. An address
+  heard once is only logged (DEBUG). A device really added in the app is reported, and fetched from the gateway, a
+  minute later than before. An open notice for such addresses goes away with the restart that installs this release.
+
 ## 1.7.3
 
 ### Fixed
