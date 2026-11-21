@@ -1,7 +1,7 @@
 """What one hub watches the export and the gateway for: unknown nodes, the export refresh, the gateway's trust.
 
-A node of the mesh advertising from a MAC the export lacks is reported (`check_unknown_node`, the `unknown_nodes`
-repair); for an entry set up from the gateway its export is fetched and adopted with back-off
+A node of the mesh advertising from a MAC the export lacks is reported once it keeps advertising from it
+(`check_unknown_node`, `UNKNOWN_NODE_CONFIRM`, the `unknown_nodes` repair); for an entry set up from the gateway its export is fetched and adopted with back-off
 (`request_refresh`, EXPORT_REFRESH_BACKOFF), and the hub follows it (`follow_adopted_export`). The gateway is used
 only once its node vouched over the mesh for the pinned certificate (`async_gateway_distrust`, `check_pin`); a
 node contradicting the pin raises the `gateway_certificate_changed` repair, and the node's address is followed
@@ -17,6 +17,7 @@ import re
 from datetime import datetime
 from typing import TYPE_CHECKING, Final, Protocol
 
+from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import callback
 from homeassistant.helpers import issue_registry as ir
@@ -53,8 +54,6 @@ from .lifecycle import Backoff
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
-    from homeassistant.components import bluetooth
-
     from custom_components.junghome_ble.jhmesh.cdb import Node
     from custom_components.junghome_ble.protocols import ConfiguratorView, LinkView
 
@@ -79,6 +78,17 @@ class ExportWatchHub(HubPort, Protocol):
 
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# A new address advertising our Network ID is looked at again this long after it was first heard, and is a node the
+# export does not know only when Home Assistant has heard it advertise again at least UNKNOWN_NODE_SPAN after that
+# first advert. A JUNG proxy advertises several times a second for as long as it is powered; a Bluetooth scanner
+# that garbles the address of one advert (seen on a live install: 15 "devices" one or two bytes off the MACs of
+# known nodes, each heard once, carrying our Network ID) hands over an address heard once and never again. Home
+# Assistant calls back only when an advert's content changes, so the check reads its advert history
+# (`bluetooth.async_last_service_info`, whose time moves on with every advert heard).
+UNKNOWN_NODE_CONFIRM: Final = 60.0
+UNKNOWN_NODE_SPAN: Final = 30.0
 
 
 # A node the export does not know (`unknown_nodes`) makes the hub ask the gateway for its export; the app uploads
@@ -124,6 +134,10 @@ class ExportWatch:
         self.unknown_nodes: dict[
             str, JungAdvertisement | None
         ] = {}  # MAC → what it advertises; nodes of our network the export does not know
+        # MAC → when its first advert was heard (`BluetoothServiceInfoBleak.time`): new addresses of our network not
+        # reported yet, until their look (the `unknown_confirm` keyed timers, by the MAC as a number)
+        self._candidates: dict[str, float] = {}
+        self._confirm = hub.lifecycle.keyed("unknown_confirm")
         self._export_refresh: asyncio.Task[None] | None = (
             None  # the gateway export fetch in flight, if any
         )
@@ -143,17 +157,55 @@ class ExportWatch:
         """Notice a node of *our* network advertising from a MAC the export does not know: the export is behind.
 
         The proxy advertisement carries our Network ID, so the node is provisioned into this mesh, and its address is
-        the MAC the export would hold in the node UUID — a node added or re-provisioned after the export. Raised
-        once as a repair issue listing the devices (product from the JUNG manufacturer record when the advert
-        carries one); cleared when the export is reloaded with them in it (a new hub starts with an empty list).
-        Addresses that are not MACs (macOS hands out UUIDs) cannot be checked.
+        the MAC the export would hold in the node UUID — a node added or re-provisioned after the export. Nothing is
+        reported yet: the address is looked at again UNKNOWN_NODE_CONFIRM later (`_confirm_unknown_node`), since
+        one advert from an address no node has is what a scanner garbling addresses hands over too. Addresses that
+        are not MACs (macOS hands out UUIDs) cannot be checked.
         """
         address = info.address.upper()
-        if address in self.unknown_nodes or address in self.hub.node_by_mac:
+        if (
+            address in self.unknown_nodes
+            or address in self.hub.node_by_mac
+            or address in self._candidates
+        ):
             return
         if len(address) != 17 or address.count(":") != 5:
             return
         if not self.hub.link.ours(info):
+            return
+        self._candidates[address] = info.time
+        key = int(address.replace(":", ""), 16)
+
+        @callback
+        def look(_now: datetime) -> None:
+            self._confirm.pop(key, None)
+            self._confirm_unknown_node(address)
+
+        self._confirm[key] = async_call_later(self.hub.hass, UNKNOWN_NODE_CONFIRM, look)
+
+    def _confirm_unknown_node(self, address: str) -> None:
+        """Report `address` when it still advertises our network, UNKNOWN_NODE_SPAN after its first advert, or forget it.
+
+        A node it kept advertising from is one the export lacks: raised once as a repair issue listing the devices
+        (product from the JUNG manufacturer record when the advert carries one); cleared when the export is reloaded
+        with them in it (a new hub starts with an empty list). An address not heard again is forgotten (DEBUG): heard
+        again later, its look starts over.
+        """
+        first = self._candidates.pop(address)
+        if address in self.hub.node_by_mac:  # the export followed meanwhile has it
+            return
+        info = bluetooth.async_last_service_info(
+            self.hub.hass, address, connectable=True
+        )
+        if (
+            info is None
+            or info.time - first < UNKNOWN_NODE_SPAN
+            or not self.hub.link.ours(info)
+        ):
+            _LOGGER.debug(
+                "%s advertised this mesh's Network ID but not again since: taken for a garbled address, not reported",
+                address,
+            )
             return
         self.unknown_nodes[address] = parse_manufacturer_data(info.manufacturer_data)
         _LOGGER.warning(

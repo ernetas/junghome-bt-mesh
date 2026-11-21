@@ -2729,8 +2729,12 @@ the export does not know does not trigger it. The repair loads the new export it
 Some node of *this* mesh advertises over Bluetooth from an address the export does not know. JUNG nodes advertise
 from their MAC address, which the export records in the node identifier, so an address with the mesh's Network ID
 that is missing from the export is a device added (or re-provisioned) in the JUNG HOME app after the export was
-made — it has no entities here. The issue lists the devices (product and address; the product comes from the
-node's own advertisement). An entry set up from the gateway helps itself: it fetches the gateway's current export
+made — it has no entities here. An address counts only once it keeps advertising: it is looked at again a minute
+after it was first heard, and is reported when Home Assistant has heard it again at least 30 s after that first
+advert (a JUNG node advertises several times a second). One advert from an address no node has is what a Bluetooth
+scanner that garbles addresses hands over too (seen on a live install: addresses one or two bytes off the MACs of
+known nodes, each heard once); such an address is only logged at DEBUG. The issue lists the devices (product and
+address; the product comes from the node's own advertisement). An entry set up from the gateway helps itself: it fetches the gateway's current export
 (the app uploads its project right after provisioning) and, when that export lists the device and only the
 gateway changed since Home Assistant last synced with it, replaces its file (keeping `<file>.bak`, and the replaced
 copy as `<file>.pre-adopt` until the next such replacement; the gateway's copy recorded as synced) and takes it

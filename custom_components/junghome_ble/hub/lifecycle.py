@@ -45,6 +45,7 @@ KEYED = (
     "motion_watch",  # blind element → the end of its motion if no status comes (`JungHomeHub._watch_motion`)
     "heard_off",  # dimmer element → the read after an off another device sent it (`JungHomeHub._on_onoff_set`)
     "locating",  # node unicast → the end of its Node Identity advert (`JungHomeHub.async_locate`)
+    "unknown_confirm",  # MAC (as a number) → the look whether a new address still advertises (`ExportWatch`)
 )
 # the background tasks, in the order the hub cancels them (`Lifecycle.async_cancel_tasks`)
 TASKS = (

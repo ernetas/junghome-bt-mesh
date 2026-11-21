@@ -95,6 +95,39 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
+def keeps_advertising(
+    hass: HomeAssistant,
+    env: dict[str, Any],
+    network_id: bytes,
+    address: str,
+    manufacturer_data: dict[int, bytes] | None = None,
+) -> None:
+    """`address` advertises `network_id` and keeps doing so past the look at a new address, which then runs.
+
+    Home Assistant calls back for the first advert only (the next ones carry the same data); its history holds the
+    latest, UNKNOWN_NODE_SPAN later (`env["last"]`). The look, due UNKNOWN_NODE_CONFIRM after the first, runs at once
+    (letting the time pass would run every other timer due by then too; `test_an_address_heard_once_is_no_unknown_node`
+    lets it pass).
+    """
+    adv_seen = env["callbacks"][0]
+    adv_seen(
+        make_service_info(network_id, address, manufacturer_data=manufacturer_data),
+        BluetoothChange.ADVERTISEMENT,
+    )
+    env["last"][address.upper()] = make_service_info(
+        network_id,
+        address,
+        manufacturer_data=manufacturer_data,
+        time=export_watch.UNKNOWN_NODE_SPAN,
+    )
+    watch: ExportWatch = adv_seen.__self__.hub.export_watch
+    if (
+        look := watch._confirm.pop(int(address.replace(":", ""), 16), None)
+    ) is not None:
+        look()
+        watch._confirm_unknown_node(address.upper())
+
+
 async def test_unknown_node_of_our_network_raises_a_repair(
     hass: HomeAssistant,
     init_answered: MockConfigEntry,
@@ -125,12 +158,7 @@ async def test_unknown_node_of_our_network_raises_a_repair(
     record = {
         JUNG_COMPANY_ID: bytes.fromhex("03020000000500 9e000010fb30".replace(" ", ""))
     }
-    callback_(
-        make_service_info(
-            network_id, address="30:fb:10:00:00:9e", manufacturer_data=record
-        ),
-        BluetoothChange.ADVERTISEMENT,
-    )
+    keeps_advertising(hass, mock_bluetooth_env, network_id, "30:fb:10:00:00:9e", record)
     assert list(hub.unknown_nodes) == ["30:FB:10:00:00:9E"]
     assert hub.unknown_nodes["30:FB:10:00:00:9E"].product_id == 2
     issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
@@ -158,10 +186,7 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         ),
         BluetoothChange.ADVERTISEMENT,
     )
-    callback_(
-        make_service_info(network_id, address="30:FB:10:00:00:01"),
-        BluetoothChange.ADVERTISEMENT,
-    )
+    keeps_advertising(hass, mock_bluetooth_env, network_id, "30:FB:10:00:00:01")
     assert len(hub.unknown_nodes) == 2
     issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
     assert issue is not None
@@ -175,6 +200,71 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         {"address": "**REDACTED**", "product_id": 2},
     ]
     assert "30:FB:10:00:00:9E" not in str(diagnostics)
+
+
+async def test_an_address_heard_once_is_no_unknown_node(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    init_answered: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A scanner that garbles the address of one advert (seen on a live install: 15 addresses one or two bytes off
+    the MACs of known nodes, each with our Network ID) raised the repair for devices that do not exist, and asked
+    for an export that could never list them. A new address is reported only when it still advertises
+    UNKNOWN_NODE_CONFIRM after it was first heard, at least UNKNOWN_NODE_SPAN after that first advert."""
+    caplog.set_level(logging.DEBUG, logger=export_watch.__name__)
+    hub = hub_of(init_answered)
+    callback_ = mock_bluetooth_env["callbacks"][0]
+    garbled, other, known = (
+        "00:00:5E:00:53:42",
+        "30:FB:10:00:00:9E",
+        "30:FB:10:00:00:01",
+    )
+
+    def advert(address: str, time: float, net: bytes = network_id) -> Any:
+        return make_service_info(net, address, time=time)
+
+    # heard once: nothing yet, and not again by the look; one heard again too soon, one that now advertises another
+    # network and one the export followed meanwhile are not reported either
+    callback_(advert(garbled, 100.0), BluetoothChange.ADVERTISEMENT)
+    callback_(advert(other, 100.0), BluetoothChange.ADVERTISEMENT)
+    callback_(advert(known, 100.0), BluetoothChange.ADVERTISEMENT)
+    callback_(advert(garbled, 101.0), BluetoothChange.ADVERTISEMENT)  # looked at once
+    assert hub.unknown_nodes == {}
+    assert find_issue(hass, ISSUE_UNKNOWN_NODES) is None
+    mock_bluetooth_env["last"] = {
+        garbled: advert(garbled, 100.0 + export_watch.UNKNOWN_NODE_SPAN - 1),
+        other: advert(other, 100.0 + export_watch.UNKNOWN_NODE_SPAN, bytes(8)),
+        known: advert(known, 100.0 + export_watch.UNKNOWN_NODE_SPAN),
+    }
+    hub.node_by_mac[known] = hub.cdb.nodes[0]
+    await tick(hass, freezer, export_watch.UNKNOWN_NODE_CONFIRM - 1)
+    assert len(hub.lifecycle.keyed("unknown_confirm")) == 3  # not due yet
+    await tick(hass, freezer, 2)
+    assert hub.unknown_nodes == {}
+    assert find_issue(hass, ISSUE_UNKNOWN_NODES) is None
+    assert hub.lifecycle.keyed("unknown_confirm") == {}
+    assert (
+        f"{garbled} advertised this mesh's Network ID but not again since"
+        in caplog.text
+    )
+    assert "not in the export" not in caplog.text
+
+    # heard again later, it is looked at again; still advertising by then, it is reported
+    callback_(advert(garbled, 500.0), BluetoothChange.ADVERTISEMENT)
+    assert hub.lifecycle.keyed("unknown_confirm")
+    mock_bluetooth_env["last"][garbled] = advert(garbled, 560.0)
+    await tick(hass, freezer, export_watch.UNKNOWN_NODE_CONFIRM + 1)
+    assert list(hub.unknown_nodes) == [garbled]
+    assert find_issue(hass, ISSUE_UNKNOWN_NODES) is not None
+
+    # a look still pending when the hub stops is cancelled with it
+    callback_(advert(other, 600.0), BluetoothChange.ADVERTISEMENT)
+    assert hub.lifecycle.keyed("unknown_confirm")
+    await hass.config_entries.async_unload(init_answered.entry_id)
+    assert hub.lifecycle.keyed("unknown_confirm") == {}
 
 
 STRINGS_JSON = (
@@ -198,10 +288,7 @@ async def test_unknown_node_issue_is_gone_after_a_reload_with_it_in_the_export(
     """The issue is tied to the running hub: a reload (with a new export) starts clean and only re-raises it when the
     node is still missing and still advertising."""
     hub = hub_of(init_answered)
-    mock_bluetooth_env["callbacks"][0](
-        make_service_info(network_id, address="30:FB:10:00:00:01"),
-        BluetoothChange.ADVERTISEMENT,
-    )
+    keeps_advertising(hass, mock_bluetooth_env, network_id, "30:FB:10:00:00:01")
     assert find_issue(hass, ISSUE_UNKNOWN_NODES) is not None
     assert hub.unknown_nodes
     await hass.config_entries.async_reload(init_answered.entry_id)
@@ -260,10 +347,7 @@ async def test_unknown_node_leaves_a_users_export_alone(
     await settle(hass)
     original = _read_bytes(str(path))
     with patch.object(JungHomeGatewayApi, "fetch_project", AsyncMock()) as fetch:
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
         await settle(hass)
     assert fetch.await_count == 0
@@ -302,10 +386,7 @@ async def test_unknown_node_fetches_the_gateways_export_and_follows_it(
         return _export_with_new_node(share)
 
     with patch.object(JungHomeGatewayApi, "fetch_project", fetch_project):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         issue = find_issue(hass, ISSUE_UNKNOWN_NODES)
         assert issue is not None  # raised at once; the fetch runs in the background
         # the wording that names the gateway, whose host is its one extra placeholder (review-4 H4-8)
@@ -365,10 +446,7 @@ async def test_an_adopted_export_that_lists_some_unknown_nodes_leaves_the_others
     hub.unknown_nodes[other] = None
     fetch = AsyncMock(return_value=_export_with_new_node(_read_json(SHARE_EXPORT_PATH)))
     with patch.object(JungHomeGatewayApi, "fetch_project", fetch):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
         await wait_until(
             hass,
@@ -404,10 +482,7 @@ class GatewayAnswers:
 
     async def advert(self, network_id: bytes, mac: str | None = None) -> None:
         """A node advertises; wait for the refresh it started (a background task with real executor I/O)."""
-        self.env["callbacks"][0](
-            make_service_info(network_id, address=mac or next(self.macs)),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(self.hass, self.env, network_id, mac or next(self.macs))
         await self.hass.async_block_till_done()
         hub = hub_of(self.entry)
         await wait_until(
@@ -541,10 +616,7 @@ async def test_gateway_export_refresh_takes_a_bare_database_over_a_bare_file(
         AsyncMock(return_value={"meshNetwork": newer}),
     ):
         hub = hub_of(entry)
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
         await wait_until(
             hass,
@@ -607,10 +679,7 @@ async def test_gateway_export_refresh_is_retried_until_the_app_uploaded(
         patch.object(JungHomeGatewayApi, "fetch_project", fetch),
         patch.object(hub, "follow_export", AsyncMock()) as follow,
     ):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await fetched(1)
         assert hub.lifecycle.timer("export_refresh") is not None
         await tick(hass, freezer, export_watch.EXPORT_REFRESH_BACKOFF[0] + 1)
@@ -642,10 +711,7 @@ async def test_following_the_adopted_export_waits_for_a_running_service_call(
         patch.object(hub, "follow_export", AsyncMock()) as reload,
     ):
         await lock.acquire()  # a service call is running
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         # not `wait_until` / `settle`: they flush HA's tasks, and the reload waiting for the lock is one of them
         deadline = time.monotonic() + 10
         while not (
@@ -726,10 +792,7 @@ async def test_gateway_export_refresh_runs_one_fetch_at_a_time(
 
     with patch.object(JungHomeGatewayApi, "fetch_project", slow_fetch):
         for mac in ("30:FB:10:00:00:06", "30:FB:10:00:00:07"):
-            mock_bluetooth_env["callbacks"][0](
-                make_service_info(network_id, address=mac),
-                BluetoothChange.ADVERTISEMENT,
-            )
+            keeps_advertising(hass, mock_bluetooth_env, network_id, mac)
         await asyncio.sleep(0)
         gate.set()
         await hass.async_block_till_done()
@@ -778,10 +841,7 @@ async def test_gateway_is_followed_to_its_new_address(
         )  # reached; what it says is another test
 
     with patch.object(JungHomeGatewayApi, "fetch_project", fetch_project):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
     assert hosts == [GATEWAY_DATA[CONF_GATEWAY_HOST], NEW_GATEWAY_HOST]
     data = gateway_entry.data
@@ -814,10 +874,7 @@ async def test_a_certificate_reported_over_the_mesh_is_never_adopted(
 
     with patch.object(JungHomeGatewayApi, "fetch_project", fetch_project):
         for mac in (NEW_MAC, "30:FB:10:00:00:02"):
-            mock_bluetooth_env["callbacks"][0](
-                make_service_info(network_id, address=mac),
-                BluetoothChange.ADVERTISEMENT,
-            )
+            keeps_advertising(hass, mock_bluetooth_env, network_id, mac)
             await hass.async_block_till_done()
     assert hosts == [GATEWAY_DATA[CONF_GATEWAY_HOST]]  # once: then no more
     data = gateway_entry.data
@@ -856,16 +913,10 @@ async def test_a_pinned_certificate_the_host_no_longer_presents_raises_the_repai
         return answer
 
     with patch.object(JungHomeGatewayApi, "fetch_project", fetch_project):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
         assert find_issue(hass, ISSUE_GATEWAY_CERTIFICATE) is not None
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address="30:FB:10:00:00:02"),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, "30:FB:10:00:00:02")
         await hass.async_block_till_done()
     assert not answers
     assert find_issue(hass, ISSUE_GATEWAY_CERTIFICATE) is None
@@ -945,10 +996,7 @@ async def test_gateway_that_cannot_be_followed_stays_unreachable(
             JungHomeHub, "async_follow_gateway", AsyncMock(return_value=False)
         ) as follow,
     ):
-        mock_bluetooth_env["callbacks"][0](
-            make_service_info(network_id, address=NEW_MAC),
-            BluetoothChange.ADVERTISEMENT,
-        )
+        keeps_advertising(hass, mock_bluetooth_env, network_id, NEW_MAC)
         await hass.async_block_till_done()
     follow.assert_awaited_once()
     assert "Could not ask the gateway junghome.local for its export" in caplog.text
