@@ -286,6 +286,7 @@ def make_service_info(
     address: str = PROXY_ADDRESS,
     rssi: int = -50,
     manufacturer_data: dict[int, bytes] | None = None,
+    time: float = 0.0,
 ) -> BluetoothServiceInfoBleak:
     dev = BLEDevice(address, None, {})
     adv = AdvertisementData(
@@ -298,7 +299,7 @@ def make_service_info(
         platform_data=(),
     )
     return BluetoothServiceInfoBleak.from_device_and_advertisement_data(
-        dev, adv, "local", 0.0, True
+        dev, adv, "local", time, True
     )
 
 
@@ -347,7 +348,9 @@ def mock_bluetooth_env(
     """Make HA's bluetooth helpers see one proxy node of the fixture network, through one connectable scanner.
 
     `scanners` is what `async_scanner_count` reports: 0 is a Home Assistant without Bluetooth. `heard_by` maps a MAC
-    to what `async_scanner_devices_by_address` reports for it (the scanners hearing it; none by default).
+    to what `async_scanner_devices_by_address` reports for it (the scanners hearing it; none by default). `last`
+    maps an upper-case MAC to what `async_last_service_info` reports for it (the latest advert Home Assistant heard
+    from it), falling back to the last of `infos` from that address.
     """
     env: dict[str, Any] = {
         "infos": [service_info],
@@ -355,7 +358,18 @@ def mock_bluetooth_env(
         "scans": 0,
         "scanners": 1,
         "heard_by": {},
+        "last": {},
     }
+
+    def last_info(
+        hass: HomeAssistant, address: str, connectable: bool = True
+    ) -> BluetoothServiceInfoBleak | None:
+        if (info := env["last"].get(address.upper())) is not None:
+            return info  # type: ignore[no-any-return]
+        return next(
+            (i for i in reversed(env["infos"]) if i.address.upper() == address.upper()),
+            None,
+        )
 
     def discovered(
         hass: HomeAssistant, connectable: bool = True
@@ -400,6 +414,10 @@ def mock_bluetooth_env(
             side_effect=lambda hass, address, connectable=True: list(
                 env["heard_by"].get(address, [])
             ),
+        ),
+        patch(
+            "custom_components.junghome_ble.coordinator.bluetooth.async_last_service_info",
+            side_effect=last_info,
         ),
     ):
         yield env
