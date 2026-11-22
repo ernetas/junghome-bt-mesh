@@ -2199,6 +2199,29 @@ def test_re_sent_bindings_and_subscriptions_are_recorded(cdb: CDB) -> None:
     assert not _recorded(cdb, delete_all(LIGHT_SWITCH, "1300"))
 
 
+def test_binding_a_device_key_model_is_recorded(cdb: CDB) -> None:
+    """A device-key model takes no AppKey, so (un)binding one changes nothing, whatever its `bind` says.
+
+    The app sent the gateway exactly this on a live install: Model App Bind of AppKey 0 to its Remote Provisioning
+    Server (0004), which the export lists with `bind: []`.
+    """
+    gateway = cdb.node_by_addr(GATEWAY)
+    assert gateway is not None
+    gateway.elements[0].raw_models.append({"modelId": "0004", "bind": []})
+    bind, unbind = C.model_app_bind, C.model_app_unbind
+    assert _recorded(cdb, bind(GATEWAY, "0004"), dst=GATEWAY)
+    assert _recorded(cdb, unbind(GATEWAY, "0004"), dst=GATEWAY)
+    # whatever the export lists: the fixture's Configuration Server shows AppKey 0 bound
+    assert _recorded(cdb, unbind(GATEWAY, "0000"), dst=GATEWAY)
+    del gateway.elements[0].raw_models[-1]["bind"]
+    assert _recorded(cdb, bind(GATEWAY, "0004"), dst=GATEWAY)  # no `bind` at all
+    assert not _recorded(cdb, bind(GATEWAY, "0005"), dst=GATEWAY)  # not on the node
+    assert not _recorded(cdb, bind(LIGHT_SWITCH, "0004"))  # nor on this one
+    # Health takes AppKeys: a binding the export lacks is a change
+    assert not _recorded(cdb, bind(LIGHT_SWITCH, "0002", 1))
+    assert app_follow.DEVICE_KEY_MODELS.isdisjoint({0x0002, 0x0003, 0x0010, 0x0011})
+
+
 def test_a_re_sent_publication_is_recorded(cdb: CDB) -> None:
     """Every field of a Publication Set the export records must match it; an address of 0 is no `publish`."""
     pub = C.model_publication_set

@@ -1299,7 +1299,9 @@ JUNG product, or no node at all) as the phone's:
   appears once, and stays across restarts until a new export is loaded. Plain control from the phone raises nothing,
   and neither does a Config message that sets what the loaded export already records for that device (a key, binding,
   subscription, publication or mesh setting it has as sent): the app re-sends some settings unchanged, seen on the
-  gateway node, and the new export would differ only in its timestamp. Such a message is logged at debug level; the
+  gateway node, and the new export would differ only in its timestamp. So does a Model App Bind or Unbind of a
+  model that uses only the device key (the Configuration or Remote Provisioning Server, among others): the device
+  answers Cannot Bind and nothing changes. The app binds the gateway's Remote Provisioning Server anyway. Such a message is logged at debug level; the
   notice's warning in the log names the message that raised it.
 
 Both are [options](#options) of the entry (*Follow changes made in the JUNG HOME app*, *Check the gateway's export

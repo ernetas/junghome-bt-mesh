@@ -96,6 +96,14 @@ CONFIG_CHANGES = frozenset(
         C.CONFIG_NODE_RESET,
     }
 )
+# SIG foundation models that use only the device key, so an AppKey can never be bound to them (Mesh Protocol 1.1: a
+# Model App Bind to one is answered Cannot Bind): the Configuration, Remote Provisioning, Directed Forwarding
+# Configuration, Bridge Configuration, Mesh Private Beacon, On-Demand Private Proxy, SAR Configuration, Large
+# Composition Data and Solicitation PDU RPL Configuration servers and clients. Health (0002 / 0003) and Opcodes
+# Aggregator (0010 / 0011) models do take AppKeys.
+DEVICE_KEY_MODELS: Final = frozenset(
+    {0x0000, 0x0001, *range(0x0004, 0x0010), *range(0x0012, 0x0016)}
+)
 # ... and the scene edits, sent with the application key
 SCENE_CHANGES = frozenset(
     {M.SCENE_STORE, M.SCENE_STORE_UNACK, M.SCENE_DELETE, M.SCENE_DELETE_UNACK}
@@ -173,8 +181,17 @@ def _setting(node: Node, op: int, p: bytes, _cdb: CDB) -> bool:
 
 
 def _binding(node: Node, op: int, p: bytes, cdb: CDB) -> bool:
+    """Tell a binding the model has, or an unbinding of one it has not; any (un)binding of a device-key model.
+
+    A device-key model takes no AppKey: the node answers Cannot Bind and nothing changes. The app binds the gateway's
+    Remote Provisioning Server (0004) anyway (seen on a live install).
+    """
     entry = _model_of(cdb, node, p, 4)
-    if entry is None or not isinstance(bound := entry.get("bind"), list):
+    if entry is None:
+        return False
+    if C.decode_model_id(p[4:]) in DEVICE_KEY_MODELS:
+        return True
+    if not isinstance(bound := entry.get("bind"), list):
         return False
     held = (_u16(p, 2) & 0xFFF) in bound
     return held if op == C.CONFIG_MODEL_APP_BIND else not held
