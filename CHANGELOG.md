@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.8.1
+
+### Fixed
+
+- **No more *The JUNG HOME app changed the installation* after the app only binds a key the gateway cannot take.** On an
+  entry set up from a file, the app was heard sending the gateway a Model App Bind of the application key to its
+  Remote Provisioning Server. That model works only with the device key, so the gateway answers Cannot Bind and nothing
+  changes, but Home Assistant took it for a change in the app and asked for a new export, which would have been the same
+  file again. A Model App Bind or Unbind of a model that uses only the device key (Configuration, Remote Provisioning,
+  Directed Forwarding Configuration, Bridge Configuration, Mesh Private Beacon, On-Demand Private Proxy, SAR
+  Configuration, Large Composition Data and Solicitation PDU RPL Configuration servers and clients) no longer raises
+  the notice. A notice already open stays until you dismiss it under Settings → Repairs or load a new export.
+- 1.8.0 was not published: this release carries its fix too (devices reported missing from the export that do not
+  exist).
+
 ## 1.8.0
 
 ### Fixed
