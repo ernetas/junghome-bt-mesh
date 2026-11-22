@@ -2220,6 +2220,14 @@ def test_binding_a_device_key_model_is_recorded(cdb: CDB) -> None:
     # Health takes AppKeys: a binding the export lacks is a change
     assert not _recorded(cdb, bind(LIGHT_SWITCH, "0002", 1))
     assert app_follow.DEVICE_KEY_MODELS.isdisjoint({0x0002, 0x0003, 0x0010, 0x0011})
+    # ... and one whose `bind` the export leaves out is a change, either way
+    health = cdb.node_by_addr(LIGHT_SWITCH)
+    assert health is not None
+    entry = health.elements[0].model_entry("0002")
+    assert entry is not None
+    del entry["bind"]
+    assert not _recorded(cdb, bind(LIGHT_SWITCH, "0002"))
+    assert not _recorded(cdb, unbind(LIGHT_SWITCH, "0002", 1))
 
 
 def test_a_re_sent_publication_is_recorded(cdb: CDB) -> None:
