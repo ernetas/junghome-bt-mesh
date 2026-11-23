@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.8.2
+
+### Fixed
+
+- **No more *JUNG HOME devices missing from the export* for addresses that are no JUNG device.** On a live install,
+  three random Bluetooth addresses kept advertising the mesh's Network ID for hours. 1.8.0 lets through any address that
+  keeps advertising, so they were listed (by address alone, with no product) as devices added in the app, and every new
+  export brought the notice back, since no export can list them. Every JUNG device advertises the JUNG manufacturer
+  record next to its mesh advert, from the same address; an address without it is now logged once (INFO) and not
+  reported. A device really added in the app carries the record and is reported as before. An open notice for such
+  addresses goes away with the restart that installs this release.
+
 ## 1.8.1
 
 ### Fixed

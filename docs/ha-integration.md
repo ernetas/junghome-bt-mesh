@@ -2735,8 +2735,10 @@ made — it has no entities here. An address counts only once it keeps advertisi
 after it was first heard, and is reported when Home Assistant has heard it again at least 30 s after that first
 advert (a JUNG node advertises several times a second). One advert from an address no node has is what a Bluetooth
 scanner that garbles addresses hands over too (seen on a live install: addresses one or two bytes off the MACs of
-known nodes, each heard once); such an address is only logged at DEBUG. The issue lists the devices (product and
-address; the product comes from the node's own advertisement). An entry set up from the gateway helps itself: it fetches the gateway's current export
+known nodes, each heard once); such an address is only logged at DEBUG. An address must also advertise the JUNG
+manufacturer record, which every JUNG node sends from the same MAC: one that keeps advertising the Network ID without
+it is no JUNG node (seen on a live install: three random addresses doing so for hours) and is only logged once at
+INFO. The issue lists the devices (product and address; the product comes from the node's own advertisement). An entry set up from the gateway helps itself: it fetches the gateway's current export
 (the app uploads its project right after provisioning) and, when that export lists the device and only the
 gateway changed since Home Assistant last synced with it, replaces its file (keeping `<file>.bak`, and the replaced
 copy as `<file>.pre-adopt` until the next such replacement; the gateway's copy recorded as synced) and takes it
