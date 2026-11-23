@@ -89,6 +89,10 @@ _LOGGER = logging.getLogger(__name__)
 # (`bluetooth.async_last_service_info`, whose time moves on with every advert heard).
 UNKNOWN_NODE_CONFIRM: Final = 60.0
 UNKNOWN_NODE_SPAN: Final = 30.0
+# An address that keeps advertising our Network ID is a JUNG node only when it also advertises the JUNG manufacturer
+# record (`jhmesh.advert`): every provisioned JUNG node does, from the same public MAC. Seen on a live install: three
+# random static addresses advertising our Network ID for hours without one, reported as devices missing from the
+# export that no export could ever list. Such an address is logged once and not looked at again.
 
 
 # A node the export does not know (`unknown_nodes`) makes the hub ask the gateway for its export; the app uploads
@@ -137,6 +141,8 @@ class ExportWatch:
         # MAC → when its first advert was heard (`BluetoothServiceInfoBleak.time`): new addresses of our network not
         # reported yet, until their look (the `unknown_confirm` keyed timers, by the MAC as a number)
         self._candidates: dict[str, float] = {}
+        # addresses that kept advertising our network without the JUNG record: no JUNG node, never looked at again
+        self._strangers: set[str] = set()
         self._confirm = hub.lifecycle.keyed("unknown_confirm")
         self._export_refresh: asyncio.Task[None] | None = (
             None  # the gateway export fetch in flight, if any
@@ -167,6 +173,7 @@ class ExportWatch:
             address in self.unknown_nodes
             or address in self.hub.node_by_mac
             or address in self._candidates
+            or address in self._strangers
         ):
             return
         if len(address) != 17 or address.count(":") != 5:
@@ -186,9 +193,10 @@ class ExportWatch:
     def _confirm_unknown_node(self, address: str) -> None:
         """Report `address` when it still advertises our network, UNKNOWN_NODE_SPAN after its first advert, or forget it.
 
-        A node it kept advertising from is one the export lacks: raised once as a repair issue listing the devices
-        (product from the JUNG manufacturer record when the advert carries one); cleared when the export is reloaded
-        with them in it (a new hub starts with an empty list). An address not heard again is forgotten (DEBUG): heard
+        An address that kept advertising without the JUNG manufacturer record is no JUNG node: logged once (INFO) and
+        not looked at again. A node it kept advertising from is one the export lacks: raised once as a repair issue
+        listing the devices (product from its JUNG manufacturer record); cleared when the export is reloaded with
+        them in it (a new hub starts with an empty list). An address not heard again is forgotten (DEBUG): heard
         again later, its look starts over.
         """
         first = self._candidates.pop(address)
@@ -207,7 +215,16 @@ class ExportWatch:
                 address,
             )
             return
-        self.unknown_nodes[address] = parse_manufacturer_data(info.manufacturer_data)
+        advert = parse_manufacturer_data(info.manufacturer_data)
+        if advert is None:
+            self._strangers.add(address)
+            _LOGGER.info(
+                "%s keeps advertising this mesh's Network ID without the JUNG manufacturer record: not a JUNG "
+                "node, not reported as missing from the export",
+                address,
+            )
+            return
+        self.unknown_nodes[address] = advert
         _LOGGER.warning(
             "JUNG node %s belongs to this mesh but is not in the export (%s): export the network again",
             address,

@@ -95,14 +95,18 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
 
+# the JUNG record every provisioned JUNG node advertises next to its proxy advert (type 1: a 1-gang push-button)
+JUNG_RECORD = {JUNG_COMPANY_ID: bytes.fromhex("0101000000")}
+
+
 def keeps_advertising(
     hass: HomeAssistant,
     env: dict[str, Any],
     network_id: bytes,
     address: str,
-    manufacturer_data: dict[int, bytes] | None = None,
+    manufacturer_data: dict[int, bytes] | None = JUNG_RECORD,
 ) -> None:
-    """`address` advertises `network_id` and keeps doing so past the look at a new address, which then runs.
+    """`address` advertises `network_id` (with a JUNG record) and keeps doing so past the look at a new address.
 
     Home Assistant calls back for the first advert only (the next ones carry the same data); its history holds the
     latest, UNKNOWN_NODE_SPAN later (`env["last"]`). The look, due UNKNOWN_NODE_CONFIRM after the first, runs at once
@@ -179,7 +183,7 @@ async def test_unknown_node_of_our_network_raises_a_repair(
         in caplog.text
     )
 
-    # seen again: nothing changes; a second one without a record is listed by its address
+    # seen again: nothing changes; a second one with a record of another type is listed with its product
     callback_(
         make_service_info(
             network_id, address="30:FB:10:00:00:9E", manufacturer_data=record
@@ -192,11 +196,11 @@ async def test_unknown_node_of_our_network_raises_a_repair(
     assert issue is not None
     assert issue.translation_placeholders["count"] == "2"
     assert issue.translation_placeholders["devices"] == (
-        "30:FB:10:00:00:01, Push-button 2-gang 30:FB:10:00:00:9E"
+        "Push-button 1-gang 30:FB:10:00:00:01, Push-button 2-gang 30:FB:10:00:00:9E"
     )
     diagnostics = await async_get_config_entry_diagnostics(hass, init_answered)
     assert diagnostics["link"]["unknown_nodes"] == [
-        {"address": "**REDACTED**", "product_id": None},
+        {"address": "**REDACTED**", "product_id": 1},
         {"address": "**REDACTED**", "product_id": 2},
     ]
     assert "30:FB:10:00:00:9E" not in str(diagnostics)
@@ -224,7 +228,7 @@ async def test_an_address_heard_once_is_no_unknown_node(
     )
 
     def advert(address: str, time: float, net: bytes = network_id) -> Any:
-        return make_service_info(net, address, time=time)
+        return make_service_info(net, address, manufacturer_data=JUNG_RECORD, time=time)
 
     # heard once: nothing yet, and not again by the look; one heard again too soon, one that now advertises another
     # network and one the export followed meanwhile are not reported either
@@ -264,6 +268,33 @@ async def test_an_address_heard_once_is_no_unknown_node(
     callback_(advert(other, 600.0), BluetoothChange.ADVERTISEMENT)
     assert hub.lifecycle.keyed("unknown_confirm")
     await hass.config_entries.async_unload(init_answered.entry_id)
+    assert hub.lifecycle.keyed("unknown_confirm") == {}
+
+
+async def test_an_address_without_the_jung_record_is_no_unknown_node(
+    hass: HomeAssistant,
+    init_answered: MockConfigEntry,
+    mock_bluetooth_env: dict[str, Any],
+    network_id: bytes,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Seen on a live install: random addresses advertising our Network ID for hours, without the JUNG record
+    every JUNG node advertises, were reported as devices missing from the export that no export could list. One is
+    logged once and never looked at again."""
+    hub = hub_of(init_answered)
+    callback_ = mock_bluetooth_env["callbacks"][0]
+    stranger = "00:00:5E:00:53:A1"
+    keeps_advertising(hass, mock_bluetooth_env, network_id, stranger, None)
+    assert hub.unknown_nodes == {}
+    assert find_issue(hass, ISSUE_UNKNOWN_NODES) is None
+    assert f"{stranger} keeps advertising this mesh's Network ID without" in caplog.text
+    # another network's record is no JUNG record either
+    keeps_advertising(
+        hass, mock_bluetooth_env, network_id, "00:00:5E:00:53:A2", {0x004C: b"\x02\x15"}
+    )
+    assert hub.unknown_nodes == {}
+    # heard again: not looked at again
+    callback_(make_service_info(network_id, stranger), BluetoothChange.ADVERTISEMENT)
     assert hub.lifecycle.keyed("unknown_confirm") == {}
 
 
@@ -394,7 +425,7 @@ async def test_unknown_node_fetches_the_gateways_export_and_follows_it(
         assert issue.translation_placeholders == {
             "title": gateway_entry.title,
             "count": "1",
-            "devices": NEW_MAC,
+            "devices": f"Push-button 1-gang {NEW_MAC}",
             "host": "junghome.local",
         }
         assert set(issue.translation_placeholders) == issue_text_placeholders(
