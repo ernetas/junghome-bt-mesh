@@ -76,7 +76,7 @@ jobs:
       - name: Workflow security (zizmor)
         # Template injection, credentials left in the checkout, unpinned actions or images, excessive permissions.
         # Offline: no repository token for the audits that would query GitHub. Every finding fails the job.
-        uses: docker://ghcr.io/zizmorcore/zizmor:1.32.0@sha256:3014cc8f68f663935f69b3c3e0e41f5ce102b268d97db13db0f62208747f860d
+        uses: docker://ghcr.io/zizmorcore/zizmor:1.33.1@sha256:ecd3ffe6158de1322e05a044ed43749bee12b1dccb7e1a7859bc6ac4b2a1c516
         with:
           args: --offline .
 
@@ -295,7 +295,7 @@ jobs:
       - name: hassfest
         # No release tags since 2020; pinned to the master commit (Renovate moves the SHA along the
         # repository's default branch, which is master there).
-        uses: home-assistant/actions/hassfest@07f46fd2e19967768b5fd3000f91f857452b767c # master
+        uses: home-assistant/actions/hassfest@9e9565e68f5a70d874202871f4c4064d23814235 # master
       - name: HACS validation
         # hacs/action is a one-line wrapper (action.yml) around the docker image ghcr.io/hacs/action:main, so pinning
         # the wrapper's commit pins nothing that runs and the image would be pulled by its moving tag with the
